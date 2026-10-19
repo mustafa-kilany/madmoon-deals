@@ -56,13 +56,24 @@ test('maps the contract error body to ApiError codes', async () => {
   expect(error.status).toBe(409);
 });
 
-test('401 signs out through the registered handler', async () => {
+test('a rejected token (401) signs out through the registered handler', async () => {
   const handler = jest.fn();
   setUnauthorizedHandler(handler);
+  tokenStorage.set('expired');
   respond(401);
   const error = await failure(api.get('/me'));
   expect(error.code).toBe('UNAUTHORIZED');
   expect(handler).toHaveBeenCalled();
+});
+
+test('a 401 without a token (wrong password) does not sign out', async () => {
+  const handler = jest.fn();
+  setUnauthorizedHandler(handler);
+  respond(401, { error: { code: 'INVALID_CREDENTIALS' } });
+  expect((await failure(api.post('/auth/login', {}))).code).toBe(
+    'INVALID_CREDENTIALS',
+  );
+  expect(handler).not.toHaveBeenCalled();
 });
 
 test('no connection becomes a NETWORK error', async () => {

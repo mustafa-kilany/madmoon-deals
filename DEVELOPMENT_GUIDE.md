@@ -302,7 +302,7 @@ sahla/
 │   │   ├── checkout/           # pricing.ts lives here
 │   │   ├── orders/             # buyer tracking
 │   │   └── courier/
-│   ├── config.ts               # apiBaseUrl, useMockApi switch (§4.4)
+│   ├── config.ts               # apiBaseUrl, per-service mock switches (§4.4)
 │   ├── services/               # Data access, one folder per domain (§4.4)
 │   │   ├── api/                # HTTP client, ApiError, tokenStorage
 │   │   ├── catalog/            # types.ts (interface) · mock.ts · http.ts · index.ts (picks one)
@@ -362,8 +362,14 @@ screen → hook (features/*/hooks, TanStack Query) → service interface (servic
                                                      └─ http.ts  real API via services/api/client.ts
 ```
 
-- `src/config.ts` picks the implementation: `useMockApi: true` today. **Connecting the backend =
-  set `apiBaseUrl`, set `useMockApi: false`.** No screen changes.
+- `src/config.ts` picks the implementation per service: `mock: { catalog: true, auth: true }`
+  today. **Connecting the backend = set `apiBaseUrl`, switch each service to `false` as the API
+  ships it** (e.g. accounts before catalog). No screen changes.
+- `tools/contract-server` is a small local server that implements `docs/API.md` for real (hashed
+  passwords, tokens, file uploads). Run `npm run contract-server`, point the app at
+  `http://10.0.2.2:4000/v1` with `mock.auth: false`, and every account call goes over real HTTP.
+  `__tests__/contract.test.ts` runs the HTTP services against it automatically. It is a test
+  stand-in for the backend, not the backend.
 - The mock behaves like a server: simulated latency, accounts and sessions stored on the device,
   the token read like an `Authorization` header, and the contract's error codes
   (`EMAIL_TAKEN`, `INVALID_CREDENTIALS`, …). Loading and error states are therefore real today.

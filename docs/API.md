@@ -1,136 +1,289 @@
-# Sahla API contract
+# Sahla API Contract & Connection Guide
 
-What the mobile app expects from the backend. The app's mock backend
-(`src/services/*/mock.ts`) implements exactly this, and the HTTP
-implementations (`src/services/*/http.ts`) call these endpoints. Build the
-backend to this document and connecting it is a configuration change:
+This document defines the REST API contract expected by the **Sahla** mobile application, as well as instructions for connecting the app to a live backend service.
+
+The app's HTTP service layer (`src/services/*/http.ts`) and API client (`src/services/api/client.ts`) are fully implemented and integrated. Connecting to a real API server requires only a configuration update in `src/config.ts`.
+
+---
+
+## Connecting the Mobile App to the Backend
+
+### 1. Update `src/config.ts`
+
+Open [`src/config.ts`](file:///C:/Users/mustafa/Desktop/Sahla/Sahla/src/config.ts) and set `apiBaseUrl` and toggles for `mock`:
 
 ```ts
-// src/config.ts
-apiBaseUrl: 'https://api.sahla.jo/v1', // your server
-useMockApi: false,
+export const config = {
+  /** Base URL of your Sahla REST API server */
+  apiBaseUrl: 'https://api.sahla.jo/v1', // or 'http://10.0.2.2:4000/v1' for Android Emulator
+
+  /** Toggles: set to false to use real HTTP API endpoints instead of mock data */
+  mock: {
+    catalog: false, // Uses httpCatalogService (/categories, /listings, /cities, etc.)
+    auth: false,    // Uses httpAuthService (/auth/login, /auth/signup, /me, etc.)
+  },
+
+  requestTimeoutMs: 15_000,
+  uploadTimeoutMs: 60_000,
+} as const;
 ```
 
-Keep this file in sync with `src/lib/types.ts` (the shapes below are those types).
+> [!NOTE]
+> * **Android Emulator Host Loopback:** Use `http://10.0.2.2:<port>/v1` to point to a server running locally on your development PC.
+> * **iOS Simulator Host Loopback:** Use `http://localhost:<port>/v1`.
+> * **Gradual Integration:** You can set `auth: false` and keep `catalog: true` (or vice versa) to integrate backend services independently.
 
-## Conventions
+---
+
+### 2. How the App Handles Requests & Authentication
+
+* **Headers & Content-Type:**
+  * Standard JSON endpoints automatically include `Accept: application/json` and `Content-Type: application/json`.
+  * Upload endpoints (e.g. `idPhoto`, `avatar`) use `FormData` (`multipart/form-data`). The client automatically lets the platform set the correct boundary header.
+* **Authentication Tokens:**
+  * When signed in, the app stores a bearer token in MMKV via [`tokenStorage`](file:///C:/Users/mustafa/Desktop/Sahla/Sahla/src/services/api/tokenStorage.ts).
+  * Every outgoing HTTP request automatically appends the header:
+    `Authorization: Bearer <token>`
+* **Automatic Sign-Out on Expired/Invalid Tokens (401):**
+  * If the API returns HTTP `401 Unauthorized` for an authenticated request, the app catches it, clears the local token and session store, and redirects the user to the guest state automatically.
+
+---
+
+## Conventions & Data Types
 
 | Topic | Rule |
 |---|---|
-| Format | JSON, UTF-8. Uploads are `multipart/form-data`. |
-| Auth | `Authorization: Bearer <token>` on every request once signed in. A rejected or expired token must return **401** (the app then signs out). |
-| Money | Integers in **fils** (1 JOD = 1000 fils). Never decimals. Fields end in `Fils`. |
-| Text in two languages | Catalog text is `{ "ar": "…", "en": "…" }` (`Localized`). |
-| Ids | Strings. Category ids are fixed: `clothing, tech, vehicles, furniture, shoes, gaming, watches, more`. |
-| Dates | ISO-8601 strings with timezone, e.g. `"2026-10-19T12:00:00Z"`. |
-| Errors | Non-2xx with body `{ "error": { "code": "EMAIL_TAKEN", "message": "…" } }`. |
+| **Format** | JSON, UTF-8 encoded. File uploads are `multipart/form-data`. |
+| **Authentication** | `Authorization: Bearer <token>` header on authenticated endpoints. |
+| **Money / Currency** | Integers in **fils** (1 JOD = 1000 fils). Never use floating point or decimals. Field names end with `Fils` (e.g. `priceFils`, `incrementFils`). |
+| **Localized Strings** | Dual-language catalog fields use `{ "ar": "...", "en": "..." }` (`Localized`). |
+| **Category IDs** | Fixed set: `clothing`, `tech`, `vehicles`, `furniture`, `shoes`, `gaming`, `watches`, `more`. |
+| **Timestamps** | ISO-8601 UTC strings (e.g. `"2026-10-19T12:00:00Z"`). |
+| **Errors** | Non-2xx responses return `{ "error": { "code": "ERROR_CODE", "message": "..." } }`. |
 
-### Error codes
+### Error Codes Standard
 
-| Code | HTTP | When |
+| Code | HTTP Status | Description |
 |---|---|---|
-| `VALIDATION` | 400 / 422 | Bad or missing fields |
-| `UNAUTHORIZED` | 401 | No / invalid / expired token |
-| `INVALID_CREDENTIALS` | 401 | Wrong email or password on log-in |
-| `NOT_FOUND` | 404 | Unknown id |
-| `EMAIL_TAKEN` | 409 | Sign-up with a registered email |
+| `VALIDATION` | 400 / 422 | Bad parameters or missing required fields |
+| `UNAUTHORIZED` | 401 | Missing, invalid, or expired authentication token |
+| `INVALID_CREDENTIALS` | 401 | Wrong email or password during login |
+| `NOT_FOUND` | 404 | Resource with the specified ID does not exist |
+| `EMAIL_TAKEN` | 409 | Attempting sign-up with an already registered email |
 
-Anything else is shown as a generic error. Messages shown to users come from
-the app's translations, keyed by `code`, so `message` is for logs only.
+---
 
-## Catalog
+## Accounts & Authentication Endpoints
 
-### `GET /categories` → `Category[]`
-```json
-[{ "id": "tech", "name": { "ar": "تكنولوجيا", "en": "Tech" },
-   "icon": "Laptop", "imageUrl": "https://cdn…/tech.jpg" }]
+### Data Models
+
+```ts
+type Session = {
+  token: string;
+  user: User;
+};
+
+type User = {
+  id: string;
+  name: string;
+  email?: string;
+  method: 'email' | 'id';
+  verified: boolean;
+  cityId: string; // 'amman', 'irbid', 'zarqa', 'aqaba'
+  avatarUrl: string;
+  card?: { brand: string; last4: string };
+};
 ```
-`icon` is a fallback line-icon name from the app's icon set (`Shirt, Laptop, Car, Sofa, Sneaker, Gamepad, Watch, Grid`).
 
-### `GET /categories/filters` → `{ [categoryId]: CategoryFilters }`
-```json
-{ "tech": { "types": [{ "id": "phones", "name": { "ar": "هواتف", "en": "Phones" } }],
-            "brands": ["Apple", "Samsung"] } }
+### Endpoints Specification
+
+#### 1. `POST /auth/signup`
+Creates a new account using email and password.
+* **Request Body:** `{ "name": "Ahmad", "email": "ahmad@sahla.jo", "password": "password123" }`
+* **Response (200):** `Session`
+* **Errors:** `EMAIL_TAKEN` (409), `VALIDATION` (400/422)
+
+#### 2. `POST /auth/login`
+Authenticates an existing user.
+* **Request Body:** `{ "email": "ahmad@sahla.jo", "password": "password123" }`
+* **Response (200):** `Session`
+* **Errors:** `INVALID_CREDENTIALS` (401), `VALIDATION` (400/422)
+
+#### 3. `POST /auth/signup/id`
+Creates a verified account using a photo of a national ID document plus email credentials for future sign-ins.
+* **Request Body:** `multipart/form-data` with fields `idPhoto` (JPEG/PNG up to 10MB), `name`, `email`, `password`
+* **Response (200):** `Session` (`user.verified = true`)
+* **Errors:** `EMAIL_TAKEN` (409), `VALIDATION` (400/422)
+
+#### 4. `POST /auth/google`
+Authenticates or registers a user via Google OAuth ID token.
+* **Request Body:** `{ "idToken"?: "google_oauth_token" }`
+* **Response (200):** `Session`
+
+#### 5. `POST /auth/apple`
+Authenticates or registers a user via Apple Sign-In identity token.
+* **Request Body:** `{ "idToken"?: "apple_identity_token" }`
+* **Response (200):** `Session`
+
+#### 6. `POST /auth/send-otp`
+Requests a 6-digit OTP verification code to be sent to the user's email.
+* **Request Body:** `{ "email": "user@sahla.jo" }`
+* **Response (200):** 200 OK
+
+#### 7. `POST /auth/verify-otp`
+Verifies the OTP code sent to the email and returns a session.
+* **Request Body:** `{ "email": "user@sahla.jo", "code": "123456" }`
+* **Response (200):** `Session`
+* **Errors:** `INVALID_CREDENTIALS` (401)
+
+#### 8. `POST /auth/logout` *(Authenticated)*
+Revokes the session token on the server.
+* **Headers:** `Authorization: Bearer <token>`
+* **Response:** 204 No Content
+
+#### 9. `GET /me` *(Authenticated)*
+Fetches the currently authenticated user profile.
+* **Response (200):** `User`
+* **Errors:** `UNAUTHORIZED` (401)
+
+#### 10. `PATCH /me` *(Authenticated)*
+Updates user profile settings (name or city).
+* **Request Body:** `{ "name"?: "Ahmad", "cityId"?: "amman" }`
+* **Response (200):** `User`
+
+#### 11. `POST /me/avatar` *(Authenticated)*
+Uploads a new profile picture.
+* **Request Body:** `multipart/form-data` with field `avatar` (JPEG/PNG up to 10MB)
+* **Response (200):** `User` (with updated `avatarUrl`)
+
+#### 12. `POST /me/id-verification` *(Authenticated)*
+Submits a national ID document to earn the Verified Seller badge.
+* **Request Body:** `multipart/form-data` with field `idPhoto`
+* **Response (200):** `User` (`verified: true`)
+
+#### 13. `POST /me/payment-card` *(Authenticated)*
+Attaches a saved card reference using a payment token generated by the payment provider's mobile SDK. Raw card numbers are never sent to Sahla servers.
+* **Request Body:** `{ "cardToken": "provider_token_xyz" }`
+* **Response (200):** `User` (with updated `card: { brand, last4 }`)
+
+#### 14. `DELETE /me/payment-card` *(Authenticated)*
+Removes the saved payment card reference.
+* **Response (200):** `User` (`card` removed)
+
+---
+
+## Catalog & Listings Endpoints
+
+### Data Models
+
+```ts
+type Localized = { ar: string; en: string };
+
+type Category = {
+  id: string; // 'clothing', 'tech', 'vehicles', etc.
+  name: Localized;
+  icon: string; // 'Shirt', 'Laptop', 'Car', etc.
+  imageUrl: string;
+};
+
+type Item = {
+  id: string;
+  category: string;
+  title: Localized;
+  priceFils: number; // Integer fils
+  imageUrl: string;
+  condition: 'new' | 'excellent' | 'good' | 'loved';
+  seller: Localized;
+  brand?: string;
+  type: string;
+  verified: boolean;
+  location: { id: string; name: Localized };
+  saleType: 'fixed' | 'auction';
+  auction?: {
+    endsAt: string; // ISO-8601 UTC date
+    bidCount: number;
+    incrementFils: number;
+  };
+};
 ```
 
-### `GET /cities` → `Place[]`
-```json
-[{ "id": "amman", "name": { "ar": "عمّان", "en": "Amman" } }]
+### Endpoints Specification
+
+#### 1. `GET /categories`
+Returns all marketplace root categories.
+* **Response (200):** `Category[]`
+
+#### 2. `GET /categories/filters`
+Returns available item types and brands per category for the filter sheet.
+* **Response (200):** `{ [categoryId]: { types: [{ id, name: Localized }], brands: string[] } }`
+
+#### 3. `GET /cities`
+Returns available delivery/location cities in Jordan.
+* **Response (200):** `[{ id: "amman", name: { ar: "عمّان", en: "Amman" } }]`
+
+#### 4. `GET /listings`
+Returns active marketplace items.
+* **Response (200):** `Item[]`
+
+#### 5. `GET /listings/:id`
+Returns a single item's detailed view.
+* **Response (200):** `Item`
+* **Errors:** `NOT_FOUND` (404)
+
+#### 6. `GET /me/listings` *(Authenticated)*
+Returns all listings created by the signed-in user.
+* **Response (200):** `Item[]`
+
+---
+
+## Endpoints Specification for Subsequent Phases
+
+### Phase 4: Selling (Create & Manage Listings)
+
+* **`POST /listings` *(Authenticated)***
+  * **Request:** `multipart/form-data` with images and fields (`category`, `titleAr`, `titleEn`, `priceFils`, `condition`, `brand`, `type`, `locationId`, `saleType`, `auctionEndsAt?`, `incrementFils?`)
+  * **Response (201):** `Item`
+* **`PATCH /listings/:id` *(Authenticated)***
+  * **Request:** `{ "priceFils"?: 50000, "condition"?: "excellent" }`
+  * **Response (200):** `Item`
+* **`DELETE /listings/:id` *(Authenticated)***
+  * **Response:** 204 No Content
+
+### Phase 5: Negotiation, Chat & Auction Bids
+
+* **`GET /chats` *(Authenticated)*** → `ChatThread[]`
+* **`GET /chats/:id/messages` *(Authenticated)*** → `ChatMessage[]`
+* **`POST /chats/:id/messages` *(Authenticated)*** → Body: `{ "text": "Is this still available?" }` → `ChatMessage`
+* **`POST /listings/:id/offers` *(Authenticated)*** → Body: `{ "amountFils": 450000 }` → `Offer`
+* **`POST /offers/:id/accept` | `counter` | `reject` *(Authenticated)*** → `Offer`
+* **`POST /listings/:id/bids` *(Authenticated)*** → Body: `{ "amountFils": 530000 }` → `Item` (returns item with updated `priceFils` and incremented `bidCount`)
+
+### Phase 6: Checkout, Orders & Escrow
+
+* **`POST /orders` *(Authenticated)*** → Body: `{ "listingId": "tech-0", "offerId"?: "..." }` → `Order` (returns calculated `itemPriceFils`, `buyerProtectionFils`, `deliveryFils`, `totalFils`)
+* **`POST /orders/:id/pay` *(Authenticated)*** → Body: `{ "cardToken": "..." }` → `Order` (`status: "escrow_held"`)
+* **`GET /me/orders` *(Authenticated)*** → `Order[]` (Buyer order history)
+* **`GET /me/sales` *(Authenticated)*** → `Order[]` (Seller sales history)
+* **`GET /orders/:id` *(Authenticated)*** → `Order` (Includes buyer's delivery `pin`)
+* **`POST /courier/confirm-delivery` *(Authenticated - Courier Role)*** → Body: `{ "orderId": "ord-123", "pin": "8492" }` → `Order` (`status: "completed"`, releases escrow funds to seller)
+
+---
+
+## Testing the API Locally
+
+The repository includes a standalone local contract server for testing:
+
+```bash
+# Start the local contract server on http://localhost:4000/v1
+npm run contract-server
 ```
 
-### `GET /listings` → `Item[]` · `GET /listings/:id` → `Item`
-```json
-{
-  "id": "tech-0",
-  "category": "tech",
-  "title": { "ar": "آيفون 14 برو", "en": "iPhone 14 Pro" },
-  "priceFils": 520000,
-  "imageUrl": "https://cdn…/iphone.jpg",
-  "condition": "excellent",
-  "seller": { "ar": "عمر", "en": "Omar" },
-  "brand": "Apple",
-  "type": "phones",
-  "verified": true,
-  "location": { "id": "irbid", "name": { "ar": "إربد", "en": "Irbid" } },
-  "saleType": "fixed"
-}
-```
-- `condition`: `new | excellent | good | loved`.
-- `type`: an item-type id from `/categories/filters`.
-- `verified`: the seller passed ID verification.
-- Auctions have `"saleType": "auction"` and
-  `"auction": { "endsAt": "<ISO date>", "bidCount": 18, "incrementFils": 10000 }`;
-  `priceFils` is then the current bid.
-- Filtering, sorting and search currently run in the app over the full list. When
-  the catalog grows, add query parameters (`category, q, format, sort, page`)
-  and move that logic server-side; the app's `lib/browsing.ts` documents the rules.
+To run the mobile app against it:
+1. In [`src/config.ts`](file:///C:/Users/mustafa/Desktop/Sahla/Sahla/src/config.ts), set:
+   ```ts
+   apiBaseUrl: 'http://10.0.2.2:4000/v1',
+   mock: { catalog: true, auth: false }
+   ```
+2. Run `npm test` to execute automated integration tests against the contract server.
 
-### `GET /me/listings` → `Item[]` (auth)
-The signed-in user's listings (Phase 4).
 
-## Accounts
-
-`Session` = `{ "token": "…", "user": User }`
-
-`User`:
-```json
-{
-  "id": "user-42",
-  "name": "Ahmad",
-  "email": "ahmad@sahla.jo",
-  "method": "email",
-  "verified": false,
-  "cityId": "amman",
-  "avatarUrl": "https://cdn…/avatar.jpg",
-  "card": { "brand": "visa", "last4": "4242" }
-}
-```
-`method`: `email | id`. `card` is absent when no card is saved.
-
-| Endpoint | Body | Returns | Errors |
-|---|---|---|---|
-| `POST /auth/signup` | `{ name, email, password }` | `Session` (unverified user) | `EMAIL_TAKEN`, `VALIDATION` |
-| `POST /auth/login` | `{ email, password }` | `Session` | `INVALID_CREDENTIALS` |
-| `POST /auth/signup/id` | multipart `idPhoto` (JPEG) | `Session` (verified user) | `VALIDATION` (unreadable ID) |
-| `POST /auth/logout` (auth) | — | 204 | — |
-| `GET /me` (auth) | — | `User` | `UNAUTHORIZED` |
-| `PATCH /me` (auth) | `{ name?, cityId? }` | `User` | `VALIDATION` |
-| `POST /me/avatar` (auth) | multipart `avatar` | `User` | `VALIDATION` |
-| `POST /me/id-verification` (auth) | multipart `idPhoto` | `User` (`verified: true`) | `VALIDATION` |
-| `POST /me/payment-card` (auth) | `{ cardToken }` | `User` with `card` | `VALIDATION` |
-| `DELETE /me/payment-card` (auth) | — | `User` without `card` | — |
-
-Notes:
-- Store password hashes, never passwords. Email is case-insensitive.
-- ID photos are sensitive personal data: encrypt at rest, restrict access,
-  delete after the KYC decision (DEVELOPMENT_GUIDE §9 privacy policy).
-- `cardToken` comes from the payment provider's SDK on the phone; the card
-  number never reaches the Sahla API. The provider is still to be chosen
-  (DEVELOPMENT_GUIDE §8 #4).
-- ID verification may become asynchronous with a real KYC provider. If so,
-  return the user with a pending state and the app will add a "pending" status.
-
-## Coming in later phases
-
-Listings create/edit (Phase 4), offers and chat, bids (Phase 5), orders,
-checkout and escrow, courier PIN (Phase 6). Add them here as they're designed.

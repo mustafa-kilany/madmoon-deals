@@ -28,22 +28,29 @@ export const useAuthFlowStore = create<AuthFlowState>()(set => ({
   setPending: pending => set({ pending }),
 }));
 
-export const go = ({ name, params }: AppRoute) =>
-  navigationRef.dispatch(CommonActions.navigate(name, params));
+export const go = ({ name, params }: AppRoute) => {
+  if (navigationRef.isReady()) {
+    navigationRef.dispatch(CommonActions.navigate(name, params));
+  }
+};
 
 /** Start sign-in, remembering where to continue afterwards. */
 export function startAuth(then: AppRoute | null) {
   useAuthFlowStore.getState().setPending(then);
-  navigationRef.navigate('Auth');
+  if (navigationRef.isReady()) {
+    navigationRef.navigate('Auth');
+  }
 }
 
 /** Close the sign-in screens and continue to the pending route, if any. */
 export function leaveAuth() {
   const { pending, setPending } = useAuthFlowStore.getState();
   setPending(null);
-  navigationRef.dispatch(state => {
-    const routes = state.routes.filter(r => !AUTH_ROUTES.includes(r.name));
-    return CommonActions.reset({ ...state, routes, index: routes.length - 1 });
-  });
-  if (pending) go(pending);
+  if (navigationRef.isReady()) {
+    navigationRef.dispatch(state => {
+      const routes = state.routes.filter(r => !AUTH_ROUTES.includes(r.name));
+      return CommonActions.reset({ ...state, routes, index: routes.length - 1 });
+    });
+    if (pending) go(pending);
+  }
 }

@@ -8,7 +8,7 @@ import { mockDb } from '@/services/mock/delay';
 import { paymentProvider } from '@/services/payments';
 
 jest.mock('@/config', () => ({
-  config: { mockLatencyMs: 0, useMockApi: true },
+  config: { mockLatencyMs: 0, mock: { auth: true, catalog: true } },
 }));
 
 const code = (promise: Promise<unknown>) =>

@@ -1,10 +1,11 @@
 // Catalog queries (TanStack Query). `useCatalog` bundles what browsing
 // screens need, with one loading / error state.
 
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useUser } from '@/features/auth/sessionStore';
 import { catalogService } from '@/services/catalog';
-import { queryKeys } from '@/services/queryClient';
+import type { CreateListingInput } from '@/services/catalog/types';
+import { queryClient, queryKeys } from '@/services/queryClient';
 
 export const useCategories = () =>
   useQuery({
@@ -29,6 +30,16 @@ export const useMyListings = () =>
     queryKey: queryKeys.myListings,
     queryFn: catalogService.getMyListings,
     enabled: !!useUser(),
+  });
+
+export const useCreateListing = () =>
+  useMutation({
+    mutationFn: (input: CreateListingInput) =>
+      catalogService.createListing(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.items });
+      queryClient.invalidateQueries({ queryKey: queryKeys.myListings });
+    },
   });
 
 export function useCatalog() {

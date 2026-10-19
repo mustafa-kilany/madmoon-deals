@@ -26,7 +26,10 @@ async function request<T>(
   if (token) headers.Authorization = `Bearer ${token}`;
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), config.requestTimeoutMs);
+  const timer = setTimeout(
+    () => controller.abort(),
+    isForm ? config.uploadTimeoutMs : config.requestTimeoutMs,
+  );
   let response: Response;
   try {
     response = await fetch(`${config.apiBaseUrl}${path}`, {
@@ -46,7 +49,8 @@ async function request<T>(
   const data = text ? safeJson(text) : undefined;
 
   if (!response.ok) {
-    if (response.status === 401) onUnauthorized();
+    // Only a rejected token means "signed out" (a wrong password on log-in is also a 401).
+    if (response.status === 401 && token) onUnauthorized();
     // Contract: errors are { "error": { "code": "...", "message": "..." } }.
     const error = (data as { error?: { code?: string; message?: string } })
       ?.error;

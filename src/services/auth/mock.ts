@@ -83,18 +83,85 @@ export const mockAuthService: AuthService = {
     return openSession(account);
   },
 
-  // The mock "reads" the ID instantly; the real API runs the KYC check.
-  signUpWithId: async () => {
+  signUpWithId: async (input: any) => {
     await mockLatency();
+    const photo = input?.idPhoto || input;
+    const name = input?.name ? String(input.name).trim() : 'Mustafa';
+    const email = input?.email ? String(input.email) : 'verified@sahla.jo';
+    const address = normalizeEmail(email);
     const account: MockAccount = {
       id: `user-${newId()}`,
-      name: 'Mustafa',
+      name: name || 'Mustafa',
+      email: address,
+      password: input?.password,
       method: 'id',
       verified: true,
       cityId: 'amman',
       avatarUrl: avatarOptions[0],
     };
     saveUser(account);
+    return openSession(account);
+  },
+
+  logInWithGoogle: async () => {
+    await mockLatency();
+    const email = 'google.user@gmail.com';
+    let account = Object.values(users()).find(u => u.email === email);
+    if (!account) {
+      account = {
+        id: `user-${newId()}`,
+        name: 'Google User',
+        email,
+        method: 'google',
+        verified: false,
+        cityId: 'amman',
+        avatarUrl: avatarOptions[0],
+      };
+      saveUser(account);
+    }
+    return openSession(account);
+  },
+
+  logInWithApple: async () => {
+    await mockLatency();
+    const email = 'user@apple.com';
+    let account = Object.values(users()).find(u => u.email === email);
+    if (!account) {
+      account = {
+        id: `user-${newId()}`,
+        name: 'Apple User',
+        email,
+        method: 'apple',
+        verified: false,
+        cityId: 'amman',
+        avatarUrl: avatarOptions[0],
+      };
+      saveUser(account);
+    }
+    return openSession(account);
+  },
+
+  sendOtp: async ({ email }) => {
+    await mockLatency();
+    // Demo OTP is sent; in mock mode any 6-digit code or "123456" passes.
+  },
+
+  verifyOtp: async ({ email, code }) => {
+    await mockLatency();
+    const address = normalizeEmail(email);
+    let account = Object.values(users()).find(u => u.email === address);
+    if (!account) {
+      account = {
+        id: `user-${newId()}`,
+        name: address.split('@')[0] || 'User',
+        email: address,
+        method: 'email',
+        verified: false,
+        cityId: 'amman',
+        avatarUrl: avatarOptions[0],
+      };
+      saveUser(account);
+    }
     return openSession(account);
   },
 
@@ -113,19 +180,15 @@ export const mockAuthService: AuthService = {
     return update(patch);
   },
 
-  changeAvatar: async () => {
+  // The mock "stores" the photo where it already is on the device.
+  changeAvatar: async photo => {
     await mockLatency();
-    const { avatarUrl } = currentAccount();
-    const next =
-      avatarOptions[
-        (avatarOptions.indexOf(avatarUrl) + 1) % avatarOptions.length
-      ];
-    return update({ avatarUrl: next });
+    return update({ avatarUrl: photo.uri });
   },
 
   savePaymentCard: async cardToken => {
     await mockLatency();
-    // Mock tokens are "mock_<brand>_<last4>" (services/payments/mock.ts).
+    // Mock tokens are "mock_<brand>_<last4>" (services/payments).
     const [, brand = 'card', last4 = '0000'] = cardToken.split('_');
     return update({ card: { brand, last4 } });
   },

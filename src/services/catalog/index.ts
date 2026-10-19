@@ -5,6 +5,6 @@ import type { CatalogService } from './types';
 
 export type { CatalogService } from './types';
 
-export const catalogService: CatalogService = config.useMockApi
+export const catalogService: CatalogService = config.mock.catalog
   ? mockCatalogService
   : httpCatalogService;

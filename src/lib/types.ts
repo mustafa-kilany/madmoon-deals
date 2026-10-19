@@ -68,7 +68,7 @@ export type Item = {
   auction?: Auction;
 };
 
-export type AuthMethod = 'email' | 'id';
+export type AuthMethod = 'email' | 'id' | 'google' | 'apple';
 
 /** A saved payment card. Only the provider's reference + last 4 digits ever reach the app. */
 export type PaymentCard = { brand: string; last4: string };
@@ -124,4 +124,48 @@ export type BrowseState = {
   sort: BrowseSort;
   filters: ActiveFilters;
   query: string;
+};
+
+export type OfferStatus = 'pending' | 'accepted' | 'countered' | 'rejected';
+
+export type Offer = {
+  id: string;
+  itemId: string;
+  itemTitle: Localized;
+  itemImageUrl: string;
+  buyerId: string;
+  buyerName: string;
+  sellerName: string;
+  amountFils: number;
+  status: OfferStatus;
+  createdAt: number;
+};
+
+export type Bid = {
+  id: string;
+  itemId: string;
+  bidderId: string;
+  bidderName: string;
+  amountFils: number;
+  createdAt: number;
+};
+
+export type ChatMessage = {
+  id: string;
+  chatId: string;
+  senderId: string;
+  senderName: string;
+  text: string;
+  offer?: Offer;
+  createdAt: number;
+};
+
+export type ChatThread = {
+  id: string;
+  itemId: string;
+  itemTitle: Localized;
+  itemImageUrl: string;
+  otherPartyName: string;
+  lastMessage: string;
+  updatedAt: number;
 };

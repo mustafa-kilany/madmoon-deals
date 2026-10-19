@@ -41,6 +41,29 @@ export const useSignUpWithId = () =>
     onSuccess: useFinishAuth(),
   });
 
+export const useLogInWithGoogle = () =>
+  useMutation({
+    mutationFn: authService.logInWithGoogle,
+    onSuccess: useFinishAuth(),
+  });
+
+export const useLogInWithApple = () =>
+  useMutation({
+    mutationFn: authService.logInWithApple,
+    onSuccess: useFinishAuth(),
+  });
+
+export const useSendOtp = () =>
+  useMutation({
+    mutationFn: authService.sendOtp,
+  });
+
+export const useVerifyOtp = () =>
+  useMutation({
+    mutationFn: authService.verifyOtp,
+    onSuccess: useFinishAuth(),
+  });
+
 /** Mutation whose result is the updated user. */
 function useUserMutation<T>(mutationFn: (input: T) => Promise<User>) {
   const setUser = useSessionStore(s => s.setUser);
@@ -54,9 +77,7 @@ export const useUpdateProfile = () =>
   useUserMutation((patch: ProfilePatch) => authService.updateProfile(patch));
 
 export const useChangeAvatar = () =>
-  useUserMutation<LocalPhoto | void>(photo =>
-    authService.changeAvatar(photo || undefined),
-  );
+  useUserMutation((photo: LocalPhoto) => authService.changeAvatar(photo));
 
 /** Card number → provider token → account. The number never reaches our API. */
 export const useSavePaymentCard = () =>

@@ -67,7 +67,7 @@ export function Button({
         containerByVariant[variant]
       } ${disabled ? 'opacity-40' : ''} ${className}`}
     >
-      <View className="flex-row items-center justify-center gap-3">
+      <View pointerEvents="none" className="flex-row items-center justify-center gap-3">
         {loading ? (
           <ActivityIndicator color={contentColor} />
         ) : (

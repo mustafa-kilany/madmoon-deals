@@ -10,6 +10,6 @@ export type {
   ProfilePatch,
 } from './types';
 
-export const authService: AuthService = config.useMockApi
+export const authService: AuthService = config.mock.auth
   ? mockAuthService
   : httpAuthService;

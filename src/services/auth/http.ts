@@ -19,16 +19,24 @@ function photoForm(field: string, photo: LocalPhoto): FormData {
 export const httpAuthService: AuthService = {
   signUpWithEmail: input => api.post<Session>('/auth/signup', input),
   logInWithEmail: input => api.post<Session>('/auth/login', input),
-  signUpWithId: idPhoto =>
-    api.post<Session>('/auth/signup/id', photoForm('idPhoto', idPhoto)),
+  signUpWithId: (input: any) => {
+    const photo = input?.idPhoto || input;
+    const form = photoForm('idPhoto', photo);
+    form.append('name', input?.name ? String(input.name) : 'Mustafa');
+    form.append('email', input?.email ? String(input.email) : 'verified@sahla.jo');
+    if (input?.password) form.append('password', input.password);
+    return api.post<Session>('/auth/signup/id', form);
+  },
+  logInWithGoogle: idToken => api.post<Session>('/auth/google', { idToken }),
+  logInWithApple: idToken => api.post<Session>('/auth/apple', { idToken }),
+  sendOtp: input => api.post<void>('/auth/send-otp', input),
+  verifyOtp: input => api.post<Session>('/auth/verify-otp', input),
   verifyId: idPhoto =>
     api.post<User>('/me/id-verification', photoForm('idPhoto', idPhoto)),
   getMe: () => api.get<User>('/me'),
   updateProfile: patch => api.patch<User>('/me', patch),
-  changeAvatar: async photo => {
-    if (!photo) throw new Error('changeAvatar needs a photo with the real API');
-    return api.post<User>('/me/avatar', photoForm('avatar', photo));
-  },
+  changeAvatar: photo =>
+    api.post<User>('/me/avatar', photoForm('avatar', photo)),
   savePaymentCard: cardToken =>
     api.post<User>('/me/payment-card', { cardToken }),
   removePaymentCard: () => api.delete<User>('/me/payment-card'),

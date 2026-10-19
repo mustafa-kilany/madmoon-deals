@@ -44,4 +44,6 @@ export const httpCatalogService: CatalogService = {
     toItem(await api.get<ItemDto>(`/listings/${encodeURIComponent(id)}`)),
   getMyListings: async () =>
     (await api.get<ItemDto[]>('/me/listings')).map(toItem),
+  createListing: async input =>
+    toItem(await api.post<ItemDto>('/listings', input)),
 };

@@ -4,9 +4,26 @@ import type {
   Category,
   CategoryFilters,
   CategoryId,
+  Condition,
   Item,
   Place,
+  SaleType,
 } from '@/lib/types';
+
+export type CreateListingInput = {
+  category: CategoryId;
+  titleAr: string;
+  titleEn: string;
+  priceFils: number;
+  imageUrl: string;
+  condition: Condition;
+  brand?: string;
+  type: string;
+  locationId: string;
+  saleType: SaleType;
+  auctionEndsAt?: number;
+  incrementFils?: number;
+};
 
 export interface CatalogService {
   getCategories(): Promise<Category[]>;
@@ -18,4 +35,5 @@ export interface CatalogService {
   getItem(id: string): Promise<Item>;
   /** The signed-in user's own listings (Profile → My Listings). */
   getMyListings(): Promise<Item[]>;
+  createListing(input: CreateListingInput): Promise<Item>;
 }

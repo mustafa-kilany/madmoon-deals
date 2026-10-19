@@ -31,3 +31,30 @@ export const currencyLabel = (lang: Lang): string =>
 /** "520 JOD" / "520 د.أ". Wrap in <Ltr> when shown inside Arabic text. */
 export const formatJOD = (fils: number, lang: Lang): string =>
   `${formatAmount(fils)} ${currencyLabel(lang)}`;
+
+export type PricingBreakdown = {
+  itemPriceFils: number;
+  buyerProtectionFils: number;
+  deliveryFils: number;
+  totalFils: number;
+};
+
+/**
+ * Escrow pricing breakdown (DEVELOPMENT_GUIDE §3.2):
+ * - Item price
+ * - Buyer protection: 3% of item price, minimum 1 JOD (1000 fils)
+ * - Delivery: 2 JOD flat (2000 fils)
+ */
+export function calculateCheckoutBreakdown(
+  itemPriceFils: number,
+): PricingBreakdown {
+  const protectionFils = Math.max(1000, Math.round(itemPriceFils * 0.03));
+  const deliveryFils = 2000;
+  const totalFils = itemPriceFils + protectionFils + deliveryFils;
+  return {
+    itemPriceFils,
+    buyerProtectionFils: protectionFils,
+    deliveryFils,
+    totalFils,
+  };
+}

@@ -17,6 +17,7 @@ import {
   TextField,
 } from '@/components/ui';
 import { go, startAuth } from '@/features/auth/authFlow';
+import { pickAvatarPhoto } from '@/features/auth/photoCapture';
 import { useCities, useMyListings } from '@/features/catalog/hooks/useCatalog';
 import { useOpenItem } from '@/features/catalog/hooks/useOpenItem';
 import { useLocalized } from '@/i18n';
@@ -85,6 +86,14 @@ function SignedInProfile({ user }: { user: User }) {
   const [cardNumber, setCardNumber] = useState('');
 
   const onError = (error: unknown) => toast.info(t(errorMessageKey(error)));
+  const changePhoto = async () => {
+    try {
+      const photo = await pickAvatarPhoto();
+      if (photo) changeAvatar.mutate(photo, { onError });
+    } catch {
+      toast.info(t('profile.photoError'));
+    }
+  };
   const cardDigits = cardNumber.replace(/\D/g, '');
 
   return (
@@ -110,7 +119,7 @@ function SignedInProfile({ user }: { user: User }) {
               />
             </View>
             <Pressable
-              onPress={() => changeAvatar.mutate(undefined, { onError })}
+              onPress={changePhoto}
               disabled={changeAvatar.isPending}
               accessibilityRole="button"
               accessibilityLabel={t('profile.changePhoto')}
