@@ -51,7 +51,72 @@
     "saved": "Saved Items",
     "orderTracking": "Track Order",
     "auth": "Join Sahla",
-    "auctionBidding": "Auction"
+    "auctionBidding": "Auction",
+    "emailSignUp": "Sign Up with Email",
+    "emailLogIn": "Log In with Email",
+    "idVerification": "ID Verification",
+    "myProfile": "My Profile",
+    "makeOffer": "Make an Offer",
+    "checkout": "Secure Checkout"
+  },
+  "auth": {
+    "logoLetter": "S",
+    "subtitle": "Browse as a guest — but you need an account to buy or sell.",
+    "verifyWithId": "Verify with National ID",
+    "continueWithEmail": "Continue with Email",
+    "idBenefit": "Verifying with your ID gives you a Verified badge and promotes your listings.",
+    "fullName": "Full Name",
+    "email": "Email Address",
+    "password": "Password",
+    "emailUnverifiedNote": "Email accounts are unverified. You can verify later by adding your ID in Settings.",
+    "createAccount": "CREATE ACCOUNT",
+    "logIn": "LOG IN",
+    "haveAccount": "Already have an account? Log in",
+    "noAccount": "New to Sahla? Create an account",
+    "demoHint": "Demo account: ahmad@sahla.jo / sahla1234",
+    "welcome": "Welcome, {{name}}!"
+  },
+  "validation": {
+    "nameRequired": "Enter your name.",
+    "emailInvalid": "Enter a valid email address.",
+    "passwordShort": "Use at least 8 characters.",
+    "passwordRequired": "Enter your password.",
+    "cardInvalid": "Enter a valid card number."
+  },
+  "idVerification": {
+    "title": "Scan Jordanian ID",
+    "signupBody": "Scan your ID to create a verified account.",
+    "verifyBody": "Scan your ID to verify your existing account.",
+    "secure": "Your data is encrypted & secure",
+    "capture": "CAPTURE & VERIFY",
+    "verified": "Your account is now verified"
+  },
+  "profile": {
+    "signInPrompt": "Sign in to view your profile",
+    "signIn": "Sign In",
+    "changePhoto": "Change photo",
+    "verifiedTitle": "Verified Account",
+    "verifiedBody": "Your listings appear first.",
+    "becomeVerified": "Become Verified",
+    "becomeVerifiedBody": "Add your National ID to verify your account.",
+    "addIdVerify": "Add ID & Verify",
+    "city": "City",
+    "paymentCard": "Payment Card",
+    "cardNumber": "Card Number",
+    "save": "Save",
+    "remove": "Remove",
+    "myListings": "My Listings",
+    "noListings": "No listings yet.",
+    "logOut": "Log Out"
+  },
+  "errors": {
+    "NETWORK": "No connection. Check your internet and try again.",
+    "UNAUTHORIZED": "Please sign in again.",
+    "NOT_FOUND": "We couldn't find that.",
+    "VALIDATION": "Please check the details and try again.",
+    "EMAIL_TAKEN": "This email is already registered. Log in instead.",
+    "INVALID_CREDENTIALS": "Wrong email or password.",
+    "UNKNOWN": "Something went wrong. Please try again."
   },
   "condition": {
     "new": "New",

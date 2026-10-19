@@ -6,6 +6,8 @@ import com.facebook.react.ReactApplication
 import com.facebook.react.ReactHost
 import com.facebook.react.ReactNativeApplicationEntryPoint.loadReactNative
 import com.facebook.react.defaults.DefaultReactHost.getDefaultReactHost
+import com.facebook.react.internal.featureflags.ReactNativeFeatureFlags
+import com.facebook.react.internal.featureflags.ReactNativeNewArchitectureFeatureFlagsDefaults
 
 class MainApplication : Application(), ReactApplication {
 
@@ -23,5 +25,14 @@ class MainApplication : Application(), ReactApplication {
   override fun onCreate() {
     super.onCreate()
     loadReactNative(this)
+    // Draw text with the exact layout React Native measured. With the default
+    // text view, text that appears after launch (e.g. after signing in) can be
+    // drawn narrower than measured and lose its last word ("Verified Identity"
+    // → "Verified"). Same flags as the stable defaults otherwise.
+    ReactNativeFeatureFlags.dangerouslyForceOverride(
+      object : ReactNativeNewArchitectureFeatureFlagsDefaults() {
+        override fun enablePreparedTextLayout(): Boolean = true
+      }
+    )
   }
 }

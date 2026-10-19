@@ -8,17 +8,17 @@ import {
   NavigationContainer,
   type Theme,
 } from '@react-navigation/native';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { StatusBar, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { SidebarMenu } from '@/components/SidebarMenu';
 import { Toast } from '@/components/Toast';
+import { useSessionRefresh } from '@/features/auth/hooks/useAccount';
 import { navigationRef } from '@/navigation/navigationRef';
 import { RootNavigator } from '@/navigation/RootNavigator';
+import { queryClient } from '@/services/queryClient';
 import { colors } from '@/theme/colors';
-
-const queryClient = new QueryClient();
 
 const navigationTheme: Theme = {
   ...DefaultTheme,
@@ -39,6 +39,7 @@ function App() {
         <QueryClientProvider client={queryClient}>
           <StatusBar barStyle="dark-content" />
           <NavigationContainer ref={navigationRef} theme={navigationTheme}>
+            <SessionRefresh />
             <RootNavigator />
             <SidebarMenu />
             <Toast />
@@ -47,6 +48,12 @@ function App() {
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
+}
+
+/** Re-reads the signed-in account from the server once at launch. */
+function SessionRefresh() {
+  useSessionRefresh();
+  return null;
 }
 
 const styles = StyleSheet.create({ root: { flex: 1 } });

@@ -68,6 +68,31 @@ export type Item = {
   auction?: Auction;
 };
 
+export type AuthMethod = 'email' | 'id';
+
+/** A saved payment card. Only the provider's reference + last 4 digits ever reach the app. */
+export type PaymentCard = { brand: string; last4: string };
+
+/** A signed-in account. Guests have no User (sessionStore.user is null). */
+export type User = {
+  id: string;
+  name: string;
+  email?: string;
+  /** How the account was created; ID sign-ups start verified. */
+  method: AuthMethod;
+  /** National ID checked → Verified Seller badge, listings ranked first. */
+  verified: boolean;
+  /** Place id (amman, irbid, …). */
+  cityId: string;
+  avatarUrl: string;
+  card?: PaymentCard;
+};
+
+export type Session = { token: string; user: User };
+
+/** A photo taken or picked on the device, ready to upload. */
+export type LocalPhoto = { uri: string; mimeType: string; fileName: string };
+
 /** Fixed price, auction, or both — the All / Buy now / Auctions tabs. */
 export type ListingFormat = 'all' | SaleType;
 

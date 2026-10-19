@@ -22,10 +22,18 @@ export type RootStackParamList = {
   Product: { itemId: string };
   /** Auction detail + bidding (Phase 5). */
   AuctionBidding: { itemId: string };
+  /** Phase 5. */
+  MakeOffer: { itemId: string };
+  /** Phase 6. */
+  Checkout: { itemId: string };
   AddListing: undefined;
   Saved: undefined;
   OrderTracking: undefined;
+  /** Sign-in choice; reached through startAuth / useRequireAuth. */
   Auth: undefined;
+  EmailAuth: { mode: 'signup' | 'login' } | undefined;
+  /** signup = create a verified account; verify = upgrade the signed-in account. */
+  IdVerification: { purpose: 'signup' | 'verify' };
 };
 
 export type RootScreenProps<T extends keyof RootStackParamList> =

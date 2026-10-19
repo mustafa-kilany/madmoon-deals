@@ -18,6 +18,7 @@ import { changeLanguage, useLang, useLocalized } from '@/i18n';
 import { isLiveAuction } from '@/lib/browsing';
 import type { Item } from '@/lib/types';
 import { useUiStore } from '@/store/uiStore';
+import { useUser } from '@/features/auth/sessionStore';
 import { colors } from '@/theme/colors';
 import { iconSize } from '@/theme/spacing';
 import { useCatalog } from '../hooks/useCatalog';
@@ -30,6 +31,7 @@ export function HomeScreen() {
   const lang = useLang();
   const localized = useLocalized();
   const openSidebar = useUiStore(s => s.openSidebar);
+  const user = useUser();
   const savedCount = useFavoritesStore(s => s.ids.length);
   const recentIds = useHistoryStore(s => s.recentItemIds);
   const { items, categories, isLoading, isError, refetch } = useCatalog();
@@ -54,7 +56,9 @@ export function HomeScreen() {
           <Icon name="Menu" size={iconSize.nav} />
         </Pressable>
         <Heading className="flex-1 text-xl" numberOfLines={1}>
-          {t('home.welcome')}
+          {user
+            ? t('home.welcomeUser', { name: user.name })
+            : t('home.welcome')}
         </Heading>
       </View>
       <View className="flex-row items-center gap-1">

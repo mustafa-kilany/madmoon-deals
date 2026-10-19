@@ -1,11 +1,13 @@
 // Slide-in drawer (prototype components/SidebarMenu) from the start edge: left
-// in English, right in Arabic. Account summary, quick links, and sign-in.
-// Rendered once above the navigators; open it with useUiStore().openSidebar.
+// in English, right in Arabic. Account summary, quick links, and sign-in or
+// log-out. Rendered once above the navigators; open it with
+// useUiStore().openSidebar.
 
 import { useEffect } from 'react';
 import {
   BackHandler,
   I18nManager,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -21,15 +23,18 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Icon, type IconName } from '@/components/icons';
 import { Button, Heading, Text } from '@/components/ui';
-import { navigationRef } from '@/navigation/navigationRef';
-import type { RootStackParamList } from '@/navigation/types';
+import { go, startAuth, type AppRoute } from '@/features/auth/authFlow';
+import { useLogOut } from '@/features/auth/hooks/useAccount';
+import { useUser } from '@/features/auth/sessionStore';
 import { useUiStore } from '@/store/uiStore';
 import { colors } from '@/theme/colors';
 
 const DURATION_MS = 300;
 const MAX_WIDTH = 320;
 
-type Link = {
+const profile: AppRoute = { name: 'Tabs', params: { screen: 'Profile' } };
+
+const links: {
   icon: IconName;
   label:
     | 'sidebar.profileSettings'
@@ -37,24 +42,17 @@ type Link = {
     | 'sidebar.myListings'
     | 'sidebar.savedItems'
     | 'sidebar.settings';
-  go: () => void;
-};
-
-const toProfile = () => navigationRef.navigate('Tabs', { screen: 'Profile' });
-// Routes that take no params.
-type PlainRoute = {
-  [K in keyof RootStackParamList]: RootStackParamList[K] extends undefined
-    ? K
-    : never;
-}[keyof RootStackParamList];
-const to = (route: PlainRoute) => () => navigationRef.navigate(route);
-
-const links: Link[] = [
-  { icon: 'Profile', label: 'sidebar.profileSettings', go: toProfile },
-  { icon: 'Box', label: 'sidebar.myPurchases', go: to('OrderTracking') },
-  { icon: 'Tag', label: 'sidebar.myListings', go: toProfile },
-  { icon: 'Heart', label: 'sidebar.savedItems', go: to('Saved') },
-  { icon: 'Settings', label: 'sidebar.settings', go: toProfile },
+  route: AppRoute;
+}[] = [
+  { icon: 'Profile', label: 'sidebar.profileSettings', route: profile },
+  {
+    icon: 'Box',
+    label: 'sidebar.myPurchases',
+    route: { name: 'OrderTracking' },
+  },
+  { icon: 'Tag', label: 'sidebar.myListings', route: profile },
+  { icon: 'Heart', label: 'sidebar.savedItems', route: { name: 'Saved' } },
+  { icon: 'Settings', label: 'sidebar.settings', route: profile },
 ];
 
 export function SidebarMenu() {
@@ -63,6 +61,8 @@ export function SidebarMenu() {
   const { width: screenWidth } = useWindowDimensions();
   const isOpen = useUiStore(s => s.isSidebarOpen);
   const close = useUiStore(s => s.closeSidebar);
+  const user = useUser();
+  const logOut = useLogOut();
 
   const width = Math.min(screenWidth * 0.8, MAX_WIDTH);
   // translateX doesn't mirror in RTL, so hide toward the start edge by hand.
@@ -88,7 +88,7 @@ export function SidebarMenu() {
     transform: [{ translateX: (1 - progress.value) * hiddenX }],
   }));
 
-  const go = (action: () => void) => {
+  const then = (action: () => void) => () => {
     close();
     action();
   };
@@ -115,19 +115,37 @@ export function SidebarMenu() {
           style={{ paddingTop: insets.top + 24 }}
         >
           <View className="mb-4 h-16 w-16 items-center justify-center overflow-hidden rounded-full border-2 border-brand-surface bg-brand-muted shadow-sm">
-            <Icon name="Profile" size={32} color={colors.warmgray} />
+            {user ? (
+              <Image
+                source={{ uri: user.avatarUrl }}
+                className="h-full w-full"
+              />
+            ) : (
+              <Icon name="Profile" size={32} color={colors.warmgray} />
+            )}
           </View>
-          <Heading className="text-2xl">{t('sidebar.guest')}</Heading>
-          <Text className="mt-1 font-sans-bold text-sm text-brand-warmgray">
-            {t('sidebar.browsingAsGuest')}
-          </Text>
+          <Heading className="text-2xl">
+            {user ? user.name : t('sidebar.guest')}
+          </Heading>
+          {user?.verified ? (
+            <View className="mt-1 flex-row items-center gap-1">
+              <Icon name="BadgeCheck" size={16} color={colors.success} />
+              <Text className="font-sans-bold text-sm text-brand-success">
+                {t('sidebar.verifiedIdentity')}
+              </Text>
+            </View>
+          ) : (
+            <Text className="mt-1 font-sans-bold text-sm text-brand-warmgray">
+              {t(user ? 'sidebar.unverified' : 'sidebar.browsingAsGuest')}
+            </Text>
+          )}
         </View>
 
         <ScrollView contentContainerClassName="gap-2 p-4">
           {links.map(link => (
             <Pressable
               key={link.label}
-              onPress={() => go(link.go)}
+              onPress={then(() => go(link.route))}
               accessibilityRole="button"
               className="flex-row items-center gap-3 rounded-xl p-4 active:bg-brand-lightgray"
             >
@@ -143,7 +161,20 @@ export function SidebarMenu() {
           className="p-6"
           style={{ paddingBottom: Math.max(insets.bottom, 24) }}
         >
-          <Button label={t('sidebar.signIn')} onPress={() => go(to('Auth'))} />
+          {user ? (
+            <Pressable
+              onPress={then(() => logOut.mutate())}
+              accessibilityRole="button"
+              className="items-center rounded-xl bg-brand-lightgray py-4 active:bg-brand-muted"
+            >
+              <Text className="font-sans-bold">{t('sidebar.logOut')}</Text>
+            </Pressable>
+          ) : (
+            <Button
+              label={t('sidebar.signIn')}
+              onPress={then(() => startAuth(null))}
+            />
+          )}
         </View>
       </Animated.View>
     </View>

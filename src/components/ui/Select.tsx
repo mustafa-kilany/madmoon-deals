@@ -12,6 +12,9 @@ import { Heading, Text } from './Text';
 
 export type SelectOption<T extends string> = { value: T; label: string };
 
+const boxBySize = { sm: 'px-3 py-2.5', md: 'px-3 py-3', lg: 'px-4 py-4' };
+const textBySize = { sm: 'text-xs', md: 'text-sm', lg: 'text-base' };
+
 type SelectProps<T extends string> = {
   value: T;
   options: SelectOption<T>[];
@@ -20,8 +23,8 @@ type SelectProps<T extends string> = {
   label: string;
   /** Text in the closed box; defaults to the selected option's label. */
   display?: string;
-  /** "sm" = text-xs py-2.5 (sort bar), "md" = text-sm py-3 (forms). */
-  size?: 'sm' | 'md';
+  /** sm = text-xs (sort bar), md = text-sm (filter sheet), lg = text-base (Profile). */
+  size?: 'sm' | 'md' | 'lg';
   className?: string;
 };
 
@@ -45,14 +48,10 @@ export function Select<T extends string>({
         accessibilityRole="button"
         accessibilityLabel={label}
         accessibilityValue={{ text: selected?.label }}
-        className={`min-h-11 flex-row items-center gap-2 rounded-xl border border-brand-border bg-brand-surface px-3 ${
-          size === 'sm' ? 'py-2.5' : 'py-3'
-        } ${className}`}
+        className={`min-h-11 flex-row items-center gap-2 rounded-xl border border-brand-border bg-brand-surface ${boxBySize[size]} ${className}`}
       >
         <Text
-          className={`flex-1 font-sans-bold ${
-            size === 'sm' ? 'text-xs' : 'text-sm'
-          }`}
+          className={`flex-1 font-sans-bold ${textBySize[size]}`}
           numberOfLines={1}
         >
           {display ?? selected?.label}

@@ -1,10 +1,8 @@
 // Product page (prototype ProductDetail): photo gallery with floating back /
 // share / save, title and price, condition and location, trust badges,
 // seller card, description, similar items, and the Make an Offer / Pay Now bar.
-// Buying actions need an account: they open sign-in (redirect-after-login
-// arrives with auth in Phase 3).
+// Buying actions need an account: guests sign in first, then continue.
 
-import { useNavigation } from '@react-navigation/native';
 import { useState } from 'react';
 import { Image, Pressable, ScrollView, Share, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,6 +14,7 @@ import { ItemRail } from '@/components/ItemRail';
 import { Price } from '@/components/Price';
 import { StatusView } from '@/components/StatusView';
 import { Button, Card, Heading, Text } from '@/components/ui';
+import { useRequireAuth } from '@/features/auth/hooks/useRequireAuth';
 import {
   useIsFavorite,
   useToggleFavorite,
@@ -67,14 +66,18 @@ function ProductDetail({ item, allItems }: { item: Item; allItems: Item[] }) {
   const saved = useIsFavorite(item.id);
   const toggleFavorite = useToggleFavorite();
   const [selected, setSelected] = useState(0);
-  const navigation = useNavigation();
+  const requireAuth = useRequireAuth();
 
   const title = localized(item.title);
   const gallery = galleryOf(item.imageUrl);
   const similar = allItems
     .filter(i => i.category === item.category && i.id !== item.id)
     .slice(0, 6);
-  const requireAuth = () => navigation.navigate('Auth');
+  // Prototype: the seller's Chat button also starts an offer.
+  const makeOffer = () =>
+    requireAuth({ name: 'MakeOffer', params: { itemId: item.id } });
+  const payNow = () =>
+    requireAuth({ name: 'Checkout', params: { itemId: item.id } });
 
   const share = () =>
     Share.share({
@@ -188,7 +191,7 @@ function ProductDetail({ item, allItems }: { item: Item; allItems: Item[] }) {
               </View>
             </View>
             <Pressable
-              onPress={requireAuth}
+              onPress={makeOffer}
               accessibilityRole="button"
               className="rounded-xl bg-brand-primary/10 px-3 py-2"
             >
@@ -256,7 +259,7 @@ function ProductDetail({ item, allItems }: { item: Item; allItems: Item[] }) {
         style={{ paddingBottom: Math.max(insets.bottom, 16) }}
       >
         <Pressable
-          onPress={requireAuth}
+          onPress={makeOffer}
           accessibilityRole="button"
           className="flex-1 items-center rounded-xl border-2 border-brand-primary bg-brand-surface py-4 active:scale-[0.98]"
         >
@@ -267,7 +270,7 @@ function ProductDetail({ item, allItems }: { item: Item; allItems: Item[] }) {
         <Button
           className="flex-1"
           label={t('product.payNow')}
-          onPress={requireAuth}
+          onPress={payNow}
         />
       </View>
     </View>

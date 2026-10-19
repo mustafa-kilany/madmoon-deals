@@ -1,5 +1,5 @@
-// Page container: warm cream background, safe-area padding at the top (the
-// prototype's pt-12 status-bar gap), and an optional white header bar.
+// Page container: background, safe-area padding at the top (the prototype's
+// pt-12 status-bar gap), and an optional white header bar.
 
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
@@ -8,16 +8,30 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 type ScreenProps = {
   /** Header content (back button, title, actions); rendered on a white bar. */
   header?: ReactNode;
+  /** Thin line under the header (prototype `border-b`). */
+  headerBorder?: boolean;
+  /** cream = browsing screens; white = forms and account screens. */
+  tone?: 'cream' | 'white';
   children?: ReactNode;
-  className?: string;
 };
 
-export function Screen({ header, children, className = '' }: ScreenProps) {
+export function Screen({
+  header,
+  headerBorder = false,
+  tone = 'cream',
+  children,
+}: ScreenProps) {
   const insets = useSafeAreaInsets();
   return (
-    <View className={`flex-1 bg-brand-lightgray ${className}`}>
+    <View
+      className={`flex-1 ${
+        tone === 'white' ? 'bg-brand-surface' : 'bg-brand-lightgray'
+      }`}
+    >
       <View
-        className={header ? 'bg-brand-surface' : ''}
+        className={`${header ? 'bg-brand-surface' : ''} ${
+          headerBorder ? 'border-b border-brand-border' : ''
+        }`}
         style={{ paddingTop: insets.top }}
       >
         {header && (

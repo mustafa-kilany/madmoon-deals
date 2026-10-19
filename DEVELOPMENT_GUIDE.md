@@ -252,9 +252,12 @@ Porting classes: prototype `font-heading font-black` → `font-heading-black`; p
     `active ? 'shadow-sm' : 'shadow-none'`, never `active ? 'shadow-sm' : ''`.
 12. **Layout:** inside auto-height containers use `grow`, not `flex-1` (`flex-1` starts from zero
     height in React Native and can collapse the view).
-13. Use `ui/Text` rather than React Native's `Text`: it sets `textBreakStrategy="simple"`, which
-    stops Android cutting off the last word of text measured to fit exactly.
+13. Use `ui/Text` rather than React Native's `Text` (default font and color). Android text that
+    appears after launch could be drawn narrower than measured and lose its last word; fixed by
+    enabling React Native's `enablePreparedTextLayout` flag in `MainApplication.kt` — keep it on.
 14. Reanimated `Animated.View`s take `style`, not `className`.
+15. **Data flow:** screens → feature hooks (`features/*/hooks`, TanStack Query) → services
+    (`services/*`) → mock or HTTP. Screens never import a service or mock data directly. See §4.4.
 
 ---
 
@@ -299,12 +302,18 @@ sahla/
 │   │   ├── checkout/           # pricing.ts lives here
 │   │   ├── orders/             # buyer tracking
 │   │   └── courier/
-│   ├── services/
-│   │   ├── api/                # HTTP client, endpoints
-│   │   └── mock/               # Seed data from the prototype's catalog.ts
+│   ├── config.ts               # apiBaseUrl, useMockApi switch (§4.4)
+│   ├── services/               # Data access, one folder per domain (§4.4)
+│   │   ├── api/                # HTTP client, ApiError, tokenStorage
+│   │   ├── catalog/            # types.ts (interface) · mock.ts · http.ts · index.ts (picks one)
+│   │   ├── auth/               # same shape
+│   │   ├── payments/           # card tokenization (provider SDK later)
+│   │   ├── mock/               # mock backend: seed data, demo account, latency, storage
+│   │   └── queryClient.ts      # TanStack Query client + all query keys
 │   ├── store/                  # Global client state (Zustand)
 │   ├── lib/                    # formatJOD, itemKey, validators, types.ts
 │   └── hooks/                  # Cross-feature hooks
+├── docs/API.md                 # API contract the backend implements
 └── __tests__/
 ```
 
@@ -339,8 +348,38 @@ sahla/
 | `t("عربي", "English")` inline | `t('key')` with JSON dictionaries |
 | `dir="rtl"` | `I18nManager.forceRTL(true)` + restart |
 | Fixed phone frame | `SafeAreaView` / `useSafeAreaInsets` |
-| Fixed overlay sheet | `@gorhom/bottom-sheet` |
+| Fixed overlay sheet | `Modal` + Reanimated (`FilterSheet`, `ui/Select`) |
 | Sidebar `div` | Drawer (Reanimated) or React Navigation Drawer |
+
+### 4.4 Backend readiness (mock now, API later)
+
+The app is built against the **API contract in `docs/API.md`** from day one. Every data area is
+a service with one interface and two implementations:
+
+```
+screen → hook (features/*/hooks, TanStack Query) → service interface (services/<domain>/types.ts)
+                                                     ├─ mock.ts  in-app mock backend (today)
+                                                     └─ http.ts  real API via services/api/client.ts
+```
+
+- `src/config.ts` picks the implementation: `useMockApi: true` today. **Connecting the backend =
+  set `apiBaseUrl`, set `useMockApi: false`.** No screen changes.
+- The mock behaves like a server: simulated latency, accounts and sessions stored on the device,
+  the token read like an `Authorization` header, and the contract's error codes
+  (`EMAIL_TAKEN`, `INVALID_CREDENTIALS`, …). Loading and error states are therefore real today.
+  Demo account: `ahmad@sahla.jo` / `sahla1234`.
+- `http.ts` files are written to the contract and map wire format to app types (e.g. ISO dates →
+  timestamps, `imageUrl` → image source). `__tests__/apiClient.test.ts` checks them with a fake
+  `fetch`.
+- Errors are `ApiError` with a `code`; screens show `t(errorMessageKey(error))`. A 401 signs out.
+- The session token lives in `services/api/tokenStorage.ts` (MMKV). **Before release** move it
+  to the keychain (`react-native-keychain`) — only that file changes.
+- Card numbers never reach the Sahla API: `services/payments` tokenizes (mock now, provider SDK
+  later) and the API stores the token.
+
+**Adding an endpoint:** (1) describe it in `docs/API.md`, (2) add the method to the service's
+`types.ts`, (3) implement it in `mock.ts` and `http.ts`, (4) expose it through a hook, (5) test
+the mock (and the mapping, if any).
 
 ---
 
@@ -383,10 +422,18 @@ Each phase ends with a working build on an Android emulator (and iOS, see §6.3)
   FlashList / cached images when real data arrives (Phase 7).
 - **Done when:** a guest can browse, filter, search and save items, in Arabic and English.
 
-### Phase 3 — Accounts and trust
-- Auth choice, email sign-up/sign-in, `requireAuth` gating with redirect-after-login.
-- ID verification flow (camera / image picker, upload).
-- Profile screen, Verified Seller badge, language switch, sign-out.
+### Phase 3 — Accounts and trust (branch `feat/phase-3-accounts`)
+- Backend-ready data layer (§4.4): `config.ts`, HTTP client, `ApiError`, token storage, catalog /
+  auth / payments services each with mock + HTTP implementations, `docs/API.md`.
+- Auth choice, email sign-up **and log-in** (log-in isn't in the prototype; a real backend needs
+  it), React Hook Form + Zod validation, `useRequireAuth` gating with redirect-after-login
+  (`features/auth/authFlow.ts`): Sell, Make an Offer, Pay Now, Chat, Profile.
+- ID verification flow: the prototype's simulated scan. The photo comes from
+  `features/auth/idCapture.ts`; a real camera / image picker replaces that one function later
+  (needs a native module and a rebuild).
+- Profile (guest prompt / account: avatar, verification, city, payment card, my listings, log
+  out), sidebar and Home greeting show the signed-in user. Session refreshes from `GET /me` at
+  launch.
 
 ### Phase 4 — Selling
 - Add listing: multi-step form (photos, category, condition, brand, price),
@@ -403,8 +450,10 @@ Each phase ends with a working build on an Android emulator (and iOS, see §6.3)
 - Courier app: enter PIN → server validates → escrow release.
 
 ### Phase 7 — Backend integration
-- Replace mock services with the real API (can run in parallel from Phase 3).
-- Auth tokens, image upload, push notifications (offers, bids, delivery status).
+- Build the API to `docs/API.md`, then flip `src/config.ts` (§4.4). Can start any time after
+  Phase 3; each new phase adds its endpoints to the contract.
+- Move the token to the keychain, real camera capture for ID photos, image upload, push
+  notifications (offers, bids, delivery status).
 
 ### Phase 8 — Quality
 - Unit tests (pricing, filters, formatters, stores), component tests for the UI kit.
@@ -535,6 +584,15 @@ The template-only `@react-native/new-app-screen` was removed in Phase 1.
 | `zustand` | 5.0 | Global client state |
 | `react-native-mmkv` + `react-native-nitro-modules` | 4.3 + 0.37 | Persistent storage (favourites, language, session) |
 | `@tanstack/react-query` | 5.104 | Server state / caching |
+
+Added in Phase 3:
+
+| Package | Version | Purpose |
+|---|---|---|
+| `react-hook-form` | 7.90 | Forms |
+| `zod` | 4.6 | Validation schemas (messages are i18n keys) |
+| `@hookform/resolvers` | **5.x** | Zod ↔ React Hook Form. v6.0.0 has a broken optional-peer tree (npm `ERESOLVE`); stay on 5 until fixed |
+| `@babel/plugin-transform-export-namespace-from` (dev) | 7.29 | Zod 4 uses `export * as`, which the RN Babel preset doesn't compile. After changing `babel.config.js`, restart Metro with `--reset-cache` |
 
 Not installed (changed from the original plan):
 - `react-native-localize`: not needed, since the app always opens in English (§8 decision 2).

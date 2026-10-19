@@ -3,6 +3,8 @@ module.exports = {
   // listed again under plugins.
   presets: ['module:@react-native/babel-preset', 'nativewind/babel'],
   plugins: [
+    // Zod 4 uses `export * as ns from`, which the RN preset doesn't compile.
+    '@babel/plugin-transform-export-namespace-from',
     [
       'module-resolver',
       {

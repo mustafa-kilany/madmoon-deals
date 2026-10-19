@@ -1,6 +1,6 @@
 // Bottom tab bar (prototype components/BottomNav): Home · Auctions · Sell ·
 // Chats · Profile. Sell is a raised round button that opens the Add Listing
-// screen instead of switching tabs (sign-in gating arrives in Phase 3).
+// screen instead of switching tabs; guests are asked to sign in first.
 
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { Pressable, View } from 'react-native';
@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Icon, type IconName } from '@/components/icons';
 import { Text } from '@/components/ui';
+import { useRequireAuth } from '@/features/auth/hooks/useRequireAuth';
 import type { TabParamList } from '@/navigation/types';
 import { colors } from '@/theme/colors';
 import { iconSize } from '@/theme/spacing';
@@ -26,6 +27,7 @@ const tabs: {
 export function BottomNav({ state, navigation }: BottomTabBarProps) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const requireAuth = useRequireAuth();
   const activeRoute = state.routes[state.index].name;
 
   const renderTab = ({ route, icon, label }: (typeof tabs)[number]) => {
@@ -63,7 +65,7 @@ export function BottomNav({ state, navigation }: BottomTabBarProps) {
       {renderTab(tabs[0])}
       {renderTab(tabs[1])}
       <Pressable
-        onPress={() => navigation.getParent()?.navigate('AddListing')}
+        onPress={() => requireAuth({ name: 'AddListing' })}
         accessibilityRole="button"
         accessibilityLabel={t('tabs.sell')}
         className="-mt-8 items-center gap-1"

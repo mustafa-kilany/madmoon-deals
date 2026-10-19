@@ -51,7 +51,72 @@
     "saved": "العناصر المحفوظة",
     "orderTracking": "تتبع الطلب",
     "auth": "انضم إلى سهلة",
-    "auctionBidding": "المزاد"
+    "auctionBidding": "المزاد",
+    "emailSignUp": "التسجيل بالبريد",
+    "emailLogIn": "تسجيل الدخول بالبريد",
+    "idVerification": "توثيق الهوية",
+    "myProfile": "حسابي",
+    "makeOffer": "قدّم عرضاً",
+    "checkout": "الدفع الآمن"
+  },
+  "auth": {
+    "logoLetter": "س",
+    "subtitle": "يمكنك التصفح كزائر، لكنك تحتاج حساباً للبيع أو الشراء.",
+    "verifyWithId": "التوثيق بالهوية الوطنية",
+    "continueWithEmail": "المتابعة بالبريد الإلكتروني",
+    "idBenefit": "التوثيق بالهوية يمنحك شارة موثّق ويقدّم إعلاناتك.",
+    "fullName": "الاسم الكامل",
+    "email": "البريد الإلكتروني",
+    "password": "كلمة المرور",
+    "emailUnverifiedNote": "حساب البريد غير موثق. يمكنك التوثيق لاحقاً بإضافة هويتك من الإعدادات.",
+    "createAccount": "إنشاء الحساب",
+    "logIn": "تسجيل الدخول",
+    "haveAccount": "لديك حساب؟ سجّل الدخول",
+    "noAccount": "جديد في سهلة؟ أنشئ حساباً",
+    "demoHint": "حساب تجريبي: ahmad@sahla.jo / sahla1234",
+    "welcome": "أهلاً بك، {{name}}!"
+  },
+  "validation": {
+    "nameRequired": "أدخل اسمك.",
+    "emailInvalid": "أدخل بريداً إلكترونياً صحيحاً.",
+    "passwordShort": "استخدم 8 أحرف على الأقل.",
+    "passwordRequired": "أدخل كلمة المرور.",
+    "cardInvalid": "أدخل رقم بطاقة صحيحاً."
+  },
+  "idVerification": {
+    "title": "يرجى مسح الهوية الأردنية",
+    "signupBody": "امسح هويتك لإنشاء حساب موثق.",
+    "verifyBody": "امسح هويتك لتوثيق حسابك الحالي.",
+    "secure": "بياناتك مشفّرة وآمنة",
+    "capture": "التقاط الصورة والتوثيق",
+    "verified": "تم توثيق حسابك"
+  },
+  "profile": {
+    "signInPrompt": "سجّل الدخول لعرض ملفك الشخصي",
+    "signIn": "تسجيل الدخول",
+    "changePhoto": "تغيير الصورة",
+    "verifiedTitle": "حساب موثّق",
+    "verifiedBody": "إعلاناتك تظهر في المقدمة.",
+    "becomeVerified": "كن مستخدماً موثقاً",
+    "becomeVerifiedBody": "أضف هويتك الوطنية لتوثيق حسابك.",
+    "addIdVerify": "إضافة الهوية والتوثيق",
+    "city": "المدينة",
+    "paymentCard": "بطاقة الدفع",
+    "cardNumber": "رقم البطاقة",
+    "save": "حفظ",
+    "remove": "إزالة",
+    "myListings": "إعلاناتي",
+    "noListings": "لا توجد إعلانات بعد.",
+    "logOut": "تسجيل الخروج"
+  },
+  "errors": {
+    "NETWORK": "لا يوجد اتصال. تحقق من الإنترنت وحاول مجدداً.",
+    "UNAUTHORIZED": "يرجى تسجيل الدخول مجدداً.",
+    "NOT_FOUND": "لم نجد ما تبحث عنه.",
+    "VALIDATION": "يرجى التحقق من البيانات والمحاولة مجدداً.",
+    "EMAIL_TAKEN": "هذا البريد مسجّل مسبقاً. سجّل الدخول بدلاً من ذلك.",
+    "INVALID_CREDENTIALS": "البريد أو كلمة المرور غير صحيحة.",
+    "UNKNOWN": "حدث خطأ ما. حاول مجدداً."
   },
   "condition": {
     "new": "جديد",

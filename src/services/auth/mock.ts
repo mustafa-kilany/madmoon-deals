@@ -1,0 +1,146 @@
+// Accounts answered by the mock backend. It behaves like the real API:
+// accounts and sessions persist on the device, the token is read the way a
+// server reads the Authorization header, and failures throw the contract's
+// error codes.
+
+import type { Session, User } from '@/lib/types';
+import { ApiError } from '../api/errors';
+import { tokenStorage } from '../api/tokenStorage';
+import { mockLatency, readMockTable, writeMockTable } from '../mock/delay';
+import { avatarOptions, demoAccount, type MockAccount } from '../mock/users';
+import type { AuthService } from './types';
+
+const USERS = 'users'; // id → MockAccount
+const SESSIONS = 'sessions'; // token → user id
+
+function users(): Record<string, MockAccount> {
+  const table = readMockTable<MockAccount>(USERS);
+  if (!table[demoAccount.id]) table[demoAccount.id] = demoAccount;
+  return table;
+}
+
+const saveUser = (account: MockAccount) =>
+  writeMockTable(USERS, { ...users(), [account.id]: account });
+
+const publicUser = ({ password: _password, ...user }: MockAccount): User =>
+  user;
+
+const newId = () =>
+  `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+
+function openSession(account: MockAccount): Session {
+  const token = `mock-${newId()}`;
+  writeMockTable(SESSIONS, {
+    ...readMockTable<string>(SESSIONS),
+    [token]: account.id,
+  });
+  return { token, user: publicUser(account) };
+}
+
+/** The account behind the current token, like an authenticated endpoint. */
+function currentAccount(): MockAccount {
+  const token = tokenStorage.get();
+  const userId = token ? readMockTable<string>(SESSIONS)[token] : undefined;
+  const account = userId ? users()[userId] : undefined;
+  if (!account) throw new ApiError('UNAUTHORIZED', 'Not signed in', 401);
+  return account;
+}
+
+const update = (patch: Partial<MockAccount>): User => {
+  const account = { ...currentAccount(), ...patch };
+  saveUser(account);
+  return publicUser(account);
+};
+
+const normalizeEmail = (email: string) => email.trim().toLowerCase();
+
+export const mockAuthService: AuthService = {
+  signUpWithEmail: async ({ name, email, password }) => {
+    await mockLatency();
+    const address = normalizeEmail(email);
+    if (Object.values(users()).some(u => u.email === address))
+      throw new ApiError('EMAIL_TAKEN', 'Email already registered', 409);
+    const account: MockAccount = {
+      id: `user-${newId()}`,
+      name: name.trim(),
+      email: address,
+      password,
+      method: 'email',
+      verified: false,
+      cityId: 'amman',
+      avatarUrl: avatarOptions[0],
+    };
+    saveUser(account);
+    return openSession(account);
+  },
+
+  logInWithEmail: async ({ email, password }) => {
+    await mockLatency();
+    const address = normalizeEmail(email);
+    const account = Object.values(users()).find(u => u.email === address);
+    if (!account || account.password !== password)
+      throw new ApiError('INVALID_CREDENTIALS', 'Wrong email or password', 401);
+    return openSession(account);
+  },
+
+  // The mock "reads" the ID instantly; the real API runs the KYC check.
+  signUpWithId: async () => {
+    await mockLatency();
+    const account: MockAccount = {
+      id: `user-${newId()}`,
+      name: 'Mustafa',
+      method: 'id',
+      verified: true,
+      cityId: 'amman',
+      avatarUrl: avatarOptions[0],
+    };
+    saveUser(account);
+    return openSession(account);
+  },
+
+  verifyId: async () => {
+    await mockLatency();
+    return update({ verified: true });
+  },
+
+  getMe: async () => {
+    await mockLatency();
+    return publicUser(currentAccount());
+  },
+
+  updateProfile: async patch => {
+    await mockLatency();
+    return update(patch);
+  },
+
+  changeAvatar: async () => {
+    await mockLatency();
+    const { avatarUrl } = currentAccount();
+    const next =
+      avatarOptions[
+        (avatarOptions.indexOf(avatarUrl) + 1) % avatarOptions.length
+      ];
+    return update({ avatarUrl: next });
+  },
+
+  savePaymentCard: async cardToken => {
+    await mockLatency();
+    // Mock tokens are "mock_<brand>_<last4>" (services/payments/mock.ts).
+    const [, brand = 'card', last4 = '0000'] = cardToken.split('_');
+    return update({ card: { brand, last4 } });
+  },
+
+  removePaymentCard: async () => {
+    await mockLatency();
+    return update({ card: undefined });
+  },
+
+  logOut: async () => {
+    await mockLatency();
+    const token = tokenStorage.get();
+    if (!token) return;
+    const sessions = readMockTable<string>(SESSIONS);
+    delete sessions[token];
+    writeMockTable(SESSIONS, sessions);
+  },
+};

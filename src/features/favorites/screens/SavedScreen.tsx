@@ -27,6 +27,7 @@ export function SavedScreen({ navigation }: RootScreenProps<'Saved'>) {
 
   return (
     <Screen
+      headerBorder
       header={
         <>
           <BackButton />
@@ -39,7 +40,6 @@ export function SavedScreen({ navigation }: RootScreenProps<'Saved'>) {
         </>
       }
     >
-      <View className="border-b border-brand-border" />
       {isError ? (
         <StatusView status="error" onRetry={refetch} />
       ) : isPending ? (

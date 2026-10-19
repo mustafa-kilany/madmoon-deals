@@ -18,8 +18,11 @@ type TextFieldProps = Omit<TextInputProps, 'className'> & {
   /** Prototype uses small gray labels in sheets: "font-sans-bold text-xs text-brand-warmgray". */
   labelClassName?: string;
   error?: string;
-  /** "muted" = cream background, as on search fields. */
-  variant?: 'surface' | 'muted';
+  /**
+   * surface = default; muted = cream background (search fields);
+   * form = large field with a faint cream border (sign-up forms).
+   */
+  variant?: 'surface' | 'muted' | 'form';
   leading?: ReactNode;
   trailing?: ReactNode;
   /** Numbers and prices: always typed and shown left-to-right. */
@@ -43,13 +46,19 @@ export function TextField({
   ...props
 }: TextFieldProps) {
   const [focused, setFocused] = useState(false);
+  const form = variant === 'form';
   const border = error
     ? 'border-brand-danger'
     : focused
     ? 'border-brand-primary'
+    : form
+    ? 'border-brand-lightgray'
     : 'border-brand-border';
   const background =
     variant === 'muted' ? 'bg-brand-lightgray' : 'bg-brand-surface';
+  const size = form ? 'py-4 text-base' : 'py-3 text-sm';
+  const startPad = leading ? 'ps-10' : form ? 'ps-4' : 'ps-3';
+  const endPad = trailing ? 'pe-9' : form ? 'pe-4' : 'pe-3';
 
   return (
     <View className={`gap-2 ${className}`}>
@@ -58,9 +67,7 @@ export function TextField({
         <TextInput
           accessibilityLabel={props.accessibilityLabel ?? label}
           placeholderTextColor={colors.warmgray}
-          className={`w-full rounded-xl border-2 py-3 text-sm font-sans-bold text-brand-espresso ${background} ${border} ${
-            leading ? 'ps-10' : 'ps-3'
-          } ${trailing ? 'pe-9' : 'pe-3'}`}
+          className={`w-full rounded-xl border-2 font-sans-bold text-brand-espresso ${size} ${background} ${border} ${startPad} ${endPad}`}
           style={[ltr ? styles.ltr : styles.start, style]}
           onFocus={e => {
             setFocused(true);
