@@ -12,6 +12,14 @@
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
 		761780EF2CA45674006654EF /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EE2CA45674006654EF /* SceneDelegate.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
+		43A1CDECD4354EC69A40548E /* Cairo-Black.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 669D915DF27C466FBD9F2BA7 /* Cairo-Black.ttf */; };
+		20CAC2F669B24A92944FA86A /* Cairo-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A37965C26F82483690935459 /* Cairo-Bold.ttf */; };
+		89751A9C03E74983A05F18AE /* Cairo-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F42AAC29966C4D1786D69D9B /* Cairo-ExtraBold.ttf */; };
+		5DD7E06E43B8468890AAE12B /* Cairo-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F983E34EFBEF4EF49236F567 /* Cairo-SemiBold.ttf */; };
+		3FD73192E25F484BA6BCA624 /* IBMPlexSansArabic-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FC157F30714340A2A168F976 /* IBMPlexSansArabic-Bold.ttf */; };
+		0B507598A7C44100B1CD569C /* IBMPlexSansArabic-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = ECDC02001B004C79AA1C50CA /* IBMPlexSansArabic-Medium.ttf */; };
+		994B12B38610461EA4C71F50 /* IBMPlexSansArabic-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 4708505D66CE426386EE6743 /* IBMPlexSansArabic-Regular.ttf */; };
+		D5B665AE0E1C45ED88E28427 /* IBMPlexSansArabic-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F9B7967CD0B8417FAFEF6A69 /* IBMPlexSansArabic-SemiBold.ttf */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -26,6 +34,14 @@
 		761780EE2CA45674006654EF /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SceneDelegate.swift; path = Sahla/SceneDelegate.swift; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = Sahla/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
+		669D915DF27C466FBD9F2BA7 /* Cairo-Black.ttf */ = {isa = PBXFileReference; name = "Cairo-Black.ttf"; path = "../assets/fonts/Cairo-Black.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		A37965C26F82483690935459 /* Cairo-Bold.ttf */ = {isa = PBXFileReference; name = "Cairo-Bold.ttf"; path = "../assets/fonts/Cairo-Bold.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		F42AAC29966C4D1786D69D9B /* Cairo-ExtraBold.ttf */ = {isa = PBXFileReference; name = "Cairo-ExtraBold.ttf"; path = "../assets/fonts/Cairo-ExtraBold.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		F983E34EFBEF4EF49236F567 /* Cairo-SemiBold.ttf */ = {isa = PBXFileReference; name = "Cairo-SemiBold.ttf"; path = "../assets/fonts/Cairo-SemiBold.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		FC157F30714340A2A168F976 /* IBMPlexSansArabic-Bold.ttf */ = {isa = PBXFileReference; name = "IBMPlexSansArabic-Bold.ttf"; path = "../assets/fonts/IBMPlexSansArabic-Bold.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		ECDC02001B004C79AA1C50CA /* IBMPlexSansArabic-Medium.ttf */ = {isa = PBXFileReference; name = "IBMPlexSansArabic-Medium.ttf"; path = "../assets/fonts/IBMPlexSansArabic-Medium.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		4708505D66CE426386EE6743 /* IBMPlexSansArabic-Regular.ttf */ = {isa = PBXFileReference; name = "IBMPlexSansArabic-Regular.ttf"; path = "../assets/fonts/IBMPlexSansArabic-Regular.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		F9B7967CD0B8417FAFEF6A69 /* IBMPlexSansArabic-SemiBold.ttf */ = {isa = PBXFileReference; name = "IBMPlexSansArabic-SemiBold.ttf"; path = "../assets/fonts/IBMPlexSansArabic-SemiBold.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -77,6 +93,7 @@
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
 				BBD78D7AC51CEA395F1C20DB /* Pods */,
+				E06ABC720C84449E849313F3 /* Resources */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -99,6 +116,22 @@
 			);
 			path = Pods;
 			sourceTree = "<group>";
+		};
+		E06ABC720C84449E849313F3 /* Resources */ = {
+			isa = "PBXGroup";
+			children = (
+				669D915DF27C466FBD9F2BA7 /* Cairo-Black.ttf */,
+				A37965C26F82483690935459 /* Cairo-Bold.ttf */,
+				F42AAC29966C4D1786D69D9B /* Cairo-ExtraBold.ttf */,
+				F983E34EFBEF4EF49236F567 /* Cairo-SemiBold.ttf */,
+				FC157F30714340A2A168F976 /* IBMPlexSansArabic-Bold.ttf */,
+				ECDC02001B004C79AA1C50CA /* IBMPlexSansArabic-Medium.ttf */,
+				4708505D66CE426386EE6743 /* IBMPlexSansArabic-Regular.ttf */,
+				F9B7967CD0B8417FAFEF6A69 /* IBMPlexSansArabic-SemiBold.ttf */,
+			);
+			name = Resources;
+			sourceTree = "<group>";
+			path = "";
 		};
 /* End PBXGroup section */
 
@@ -162,6 +195,14 @@
 			files = (
 				81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
+				43A1CDECD4354EC69A40548E /* Cairo-Black.ttf in Resources */,
+				20CAC2F669B24A92944FA86A /* Cairo-Bold.ttf in Resources */,
+				89751A9C03E74983A05F18AE /* Cairo-ExtraBold.ttf in Resources */,
+				5DD7E06E43B8468890AAE12B /* Cairo-SemiBold.ttf in Resources */,
+				3FD73192E25F484BA6BCA624 /* IBMPlexSansArabic-Bold.ttf in Resources */,
+				0B507598A7C44100B1CD569C /* IBMPlexSansArabic-Medium.ttf in Resources */,
+				994B12B38610461EA4C71F50 /* IBMPlexSansArabic-Regular.ttf in Resources */,
+				D5B665AE0E1C45ED88E28427 /* IBMPlexSansArabic-SemiBold.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

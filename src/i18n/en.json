@@ -1,0 +1,52 @@
+{
+  "common": {
+    "back": "Back",
+    "comingSoon": "This screen is coming soon."
+  },
+  "language": {
+    "toggle": "عربي",
+    "toggleLabel": "Switch to Arabic"
+  },
+  "tabs": {
+    "home": "Home",
+    "auctions": "Auctions",
+    "sell": "Sell",
+    "chats": "Chats",
+    "profile": "Profile"
+  },
+  "home": {
+    "welcome": "Welcome to Sahla",
+    "welcomeUser": "Welcome, {{name}}",
+    "openMenu": "Open menu",
+    "saved": "Saved"
+  },
+  "sidebar": {
+    "guest": "Guest",
+    "browsingAsGuest": "Browsing as guest",
+    "verifiedIdentity": "Verified Identity",
+    "unverified": "Unverified account",
+    "profileSettings": "Profile & Settings",
+    "myPurchases": "My Purchases",
+    "myListings": "My Listings",
+    "savedItems": "Saved Items",
+    "settings": "Settings",
+    "signIn": "Sign Up / Log In",
+    "logOut": "Log Out",
+    "close": "Close menu"
+  },
+  "screens": {
+    "auctions": "Auctions",
+    "chats": "Chats",
+    "profile": "Profile & Settings",
+    "addListing": "List an Item",
+    "saved": "Saved Items",
+    "orderTracking": "Track Order",
+    "auth": "Join Sahla"
+  },
+  "condition": {
+    "new": "New",
+    "excellent": "Used - Excellent",
+    "good": "Used - Good",
+    "loved": "Used - Loved"
+  }
+}

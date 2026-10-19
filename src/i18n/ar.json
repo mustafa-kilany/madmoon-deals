@@ -1,0 +1,52 @@
+{
+  "common": {
+    "back": "رجوع",
+    "comingSoon": "هذه الشاشة قادمة قريباً."
+  },
+  "language": {
+    "toggle": "EN",
+    "toggleLabel": "التبديل إلى الإنجليزية"
+  },
+  "tabs": {
+    "home": "الرئيسية",
+    "auctions": "المزادات",
+    "sell": "بيع",
+    "chats": "الرسائل",
+    "profile": "حسابي"
+  },
+  "home": {
+    "welcome": "مرحباً بك في سهلة",
+    "welcomeUser": "مرحباً، {{name}}",
+    "openMenu": "فتح القائمة",
+    "saved": "المحفوظات"
+  },
+  "sidebar": {
+    "guest": "زائر",
+    "browsingAsGuest": "تصفح كزائر",
+    "verifiedIdentity": "هوية موثقة",
+    "unverified": "حساب غير موثق",
+    "profileSettings": "حسابي والإعدادات",
+    "myPurchases": "مشترياتي",
+    "myListings": "إعلاناتي",
+    "savedItems": "العناصر المحفوظة",
+    "settings": "الإعدادات",
+    "signIn": "تسجيل الدخول / إنشاء حساب",
+    "logOut": "تسجيل الخروج",
+    "close": "إغلاق القائمة"
+  },
+  "screens": {
+    "auctions": "المزادات",
+    "chats": "الرسائل",
+    "profile": "حسابي والإعدادات",
+    "addListing": "إعلان جديد",
+    "saved": "العناصر المحفوظة",
+    "orderTracking": "تتبع الطلب",
+    "auth": "انضم إلى سهلة"
+  },
+  "condition": {
+    "new": "جديد",
+    "excellent": "مستعمل - ممتاز",
+    "good": "مستعمل - جيد",
+    "loved": "مستعمل - محبوب"
+  }
+}
