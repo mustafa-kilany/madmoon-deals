@@ -1,7 +1,11 @@
 {
   "common": {
     "back": "Back",
-    "comingSoon": "This screen is coming soon."
+    "comingSoon": "This screen is coming soon.",
+    "close": "Close",
+    "clear": "Clear",
+    "loadError": "Something went wrong loading this page.",
+    "retry": "Try again"
   },
   "language": {
     "toggle": "عربي",
@@ -18,7 +22,12 @@
     "welcome": "Welcome to Sahla",
     "welcomeUser": "Welcome, {{name}}",
     "openMenu": "Open menu",
-    "saved": "Saved"
+    "saved": "Saved",
+    "searchPlaceholder": "Search for anything...",
+    "recentlyViewed": "Recently Viewed",
+    "liveAuctions": "Live Auctions",
+    "seeAll": "See all",
+    "hotBid": "Hot Bid"
   },
   "sidebar": {
     "guest": "Guest",
@@ -41,12 +50,123 @@
     "addListing": "List an Item",
     "saved": "Saved Items",
     "orderTracking": "Track Order",
-    "auth": "Join Sahla"
+    "auth": "Join Sahla",
+    "auctionBidding": "Auction"
   },
   "condition": {
     "new": "New",
     "excellent": "Used - Excellent",
     "good": "Used - Good",
     "loved": "Used - Loved"
+  },
+  "time": {
+    "days": "{{days}}d {{hours}}h",
+    "hours": "{{hours}}h {{minutes}}m",
+    "minutes": "{{minutes}}m {{seconds}}s",
+    "left": "{{time}} left",
+    "ended": "Auction ended"
+  },
+  "card": {
+    "save": "Save",
+    "removeSaved": "Remove from saved",
+    "verified": "Verified",
+    "by": "by {{name}}",
+    "currentBid": "Current bid",
+    "buyNow": "Buy now",
+    "bids": "{{count}} bids",
+    "bidNow": "Bid now"
+  },
+  "favorites": {
+    "saved": "Saved to your list",
+    "removed": "Removed from saved"
+  },
+  "browse": {
+    "listingFormat": "Listing format",
+    "all": "All",
+    "buyNow": "Buy now",
+    "auctions": "Auctions",
+    "category": "Category",
+    "allCategories": "All categories",
+    "filters": "Filters",
+    "sortListings": "Sort listings",
+    "sortPrefix": "Sort: {{label}}",
+    "sortRecommended": "Recommended",
+    "sortEndingSoon": "Ending soon",
+    "sortPriceAsc": "Price: low to high",
+    "sortPriceDesc": "Price: high to low",
+    "sortMostBids": "Most bids",
+    "clearAll": "Clear all",
+    "remove": "Remove: {{label}}",
+    "priceChip": "{{min}} – {{max}} JOD",
+    "any": "Any",
+    "verifiedOnly": "Verified only",
+    "within24h": "Within 24h",
+    "resultsOne": "{{count}} result",
+    "resultsMany": "{{count}} results",
+    "liveAuctionsOne": "{{count}} live auction",
+    "liveAuctionsMany": "{{count}} live auctions",
+    "pricesAreBids": "Prices are current bids",
+    "noMatchingAuctions": "No matching auctions",
+    "noMatchingItems": "No matching items",
+    "tryAnother": "Try another search or a little less filtering.",
+    "clearFilters": "Clear filters",
+    "searchAuctions": "Search auctions",
+    "findNextBid": "Find your next bid..."
+  },
+  "filters": {
+    "title": "Filters",
+    "close": "Close filters",
+    "priceAuction": "Current bid (JOD)",
+    "priceAll": "Price / current bid (JOD)",
+    "priceFixed": "Price range (JOD)",
+    "minimum": "Minimum",
+    "maximum": "Maximum",
+    "noLimit": "No limit",
+    "rangeError": "Use non-negative amounts, with maximum at least minimum.",
+    "auctionNote": "Auctions are filtered by the current bid. The final price may change.",
+    "category": "Category",
+    "allCategories": "All categories",
+    "condition": "Condition",
+    "location": "Location",
+    "type": "Type of item",
+    "brand": "Brand",
+    "moreOptions": "More options",
+    "verifiedSellers": "Verified sellers only",
+    "endingWithin24h": "Auctions ending within 24h",
+    "reset": "Reset",
+    "showResults": "Show {{count}} results"
+  },
+  "search": {
+    "label": "Search marketplace",
+    "recent": "Recent searches",
+    "browseByCategory": "Browse by category"
+  },
+  "auctions": {
+    "live": "Live",
+    "tagline": "Great finds. Your next winning bid.",
+    "savedItems": "Saved items"
+  },
+  "saved": {
+    "emptyTitle": "No saved items yet",
+    "emptyBody": "Tap the heart on anything you like.",
+    "startBrowsing": "Start Browsing"
+  },
+  "product": {
+    "share": "Share",
+    "shareText": "{{title}} — {{price}}",
+    "photo": "Photo {{index}}",
+    "condition": "Condition",
+    "location": "Location",
+    "buyerProtection": "Buyer Protection",
+    "delivery48h": "Delivery in 48h",
+    "reviews": "128 reviews",
+    "replies": "Replies in ~1h",
+    "chat": "Chat",
+    "description": "Description",
+    "descriptionDefault": "Excellent condition, gently used with all original accessories and box included. No scratches or defects. Ready for immediate use. Price is negotiable.",
+    "similar": "Similar items",
+    "makeOffer": "Make an Offer",
+    "payNow": "Pay Now",
+    "notFound": "This listing is no longer available."
   }
 }

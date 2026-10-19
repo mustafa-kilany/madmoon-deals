@@ -1,7 +1,11 @@
 {
   "common": {
     "back": "رجوع",
-    "comingSoon": "هذه الشاشة قادمة قريباً."
+    "comingSoon": "هذه الشاشة قادمة قريباً.",
+    "close": "إغلاق",
+    "clear": "مسح",
+    "loadError": "حدث خطأ أثناء تحميل هذه الصفحة.",
+    "retry": "حاول مجدداً"
   },
   "language": {
     "toggle": "EN",
@@ -18,7 +22,12 @@
     "welcome": "مرحباً بك في سهلة",
     "welcomeUser": "مرحباً، {{name}}",
     "openMenu": "فتح القائمة",
-    "saved": "المحفوظات"
+    "saved": "المحفوظات",
+    "searchPlaceholder": "ابحث عن أي شيء...",
+    "recentlyViewed": "شاهدت مؤخراً",
+    "liveAuctions": "مزادات مباشرة",
+    "seeAll": "عرض الكل",
+    "hotBid": "مزايدة ساخنة"
   },
   "sidebar": {
     "guest": "زائر",
@@ -41,12 +50,123 @@
     "addListing": "إعلان جديد",
     "saved": "العناصر المحفوظة",
     "orderTracking": "تتبع الطلب",
-    "auth": "انضم إلى سهلة"
+    "auth": "انضم إلى سهلة",
+    "auctionBidding": "المزاد"
   },
   "condition": {
     "new": "جديد",
     "excellent": "مستعمل - ممتاز",
     "good": "مستعمل - جيد",
     "loved": "مستعمل - محبوب"
+  },
+  "time": {
+    "days": "{{days}} يوم {{hours}} س",
+    "hours": "{{hours}} س {{minutes}} د",
+    "minutes": "{{minutes}} د {{seconds}} ث",
+    "left": "باقي {{time}}",
+    "ended": "انتهى المزاد"
+  },
+  "card": {
+    "save": "حفظ",
+    "removeSaved": "إزالة من المحفوظات",
+    "verified": "موثق",
+    "by": "بواسطة {{name}}",
+    "currentBid": "المزايدة الحالية",
+    "buyNow": "اشترِ الآن",
+    "bids": "{{count}} مزايدة",
+    "bidNow": "زايد الآن"
+  },
+  "favorites": {
+    "saved": "حُفظ في قائمتك",
+    "removed": "أُزيل من المحفوظات"
+  },
+  "browse": {
+    "listingFormat": "نوع البيع",
+    "all": "الكل",
+    "buyNow": "اشترِ الآن",
+    "auctions": "مزادات",
+    "category": "الفئة",
+    "allCategories": "كل الفئات",
+    "filters": "تصفية",
+    "sortListings": "ترتيب النتائج",
+    "sortPrefix": "ترتيب: {{label}}",
+    "sortRecommended": "مقترح",
+    "sortEndingSoon": "الأقرب للانتهاء",
+    "sortPriceAsc": "السعر: من الأقل للأعلى",
+    "sortPriceDesc": "السعر: من الأعلى للأقل",
+    "sortMostBids": "الأكثر مزايدات",
+    "clearAll": "مسح الكل",
+    "remove": "إزالة: {{label}}",
+    "priceChip": "{{min}} – {{max}} د.أ",
+    "any": "بلا حد",
+    "verifiedOnly": "موثّق فقط",
+    "within24h": "خلال 24 ساعة",
+    "resultsOne": "{{count}} نتيجة",
+    "resultsMany": "{{count}} نتيجة",
+    "liveAuctionsOne": "{{count}} مزاد مباشر",
+    "liveAuctionsMany": "{{count}} مزاد مباشر",
+    "pricesAreBids": "الأسعار = المزايدة الحالية",
+    "noMatchingAuctions": "لا توجد مزادات مطابقة",
+    "noMatchingItems": "لا توجد عناصر مطابقة",
+    "tryAnother": "جرّب كلمات مختلفة أو خفّف عوامل التصفية.",
+    "clearFilters": "مسح عوامل التصفية",
+    "searchAuctions": "البحث في المزادات",
+    "findNextBid": "ابحث عن مزاد..."
+  },
+  "filters": {
+    "title": "التصفية",
+    "close": "إغلاق التصفية",
+    "priceAuction": "المزايدة الحالية (د.أ)",
+    "priceAll": "السعر / المزايدة الحالية (د.أ)",
+    "priceFixed": "نطاق السعر (د.أ)",
+    "minimum": "الحد الأدنى",
+    "maximum": "الحد الأقصى",
+    "noLimit": "بلا حد",
+    "rangeError": "أدخل نطاقاً موجباً، والحد الأقصى لا يقل عن الأدنى.",
+    "auctionNote": "للمزادات، نُصفّي حسب المزايدة الحالية. قد يتغير السعر النهائي.",
+    "category": "الفئة",
+    "allCategories": "جميع الفئات",
+    "condition": "الحالة",
+    "location": "الموقع",
+    "type": "نوع العنصر",
+    "brand": "الماركة",
+    "moreOptions": "خيارات إضافية",
+    "verifiedSellers": "بائعون موثّقون فقط",
+    "endingWithin24h": "مزادات تنتهي خلال 24 ساعة",
+    "reset": "إعادة تعيين",
+    "showResults": "عرض {{count}} نتيجة"
+  },
+  "search": {
+    "label": "البحث في السوق",
+    "recent": "عمليات البحث الأخيرة",
+    "browseByCategory": "تصفح حسب الفئة"
+  },
+  "auctions": {
+    "live": "مباشر",
+    "tagline": "اكتشف. زايد. خلّيها إلك.",
+    "savedItems": "المحفوظات"
+  },
+  "saved": {
+    "emptyTitle": "لا عناصر محفوظة بعد",
+    "emptyBody": "اضغط على القلب لحفظ ما يعجبك.",
+    "startBrowsing": "ابدأ التصفح"
+  },
+  "product": {
+    "share": "مشاركة",
+    "shareText": "{{title}} — {{price}}",
+    "photo": "صورة {{index}}",
+    "condition": "الحالة",
+    "location": "الموقع",
+    "buyerProtection": "حماية المشتري",
+    "delivery48h": "توصيل خلال 48 ساعة",
+    "reviews": "128 تقييم",
+    "replies": "يرد خلال ساعة",
+    "chat": "محادثة",
+    "description": "الوصف",
+    "descriptionDefault": "حالة ممتازة، استُخدم بعناية مع الحفاظ على جميع الملحقات الأصلية والعلبة. لا توجد خدوش أو أعطال. جاهز للاستخدام الفوري. السعر قابل للتفاوض.",
+    "similar": "عناصر مشابهة",
+    "makeOffer": "قدّم عرضاً",
+    "payNow": "ادفع الآن",
+    "notFound": "هذا الإعلان لم يعد متاحاً."
   }
 }

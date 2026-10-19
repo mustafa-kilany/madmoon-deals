@@ -246,6 +246,15 @@ Porting classes: prototype `font-heading font-black` → `font-heading-black`; p
 8. Prettier + ESLint and the type check must pass before committing (`npm run lint`, `npm run typecheck`).
 9. Commits follow **Conventional Commits**: `feat:`, `fix:`, `refactor:`, `chore:`, `test:`, `docs:`.
 10. Work on feature branches (`feat/home-screen`), merge to `main` through pull requests.
+11. **NativeWind:** a component must not *gain* shadow / ring / transform / animation classes
+    after its first render (they use CSS variables; NativeWind then remounts it, and in
+    development its warning crashes the app). Toggle between two values instead:
+    `active ? 'shadow-sm' : 'shadow-none'`, never `active ? 'shadow-sm' : ''`.
+12. **Layout:** inside auto-height containers use `grow`, not `flex-1` (`flex-1` starts from zero
+    height in React Native and can collapse the view).
+13. Use `ui/Text` rather than React Native's `Text`: it sets `textBreakStrategy="simple"`, which
+    stops Android cutting off the last word of text measured to fit exactly.
+14. Reanimated `Animated.View`s take `style`, not `className`.
 
 ---
 
@@ -361,10 +370,17 @@ Each phase ends with a working build on an Android emulator (and iOS, see §6.3)
   bundled in `assets/images/categories`; listing photos stay remote URLs, like real listing images.
 - **Done when:** empty tab screens navigate correctly in both languages.
 
-### Phase 2 — Browsing (guest)
+### Phase 2 — Browsing (guest) ✅ Done on Android (2026-10-19; branch `feat/phase-2-browsing`)
 - Home dashboard, category screen + filter sheet, search (recent searches), product detail,
-  saved items (local favourites).
+  saved items (local favourites), Auctions tab (browsing only; the auction page itself is Phase 5).
 - Verified sellers ranked first.
+- Shared pieces: `ListingBrowser` (format tabs, category chips, Filters + Sort, filter chips),
+  `ProductGrid` / `ProductCard`, `FilterSheet`, `ui/Select`, `ItemRail`, `Price`, `ConditionTag`.
+  Pure logic in `lib/browsing.ts` (unit-tested). Favourites and history persist in MMKV
+  (`features/favorites/store.ts`, `features/catalog/historyStore.ts`).
+- Filter sheet and dropdown are built on React Native `Modal` + Reanimated, so
+  `@gorhom/bottom-sheet` isn't needed. `FlatList` is enough for the seed catalog; revisit
+  FlashList / cached images when real data arrives (Phase 7).
 - **Done when:** a guest can browse, filter, search and save items, in Arabic and English.
 
 ### Phase 3 — Accounts and trust
@@ -522,9 +538,7 @@ The template-only `@react-native/new-app-screen` was removed in Phase 1.
 
 Not installed (changed from the original plan):
 - `react-native-localize`: not needed, since the app always opens in English (§8 decision 2).
-- `@gorhom/bottom-sheet`: moved to Phase 2 (the filter sheet). Check that its current release
-  supports `react-native-gesture-handler` 3 before installing; otherwise build the sheet with
-  Reanimated directly.
+- `@gorhom/bottom-sheet`: not needed; the Phase 2 sheets use `Modal` + Reanimated.
 
 On macOS / cloud iOS builds: `cd ios && pod install`.
 

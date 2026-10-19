@@ -41,8 +41,13 @@ type Link = {
 };
 
 const toProfile = () => navigationRef.navigate('Tabs', { screen: 'Profile' });
-const to = (route: Exclude<keyof RootStackParamList, 'Tabs'>) => () =>
-  navigationRef.navigate(route);
+// Routes that take no params.
+type PlainRoute = {
+  [K in keyof RootStackParamList]: RootStackParamList[K] extends undefined
+    ? K
+    : never;
+}[keyof RootStackParamList];
+const to = (route: PlainRoute) => () => navigationRef.navigate(route);
 
 const links: Link[] = [
   { icon: 'Profile', label: 'sidebar.profileSettings', go: toProfile },

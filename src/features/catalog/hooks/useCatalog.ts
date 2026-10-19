@@ -1,4 +1,5 @@
-// Catalog queries (TanStack Query) used by browsing screens from Phase 2.
+// Catalog queries (TanStack Query). `useCatalog` bundles what browsing
+// screens need, with one loading / error state.
 
 import { useQuery } from '@tanstack/react-query';
 import { catalogService } from '@/services/catalog';
@@ -15,8 +16,17 @@ export const useCategoryFilters = () =>
 export const useItems = () =>
   useQuery({ queryKey: ['items'], queryFn: catalogService.getItems });
 
-export const useItem = (id: string) =>
-  useQuery({
-    queryKey: ['items', id],
-    queryFn: () => catalogService.getItem(id),
-  });
+export function useCatalog() {
+  const items = useItems();
+  const categories = useCategories();
+  const categoryFilters = useCategoryFilters();
+  const queries = [items, categories, categoryFilters];
+  return {
+    items: items.data ?? [],
+    categories: categories.data ?? [],
+    categoryFilters: categoryFilters.data,
+    isLoading: queries.some(q => q.isPending),
+    isError: queries.some(q => q.isError),
+    refetch: () => queries.forEach(q => q.refetch()),
+  };
+}

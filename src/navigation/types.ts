@@ -2,6 +2,8 @@
 // see DEVELOPMENT_GUIDE.md §1 for the full list.
 
 import type { NavigatorScreenParams } from '@react-navigation/native';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { CategoryId } from '@/lib/types';
 
 /** Bottom tabs: Home · Auctions · Sell · Chats · Profile. */
 export type TabParamList = {
@@ -15,11 +17,19 @@ export type TabParamList = {
 
 export type RootStackParamList = {
   Tabs: NavigatorScreenParams<TabParamList>;
+  Search: undefined;
+  Category: { categoryId: CategoryId };
+  Product: { itemId: string };
+  /** Auction detail + bidding (Phase 5). */
+  AuctionBidding: { itemId: string };
   AddListing: undefined;
   Saved: undefined;
   OrderTracking: undefined;
   Auth: undefined;
 };
+
+export type RootScreenProps<T extends keyof RootStackParamList> =
+  NativeStackScreenProps<RootStackParamList, T>;
 
 declare global {
   // Lets useNavigation() know every route without a generic argument.

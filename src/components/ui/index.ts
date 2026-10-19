@@ -4,5 +4,6 @@ export { Card } from './Card';
 export { Chip } from './Chip';
 export { Ltr, ltr } from './Ltr';
 export { Screen } from './Screen';
+export { Select, type SelectOption } from './Select';
 export { Heading, Text } from './Text';
 export { TextField } from './TextField';

@@ -82,6 +82,8 @@ const paths = {
   ),
   ChevronLeft: <Polyline points="15 18 9 12 15 6" />,
   ChevronRight: <Polyline points="9 18 15 12 9 6" />,
+  // Not in the prototype's set (it used the browser's native <select> arrow).
+  ChevronDown: <Polyline points="6 9 12 15 18 9" />,
   Box: (
     <>
       <Path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
@@ -239,15 +241,22 @@ type IconProps = {
   /** 16 inline · 20 lists · 24 navigation (see theme/spacing iconSize). */
   size?: number;
   color?: string;
+  /** Solid fill in the same color: saved hearts, rating stars. */
+  filled?: boolean;
 };
 
-export function Icon({ name, size = 24, color = colors.espresso }: IconProps) {
+export function Icon({
+  name,
+  size = 24,
+  color = colors.espresso,
+  filled = false,
+}: IconProps) {
   return (
     <Svg
       width={size}
       height={size}
       viewBox="0 0 24 24"
-      fill="none"
+      fill={filled ? color : 'none'}
       stroke={color}
       strokeWidth={2.5}
       strokeLinecap="round"

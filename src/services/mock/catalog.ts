@@ -11,6 +11,7 @@ import type {
   Condition,
   Item,
   Localized,
+  Place,
 } from '@/lib/types';
 
 const unsplash = (photo: string) =>
@@ -158,11 +159,11 @@ const sellers = {
   noor: { ar: 'نور', en: 'Noor' },
 } satisfies Record<string, Localized>;
 
-const cities: Localized[] = [
-  { ar: 'عمّان', en: 'Amman' },
-  { ar: 'إربد', en: 'Irbid' },
-  { ar: 'الزرقاء', en: 'Zarqa' },
-  { ar: 'العقبة', en: 'Aqaba' },
+export const cities: Place[] = [
+  { id: 'amman', name: { ar: 'عمّان', en: 'Amman' } },
+  { id: 'irbid', name: { ar: 'إربد', en: 'Irbid' } },
+  { id: 'zarqa', name: { ar: 'الزرقاء', en: 'Zarqa' } },
+  { id: 'aqaba', name: { ar: 'العقبة', en: 'Aqaba' } },
 ];
 
 type Seed = {

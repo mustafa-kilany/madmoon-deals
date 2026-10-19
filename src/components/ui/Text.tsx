@@ -10,7 +10,15 @@ const HAS_COLOR = /(^|\s)text-brand-/;
 export function Text({ className = '', ...props }: TextProps) {
   const family = HAS_FAMILY.test(className) ? '' : 'font-sans-regular';
   const color = HAS_COLOR.test(className) ? '' : 'text-brand-espresso';
-  return <RNText className={`${family} ${color} ${className}`} {...props} />;
+  return (
+    <RNText
+      // Android's default "highQuality" line breaking can wrap text that was
+      // measured to fit, cutting off the last word ("كل الفئات" → "كل").
+      textBreakStrategy="simple"
+      className={`${family} ${color} ${className}`}
+      {...props}
+    />
+  );
 }
 
 /** Screen and section titles: Cairo Black. Size comes from className (text-xl, text-sm, …). */
