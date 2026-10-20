@@ -9,12 +9,14 @@ import {
   type Theme,
 } from '@react-navigation/native';
 import { QueryClientProvider } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
 import { StatusBar, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { SidebarMenu } from '@/components/SidebarMenu';
 import { Toast } from '@/components/Toast';
 import { useSessionRefresh } from '@/features/auth/hooks/useAccount';
+import { restoreSession } from '@/features/auth/sessionStore';
 import { navigationRef } from '@/navigation/navigationRef';
 import { RootNavigator } from '@/navigation/RootNavigator';
 import { queryClient } from '@/services/queryClient';
@@ -33,6 +35,13 @@ const navigationTheme: Theme = {
 };
 
 function App() {
+  // The session token is read from the keychain before anything asks the API.
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    restoreSession().finally(() => setReady(true));
+  }, []);
+  if (!ready) return null;
+
   return (
     <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider>

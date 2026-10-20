@@ -81,7 +81,10 @@ function ProductDetail({ item }: { item: Item }) {
   const requireAuth = useRequireAuth();
 
   const title = localized(item.title);
-  const gallery = galleryOf(item.imageUrl);
+  // Real listings carry their own photos; demo listings fake a gallery.
+  const gallery = item.imageUrls?.length
+    ? item.imageUrls
+    : galleryOf(item.imageUrl);
   // One page of the same category; the server does the matching.
   const { items: sameCategory } = useListings({
     category: item.category,

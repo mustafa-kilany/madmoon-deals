@@ -13,7 +13,8 @@ import type {
   ListingQuery,
 } from '@/lib/types';
 import { jod } from '@/lib/money';
-import { api } from '../api/client';
+import { api, photoForm } from '../api/client';
+import { toIso } from '../api/wire';
 import type { CatalogService } from './types';
 
 type CategoryDto = Omit<Category, 'image' | 'icon'> & {
@@ -83,6 +84,19 @@ export const httpCatalogService: CatalogService = {
     toItem(await api.get<ItemDto>(`/listings/${encodeURIComponent(id)}`)),
   getMyListings: async () =>
     (await api.get<ItemDto[]>('/me/listings')).map(toItem),
-  createListing: async input =>
-    toItem(await api.post<ItemDto>('/listings', input)),
+  uploadListingPhoto: async photo =>
+    (
+      await api.post<{ url: string }>(
+        '/uploads/listing-photo',
+        photoForm('photo', photo),
+      )
+    ).url,
+  createListing: async ({ auctionEndsAt, ...input }) =>
+    toItem(
+      await api.post<ItemDto>('/listings', {
+        ...input,
+        auctionEndsAt:
+          auctionEndsAt === undefined ? undefined : toIso(auctionEndsAt),
+      }),
+    ),
 };

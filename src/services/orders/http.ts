@@ -2,16 +2,32 @@
 
 import type { Order } from '@/lib/types';
 import { api } from '../api/client';
+import { fromIso, fromIsoMaybe, type Dated } from '../api/wire';
 import type { OrdersService } from './types';
 
+type OrderDto = Dated<Order, 'createdAt' | 'deliveredAt'>;
+
+const toOrder = (o: OrderDto): Order => ({
+  ...o,
+  createdAt: fromIso(o.createdAt),
+  deliveredAt: fromIsoMaybe(o.deliveredAt),
+});
+
+const orderPath = (orderId: string) => `/orders/${encodeURIComponent(orderId)}`;
+
 export const httpOrdersService: OrdersService = {
-  createOrder: input => api.post<Order>('/orders', input),
-  payOrder: (orderId, cardToken) =>
-    api.post<Order>(`/orders/${encodeURIComponent(orderId)}/pay`, {
-      cardToken,
-    }),
-  getOrder: orderId => api.get<Order>(`/orders/${encodeURIComponent(orderId)}`),
-  getMyOrders: () => api.get<Order[]>('/me/orders'),
-  confirmDelivery: (orderId, pin) =>
-    api.post<Order>('/courier/confirm-delivery', { orderId, pin }),
+  createOrder: async input =>
+    toOrder(await api.post<OrderDto>('/orders', input)),
+  payOrder: async (orderId, cardToken) =>
+    toOrder(
+      await api.post<OrderDto>(`${orderPath(orderId)}/pay`, { cardToken }),
+    ),
+  getOrder: async orderId =>
+    toOrder(await api.get<OrderDto>(orderPath(orderId))),
+  getMyOrders: async () =>
+    (await api.get<OrderDto[]>('/me/orders')).map(toOrder),
+  confirmDelivery: async (orderId, pin) =>
+    toOrder(
+      await api.post<OrderDto>('/courier/confirm-delivery', { orderId, pin }),
+    ),
 };

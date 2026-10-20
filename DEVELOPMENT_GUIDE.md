@@ -462,11 +462,23 @@ Each phase ends with a working build on an Android emulator (and iOS, see §6.3)
   once the provider is chosen (§8 #4); won-auction checkout waits for auction closing on the
   server (Phase 7); the contract server has no `/orders` routes yet.
 
-### Phase 7 — Backend integration
-- Build the API to `docs/API.md`, then flip `src/config.ts` (§4.4). Can start any time after
-  Phase 3; each new phase adds its endpoints to the contract.
-- Move the token to the keychain, real camera capture for ID photos, image upload, push
-  notifications (offers, bids, delivery status).
+### Phase 7 — Backend integration (app side ✅ 2026-10-20; backend in progress by the backend developer)
+- Backend developer builds the API to `docs/API.md`; the app flips each service in
+  `src/config.ts` → `mock` (catalog, auth, negotiation, orders) as its endpoints go live (§4.4).
+  Release builds use the production `apiBaseUrl`, debug builds the local contract server.
+- ✅ Contract checked by `__tests__/httpContract.test.ts`: every request the app makes (method,
+  path, body) and that each endpoint is documented in `docs/API.md`. Dates are ISO strings on
+  the wire, converted in `src/services/api/wire.ts`.
+- ✅ Session token in the device keychain (`react-native-keychain`; old MMKV tokens migrate on
+  first launch). Verified on the emulator: the session survives an app restart.
+- ✅ Listing photos are uploaded (`POST /uploads/listing-photo`), then the listing is created
+  with their URLs (`imageUrls`); at least one photo is required.
+- ✅ Live screens poll (`config.pollMs`): auction 3 s, chats 5 s, orders 15 s.
+- ✅ ID photo uses the real camera (`features/auth/photoCapture.ts`, done in Phase 3).
+- **Still open (needs accounts/decisions):** push notifications (Firebase project + Apple Push
+  key; endpoints proposed in `docs/API.md` → Live Updates), real Google / Apple sign-in (Google
+  Cloud OAuth client IDs, Apple Developer account), the payment provider SDK (§8 #4),
+  won-auction checkout (after the server closes auctions).
 
 ### Phase 8 — Quality
 - Unit tests (pricing, filters, formatters, stores), component tests for the UI kit.

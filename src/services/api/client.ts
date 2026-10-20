@@ -2,6 +2,7 @@
 // errors turned into ApiError. Only the services' http.ts files use it.
 
 import { config } from '@/config';
+import type { LocalPhoto } from '@/lib/types';
 import { ApiError, type ApiErrorCode } from './errors';
 import { tokenStorage } from './tokenStorage';
 
@@ -76,6 +77,18 @@ function statusCode(status: number): ApiErrorCode {
   if (status === 404) return 'NOT_FOUND';
   if (status === 400 || status === 422) return 'VALIDATION';
   return 'UNKNOWN';
+}
+
+/** multipart/form-data body with one image field. */
+export function photoForm(field: string, photo: LocalPhoto): FormData {
+  const form = new FormData();
+  // React Native's FormData takes { uri, type, name } for files.
+  form.append(field, {
+    uri: photo.uri,
+    type: photo.mimeType,
+    name: photo.fileName,
+  } as unknown as Blob);
+  return form;
 }
 
 export const api = {

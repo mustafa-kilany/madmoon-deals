@@ -33,9 +33,6 @@ import type { RootScreenProps } from '@/navigation/types';
 import { toast } from '@/store/toastStore';
 import { colors } from '@/theme/colors';
 
-const DEFAULT_IMAGE =
-  'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&h=600&fit=crop';
-
 const conditions: Condition[] = ['new', 'excellent', 'good', 'loved'];
 
 export function AddListingScreen({
@@ -109,6 +106,10 @@ export function AddListingScreen({
   };
 
   const handleSubmit = () => {
+    if (photos.length === 0) {
+      toast.error(t('addListing.photoRequired'));
+      return;
+    }
     if (!title.trim()) {
       toast.error(t('validation.nameRequired'));
       return;
@@ -121,7 +122,6 @@ export function AddListingScreen({
     }
 
     const priceFils = Math.round(numericPrice * 1000);
-    const imageUrl = photos[0]?.uri || DEFAULT_IMAGE;
     const durationMs = parseInt(durationDays, 10) * 24 * 60 * 60 * 1000;
 
     createListing.mutate(
@@ -130,7 +130,7 @@ export function AddListingScreen({
         titleAr: title.trim(),
         titleEn: title.trim(),
         priceFils,
-        imageUrl,
+        photos,
         condition,
         brand: brand.trim() || undefined,
         type: activeType,

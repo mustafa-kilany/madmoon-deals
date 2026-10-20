@@ -8,8 +8,9 @@ import {
   useMutation,
   useQuery,
 } from '@tanstack/react-query';
+import { config } from '@/config';
 import { emptyFilters, validPriceRange } from '@/lib/browsing';
-import type { Item, ListingQuery } from '@/lib/types';
+import type { Item, ListingQuery, LocalPhoto } from '@/lib/types';
 import { useUser } from '@/features/auth/sessionStore';
 import { catalogService } from '@/services/catalog';
 import type { CreateListingInput } from '@/services/catalog/types';
@@ -63,11 +64,16 @@ export function useListingTotal(query: ListingQuery) {
   return validPriceRange(query.filters) ? data : 0;
 }
 
-export const useItem = (id: string | undefined) =>
+/** `live`: keep refreshing while open (auction price changes with each bid). */
+export const useItem = (
+  id: string | undefined,
+  { live = false }: { live?: boolean } = {},
+) =>
   useQuery({
     queryKey: queryKeys.item(id ?? ''),
     queryFn: () => catalogService.getItem(id!),
     enabled: !!id,
+    refetchInterval: live ? config.pollMs.auction : false,
   });
 
 /** Specific listings in the given order (Saved, recently viewed). */
@@ -96,10 +102,19 @@ export const useMyListings = () =>
     enabled: !!useUser(),
   });
 
+export type NewListing = Omit<CreateListingInput, 'imageUrls'> & {
+  photos: LocalPhoto[];
+};
+
+/** Upload the photos (in parallel), then create the listing with their URLs. */
 export const useCreateListing = () =>
   useMutation({
-    mutationFn: (input: CreateListingInput) =>
-      catalogService.createListing(input),
+    mutationFn: async ({ photos, ...input }: NewListing) => {
+      const imageUrls = await Promise.all(
+        photos.map(catalogService.uploadListingPhoto),
+      );
+      return catalogService.createListing({ ...input, imageUrls });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.items });
       queryClient.invalidateQueries({ queryKey: queryKeys.myListings });

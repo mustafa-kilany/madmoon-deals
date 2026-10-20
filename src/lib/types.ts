@@ -60,7 +60,10 @@ export type Item = {
   title: Localized;
   /** Fixed price, or the current bid for auctions. Integer fils. */
   priceFils: number;
+  /** Cover photo (the first of imageUrls). */
   imageUrl: string;
+  /** Every photo, cover first. Missing on listings with a single photo. */
+  imageUrls?: string[];
   condition: Condition;
   seller: Localized;
   brand?: string;

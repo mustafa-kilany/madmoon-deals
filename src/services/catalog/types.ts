@@ -7,6 +7,7 @@ import type {
   CategoryId,
   Condition,
   Item,
+  LocalPhoto,
   ListingPage,
   ListingQuery,
   SaleType,
@@ -17,7 +18,8 @@ export type CreateListingInput = {
   titleAr: string;
   titleEn: string;
   priceFils: number;
-  imageUrl: string;
+  /** URLs from uploadListingPhoto, cover first (1 to 5). */
+  imageUrls: string[];
   condition: Condition;
   brand?: string;
   type: string;
@@ -44,5 +46,7 @@ export interface CatalogService {
   getItem(id: string): Promise<Item>;
   /** The signed-in user's own listings (Profile → My Listings). */
   getMyListings(): Promise<Item[]>;
+  /** Upload one listing photo to storage; returns its public URL. */
+  uploadListingPhoto(photo: LocalPhoto): Promise<string>;
   createListing(input: CreateListingInput): Promise<Item>;
 }

@@ -1,6 +1,7 @@
 // Negotiation & bidding TanStack Query hooks for Phase 5.
 
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { config } from '@/config';
 import type { OfferStatus } from '@/lib/types';
 import { negotiationService } from '@/services/negotiation';
 import type {
@@ -46,6 +47,7 @@ export const useBids = (itemId: string) =>
     queryKey: ['bids', itemId],
     queryFn: () => negotiationService.getBids(itemId),
     enabled: !!itemId,
+    refetchInterval: config.pollMs.auction,
   });
 
 export const usePlaceBid = () =>
@@ -61,6 +63,7 @@ export const useChatThreads = () =>
   useQuery({
     queryKey: queryKeys.chats,
     queryFn: negotiationService.getChatThreads,
+    refetchInterval: config.pollMs.chat,
   });
 
 export const useChatMessages = (chatId: string) =>
@@ -68,6 +71,7 @@ export const useChatMessages = (chatId: string) =>
     queryKey: ['chatMessages', chatId],
     queryFn: () => negotiationService.getChatMessages(chatId),
     enabled: !!chatId,
+    refetchInterval: config.pollMs.chat,
   });
 
 export const useSendMessage = () =>

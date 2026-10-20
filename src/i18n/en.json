@@ -246,6 +246,7 @@
     "notFound": "This listing is no longer available."
   },
   "addListing": {
+    "photoRequired": "Add at least one photo.",
     "photos": "Photos (up to 5)",
     "addPhoto": "Add Photo",
     "title": "Listing Title",

@@ -1,20 +1,8 @@
 // Accounts from the Sahla API (docs/API.md → Accounts).
 
-import type { LocalPhoto, Session, User } from '@/lib/types';
-import { api } from '../api/client';
+import type { Session, User } from '@/lib/types';
+import { api, photoForm } from '../api/client';
 import type { AuthService } from './types';
-
-/** multipart/form-data body with one image field. */
-function photoForm(field: string, photo: LocalPhoto): FormData {
-  const form = new FormData();
-  // React Native's FormData takes { uri, type, name } for files.
-  form.append(field, {
-    uri: photo.uri,
-    type: photo.mimeType,
-    name: photo.fileName,
-  } as unknown as Blob);
-  return form;
-}
 
 export const httpAuthService: AuthService = {
   signUpWithEmail: input => api.post<Session>('/auth/signup', input),

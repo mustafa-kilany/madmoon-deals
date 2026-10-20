@@ -47,6 +47,11 @@ export const mockCatalogService: CatalogService = {
     await mockLatency();
     return userListings;
   },
+  // The phone's own file stands in for the uploaded copy.
+  uploadListingPhoto: async photo => {
+    await mockLatency();
+    return photo.uri;
+  },
   createListing: async (input: CreateListingInput) => {
     await mockLatency();
     const city = cities.find(c => c.id === input.locationId) ?? cities[0];
@@ -55,7 +60,8 @@ export const mockCatalogService: CatalogService = {
       category: input.category,
       title: { ar: input.titleAr, en: input.titleEn },
       priceFils: input.priceFils,
-      imageUrl: input.imageUrl,
+      imageUrl: input.imageUrls[0],
+      imageUrls: input.imageUrls,
       condition: input.condition,
       seller: { ar: 'Ahmad', en: 'Ahmad' },
       brand: input.brand,

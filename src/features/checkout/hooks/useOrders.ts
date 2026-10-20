@@ -1,6 +1,7 @@
 // Checkout and order tracking as TanStack Query hooks.
 
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { config } from '@/config';
 import { ordersService, type CreateOrderInput } from '@/services/orders';
 import { queryClient, queryKeys } from '@/services/queryClient';
 
@@ -22,6 +23,8 @@ export const useMyOrders = () =>
   useQuery({
     queryKey: queryKeys.orders,
     queryFn: ordersService.getMyOrders,
+    // Picks up "delivered" once the courier confirms the PIN.
+    refetchInterval: config.pollMs.orders,
   });
 
 /** Courier: buyer's PIN → server releases escrow. */

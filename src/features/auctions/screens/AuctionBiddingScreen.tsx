@@ -41,7 +41,9 @@ export function AuctionBiddingScreen({
   const timeLeftLabel = useTimeLeftLabel();
   const itemId = route.params?.itemId;
 
-  const { data: item, isLoading: isItemLoading } = useItem(itemId);
+  const { data: item, isLoading: isItemLoading } = useItem(itemId, {
+    live: true,
+  });
   const { data: bids = [], isLoading: isBidsLoading } = useBids(itemId);
   const placeBid = usePlaceBid();
 

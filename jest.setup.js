@@ -18,3 +18,19 @@ jest.mock('react-native-mmkv', () => ({
     };
   },
 }));
+
+// Keychain: an in-memory credential per service.
+jest.mock('react-native-keychain', () => {
+  const saved = new Map();
+  return {
+    ACCESSIBLE: {
+      WHEN_UNLOCKED_THIS_DEVICE_ONLY: 'AccessibleWhenUnlockedThisDeviceOnly',
+    },
+    setGenericPassword: async (username, password, { service } = {}) => {
+      saved.set(service, { username, password, service });
+      return { service };
+    },
+    getGenericPassword: async ({ service } = {}) => saved.get(service) ?? false,
+    resetGenericPassword: async ({ service } = {}) => saved.delete(service),
+  };
+});

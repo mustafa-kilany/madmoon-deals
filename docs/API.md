@@ -14,24 +14,33 @@ Open [`src/config.ts`](file:///C:/Users/mustafa/Desktop/Sahla/Sahla/src/config.t
 
 ```ts
 export const config = {
-  /** Base URL of your Sahla REST API server */
-  apiBaseUrl: 'https://api.sahla.jo/v1', // or 'http://10.0.2.2:4000/v1' for Android Emulator
+  /** Debug builds → local server; release builds → the production API. */
+  apiBaseUrl: __DEV__ ? 'http://10.0.2.2:4000/v1' : 'https://api.sahla.jo/v1',
 
-  /** Toggles: set to false to use real HTTP API endpoints instead of mock data */
+  /** true = in-app mock data; false = the real HTTP endpoints below. */
   mock: {
-    catalog: false, // Uses httpCatalogService (/categories, /listings, /cities, etc.)
-    auth: false,    // Uses httpAuthService (/auth/login, /auth/signup, /me, etc.)
+    catalog: true,      // /categories, /cities, /listings, /uploads/listing-photo
+    auth: false,        // /auth/*, /me/*
+    negotiation: true,  // /offers, /listings/:id/bids, /chats
+    orders: true,       // /orders, /me/orders, /courier/*
   },
 
   requestTimeoutMs: 15_000,
   uploadTimeoutMs: 60_000,
+  pollMs: { auction: 3_000, chat: 5_000, orders: 15_000 }, // see "Live updates"
 } as const;
 ```
+
+> [!IMPORTANT]
+> **Backend developer:** send the production base URL (`https://…/v1`) to the app developer. Each
+> service is switched to `false` when its endpoints are live, one at a time.
 
 > [!NOTE]
 > * **Android Emulator Host Loopback:** Use `http://10.0.2.2:<port>/v1` to point to a server running locally on your development PC.
 > * **iOS Simulator Host Loopback:** Use `http://localhost:<port>/v1`.
-> * **Gradual Integration:** You can set `auth: false` and keep `catalog: true` (or vice versa) to integrate backend services independently.
+> * **Gradual Integration:** Each of `catalog`, `auth`, `negotiation`, `orders` switches on its own.
+> * **Every endpoint below is checked by `__tests__/httpContract.test.ts`:** it records the exact
+>   method, path and body the app sends, and fails if an endpoint the app calls is missing here.
 
 ---
 
@@ -41,7 +50,7 @@ export const config = {
   * Standard JSON endpoints automatically include `Accept: application/json` and `Content-Type: application/json`.
   * Upload endpoints (e.g. `idPhoto`, `avatar`) use `FormData` (`multipart/form-data`). The client automatically lets the platform set the correct boundary header.
 * **Authentication Tokens:**
-  * When signed in, the app stores a bearer token in MMKV via [`tokenStorage`](file:///C:/Users/mustafa/Desktop/Sahla/Sahla/src/services/api/tokenStorage.ts).
+  * When signed in, the app keeps the bearer token in the device keychain (iOS Keychain / Android Keystore) via [`tokenStorage`](file:///C:/Users/mustafa/Desktop/Sahla/Sahla/src/services/api/tokenStorage.ts). Tokens should be long-lived (e.g. 30–90 days) and revoked by `POST /auth/logout`; the app has no refresh-token flow, so an expired token simply signs the user out.
   * Every outgoing HTTP request automatically appends the header:
     `Authorization: Bearer <token>`
 * **Automatic Sign-Out on Expired/Invalid Tokens (401):**
@@ -58,7 +67,7 @@ export const config = {
 | **Money / Currency** | Integers in **fils** (1 JOD = 1000 fils). Never use floating point or decimals. Field names end with `Fils` (e.g. `priceFils`, `incrementFils`). |
 | **Localized Strings** | Dual-language catalog fields use `{ "ar": "...", "en": "..." }` (`Localized`). |
 | **Category IDs** | Fixed set: `mobiles`, `electronics`, `vehicles`, `furniture`, `appliances`, `fashion`, `kids`, `hobbies`. Item types per category come from `GET /categories/filters` (e.g. gaming is a type under `electronics`, watches under `fashion`). |
-| **Timestamps** | ISO-8601 UTC strings (e.g. `"2026-10-19T12:00:00Z"`). |
+| **Timestamps** | ISO-8601 UTC strings (e.g. `"2026-10-19T12:00:00Z"`) in both directions: every `createdAt`, `updatedAt`, `deliveredAt`, `endsAt`, `auctionEndsAt`. The app converts them (`src/services/api/wire.ts`). |
 | **Errors** | Non-2xx responses return `{ "error": { "code": "ERROR_CODE", "message": "..." } }`. |
 
 ### Error Codes Standard
@@ -70,6 +79,9 @@ export const config = {
 | `INVALID_CREDENTIALS` | 401 | Wrong email or password during login |
 | `NOT_FOUND` | 404 | Resource with the specified ID does not exist |
 | `EMAIL_TAKEN` | 409 | Attempting sign-up with an already registered email |
+| `INVALID_PIN` | 422 | Courier typed the wrong delivery PIN (nothing is released) |
+
+Any other code is shown to the user as a generic error, so new codes need an app update to get their own message.
 
 ---
 
@@ -87,11 +99,12 @@ type User = {
   id: string;
   name: string;
   email?: string;
-  method: 'email' | 'id';
-  verified: boolean;
-  cityId: string; // 'amman', 'irbid', 'zarqa', 'aqaba'
+  method: 'email' | 'google' | 'apple';
+  verified: boolean; // true after POST /me/id-verification is approved
+  cityId: string;    // an area id from GET /cities, e.g. 'salt', 'amman-khalda'
   avatarUrl: string;
   card?: { brand: string; last4: string };
+  role?: 'courier';  // courier accounts only
 };
 ```
 
@@ -184,14 +197,15 @@ type Item = {
   id: string;
   category: string;
   title: Localized;
-  priceFils: number; // Integer fils
-  imageUrl: string;
+  priceFils: number; // Integer fils; for auctions, the current highest bid
+  imageUrl: string;    // cover photo (= imageUrls[0])
+  imageUrls?: string[]; // every photo, cover first
   condition: 'new' | 'excellent' | 'good' | 'loved';
   seller: Localized;
   brand?: string;
   type: string;
   verified: boolean;
-  location: { id: string; name: Localized };
+  location: { id: string; name: Localized; governorate: Localized };
   saleType: 'fixed' | 'auction';
   auction?: {
     endsAt: string; // ISO-8601 UTC date
@@ -292,8 +306,18 @@ Returns all listings created by the signed-in user.
 
 ### Phase 4: Selling (Create & Manage Listings)
 
+Publishing a listing is two steps: the app uploads each photo (up to 5, in parallel), then creates
+the listing with the returned URLs.
+
+* **`POST /uploads/listing-photo` *(Authenticated)***
+  * **Request:** `multipart/form-data` with one field `photo` (JPEG/PNG/WebP, up to 10 MB).
+  * **Response (201):** `{ "url": "https://cdn.sahla.jo/listings/…jpg" }` — a public URL the app can show.
+  * **Backend notes:** check the real file type from its bytes, not the name; strip EXIF (it can
+    contain the seller's GPS position); resize (e.g. 1600 px long side) and serve from a CDN.
+    Uploads that no listing uses within ~24 h can be deleted.
 * **`POST /listings` *(Authenticated)***
-  * **Request (JSON):** `category`, `titleAr`, `titleEn`, `priceFils`, `imageUrl`, `condition`, `brand?`, `type`, `locationId`, `saleType`, `auctionEndsAt?` (epoch ms), `incrementFils?`. Photo upload to storage arrives in Phase 7; until then `imageUrl` is the first photo's URL.
+  * **Request (JSON):** `category`, `titleAr`, `titleEn`, `priceFils`, `imageUrls` (1–5 URLs from the upload above, cover first), `condition`, `brand?`, `type`, `locationId` (area id), `saleType` (`fixed` or `auction`), `auctionEndsAt?` (ISO-8601), `incrementFils?`.
+  * Only accept `imageUrls` that this server issued. For auctions, `priceFils` is the starting bid.
   * **Response (201):** `Item`
 * **`PATCH /listings/:id` *(Authenticated)***
   * **Request:** `{ "priceFils"?: 50000, "condition"?: "excellent" }`
@@ -303,12 +327,60 @@ Returns all listings created by the signed-in user.
 
 ### Phase 5: Negotiation, Chat & Auction Bids
 
+```ts
+type Offer = {
+  id: string;
+  itemId: string;
+  itemTitle: Localized;
+  itemImageUrl: string;
+  buyerId: string;
+  buyerName: string;
+  sellerName: string;
+  amountFils: number;
+  status: 'pending' | 'accepted' | 'countered' | 'rejected';
+  createdAt: string; // ISO-8601
+};
+
+type Bid = {
+  id: string;
+  itemId: string;
+  bidderId: string;
+  bidderName: string;
+  amountFils: number;
+  createdAt: string;
+};
+
+type ChatThread = {
+  id: string;
+  itemId: string;
+  itemTitle: Localized;
+  itemImageUrl: string;
+  otherPartyName: string; // the seller for the buyer, and the buyer for the seller
+  lastMessage: string;
+  updatedAt: string;
+};
+
+type ChatMessage = {
+  id: string;
+  chatId: string;
+  senderId: string;
+  senderName: string;
+  text: string;
+  offer?: Offer; // present on "offer made / countered / accepted" messages
+  createdAt: string;
+};
+```
+
+Lists are newest first except `GET /chats/:id/messages` (oldest first, like a conversation).
+
 * **`GET /chats` *(Authenticated)*** → `ChatThread[]`
 * **`GET /chats/:id/messages` *(Authenticated)*** → `ChatMessage[]`
 * **`POST /chats/:id/messages` *(Authenticated)*** → Body: `{ "text": "Is this still available?" }` → `ChatMessage`
 * **`POST /listings/:id/offers` *(Authenticated)*** → Body: `{ "amountFils": 450000 }` → `{ "offer": Offer, "chatId": "..." }`
 * **`POST /offers/:id/respond` *(Authenticated, seller)*** → Body: `{ "status": "accepted" | "countered" | "rejected", "counterAmountFils"?: 480000 }` → `Offer`
 * **`POST /listings/:id/bids` *(Authenticated)*** → Body: `{ "amountFils": 530000 }` → `Bid` (the item's `priceFils` and `bidCount` update; refetch the item)
+  * `VALIDATION` (422) if `amountFils` < current bid + `incrementFils`, the auction has ended, or the bidder is the seller. Check and update in one transaction so two bids at the same moment can't both win.
+  * **Auction end:** when `endsAt` passes, the server closes the auction and the highest bidder is the winner (they check out like a fixed-price buyer; the app part for this is still to do).
 * **`GET /listings/:id/bids`** → `Bid[]`
 
 ### Phase 6: Checkout, Orders & Escrow
@@ -326,8 +398,8 @@ type Order = {
   status: 'awaiting_payment' | 'escrow_held' | 'completed' | 'refunded';
   pin?: string;          // 4 digits, buyer only, once escrow_held
   offerId?: string;
-  createdAt: number;
-  deliveredAt?: number;
+  createdAt: string;     // ISO-8601
+  deliveredAt?: string;  // ISO-8601, once the courier confirms
 };
 ```
 
@@ -348,6 +420,32 @@ type Order = {
 
 ---
 
+## Live Updates & Notifications
+
+**Today (works with any REST backend):** screens that change while open ask again on a timer, only
+while they're on screen and the app is in the foreground (`config.pollMs`):
+
+| Screen | Requests | Every |
+|---|---|---|
+| Auction bidding | `GET /listings/:id`, `GET /listings/:id/bids` | 3 s |
+| Chats / open conversation | `GET /chats`, `GET /chats/:id/messages` | 5 s |
+| Order tracking | `GET /me/orders` | 15 s |
+
+These endpoints must therefore be cheap. Optional: support `ETag` / `If-None-Match` → `304`.
+
+**Planned — push notifications** (needs a Firebase project for Android and an Apple Push key for
+iOS; not in the app yet). Proposed endpoints, so the backend can plan for them:
+
+* **`POST /me/devices` *(Authenticated)*** → Body: `{ "token": "<FCM token>", "platform": "android" | "ios" }` → 204. Sent after sign-in and whenever the token changes.
+* **`DELETE /me/devices/:token` *(Authenticated)*** → 204. Sent on log-out.
+* Server sends a push for: new chat message, offer accepted / countered, outbid, auction won,
+  order delivered. Payload `data`: `{ "type": "chat" | "offer" | "outbid" | "auction_won" | "order", "id": "<chat, listing or order id>" }` so tapping it opens the right screen.
+
+Later, a WebSocket (or Server-Sent Events) channel can replace the timers for chat and live
+bidding; the screens won't change.
+
+---
+
 ## Testing the API Locally
 
 The repository includes a standalone local contract server for testing:
@@ -361,8 +459,9 @@ To run the mobile app against it:
 1. In [`src/config.ts`](file:///C:/Users/mustafa/Desktop/Sahla/Sahla/src/config.ts), set:
    ```ts
    apiBaseUrl: 'http://10.0.2.2:4000/v1',
-   mock: { catalog: true, auth: false }
+   mock: { catalog: true, auth: false, negotiation: true, orders: true }
    ```
+   (The contract server implements the **Accounts** endpoints only; the others stay on mock.)
 2. Run `npm test` to execute automated integration tests against the contract server.
 
 

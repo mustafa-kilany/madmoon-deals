@@ -37,8 +37,11 @@ export const useSessionStore = create<SessionState>()(
   ),
 );
 
-// A saved user without a token isn't signed in.
-if (!tokenStorage.get()) useSessionStore.setState({ user: null });
+/** Launch: load the token from the keychain; a saved user without one isn't signed in. */
+export async function restoreSession(): Promise<void> {
+  await tokenStorage.load();
+  if (!tokenStorage.get()) useSessionStore.setState({ user: null });
+}
 
 setUnauthorizedHandler(() => {
   if (useSessionStore.getState().user) useSessionStore.getState().signOut();

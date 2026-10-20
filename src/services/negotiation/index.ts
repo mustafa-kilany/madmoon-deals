@@ -5,6 +5,6 @@ import type { NegotiationService } from './types';
 
 export type { NegotiationService } from './types';
 
-export const negotiationService: NegotiationService = config.mock.catalog
+export const negotiationService: NegotiationService = config.mock.negotiation
   ? mockNegotiationService
   : httpNegotiationService;

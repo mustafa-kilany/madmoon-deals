@@ -7,12 +7,16 @@
 //   mock: { auth: false, … }
 
 export const config = {
-  /** Base URL of the Sahla REST API. Placeholder until the backend exists. */
-  apiBaseUrl: 'http://10.0.2.2:4000/v1',
+  /**
+   * Base URL of the Sahla REST API. Debug builds use the local contract
+   * server; release builds the real API (address from the backend developer).
+   */
+  apiBaseUrl: __DEV__ ? 'http://10.0.2.2:4000/v1' : 'https://api.sahla.jo/v1',
   /** true = that service answers from the in-app mock backend (src/services/mock). */
   mock: {
     catalog: true,
     auth: false,
+    negotiation: true,
     orders: true,
   },
   /** Fake network delay for mock calls, so loading states are visible in dev. */
@@ -20,4 +24,14 @@ export const config = {
   /** Requests slower than this fail with a NETWORK error. Uploads get longer. */
   requestTimeoutMs: 15_000,
   uploadTimeoutMs: 60_000,
+  /**
+   * Live screens re-ask the server this often while they're open (and stop
+   * when the app is in the background). A WebSocket / push can replace this
+   * later without touching the screens.
+   */
+  pollMs: {
+    auction: 3_000, // current bid + bid list
+    chat: 5_000, // threads and open conversation
+    orders: 15_000, // order status (courier delivered → completed)
+  },
 } as const;
