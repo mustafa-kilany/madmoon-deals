@@ -34,14 +34,22 @@ export function Toast() {
               className={`h-6 w-6 items-center justify-center rounded-full ${
                 toast.tone === 'success'
                   ? 'bg-brand-success'
+                  : toast.tone === 'error'
+                  ? 'bg-brand-danger'
                   : 'bg-brand-secondary'
               }`}
             >
               <Icon
-                name={toast.tone === 'success' ? 'Check' : 'Heart'}
+                name={
+                  toast.tone === 'success'
+                    ? 'Check'
+                    : toast.tone === 'error'
+                    ? 'X'
+                    : 'Heart'
+                }
                 size={toast.tone === 'success' ? 16 : 14}
                 color={
-                  toast.tone === 'success' ? colors.onPrimary : colors.espresso
+                  toast.tone === 'info' ? colors.espresso : colors.onPrimary
                 }
               />
             </View>

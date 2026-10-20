@@ -3,7 +3,7 @@
 
 import { create } from 'zustand';
 
-export type ToastTone = 'success' | 'info';
+export type ToastTone = 'success' | 'info' | 'error';
 export type ToastMessage = { id: number; message: string; tone: ToastTone };
 
 const TOAST_DURATION_MS = 2600;
@@ -31,4 +31,6 @@ export const toast = {
   success: (message: string) =>
     useToastStore.getState().show(message, 'success'),
   info: (message: string) => useToastStore.getState().show(message, 'info'),
+  error: (message: string) =>
+    useToastStore.getState().show(message, 'error'),
 };

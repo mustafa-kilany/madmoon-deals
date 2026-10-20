@@ -19,14 +19,6 @@ function photoForm(field: string, photo: LocalPhoto): FormData {
 export const httpAuthService: AuthService = {
   signUpWithEmail: input => api.post<Session>('/auth/signup', input),
   logInWithEmail: input => api.post<Session>('/auth/login', input),
-  signUpWithId: (input: any) => {
-    const photo = input?.idPhoto || input;
-    const form = photoForm('idPhoto', photo);
-    form.append('name', input?.name ? String(input.name) : 'Mustafa');
-    form.append('email', input?.email ? String(input.email) : 'verified@sahla.jo');
-    if (input?.password) form.append('password', input.password);
-    return api.post<Session>('/auth/signup/id', form);
-  },
   logInWithGoogle: idToken => api.post<Session>('/auth/google', { idToken }),
   logInWithApple: idToken => api.post<Session>('/auth/apple', { idToken }),
   sendOtp: input => api.post<void>('/auth/send-otp', input),

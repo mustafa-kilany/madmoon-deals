@@ -1,10 +1,8 @@
-// National ID scan (prototype IDVerification). purpose "signup" prompts
-// camera ID capture AND requires email credentials so the user can log in later.
-// purpose "verify" upgrades the signed-in email account.
+// National ID scan (prototype IDVerification). Accounts are created with
+// email only; this upgrades the signed-in account to Verified.
 
 import { useEffect, useState } from 'react';
 import {
-  Image,
   KeyboardAvoidingView,
   ScrollView,
   StyleSheet,
@@ -20,32 +18,21 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { BackButton } from '@/components/BackButton';
 import { Icon } from '@/components/icons';
-import { Button, Heading, Screen, Text, TextField } from '@/components/ui';
+import { Button, Heading, Screen, Text } from '@/components/ui';
 import type { LocalPhoto } from '@/lib/types';
 import type { RootScreenProps } from '@/navigation/types';
 import { errorMessageKey } from '@/services/api/errors';
 import { toast } from '@/store/toastStore';
 import { colors } from '@/theme/colors';
-import { useSignUpWithId, useVerifyId } from '../hooks/useAccount';
+import { useVerifyId } from '../hooks/useAccount';
 import { captureIdPhoto } from '../photoCapture';
 
 export function IdVerificationScreen({
-  route,
   navigation,
 }: RootScreenProps<'IdVerification'>) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const { purpose } = route.params;
-  const isSignUp = purpose === 'signup';
-
-  const signUp = useSignUpWithId();
   const verify = useVerifyId();
-  const mutation = isSignUp ? signUp : verify;
-
-  const [idPhoto, setIdPhoto] = useState<LocalPhoto | null>(null);
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [cameraFailed, setCameraFailed] = useState(false);
 
   const capture = async () => {
@@ -58,33 +45,11 @@ export function IdVerificationScreen({
       return;
     }
     if (!photo) return; // cancelled
-
-    if (isSignUp) {
-      setIdPhoto(photo);
-    } else {
-      verify.mutate(photo, {
-        onSuccess: () => {
-          toast.success(t('idVerification.verified'));
-          navigation.goBack();
-        },
-      });
-    }
-  };
-
-  const handleSignUpSubmit = () => {
-    if (!idPhoto) {
-      capture();
-      return;
-    }
-    if (!email.trim() || !email.includes('@')) {
-      toast.error(t('validation.emailInvalid'));
-      return;
-    }
-    signUp.mutate({
-      idPhoto,
-      name: name.trim() || 'Verified User',
-      email: email.trim(),
-      password,
+    verify.mutate(photo, {
+      onSuccess: () => {
+        toast.success(t('idVerification.verified'));
+        navigation.goBack();
+      },
     });
   };
 
@@ -108,74 +73,11 @@ export function IdVerificationScreen({
               {t('idVerification.title')}
             </Heading>
             <Text className="text-center font-sans-medium text-sm leading-relaxed text-brand-warmgray">
-              {t(
-                isSignUp
-                  ? 'idVerification.signupBody'
-                  : 'idVerification.verifyBody',
-              )}
+              {t('idVerification.verifyBody')}
             </Text>
           </View>
 
-          {idPhoto ? (
-            <View className="items-center gap-3">
-              <View className="aspect-[1.6] w-full overflow-hidden rounded-2xl border-2 border-brand-primary">
-                <Image source={{ uri: idPhoto.uri }} className="h-full w-full" />
-              </View>
-              <Button
-                variant="secondary"
-                size="sm"
-                icon="Camera"
-                label={t('idVerification.capture')}
-                onPress={capture}
-              />
-            </View>
-          ) : (
-            <ScanFrame />
-          )}
-
-          {isSignUp && (
-            <View className="gap-4 pt-2">
-              <View className="gap-1 border-t border-brand-border pt-4">
-                <Text className="font-sans-bold text-sm">
-                  {t('auth.idAccountDetails')}
-                </Text>
-                <Text className="font-sans-medium text-xs text-brand-warmgray">
-                  {t('auth.idEmailRequired')}
-                </Text>
-              </View>
-
-              <TextField
-                variant="form"
-                value={name}
-                onChangeText={setName}
-                placeholder={t('auth.fullName')}
-                accessibilityLabel={t('auth.fullName')}
-                autoComplete="name"
-              />
-
-              <TextField
-                variant="form"
-                value={email}
-                onChangeText={setEmail}
-                placeholder={t('auth.email')}
-                accessibilityLabel={t('auth.email')}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoComplete="email"
-                ltr
-              />
-
-              <TextField
-                variant="form"
-                value={password}
-                onChangeText={setPassword}
-                placeholder={t('auth.password')}
-                accessibilityLabel={t('auth.password')}
-                secureTextEntry
-                autoComplete="new-password"
-              />
-            </View>
-          )}
+          <ScanFrame />
 
           <View className="flex-row items-center justify-center gap-2">
             <Icon name="Lock" size={16} color={colors.success} />
@@ -189,27 +91,21 @@ export function IdVerificationScreen({
           className="gap-3 border-t border-brand-border bg-brand-surface p-6"
           style={{ paddingBottom: Math.max(insets.bottom, 24) }}
         >
-          {(cameraFailed || mutation.isError) && (
+          {(cameraFailed || verify.isError) && (
             <Text
               accessibilityRole="alert"
               className="text-center font-sans-bold text-sm text-brand-danger"
             >
               {cameraFailed
                 ? t('idVerification.cameraError')
-                : t(errorMessageKey(mutation.error))}
+                : t(errorMessageKey(verify.error))}
             </Text>
           )}
           <Button
             size="lg"
-            label={
-              isSignUp
-                ? idPhoto
-                  ? t('auth.createAccount')
-                  : t('idVerification.capture')
-                : t('idVerification.capture')
-            }
-            loading={mutation.isPending}
-            onPress={isSignUp ? (idPhoto ? handleSignUpSubmit : capture) : capture}
+            label={t('idVerification.capture')}
+            loading={verify.isPending}
+            onPress={capture}
           />
         </View>
       </KeyboardAvoidingView>

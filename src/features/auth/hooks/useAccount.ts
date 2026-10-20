@@ -35,12 +35,6 @@ export const useLogInWithEmail = () =>
     onSuccess: useFinishAuth(),
   });
 
-export const useSignUpWithId = () =>
-  useMutation({
-    mutationFn: authService.signUpWithId,
-    onSuccess: useFinishAuth(),
-  });
-
 export const useLogInWithGoogle = () =>
   useMutation({
     mutationFn: authService.logInWithGoogle,

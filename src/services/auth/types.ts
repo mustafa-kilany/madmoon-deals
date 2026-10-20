@@ -4,12 +4,6 @@ import type { LocalPhoto, Session, User } from '@/lib/types';
 
 export type EmailSignUp = { name: string; email: string; password: string };
 export type EmailLogIn = { email: string; password: string };
-export type IdSignUpInput = {
-  idPhoto: LocalPhoto;
-  name: string;
-  email: string;
-  password?: string;
-};
 export type SendOtpInput = { email: string };
 export type VerifyOtpInput = { email: string; code: string };
 export type ProfilePatch = Partial<Pick<User, 'name' | 'cityId'>>;
@@ -17,8 +11,6 @@ export type ProfilePatch = Partial<Pick<User, 'name' | 'cityId'>>;
 export interface AuthService {
   signUpWithEmail(input: EmailSignUp): Promise<Session>;
   logInWithEmail(input: EmailLogIn): Promise<Session>;
-  /** Create a verified account from a photo of the national ID and user's email. */
-  signUpWithId(input: IdSignUpInput | LocalPhoto): Promise<Session>;
   /** Social log-in with Google. */
   logInWithGoogle(idToken?: string): Promise<Session>;
   /** Social log-in with Apple. */

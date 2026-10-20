@@ -33,7 +33,7 @@ export type RootStackParamList = {
   Auth: undefined;
   EmailAuth: { mode: 'signup' | 'login' } | undefined;
   /** signup = create a verified account; verify = upgrade the signed-in account. */
-  IdVerification: { purpose: 'signup' | 'verify' };
+  IdVerification: undefined;
 };
 
 export type RootScreenProps<T extends keyof RootStackParamList> =

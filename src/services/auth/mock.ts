@@ -83,26 +83,6 @@ export const mockAuthService: AuthService = {
     return openSession(account);
   },
 
-  signUpWithId: async (input: any) => {
-    await mockLatency();
-    const photo = input?.idPhoto || input;
-    const name = input?.name ? String(input.name).trim() : 'Mustafa';
-    const email = input?.email ? String(input.email) : 'verified@sahla.jo';
-    const address = normalizeEmail(email);
-    const account: MockAccount = {
-      id: `user-${newId()}`,
-      name: name || 'Mustafa',
-      email: address,
-      password: input?.password,
-      method: 'id',
-      verified: true,
-      cityId: 'amman',
-      avatarUrl: avatarOptions[0],
-    };
-    saveUser(account);
-    return openSession(account);
-  },
-
   logInWithGoogle: async () => {
     await mockLatency();
     const email = 'google.user@gmail.com';

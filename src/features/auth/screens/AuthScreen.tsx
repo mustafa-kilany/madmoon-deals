@@ -1,10 +1,11 @@
 // Sign-in choice (prototype AuthScreen): Google, Apple, Email, or verify
 // with national ID (creates a verified account with email). Opened by any gated action.
 
-import { Pressable, ScrollView, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '@/components/icons';
+import { AppleLogo, GoogleLogo } from '@/components/icons/BrandLogos';
 import { Button, Heading, Text } from '@/components/ui';
 import type { RootScreenProps } from '@/navigation/types';
 import { colors } from '@/theme/colors';
@@ -18,6 +19,8 @@ export function AuthScreen({ navigation }: RootScreenProps<'Auth'>) {
   const setPending = useAuthFlowStore(s => s.setPending);
   const logInGoogle = useLogInWithGoogle();
   const logInApple = useLogInWithApple();
+
+  const busy = logInGoogle.isPending || logInApple.isPending;
 
   const close = () => {
     setPending(null);
@@ -56,53 +59,56 @@ export function AuthScreen({ navigation }: RootScreenProps<'Auth'>) {
         </View>
 
         <View className="gap-3">
-          <Button
-            size="lg"
-            variant="secondary"
-            label={t('auth.continueWithGoogle')}
-            loading={logInGoogle.isPending}
+          <Pressable
             onPress={() => logInGoogle.mutate(undefined)}
-          />
+            disabled={busy}
+            accessibilityRole="button"
+            accessibilityLabel={t('auth.continueWithGoogle')}
+            className="min-h-[56px] flex-row items-center justify-center gap-3 rounded-xl border-2 border-brand-border bg-white px-6 active:scale-[0.98]"
+          >
+            {logInGoogle.isPending ? (
+              <ActivityIndicator color={colors.espresso} />
+            ) : (
+              <GoogleLogo size={22} />
+            )}
+            <Text className="font-sans-bold text-lg text-brand-espresso">
+              {t('auth.continueWithGoogle')}
+            </Text>
+          </Pressable>
 
-          <Button
-            size="lg"
-            variant="secondary"
-            label={t('auth.continueWithApple')}
-            loading={logInApple.isPending}
+          {/* Apple's guidelines: black button, white logo; shown on iOS and,
+              as Android also supports the web flow, kept visible there too. */}
+          <Pressable
             onPress={() => logInApple.mutate(undefined)}
-          />
-
-          <Button
-            size="lg"
-            variant="secondary"
-            icon="Mail"
-            label={t('auth.continueWithEmail')}
-            onPress={() => navigation.navigate('EmailAuth', { mode: 'signup' })}
-          />
+            disabled={busy}
+            accessibilityRole="button"
+            accessibilityLabel={t('auth.continueWithApple')}
+            className="min-h-[56px] flex-row items-center justify-center gap-3 rounded-xl bg-black px-6 active:scale-[0.98]"
+          >
+            {logInApple.isPending ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <AppleLogo size={24} color="#fff" />
+            )}
+            <Text className="font-sans-bold text-lg text-white">
+              {t('auth.continueWithApple')}
+            </Text>
+          </Pressable>
 
           <View className="my-1 flex-row items-center gap-3">
             <View className="h-[1px] flex-1 bg-brand-border" />
             <Text className="font-sans-bold text-xs text-brand-warmgray">
-              OR
+              {t('auth.or')}
             </Text>
             <View className="h-[1px] flex-1 bg-brand-border" />
           </View>
 
           <Button
             size="lg"
-            icon="IdCard"
-            label={t('auth.verifyWithId')}
-            onPress={() =>
-              navigation.navigate('IdVerification', { purpose: 'signup' })
-            }
+            icon="Mail"
+            label={t('auth.continueWithEmail')}
+            onPress={() => navigation.navigate('EmailAuth', { mode: 'signup' })}
           />
-        </View>
-
-        <View className="flex-row items-center gap-2 rounded-xl border border-brand-secondary bg-brand-secondary/15 p-3">
-          <Icon name="BadgeCheck" size={20} color={colors.primary} />
-          <Text className="flex-1 font-sans-bold text-xs">
-            {t('auth.idBenefit')}
-          </Text>
         </View>
       </ScrollView>
     </View>

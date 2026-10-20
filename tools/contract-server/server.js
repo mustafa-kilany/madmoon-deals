@@ -189,6 +189,13 @@ function validateSignUp({ name, email, password }) {
     throw new HttpError(422, 'VALIDATION', 'password: at least 8 characters');
 }
 
+function socialAccount(store, method, name, email) {
+  return (
+    findByEmail(store, email) ??
+    addAccount(store, { name, email, method, verified: false })
+  );
+}
+
 // ---------- routes ----------
 
 function routes(store) {
@@ -228,17 +235,36 @@ function routes(store) {
       return [200, openSession(store, account)];
     },
 
-    // A real backend runs a KYC check on the photo; this server only checks
-    // that a genuine image arrived, then creates a verified account.
-    'POST /auth/signup/id': async req => {
-      const photo = await readPhoto(req, 'idPhoto');
-      const account = addAccount(store, {
-        name: 'ID User',
-        method: 'id',
-        verified: true,
-        idPhoto: photo.name,
-      });
-      return [201, openSession(store, account), photo];
+    // Social log-in: a real backend verifies the provider's ID token; this
+    // server accepts any call and signs in a fixed demo account per provider.
+    'POST /auth/google': async () => [
+      200,
+      openSession(
+        store,
+        socialAccount(store, 'google', 'Google User', 'google.user@gmail.com'),
+      ),
+    ],
+    'POST /auth/apple': async () => [
+      200,
+      openSession(
+        store,
+        socialAccount(store, 'apple', 'Apple User', 'user@apple.com'),
+      ),
+    ],
+
+    // OTP: the demo code is always 123456.
+    'POST /auth/send-otp': async req => {
+      const { email } = await readJson(req);
+      if (typeof email !== 'string' || !EMAIL.test(email.trim()))
+        throw new HttpError(422, 'VALIDATION', 'email: invalid');
+      return [200, {}];
+    },
+    'POST /auth/verify-otp': async req => {
+      const { email, code } = await readJson(req);
+      const account = findByEmail(store, String(email).trim().toLowerCase());
+      if (!account || code !== '123456')
+        throw new HttpError(401, 'INVALID_CREDENTIALS', 'Wrong code');
+      return [200, openSession(store, account)];
     },
 
     'POST /auth/logout': async req => {

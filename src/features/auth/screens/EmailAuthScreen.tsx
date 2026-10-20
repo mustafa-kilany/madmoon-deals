@@ -118,8 +118,14 @@ export function EmailAuthScreen({ route }: RootScreenProps<'EmailAuth'>) {
 
   const activeMutation =
     step === 'otp'
-      ? verifyOtp.isPending ? verifyOtp : signUp
-      : isSignUp ? sendOtp.isPending ? sendOtp : signUp : logIn;
+      ? verifyOtp.isPending
+        ? verifyOtp
+        : signUp
+      : isSignUp
+      ? sendOtp.isPending
+        ? sendOtp
+        : signUp
+      : logIn;
 
   return (
     <Screen
@@ -128,9 +134,7 @@ export function EmailAuthScreen({ route }: RootScreenProps<'EmailAuth'>) {
       header={
         <>
           <BackButton
-            onPress={
-              step === 'otp' ? () => setStep('credentials') : undefined
-            }
+            onPress={step === 'otp' ? () => setStep('credentials') : undefined}
           />
           <Heading className="text-xl">
             {t(
@@ -207,7 +211,7 @@ export function EmailAuthScreen({ route }: RootScreenProps<'EmailAuth'>) {
                       isSignUp ? 'new-password' : 'current-password'
                     }
                     textContentType={isSignUp ? 'newPassword' : 'password'}
-                    onSubmitEditing={handleCredentialsSubmit}
+                    onSubmitEditing={() => handleCredentialsSubmit()}
                     error={fieldError(errors.password)}
                   />
                 )}
@@ -303,7 +307,9 @@ export function EmailAuthScreen({ route }: RootScreenProps<'EmailAuth'>) {
             )}
             loading={activeMutation.isPending}
             onPress={
-              step === 'otp' ? handleVerifyOtpSubmit : handleCredentialsSubmit
+              step === 'otp'
+                ? handleVerifyOtpSubmit
+                : () => handleCredentialsSubmit()
             }
           />
         </View>

@@ -60,13 +60,22 @@ test('log-in checks the password; the demo account works', async () => {
 
 test('authenticated calls need a valid token', async () => {
   expect(await code(auth.getMe())).toBe('UNAUTHORIZED');
-  const session = await auth.signUpWithId({
-    uri: 'x',
-    mimeType: 'image/jpeg',
-    fileName: 'id.jpg',
+  const session = await auth.signUpWithEmail({
+    name: 'Sara',
+    email: 'sara@x.jo',
+    password: 'longenough',
   });
   tokenStorage.set(session.token);
-  expect((await auth.getMe()).verified).toBe(true);
+  expect((await auth.getMe()).verified).toBe(false);
+  expect(
+    (
+      await auth.verifyId({
+        uri: 'x',
+        mimeType: 'image/jpeg',
+        fileName: 'id.jpg',
+      })
+    ).verified,
+  ).toBe(true);
   await auth.logOut();
   expect(await code(auth.getMe())).toBe('UNAUTHORIZED');
 });

@@ -17,4 +17,5 @@ export const queryKeys = {
   item: (id: string) => ['items', id],
   me: ['me'],
   myListings: ['me', 'listings'],
+  chats: ['chats'],
 } as const;

@@ -60,13 +60,12 @@
     "checkout": "Secure Checkout"
   },
   "auth": {
+    "or": "OR",
     "logoLetter": "S",
     "subtitle": "Browse as a guest — but you need an account to buy or sell.",
     "continueWithGoogle": "Continue with Google",
     "continueWithApple": "Continue with Apple",
-    "verifyWithId": "Verify & Sign Up with National ID",
     "continueWithEmail": "Continue with Email",
-    "idBenefit": "Verifying with your ID gives you a Verified badge and promotes your listings.",
     "fullName": "Full Name",
     "email": "Email Address",
     "password": "Password",
@@ -80,8 +79,6 @@
     "otpCode": "Verification Code",
     "verifyAndSignIn": "VERIFY & SIGN IN",
     "resendOtp": "Resend Code",
-    "idAccountDetails": "Account Details",
-    "idEmailRequired": "Enter an email to use for future sign-ins.",
     "demoHint": "Demo account: ahmad@sahla.jo / sahla1234",
     "welcome": "Welcome, {{name}}!"
   },
@@ -94,7 +91,6 @@
   },
   "idVerification": {
     "title": "Scan Jordanian ID",
-    "signupBody": "Scan your ID to create a verified account.",
     "verifyBody": "Scan your ID to verify your existing account.",
     "secure": "Your data is encrypted & secure",
     "capture": "CAPTURE & VERIFY",

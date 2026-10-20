@@ -159,9 +159,7 @@ function SignedInProfile({ user }: { user: User }) {
             <Button
               size="sm"
               label={t('profile.addIdVerify')}
-              onPress={() =>
-                go({ name: 'IdVerification', params: { purpose: 'verify' } })
-              }
+              onPress={() => go({ name: 'IdVerification' })}
             />
           </View>
         )}

@@ -158,11 +158,13 @@ test('profile, ID verification upload and card, with the session token', async (
   ).toBe(true);
 });
 
-test('ID sign-up uploads the photo and returns a verified account', async () => {
-  const { token, user } = await api.signUpWithId(jpeg);
-  expect(user).toMatchObject({ method: 'id', verified: true });
+test('ID verification upgrades an email account to verified', async () => {
+  const { token } = await api.logInWithEmail({
+    email: 'ahmad@sahla.jo',
+    password: 'sahla1234',
+  });
   tokenStorage.set(token);
-  expect((await api.getMe()).id).toBe(user.id);
+  expect((await api.verifyId(jpeg)).verified).toBe(true);
 });
 
 test('log-out revokes the token; using it again signs the app out', async () => {
