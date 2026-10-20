@@ -9,6 +9,7 @@ import {
   ScrollView,
   View,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { BackButton } from '@/components/BackButton';
 import { Icon } from '@/components/icons';
@@ -227,6 +228,7 @@ function OfferCard({ offer, thread }: { offer: Offer; thread: ChatThread }) {
   const { t } = useTranslation();
   const lang = useLang();
   const respond = useRespondToOffer();
+  const navigation = useNavigation();
 
   const handleRespond = (status: 'accepted' | 'rejected') => {
     respond.mutate(
@@ -276,9 +278,22 @@ function OfferCard({ offer, thread }: { offer: Offer; thread: ChatThread }) {
       )}
 
       {offer.status === 'accepted' && (
-        <Text className="font-sans-bold text-xs text-brand-success">
-          {t('offers.statusAccepted')}
-        </Text>
+        <View className="gap-2 pt-1">
+          <Text className="font-sans-bold text-xs text-brand-success">
+            {t('offers.statusAccepted')}
+          </Text>
+          <Button
+            size="sm"
+            icon="Lock"
+            label={t('offers.proceedToCheckout')}
+            onPress={() =>
+              navigation.navigate('Checkout', {
+                itemId: offer.itemId,
+                offerId: offer.id,
+              })
+            }
+          />
+        </View>
       )}
 
       {offer.status === 'rejected' && (

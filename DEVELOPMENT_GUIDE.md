@@ -202,7 +202,7 @@ Porting classes: prototype `font-heading font-black` → `font-heading-black`; p
    | Delivery | **2 JOD** flat |
    | **Total** | Item + Protection + Delivery |
 
-4. The pricing logic lives in **one pure function** (`src/features/checkout/pricing.ts`) with
+4. The pricing logic lives in **one pure function** (`calculateCheckoutBreakdown` in `src/lib/money.ts`) with
    unit tests. Screens never compute fees themselves.
 5. Card numbers are never shown in full: only `•••• 1234`. The app never stores raw card data;
    a payment provider's SDK handles card entry (tokenization).
@@ -299,7 +299,7 @@ sahla/
 │   │   ├── listings/           # add listing
 │   │   ├── offers/             # make offer, chat
 │   │   ├── auctions/
-│   │   ├── checkout/           # pricing.ts lives here
+│   │   ├── checkout/           # checkout screen + order hooks (pricing: lib/money.ts)
 │   │   ├── orders/             # buyer tracking
 │   │   └── courier/
 │   ├── config.ts               # apiBaseUrl, per-service mock switches (§4.4)
@@ -450,10 +450,17 @@ Each phase ends with a working build on an Android emulator (and iOS, see §6.3)
 - Secure chat (real-time), make offer, seller accept / counter.
 - Auction bidding (live updates, countdown).
 
-### Phase 6 — Checkout, escrow and delivery
-- Checkout with pricing breakdown (unit-tested `pricing.ts`), card payment via provider SDK.
-- Order tracking with delivery PIN.
-- Courier app: enter PIN → server validates → escrow release.
+### Phase 6 — Checkout, escrow and delivery ✅ Done in the app (2026-10-19; mock backend)
+- Checkout with pricing breakdown (`calculateCheckoutBreakdown` in `src/lib/money.ts`,
+  unit-tested): listing price, or the accepted offer's price from chat ("Proceed to Checkout").
+  Saved card or a typed card number → `paymentProvider.tokenizeCard` → `POST /orders/:id/pay`.
+- Order tracking (`features/orders`): order number, escrow timeline, delivery PIN, pull to refresh.
+- Courier: same app, `user.role === 'courier'` (decision §8 #7). "Confirm a Delivery" in the
+  menu → order number + PIN → server validates → escrow released. Demo courier:
+  `courier@sahla.jo` / `sahla1234` (mock backend).
+- **Still open:** the real payment provider SDK and its card field replace the typed card number
+  once the provider is chosen (§8 #4); won-auction checkout waits for auction closing on the
+  server (Phase 7); the contract server has no `/orders` routes yet.
 
 ### Phase 7 — Backend integration
 - Build the API to `docs/API.md`, then flip `src/config.ts` (§4.4). Can start any time after
@@ -644,7 +651,7 @@ On macOS / cloud iOS builds: `cd ios && pod install`.
 | 5 | ID verification: manual review or a KYC provider? | Phase 3 |
 | ~~6~~ | ~~iOS build path~~ → **Decided:** cloud build service, EAS Build; testing via Appetize.io / Sideloadly until a paid Apple account is bought (§6.3) | ✅ |
 | 8 | When to buy the Apple Developer account ($99/year) | Before push notifications (Phase 7) or release (Phase 9) |
-| 7 | Courier app: same app with a courier role, or a separate app? | Phase 6 |
+| 7 | Courier app: same app with a courier role, or a separate app? | Phase 6: **same app, `role: 'courier'`** for now; can be split out later |
 
 ---
 

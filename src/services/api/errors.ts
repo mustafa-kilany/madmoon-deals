@@ -8,6 +8,7 @@ export type ApiErrorCode =
   | 'VALIDATION'
   | 'EMAIL_TAKEN'
   | 'INVALID_CREDENTIALS'
+  | 'INVALID_PIN'
   | 'UNKNOWN';
 
 export class ApiError extends Error {
@@ -28,6 +29,7 @@ const KNOWN: ApiErrorCode[] = [
   'VALIDATION',
   'EMAIL_TAKEN',
   'INVALID_CREDENTIALS',
+  'INVALID_PIN',
 ];
 
 /** i18n key for an error's user-facing message (src/i18n: errors.*). */

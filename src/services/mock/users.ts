@@ -1,5 +1,5 @@
 // Seed accounts for the mock backend. Sign in with the demo account to see a
-// filled-in profile: ahmad@sahla.jo / sahla1234.
+// filled-in profile: ahmad@sahla.jo / sahla1234. Courier: courier@sahla.jo.
 
 import type { User } from '@/lib/types';
 
@@ -24,4 +24,17 @@ export const demoAccount: MockAccount = {
   cityId: 'amman',
   avatarUrl: avatarOptions[0],
   card: { brand: 'visa', last4: '4242' },
+};
+
+/** Demo courier: courier@sahla.jo / sahla1234. Sees "Confirm a delivery". */
+export const courierAccount: MockAccount = {
+  id: 'user-courier',
+  name: 'Khaled',
+  email: 'courier@sahla.jo',
+  password: 'sahla1234',
+  method: 'email',
+  verified: true,
+  cityId: 'amman',
+  avatarUrl: avatarOptions[3],
+  role: 'courier',
 };

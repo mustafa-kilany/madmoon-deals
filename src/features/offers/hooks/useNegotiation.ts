@@ -10,6 +10,13 @@ import type {
 } from '@/services/negotiation/types';
 import { queryClient, queryKeys } from '@/services/queryClient';
 
+export const useOffer = (offerId: string | undefined) =>
+  useQuery({
+    queryKey: ['offers', offerId],
+    queryFn: () => negotiationService.getOffer(offerId!),
+    enabled: !!offerId,
+  });
+
 export const useMakeOffer = () =>
   useMutation({
     mutationFn: (input: MakeOfferInput) => negotiationService.makeOffer(input),

@@ -12,4 +12,6 @@ export const httpOrdersService: OrdersService = {
     }),
   getOrder: orderId => api.get<Order>(`/orders/${encodeURIComponent(orderId)}`),
   getMyOrders: () => api.get<Order[]>('/me/orders'),
+  confirmDelivery: (orderId, pin) =>
+    api.post<Order>('/courier/confirm-delivery', { orderId, pin }),
 };

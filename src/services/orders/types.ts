@@ -12,4 +12,9 @@ export interface OrdersService {
   getOrder(orderId: string): Promise<Order>;
   /** The signed-in buyer's orders, newest first. */
   getMyOrders(): Promise<Order[]>;
+  /**
+   * Courier: the buyer's PIN proves delivery. The server checks it and
+   * releases escrow to the seller; a wrong PIN releases nothing.
+   */
+  confirmDelivery(orderId: string, pin: string): Promise<Order>;
 }

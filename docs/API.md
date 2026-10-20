@@ -301,12 +301,38 @@ Returns all listings created by the signed-in user.
 
 ### Phase 6: Checkout, Orders & Escrow
 
-* **`POST /orders` *(Authenticated)*** → Body: `{ "listingId": "tech-0", "offerId"?: "..." }` → `Order` (returns calculated `itemPriceFils`, `buyerProtectionFils`, `deliveryFils`, `totalFils`)
+```ts
+type Order = {
+  id: string;            // short, readable: "SA-123456" (the courier types it)
+  itemId: string;
+  itemTitle: Localized;
+  itemImageUrl: string;
+  itemPriceFils: number; // listing price, or the accepted offer's amount
+  buyerProtectionFils: number; // 3% of item price, min 1000
+  deliveryFils: number;  // 2000 flat
+  totalFils: number;
+  status: 'awaiting_payment' | 'escrow_held' | 'completed' | 'refunded';
+  pin?: string;          // 4 digits, buyer only, once escrow_held
+  offerId?: string;
+  createdAt: number;
+  deliveredAt?: number;
+};
+```
+
+**The server prices every order.** The app shows the same breakdown (`calculateCheckoutBreakdown` in
+`src/lib/money.ts`) but never sends amounts.
+
+* **`POST /orders` *(Authenticated)*** → Body: `{ "listingId": "tech-0", "offerId"?: "..." }` → `Order` (`status: "awaiting_payment"`). With `offerId`, the offer must be **accepted**, on this listing, and made by this buyer; its `amountFils` becomes `itemPriceFils`. Otherwise `VALIDATION` (422).
 * **`POST /orders/:id/pay` *(Authenticated)*** → Body: `{ "cardToken": "..." }` (provider token, or `"saved"` to charge the account's saved card) → `Order` (`status: "escrow_held"`, includes the delivery `pin`)
 * **`GET /me/orders` *(Authenticated)*** → `Order[]` (Buyer order history)
 * **`GET /me/sales` *(Authenticated)*** → `Order[]` (Seller sales history)
 * **`GET /orders/:id` *(Authenticated)*** → `Order` (Includes buyer's delivery `pin`)
-* **`POST /courier/confirm-delivery` *(Authenticated - Courier Role)*** → Body: `{ "orderId": "ord-123", "pin": "8492" }` → `Order` (`status: "completed"`, releases escrow funds to seller)
+* **`GET /offers/:id` *(Authenticated, buyer or seller)*** → `Offer` (Checkout loads the accepted offer to show its price)
+* **`POST /courier/confirm-delivery` *(Authenticated, `user.role === "courier"`)*** → Body: `{ "orderId": "SA-123456", "pin": "8492" }` → `Order` (`status: "completed"`, `deliveredAt` set; escrow funds released to the seller).
+  * Errors: `INVALID_PIN` (422) wrong PIN, nothing released; `VALIDATION` (422) order not in `escrow_held`; `NOT_FOUND` (404); `UNAUTHORIZED` (403) not a courier.
+  * The PIN check and release happen **only on the server**. Rate-limit attempts per order (e.g. lock after 5 wrong PINs) so a PIN can't be guessed.
+* **Refunds:** if the item never arrives, support/admin moves the order to `refunded` and the escrow is returned to the buyer (no app endpoint).
+* **`User.role`**: optional, `"courier"` for courier accounts. Couriers see "Confirm a Delivery" in the menu.
 
 ---
 

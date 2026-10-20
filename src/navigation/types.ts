@@ -24,11 +24,13 @@ export type RootStackParamList = {
   AuctionBidding: { itemId: string };
   /** Phase 5. */
   MakeOffer: { itemId: string };
-  /** Phase 6. */
-  Checkout: { itemId: string };
+  /** Listing price, or the accepted offer's price when offerId is given. */
+  Checkout: { itemId: string; offerId?: string };
   AddListing: undefined;
   Saved: undefined;
   OrderTracking: undefined;
+  /** Courier: enter the buyer's PIN to confirm delivery (role 'courier'). */
+  CourierConfirm: undefined;
   /** Sign-in choice; reached through startAuth / useRequireAuth. */
   Auth: undefined;
   EmailAuth: { mode: 'signup' | 'login' } | undefined;

@@ -25,6 +25,8 @@ export type SendMessageInput = {
 
 export interface NegotiationService {
   makeOffer(input: MakeOfferInput): Promise<{ offer: Offer; chatId: string }>;
+  /** One offer, e.g. an accepted one before checkout. */
+  getOffer(offerId: string): Promise<Offer>;
   respondToOffer(
     offerId: string,
     status: OfferStatus,

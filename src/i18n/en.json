@@ -41,7 +41,8 @@
     "settings": "Settings",
     "signIn": "Sign Up / Log In",
     "logOut": "Log Out",
-    "close": "Close menu"
+    "close": "Close menu",
+    "courier": "Confirm a Delivery"
   },
   "screens": {
     "auctions": "Auctions",
@@ -123,7 +124,8 @@
     "VALIDATION": "Please check the details and try again.",
     "EMAIL_TAKEN": "This email is already registered. Log in instead.",
     "INVALID_CREDENTIALS": "Wrong email or password.",
-    "UNKNOWN": "Something went wrong. Please try again."
+    "UNKNOWN": "Something went wrong. Please try again.",
+    "INVALID_PIN": "That PIN doesn't match this order. Ask the buyer to check it."
   },
   "condition": {
     "new": "New",
@@ -282,7 +284,8 @@
     "statusCountered": "Seller Countered: {{amount}} JOD",
     "accept": "Accept Offer",
     "counter": "Counter Offer",
-    "reject": "Reject Offer"
+    "reject": "Reject Offer",
+    "proceedToCheckout": "Proceed to Checkout"
   },
   "auctionBidding": {
     "title": "Live Auction",
@@ -309,7 +312,9 @@
     "newCard": "Card number",
     "pay": "Pay {{amount}}",
     "escrowNote": "Your payment is held safely in escrow and only released to the seller after you receive the item and confirm with your delivery PIN.",
-    "paid": "Payment held in escrow!"
+    "paid": "Payment held in escrow!",
+    "agreedPrice": "Agreed price (accepted offer)",
+    "offerNotReady": "This offer is no longer accepted."
   },
   "orders": {
     "empty": "No orders yet",
@@ -318,6 +323,21 @@
     "statusAwaiting_payment": "Awaiting payment",
     "statusEscrow_held": "Payment held in escrow",
     "statusCompleted": "Delivered",
-    "statusRefunded": "Refunded"
+    "statusRefunded": "Refunded",
+    "number": "Order {{id}}",
+    "stepPaid": "Payment held in escrow",
+    "stepDelivery": "Out for delivery: give the courier your PIN",
+    "stepDelivered": "Delivered, payment released to the seller",
+    "refundedNote": "Your payment was refunded from escrow."
+  },
+  "courier": {
+    "title": "Confirm a Delivery",
+    "body": "Hand over the item, ask the buyer for their 4-digit PIN, and enter it with the order number.",
+    "orderNumber": "Order number (e.g. SA-123456)",
+    "pin": "Delivery PIN",
+    "confirm": "Confirm Delivery",
+    "confirmed": "Delivery confirmed. Payment released to the seller.",
+    "another": "Confirm Another",
+    "notCourier": "Only Sahla couriers can confirm deliveries."
   }
 }

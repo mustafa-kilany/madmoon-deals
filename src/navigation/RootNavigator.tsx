@@ -5,6 +5,7 @@ import { AuctionBiddingScreen } from '@/features/auctions/screens/AuctionBidding
 import { AuthScreen } from '@/features/auth/screens/AuthScreen';
 import { EmailAuthScreen } from '@/features/auth/screens/EmailAuthScreen';
 import { IdVerificationScreen } from '@/features/auth/screens/IdVerificationScreen';
+import { CourierConfirmScreen } from '@/features/courier/screens/CourierConfirmScreen';
 import { CategoryScreen } from '@/features/catalog/screens/CategoryScreen';
 import { ProductScreen } from '@/features/catalog/screens/ProductScreen';
 import { SearchScreen } from '@/features/catalog/screens/SearchScreen';
@@ -37,6 +38,7 @@ export function RootNavigator() {
       <Stack.Screen name="AddListing" component={AddListingScreen} />
       <Stack.Screen name="Saved" component={SavedScreen} />
       <Stack.Screen name="OrderTracking" component={OrderTrackingScreen} />
+      <Stack.Screen name="CourierConfirm" component={CourierConfirmScreen} />
       {/* Sign-in flow (removed from history once signed in, see authFlow). */}
       <Stack.Screen
         name="Auth"

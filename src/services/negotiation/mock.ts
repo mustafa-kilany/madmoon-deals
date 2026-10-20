@@ -55,6 +55,10 @@ const mockMessages: Record<string, ChatMessage[]> = {
   ],
 };
 
+/** For the orders mock: an accepted offer sets the checkout price. */
+export const findMockOffer = (offerId: string) =>
+  mockOffers.find(o => o.id === offerId);
+
 export const mockNegotiationService: NegotiationService = {
   makeOffer: async ({ itemId, amountFils }) => {
     await mockLatency();
@@ -106,6 +110,13 @@ export const mockNegotiationService: NegotiationService = {
     mockMessages[chatId] = [message];
 
     return { offer, chatId };
+  },
+
+  getOffer: async offerId => {
+    await mockLatency();
+    const offer = findMockOffer(offerId);
+    if (!offer) throw new ApiError('NOT_FOUND');
+    return { ...offer };
   },
 
   respondToOffer: async (offerId, status, counterAmountFils) => {

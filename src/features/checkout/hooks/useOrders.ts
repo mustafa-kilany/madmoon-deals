@@ -23,3 +23,13 @@ export const useMyOrders = () =>
     queryKey: queryKeys.orders,
     queryFn: ordersService.getMyOrders,
   });
+
+/** Courier: buyer's PIN → server releases escrow. */
+export const useConfirmDelivery = () =>
+  useMutation({
+    mutationFn: (input: { orderId: string; pin: string }) =>
+      ordersService.confirmDelivery(input.orderId, input.pin),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders });
+    },
+  });

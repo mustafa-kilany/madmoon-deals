@@ -7,7 +7,12 @@ import type { Session, User } from '@/lib/types';
 import { ApiError } from '../api/errors';
 import { tokenStorage } from '../api/tokenStorage';
 import { mockLatency, readMockTable, writeMockTable } from '../mock/delay';
-import { avatarOptions, demoAccount, type MockAccount } from '../mock/users';
+import {
+  avatarOptions,
+  courierAccount,
+  demoAccount,
+  type MockAccount,
+} from '../mock/users';
 import type { AuthService } from './types';
 
 const USERS = 'users'; // id → MockAccount
@@ -15,7 +20,8 @@ const SESSIONS = 'sessions'; // token → user id
 
 function users(): Record<string, MockAccount> {
   const table = readMockTable<MockAccount>(USERS);
-  if (!table[demoAccount.id]) table[demoAccount.id] = demoAccount;
+  for (const seed of [demoAccount, courierAccount])
+    if (!table[seed.id]) table[seed.id] = seed;
   return table;
 }
 

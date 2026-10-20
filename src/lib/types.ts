@@ -86,6 +86,8 @@ export type User = {
   cityId: string;
   avatarUrl: string;
   card?: PaymentCard;
+  /** Couriers confirm deliveries with the buyer's PIN (Courier screen). */
+  role?: 'courier';
 };
 
 export type Session = { token: string; user: User };
@@ -189,7 +191,11 @@ export type Order = {
   status: OrderStatus;
   /** Delivery PIN the buyer gives the courier; only present once the payment is held. */
   pin?: string;
+  /** Set when the checkout price came from an accepted offer. */
+  offerId?: string;
   createdAt: number;
+  /** When the courier confirmed delivery (escrow released). */
+  deliveredAt?: number;
 };
 
 /** One request for a page of listings (GET /listings). The server filters, sorts and pages. */

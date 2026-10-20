@@ -1,4 +1,5 @@
 // Secure checkout (prototype Checkout): item, price breakdown, card, Pay.
+// The price is the listing's, or an accepted offer's when opened from chat.
 // Paying puts the money in escrow; the buyer then tracks the order and gets
 // the delivery PIN (features/orders).
 
@@ -27,6 +28,7 @@ import { errorMessageKey } from '@/services/api/errors';
 import { paymentProvider } from '@/services/payments';
 import { toast } from '@/store/toastStore';
 import { colors } from '@/theme/colors';
+import { useOffer } from '@/features/offers/hooks/useNegotiation';
 import { useCreateOrder, usePayOrder } from '../hooks/useOrders';
 
 /** Token that tells the server to charge the account's saved card. */
@@ -40,15 +42,27 @@ export function CheckoutScreen({
   const lang = useLang();
   const localized = useLocalized();
   const user = useUser();
-  const { itemId } = route.params;
+  const { itemId, offerId } = route.params;
 
   const { data: item, isLoading, isError, refetch } = useItem(itemId);
+  const offer = useOffer(offerId);
   const createOrder = useCreateOrder();
   const payOrder = usePayOrder();
   const [cardNumber, setCardNumber] = useState('');
   const [tokenizing, setTokenizing] = useState(false);
 
-  if (isLoading) return <StatusView status="loading" />;
+  if (isLoading || offer.isLoading) return <StatusView status="loading" />;
+  const offerUsable =
+    !offerId ||
+    (offer.data?.status === 'accepted' && offer.data.itemId === itemId);
+  if (!offerUsable)
+    return (
+      <StatusView
+        status="error"
+        message={t('checkout.offerNotReady')}
+        onRetry={() => navigation.goBack()}
+      />
+    );
   if (isError || !item) {
     return (
       <StatusView
@@ -60,7 +74,8 @@ export function CheckoutScreen({
   }
 
   // Display only: the server prices the order when it is created.
-  const breakdown = calculateCheckoutBreakdown(item.priceFils);
+  const priceFils = offer.data?.amountFils ?? item.priceFils;
+  const breakdown = calculateCheckoutBreakdown(priceFils);
   const savedCard = user?.card;
   const cardDigits = cardNumber.replace(/\D/g, '');
   const cardReady = !!savedCard || cardDigits.length >= 12;
@@ -73,7 +88,10 @@ export function CheckoutScreen({
         ? SAVED_CARD
         : await paymentProvider.tokenizeCard(cardNumber);
       setTokenizing(false);
-      const order = await createOrder.mutateAsync({ listingId: item.id });
+      const order = await createOrder.mutateAsync({
+        listingId: item.id,
+        offerId,
+      });
       await payOrder.mutateAsync({ orderId: order.id, cardToken });
       toast.success(t('checkout.paid'));
       navigation.replace('OrderTracking');
@@ -120,7 +138,10 @@ export function CheckoutScreen({
 
         <Card className="gap-3 p-4">
           <Heading className="text-sm">{t('offers.feeBreakdown')}</Heading>
-          {row(t('offers.itemOffer'), breakdown.itemPriceFils)}
+          {row(
+            offerId ? t('checkout.agreedPrice') : t('offers.itemOffer'),
+            breakdown.itemPriceFils,
+          )}
           {row(t('offers.buyerProtection'), breakdown.buyerProtectionFils)}
           {row(t('offers.deliveryFee'), breakdown.deliveryFils)}
           <View className="mt-1 h-[1px] bg-brand-border" />

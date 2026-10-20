@@ -11,6 +11,8 @@ export const httpNegotiationService: NegotiationService = {
       { amountFils },
     ),
 
+  getOffer: offerId => api.get<Offer>(`/offers/${encodeURIComponent(offerId)}`),
+
   respondToOffer: (offerId, status, counterAmountFils) =>
     api.post<Offer>(`/offers/${encodeURIComponent(offerId)}/respond`, {
       status,

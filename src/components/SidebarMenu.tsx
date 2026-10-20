@@ -41,7 +41,8 @@ const links: {
     | 'sidebar.myPurchases'
     | 'sidebar.myListings'
     | 'sidebar.savedItems'
-    | 'sidebar.settings';
+    | 'sidebar.settings'
+    | 'sidebar.courier';
   route: AppRoute;
 }[] = [
   { icon: 'Profile', label: 'sidebar.profileSettings', route: profile },
@@ -54,6 +55,13 @@ const links: {
   { icon: 'Heart', label: 'sidebar.savedItems', route: { name: 'Saved' } },
   { icon: 'Settings', label: 'sidebar.settings', route: profile },
 ];
+
+/** Shown first, and only to couriers. */
+const courierLink: (typeof links)[number] = {
+  icon: 'Truck',
+  label: 'sidebar.courier',
+  route: { name: 'CourierConfirm' },
+};
 
 export function SidebarMenu() {
   const { t } = useTranslation();
@@ -142,19 +150,21 @@ export function SidebarMenu() {
         </View>
 
         <ScrollView contentContainerClassName="gap-2 p-4">
-          {links.map(link => (
-            <Pressable
-              key={link.label}
-              onPress={then(() => go(link.route))}
-              accessibilityRole="button"
-              className="flex-row items-center gap-3 rounded-xl p-4 active:bg-brand-lightgray"
-            >
-              <View className="h-10 w-10 items-center justify-center rounded-xl bg-brand-lightgray">
-                <Icon name={link.icon} size={20} color={colors.primary} />
-              </View>
-              <Text className="font-sans-bold">{t(link.label)}</Text>
-            </Pressable>
-          ))}
+          {(user?.role === 'courier' ? [courierLink, ...links] : links).map(
+            link => (
+              <Pressable
+                key={link.label}
+                onPress={then(() => go(link.route))}
+                accessibilityRole="button"
+                className="flex-row items-center gap-3 rounded-xl p-4 active:bg-brand-lightgray"
+              >
+                <View className="h-10 w-10 items-center justify-center rounded-xl bg-brand-lightgray">
+                  <Icon name={link.icon} size={20} color={colors.primary} />
+                </View>
+                <Text className="font-sans-bold">{t(link.label)}</Text>
+              </Pressable>
+            ),
+          )}
         </ScrollView>
 
         <View
