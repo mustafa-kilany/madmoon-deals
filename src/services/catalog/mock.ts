@@ -1,3 +1,4 @@
+import { queryListings } from '@/lib/browsing';
 import type { Item } from '@/lib/types';
 import { ApiError } from '@/services/api/errors';
 import {
@@ -26,9 +27,15 @@ export const mockCatalogService: CatalogService = {
     await mockLatency();
     return cities;
   },
-  getItems: async () => {
+  searchListings: async (query, cursor) => {
     await mockLatency();
-    return [...userListings, ...items];
+    return queryListings(
+      [...userListings, ...items],
+      query,
+      categoryFilters,
+      Date.now(),
+      cursor,
+    );
   },
   getItem: async id => {
     await mockLatency();

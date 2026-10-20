@@ -8,8 +8,11 @@ import type {
   CategoryFilters,
   CategoryId,
   Item,
+  ListingPage,
+  ListingQuery,
   Place,
 } from '@/lib/types';
+import { jod } from '@/lib/money';
 import { api } from '../api/client';
 import type { CatalogService } from './types';
 
@@ -21,6 +24,37 @@ type CategoryDto = Omit<Category, 'image' | 'icon'> & {
 type ItemDto = Omit<Item, 'auction'> & {
   auction?: Omit<Auction, 'endsAt'> & { endsAt: string };
 };
+
+type ListingPageDto = Omit<ListingPage, 'items'> & { items: ItemDto[] };
+
+/** ListingQuery → GET /listings query string (docs/API.md). Prices go as fils. */
+export function listingParams(
+  { q, category, format, filters: f, sort, ids }: ListingQuery,
+  cursor?: string | null,
+): string {
+  const params: [string, string][] = [];
+  const add = (key: string, value: string | undefined | false) => {
+    if (value) params.push([key, value]);
+  };
+  if (ids) {
+    add('ids', ids.join(','));
+  } else {
+    add('q', q?.trim());
+    add('category', f.category || category);
+    add('format', format !== 'all' && format);
+    add('types', f.types.join(','));
+    add('brands', f.brands.join(','));
+    add('conditions', f.conditions.join(','));
+    add('cities', f.locations.join(','));
+    add('minPrice', f.min && String(jod(Number(f.min))));
+    add('maxPrice', f.max && String(jod(Number(f.max))));
+    add('verifiedOnly', f.verifiedOnly && 'true');
+    add('endingSoon', f.endingSoon && 'true');
+    add('sort', sort);
+    add('cursor', cursor ?? undefined);
+  }
+  return params.map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&');
+}
 
 const toCategory = ({ imageUrl, icon, ...rest }: CategoryDto): Category => ({
   ...rest,
@@ -39,7 +73,12 @@ export const httpCatalogService: CatalogService = {
   getCategoryFilters: () =>
     api.get<Record<CategoryId, CategoryFilters>>('/categories/filters'),
   getCities: () => api.get<Place[]>('/cities'),
-  getItems: async () => (await api.get<ItemDto[]>('/listings')).map(toItem),
+  searchListings: async (query, cursor) => {
+    const page = await api.get<ListingPageDto>(
+      `/listings?${listingParams(query, cursor)}`,
+    );
+    return { ...page, items: page.items.map(toItem) };
+  },
   getItem: async id =>
     toItem(await api.get<ItemDto>(`/listings/${encodeURIComponent(id)}`)),
   getMyListings: async () =>

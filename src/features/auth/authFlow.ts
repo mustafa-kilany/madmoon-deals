@@ -49,7 +49,11 @@ export function leaveAuth() {
   if (navigationRef.isReady()) {
     navigationRef.dispatch(state => {
       const routes = state.routes.filter(r => !AUTH_ROUTES.includes(r.name));
-      return CommonActions.reset({ ...state, routes, index: routes.length - 1 });
+      return CommonActions.reset({
+        ...state,
+        routes,
+        index: routes.length - 1,
+      });
     });
     if (pending) go(pending);
   }

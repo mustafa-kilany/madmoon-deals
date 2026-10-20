@@ -21,11 +21,8 @@ import {
   TextField,
 } from '@/components/ui';
 import { useTimeLeftLabel } from '@/features/auctions/hooks/useTimeLeftLabel';
-import { useItems } from '@/features/catalog/hooks/useCatalog';
-import {
-  useBids,
-  usePlaceBid,
-} from '@/features/offers/hooks/useNegotiation';
+import { useItem } from '@/features/catalog/hooks/useCatalog';
+import { useBids, usePlaceBid } from '@/features/offers/hooks/useNegotiation';
 import { useNow } from '@/hooks/useNow';
 import { useLang, useLocalized } from '@/i18n';
 import { formatJOD } from '@/lib/money';
@@ -44,11 +41,9 @@ export function AuctionBiddingScreen({
   const timeLeftLabel = useTimeLeftLabel();
   const itemId = route.params?.itemId;
 
-  const { data: items, isLoading: isItemLoading } = useItems();
+  const { data: item, isLoading: isItemLoading } = useItem(itemId);
   const { data: bids = [], isLoading: isBidsLoading } = useBids(itemId);
   const placeBid = usePlaceBid();
-
-  const item = items?.find(i => i.id === itemId);
 
   const [bidJod, setBidJod] = useState('');
 

@@ -2,9 +2,11 @@
 // (prototype components/ListingBrowser): optional search box, All / Buy now /
 // Auctions tabs with counts, category chips, Filters + Sort, removable
 // filter chips, and the 2-column results grid. Choices are kept per `scope`.
+// Results come from the server a page at a time (useListings); scrolling to
+// the end loads the next page.
 
 import { useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { CategoryImage } from '@/components/CategoryImage';
 import { FilterSheet } from '@/components/FilterSheet';
@@ -19,31 +21,30 @@ import {
   TextField,
   type SelectOption,
 } from '@/components/ui';
+import { StatusView } from '@/components/StatusView';
 import { useBrowseState } from '@/features/catalog/browseStore';
+import { useListings } from '@/features/catalog/hooks/useCatalog';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useNow } from '@/hooks/useNow';
 import { useLocalized } from '@/i18n';
-import {
-  emptyFilters,
-  filterCount,
-  filterItems,
-  searchItems,
-  sortItems,
-} from '@/lib/browsing';
+import { emptyFilters, filterCount } from '@/lib/browsing';
 import type {
   ActiveFilters,
   BrowseSort,
   Category,
   CategoryFilters,
   CategoryId,
-  Item,
   ListingFormat,
+  ListingQuery,
 } from '@/lib/types';
 import { colors } from '@/theme/colors';
 
 type ListingBrowserProps = {
-  /** Listings this browser starts from (all, a search's results, one category). */
-  items: Item[];
   scope: string;
+  /** Search text from the screen (Search); `searchable` browsers have their own box. */
+  query?: string;
+  /** Only this category's listings (Category page). */
+  category?: CategoryId;
   categories: Category[];
   categoryFilters: Record<CategoryId, CategoryFilters>;
   /** Auctions tab: no format tabs, auction sorts. */
@@ -55,8 +56,9 @@ type ListingBrowserProps = {
 };
 
 export function ListingBrowser({
-  items: pool,
   scope,
+  query: screenQuery = '',
+  category: scopeCategory,
   categories,
   categoryFilters,
   auctionOnly = false,
@@ -70,15 +72,23 @@ export function ListingBrowser({
   const [sheetOpen, setSheetOpen] = useState(false);
 
   const format: ListingFormat = auctionOnly ? 'auction' : state.format;
-  const searched = searchable
-    ? searchItems(pool, state.query, categoryFilters)
-    : pool;
-  const matches = (filters: ActiveFilters, selection: ListingFormat = format) =>
-    filterItems(searched, filters, selection, now);
-  const items = sortItems(matches(state.filters), state.sort);
+  const q = useDebouncedValue(searchable ? state.query : screenQuery);
+  const listingQuery: ListingQuery = {
+    q,
+    category: scopeCategory,
+    format,
+    filters: state.filters,
+    sort: state.sort,
+  };
+  const listings = useListings(listingQuery);
+  const { items, total, counts, facets } = listings;
+  const loadMore = () => {
+    if (listings.hasNextPage && !listings.isFetchingNextPage)
+      listings.fetchNextPage();
+  };
   const count = filterCount(state.filters);
   const availableCategories = categories.filter(c =>
-    pool.some(item => item.category === c.id),
+    facets?.categories.includes(c.id),
   );
 
   const changeFilters = (filters: ActiveFilters) => patch({ filters });
@@ -133,7 +143,7 @@ export function ListingBrowser({
       remove: () => without('conditions', condition),
     });
   for (const id of f.locations) {
-    const place = pool.find(i => i.location.id === id)?.location;
+    const place = facets?.cities.find(p => p.id === id);
     chips.push({
       key: `location:${id}`,
       label: place ? localized(place.name) : id,
@@ -226,7 +236,7 @@ export function ListingBrowser({
                     active ? 'text-brand-primary' : 'text-brand-warmgray'
                   }`}
                 >
-                  {matches(state.filters, id).length}
+                  {counts?.[id] ?? ''}
                 </Text>
               </Pressable>
             );
@@ -326,7 +336,7 @@ export function ListingBrowser({
   );
 
   const auctionsView = format === 'auction';
-  const many = items.length !== 1;
+  const many = total !== 1;
 
   return (
     <View className="flex-1">
@@ -334,6 +344,8 @@ export function ListingBrowser({
       <ProductGrid
         items={items}
         now={now}
+        onEndReached={loadMore}
+        loadingMore={listings.isFetchingNextPage}
         header={
           <View className="mb-1 flex-row items-center justify-between gap-2">
             <Text
@@ -344,11 +356,11 @@ export function ListingBrowser({
                 ? t(
                     many ? 'browse.liveAuctionsMany' : 'browse.liveAuctionsOne',
                     {
-                      count: items.length,
+                      count: total,
                     },
                   )
                 : t(many ? 'browse.resultsMany' : 'browse.resultsOne', {
-                    count: items.length,
+                    count: total,
                   })}
             </Text>
             {auctionsView && (
@@ -359,36 +371,45 @@ export function ListingBrowser({
           </View>
         }
         empty={
-          <View className="items-center gap-3 px-3 py-12">
-            <View className="h-16 w-16 items-center justify-center rounded-2xl bg-brand-success-soft">
-              <Icon
-                name={auctionsView ? 'Gavel' : 'Search'}
-                size={28}
-                color={colors.primary}
-              />
+          listings.isPending ? (
+            <View className="py-12">
+              <ActivityIndicator color={colors.primary} />
             </View>
-            <Heading className="text-center text-lg">
-              {auctionsView
-                ? t('browse.noMatchingAuctions')
-                : t('browse.noMatchingItems')}
-            </Heading>
-            <Text className="text-center text-sm text-brand-warmgray">
-              {t('browse.tryAnother')}
-            </Text>
-            {count > 0 && (
-              <Button
-                className="mt-2"
-                label={t('browse.clearFilters')}
-                onPress={clear}
-              />
-            )}
-          </View>
+          ) : listings.isError ? (
+            <StatusView status="error" onRetry={listings.refetch} />
+          ) : (
+            <View className="items-center gap-3 px-3 py-12">
+              <View className="h-16 w-16 items-center justify-center rounded-2xl bg-brand-success-soft">
+                <Icon
+                  name={auctionsView ? 'Gavel' : 'Search'}
+                  size={28}
+                  color={colors.primary}
+                />
+              </View>
+              <Heading className="text-center text-lg">
+                {auctionsView
+                  ? t('browse.noMatchingAuctions')
+                  : t('browse.noMatchingItems')}
+              </Heading>
+              <Text className="text-center text-sm text-brand-warmgray">
+                {t('browse.tryAnother')}
+              </Text>
+              {count > 0 && (
+                <Button
+                  className="mt-2"
+                  label={t('browse.clearFilters')}
+                  onPress={clear}
+                />
+              )}
+            </View>
+          )
         }
       />
 
       <FilterSheet
         visible={sheetOpen}
-        items={filterItems(searched, emptyFilters(), format, now)}
+        facets={facets}
+        countQuery={listingQuery}
         categories={showCategories ? availableCategories : undefined}
         categoryFilters={categoryFilters}
         format={format}
@@ -398,7 +419,6 @@ export function ListingBrowser({
           changeFilters(filters);
           setSheetOpen(false);
         }}
-        resultCount={draft => matches(draft).length}
       />
     </View>
   );

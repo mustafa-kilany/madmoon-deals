@@ -301,5 +301,23 @@
     "emptyBody": "Offers and conversations with buyers and sellers will appear here.",
     "typeMessage": "Type a message...",
     "send": "Send"
+  },
+  "checkout": {
+    "title": "Secure Checkout",
+    "payWith": "Pay with",
+    "savedCard": "Saved card",
+    "newCard": "Card number",
+    "pay": "Pay {{amount}}",
+    "escrowNote": "Your payment is held safely in escrow and only released to the seller after you receive the item and confirm with your delivery PIN.",
+    "paid": "Payment held in escrow!"
+  },
+  "orders": {
+    "empty": "No orders yet",
+    "pin": "Delivery PIN",
+    "pinHint": "Give this PIN to the courier when your item arrives.",
+    "statusAwaiting_payment": "Awaiting payment",
+    "statusEscrow_held": "Payment held in escrow",
+    "statusCompleted": "Delivered",
+    "statusRefunded": "Refunded"
   }
 }

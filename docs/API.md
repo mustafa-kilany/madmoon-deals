@@ -215,9 +215,55 @@ Returns available item types and brands per category for the filter sheet.
 Returns available delivery/location cities in Jordan.
 * **Response (200):** `[{ id: "amman", name: { ar: "عمّان", en: "Amman" } }]`
 
-#### 4. `GET /listings`
-Returns active marketplace items.
-* **Response (200):** `Item[]`
+#### 4. `GET /listings` — search, filter, sort, paginate
+The app never downloads the whole catalog. Every browsing screen (Search, Category, Auctions,
+Home's featured auction, Product's similar items, Saved) asks for **one page** at a time and asks
+for the next page when the user scrolls near the end (infinite scroll). **Searching, filtering,
+sorting and counting all happen on the server.** The mock backend's reference implementation is
+`queryListings()` in `src/lib/browsing.ts`; the app builds the query string in
+`listingParams()` (`src/services/catalog/http.ts`).
+
+**Query parameters** (all optional; lists are comma-separated):
+
+| Param | Example | Meaning |
+|---|---|---|
+| `q` | `iphone 14` | Free text. Every word must match title (ar or en), brand or type name (ar or en). Server should normalise Arabic (أ/إ/آ→ا, ة→ه, ى→ي, strip tashkeel) and may add typo tolerance. |
+| `category` | `tech` | One category id. |
+| `format` | `fixed` \| `auction` | Omit for all. Ended auctions are never returned. |
+| `types` | `phones,laptops` | Item type ids. |
+| `brands` | `Apple,Samsung` | Brand names. |
+| `conditions` | `new,excellent` | |
+| `cities` | `amman,irbid` | Location ids. |
+| `minPrice` / `maxPrice` | `10000` | **Integer fils**, inclusive. |
+| `verifiedOnly` | `true` | Verified sellers only. |
+| `endingSoon` | `true` | Auctions ending within 24 h. |
+| `sort` | `recommended` | `recommended` (verified sellers first, then relevance), `price_asc`, `price_desc`, `ending_soon`, `most_bids`. |
+| `cursor` | `eyJvZmZzZXQiOjIwfQ` | Opaque value from the previous page's `nextCursor`. |
+| `limit` | `20` | Page size, default 20, max 50. |
+| `ids` | `tech-0,tech-1` | Fetch exactly these listings, in this order (Saved, recently viewed). Other params ignored; missing ids are skipped. |
+
+**Response (200):**
+```ts
+{
+  items: Item[];               // this page only
+  nextCursor: string | null;   // null = last page
+  total: number;               // matches for the whole query
+  counts: { all: number; fixed: number; auction: number }; // same filters, per format (tabs)
+  facets: {                    // options that exist in scope, before filters (Filters sheet)
+    categories: string[];
+    conditions: Condition[];
+    cities: { id: string; name: Localized }[];
+    byCategory: { [categoryId]: { types: string[]; brands: string[] } };
+  };
+}
+```
+
+* **Errors:** `VALIDATION` (422) for a bad `sort`, `minPrice > maxPrice`, unknown `cursor`.
+* **Backend notes:** use cursor (keyset) pagination, not page numbers, so new listings don't
+  shift pages while scrolling. Index the filter columns (`category`, `sale_type`, `price_fils`,
+  `city_id`, `verified`, `auction_ends_at`). Full-text search: Postgres `tsvector` + `pg_trgm`
+  is enough to start; Meilisearch / Typesense / Elasticsearch when typo tolerance and ranking
+  matter. `counts` and `facets` can be cached briefly per query; they don't change per page.
 
 #### 5. `GET /listings/:id`
 Returns a single item's detailed view.
@@ -256,7 +302,7 @@ Returns all listings created by the signed-in user.
 ### Phase 6: Checkout, Orders & Escrow
 
 * **`POST /orders` *(Authenticated)*** → Body: `{ "listingId": "tech-0", "offerId"?: "..." }` → `Order` (returns calculated `itemPriceFils`, `buyerProtectionFils`, `deliveryFils`, `totalFils`)
-* **`POST /orders/:id/pay` *(Authenticated)*** → Body: `{ "cardToken": "..." }` → `Order` (`status: "escrow_held"`)
+* **`POST /orders/:id/pay` *(Authenticated)*** → Body: `{ "cardToken": "..." }` (provider token, or `"saved"` to charge the account's saved card) → `Order` (`status: "escrow_held"`, includes the delivery `pin`)
 * **`GET /me/orders` *(Authenticated)*** → `Order[]` (Buyer order history)
 * **`GET /me/sales` *(Authenticated)*** → `Order[]` (Seller sales history)
 * **`GET /orders/:id` *(Authenticated)*** → `Order` (Includes buyer's delivery `pin`)

@@ -36,7 +36,9 @@ const DEFAULT_IMAGE =
 
 const conditions: Condition[] = ['new', 'excellent', 'good', 'loved'];
 
-export function AddListingScreen({ navigation }: RootScreenProps<'AddListing'>) {
+export function AddListingScreen({
+  navigation,
+}: RootScreenProps<'AddListing'>) {
   const { t } = useTranslation();
   const localized = useLocalized();
 
@@ -75,7 +77,8 @@ export function AddListingScreen({ navigation }: RootScreenProps<'AddListing'>) 
   }));
 
   const availableTypes =
-    categoryFilters?.[activeCategory as keyof typeof categoryFilters]?.types ?? [];
+    categoryFilters?.[activeCategory as keyof typeof categoryFilters]?.types ??
+    [];
 
   const typeOptions: SelectOption<string>[] = availableTypes.map(tItem => ({
     value: tItem.id,
@@ -168,7 +171,9 @@ export function AddListingScreen({ navigation }: RootScreenProps<'AddListing'>) 
       >
         {/* Photos section */}
         <View className="gap-2">
-          <Text className="font-sans-bold text-sm">{t('addListing.photos')}</Text>
+          <Text className="font-sans-bold text-sm">
+            {t('addListing.photos')}
+          </Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             <View className="flex-row items-center gap-3">
               {photos.map((photo, i) => (

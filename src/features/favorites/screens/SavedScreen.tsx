@@ -8,9 +8,8 @@ import { Icon } from '@/components/icons';
 import { ProductGrid } from '@/components/ProductGrid';
 import { StatusView } from '@/components/StatusView';
 import { Button, Heading, Screen, Text } from '@/components/ui';
-import { useItems } from '@/features/catalog/hooks/useCatalog';
+import { useItemsByIds } from '@/features/catalog/hooks/useCatalog';
 import { useNow } from '@/hooks/useNow';
-import type { Item } from '@/lib/types';
 import type { RootScreenProps } from '@/navigation/types';
 import { colors } from '@/theme/colors';
 import { useFavoritesStore } from '../store';
@@ -18,12 +17,9 @@ import { useFavoritesStore } from '../store';
 export function SavedScreen({ navigation }: RootScreenProps<'Saved'>) {
   const { t } = useTranslation();
   const ids = useFavoritesStore(s => s.ids);
-  const { data: items = [], isPending, isError, refetch } = useItems();
+  // Only the saved listings are fetched, in the order they were saved.
+  const { items: saved, isPending, isError, refetch } = useItemsByIds(ids);
   const now = useNow();
-
-  const saved = ids
-    .map(id => items.find(i => i.id === id))
-    .filter((i): i is Item => !!i);
 
   return (
     <Screen

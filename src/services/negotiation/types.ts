@@ -1,6 +1,12 @@
 // What the app needs for offers, auctions bidding and chat threads.
 
-import type { Bid, ChatMessage, ChatThread, Offer, OfferStatus } from '@/lib/types';
+import type {
+  Bid,
+  ChatMessage,
+  ChatThread,
+  Offer,
+  OfferStatus,
+} from '@/lib/types';
 
 export type MakeOfferInput = {
   itemId: string;

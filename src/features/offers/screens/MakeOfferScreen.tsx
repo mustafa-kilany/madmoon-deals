@@ -8,8 +8,15 @@ import { useTranslation } from 'react-i18next';
 import { BackButton } from '@/components/BackButton';
 import { Price } from '@/components/Price';
 import { StatusView } from '@/components/StatusView';
-import { Button, Card, Heading, Screen, Text, TextField } from '@/components/ui';
-import { useItems } from '@/features/catalog/hooks/useCatalog';
+import {
+  Button,
+  Card,
+  Heading,
+  Screen,
+  Text,
+  TextField,
+} from '@/components/ui';
+import { useItem } from '@/features/catalog/hooks/useCatalog';
 import { useLang, useLocalized } from '@/i18n';
 import { calculateCheckoutBreakdown, formatJOD } from '@/lib/money';
 import type { RootScreenProps } from '@/navigation/types';
@@ -25,10 +32,8 @@ export function MakeOfferScreen({
   const localized = useLocalized();
   const itemId = route.params?.itemId;
 
-  const { data: items, isLoading, isError, refetch } = useItems();
+  const { data: item, isLoading, isError, refetch } = useItem(itemId);
   const makeOffer = useMakeOffer();
-
-  const item = items?.find(i => i.id === itemId);
 
   const [offerJod, setOfferJod] = useState('');
 

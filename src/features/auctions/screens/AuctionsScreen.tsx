@@ -8,15 +8,15 @@ import { Icon } from '@/components/icons';
 import { ListingBrowser } from '@/components/ListingBrowser';
 import { StatusView } from '@/components/StatusView';
 import { Badge, Heading, Screen, Text } from '@/components/ui';
-import { useCatalog } from '@/features/catalog/hooks/useCatalog';
+import { useCatalogMeta } from '@/features/catalog/hooks/useCatalog';
 import { useFavoritesStore } from '@/features/favorites/store';
 
 export function AuctionsScreen() {
   const { t } = useTranslation();
   const navigation = useNavigation();
   const hasSaved = useFavoritesStore(s => s.ids.length > 0);
-  const { items, categories, categoryFilters, isLoading, isError, refetch } =
-    useCatalog();
+  const { categories, categoryFilters, isLoading, isError, refetch } =
+    useCatalogMeta();
 
   return (
     <Screen
@@ -49,7 +49,6 @@ export function AuctionsScreen() {
       ) : (
         <ListingBrowser
           scope="auctions"
-          items={items.filter(i => i.saleType === 'auction')}
           categories={categories}
           categoryFilters={categoryFilters}
           auctionOnly

@@ -10,7 +10,10 @@ import type {
   CategoryFilters,
   CategoryId,
   Item,
+  ListingFacets,
   ListingFormat,
+  ListingPage,
+  ListingQuery,
 } from './types';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -167,4 +170,74 @@ export function timeLeft(endsAt: number, now: number): TimeLeft {
   if (days) return { unit: 'days', days, hours };
   if (hours) return { unit: 'hours', hours, minutes };
   return { unit: 'minutes', minutes, seconds: total % 60 };
+}
+
+export const DEFAULT_PAGE_SIZE = 20;
+
+/**
+ * Answers a ListingQuery the way the server does (GET /listings): search,
+ * filter, sort, then one page. The mock backend runs this; the real backend
+ * implements the same rules (docs/API.md → Catalog).
+ */
+export function queryListings(
+  pool: Item[],
+  query: ListingQuery,
+  categoryFilters: Record<CategoryId, CategoryFilters>,
+  now: number,
+  cursor: string | null = null,
+  limit = DEFAULT_PAGE_SIZE,
+): ListingPage {
+  if (query.ids) {
+    const items = query.ids
+      .map(id => pool.find(i => i.id === id))
+      .filter((i): i is Item => !!i);
+    return {
+      items,
+      nextCursor: null,
+      total: items.length,
+      counts: { all: items.length, fixed: 0, auction: 0 },
+      facets: { categories: [], conditions: [], cities: [], byCategory: {} },
+    };
+  }
+
+  const scoped = searchItems(
+    query.category ? pool.filter(i => i.category === query.category) : pool,
+    query.q ?? '',
+    categoryFilters,
+  );
+  const inFormat = filterItems(scoped, emptyFilters(), query.format, now);
+  const matches = (format: ListingFormat) =>
+    filterItems(scoped, query.filters, format, now);
+  const sorted = sortItems(matches(query.format), query.sort);
+
+  const start = cursor ? Number(cursor) : 0;
+  const end = start + limit;
+  const unique = <T>(values: (T | undefined)[]) =>
+    [...new Set(values)].filter((v): v is T => v !== undefined);
+  const byCategory: ListingFacets['byCategory'] = {};
+  for (const item of inFormat) {
+    const entry = (byCategory[item.category] ??= { types: [], brands: [] });
+    if (!entry.types.includes(item.type)) entry.types.push(item.type);
+    if (item.brand && !entry.brands.includes(item.brand))
+      entry.brands.push(item.brand);
+  }
+
+  return {
+    items: sorted.slice(start, end),
+    nextCursor: end < sorted.length ? String(end) : null,
+    total: sorted.length,
+    counts: {
+      all: matches('all').length,
+      fixed: matches('fixed').length,
+      auction: matches('auction').length,
+    },
+    facets: {
+      categories: unique(inFormat.map(i => i.category)),
+      conditions: unique(inFormat.map(i => i.condition)),
+      cities: inFormat
+        .map(i => i.location)
+        .filter((p, i, all) => all.findIndex(x => x.id === p.id) === i),
+      byCategory,
+    },
+  };
 }

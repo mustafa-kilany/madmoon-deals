@@ -12,10 +12,9 @@ import { ListingBrowser } from '@/components/ListingBrowser';
 import { StatusView } from '@/components/StatusView';
 import { Heading, Screen, Text, TextField } from '@/components/ui';
 import { useLocalized } from '@/i18n';
-import { searchItems } from '@/lib/browsing';
 import type { RootScreenProps } from '@/navigation/types';
 import { colors } from '@/theme/colors';
-import { useCatalog } from '../hooks/useCatalog';
+import { useCatalogMeta } from '../hooks/useCatalog';
 import { useHistoryStore } from '../historyStore';
 
 export function SearchScreen({ navigation }: RootScreenProps<'Search'>) {
@@ -24,8 +23,8 @@ export function SearchScreen({ navigation }: RootScreenProps<'Search'>) {
   const [query, setQuery] = useState('');
   const recentSearches = useHistoryStore(s => s.recentSearches);
   const addRecentSearch = useHistoryStore(s => s.addRecentSearch);
-  const { items, categories, categoryFilters, isLoading, isError, refetch } =
-    useCatalog();
+  const { categories, categoryFilters, isLoading, isError, refetch } =
+    useCatalogMeta();
 
   const trimmed = query.trim();
 
@@ -72,7 +71,7 @@ export function SearchScreen({ navigation }: RootScreenProps<'Search'>) {
       ) : trimmed ? (
         <ListingBrowser
           scope="search"
-          items={searchItems(items, trimmed, categoryFilters)}
+          query={trimmed}
           categories={categories}
           categoryFilters={categoryFilters}
           showCategories

@@ -14,8 +14,10 @@ export const queryKeys = {
   categoryFilters: ['categoryFilters'],
   cities: ['cities'],
   items: ['items'],
+  listings: (query: object) => ['items', 'listings', query],
   item: (id: string) => ['items', id],
   me: ['me'],
   myListings: ['me', 'listings'],
   chats: ['chats'],
+  orders: ['me', 'orders'],
 } as const;

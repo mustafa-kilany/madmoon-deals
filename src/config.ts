@@ -13,6 +13,7 @@ export const config = {
   mock: {
     catalog: true,
     auth: false,
+    orders: true,
   },
   /** Fake network delay for mock calls, so loading states are visible in dev. */
   mockLatencyMs: __DEV__ ? 400 : 0,

@@ -1,6 +1,7 @@
 // Filters bottom sheet (prototype components/FilterSheet). Edits a draft;
-// "Show N results" applies it, closing discards it. Option chips are built
-// from the listings in view, so only choices that match something appear.
+// "Show N results" applies it, closing discards it. Option chips come from the
+// server's facets (what exists in scope), and the count is asked of the
+// server as the draft changes.
 
 import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -16,6 +17,8 @@ import {
   Text,
   TextField,
 } from '@/components/ui';
+import { useListingTotal } from '@/features/catalog/hooks/useCatalog';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useLocalized } from '@/i18n';
 import { emptyFilters, validPriceRange } from '@/lib/browsing';
 import type {
@@ -23,16 +26,18 @@ import type {
   Category,
   CategoryFilters,
   CategoryId,
-  Condition,
-  Item,
+  ListingFacets,
   ListingFormat,
+  ListingQuery,
 } from '@/lib/types';
 import { colors } from '@/theme/colors';
 
 type FilterSheetProps = {
   visible: boolean;
-  /** Listings in view before filtering (search/category/format applied). */
-  items: Item[];
+  /** Options that exist in scope; undefined while the first page loads. */
+  facets: ListingFacets | undefined;
+  /** The browser's query; the draft filters replace its filters for the count. */
+  countQuery: ListingQuery;
   /** Shown as a Category picker on Search and Auctions; omitted on a category page. */
   categories?: Category[];
   categoryFilters: Record<CategoryId, CategoryFilters>;
@@ -40,13 +45,9 @@ type FilterSheetProps = {
   value: ActiveFilters;
   onClose: () => void;
   onApply: (filters: ActiveFilters) => void;
-  resultCount: (draft: ActiveFilters) => number;
 };
 
 type ListKey = 'conditions' | 'locations' | 'types' | 'brands';
-
-const unique = <T,>(values: (T | undefined)[]) =>
-  [...new Set(values)].filter((v): v is T => v !== undefined);
 
 export function FilterSheet(props: FilterSheetProps) {
   return (
@@ -64,14 +65,14 @@ export function FilterSheet(props: FilterSheetProps) {
 }
 
 function SheetContent({
-  items,
+  facets,
+  countQuery,
   categories,
   categoryFilters,
   format,
   value,
   onClose,
   onApply,
-  resultCount,
 }: FilterSheetProps) {
   const { t } = useTranslation();
   const localized = useLocalized();
@@ -91,11 +92,21 @@ function SheetContent({
     });
 
   // Types and brands follow the chosen category; condition and location don't.
-  const scoped = items.filter(
-    i => !draft.category || i.category === draft.category,
+  const byCategory = facets?.byCategory ?? {};
+  const scopedCategories = (
+    draft.category
+      ? [draft.category]
+      : (Object.keys(byCategory) as CategoryId[])
+  ).filter(id => byCategory[id]);
+  const typeOptions = scopedCategories.flatMap(id =>
+    byCategory[id]!.types.flatMap(typeId => {
+      const name = categoryFilters[id]?.types.find(x => x.id === typeId)?.name;
+      return name ? [{ id: typeId, label: localized(name) }] : [];
+    }),
   );
-  const typeName = (item: Item) =>
-    categoryFilters[item.category]?.types.find(x => x.id === item.type)?.name;
+  const brandOptions = [
+    ...new Set(scopedCategories.flatMap(id => byCategory[id]!.brands)),
+  ].map(b => ({ id: b, label: b }));
 
   const sections: {
     key: ListKey;
@@ -105,7 +116,7 @@ function SheetContent({
     {
       key: 'conditions',
       title: t('filters.condition'),
-      options: unique<Condition>(items.map(i => i.condition)).map(c => ({
+      options: (facets?.conditions ?? []).map(c => ({
         id: c,
         label: t(`condition.${c}`),
       })),
@@ -113,28 +124,27 @@ function SheetContent({
     {
       key: 'locations',
       title: t('filters.location'),
-      options: unique(items.map(i => i.location.id)).map(id => ({
-        id,
-        label: localized(items.find(i => i.location.id === id)!.location.name),
+      options: (facets?.cities ?? []).map(place => ({
+        id: place.id,
+        label: localized(place.name),
       })),
     },
     {
       key: 'types',
       title: t('filters.type'),
-      options: unique(scoped.map(i => i.type)).flatMap(id => {
-        const name = typeName(scoped.find(i => i.type === id)!);
-        return name ? [{ id, label: localized(name) }] : [];
-      }),
+      options: typeOptions,
     },
     {
       key: 'brands',
       title: t('filters.brand'),
-      options: unique(scoped.map(i => i.brand)).map(b => ({ id: b, label: b })),
+      options: brandOptions,
     },
   ];
 
   const valid = validPriceRange(draft);
-  const count = resultCount(draft);
+  // Asked of the server, debounced so typing a price doesn't spam requests.
+  const debouncedDraft = useDebouncedValue(draft);
+  const count = useListingTotal({ ...countQuery, filters: debouncedDraft });
   const priceTitle =
     format === 'auction'
       ? t('filters.priceAuction')
@@ -293,7 +303,11 @@ function SheetContent({
           </Pressable>
           <Button
             className="flex-1"
-            label={t('filters.showResults', { count })}
+            label={
+              count === undefined
+                ? t('browse.filters')
+                : t('filters.showResults', { count })
+            }
             disabled={!valid}
             onPress={() => onApply(draft)}
           />

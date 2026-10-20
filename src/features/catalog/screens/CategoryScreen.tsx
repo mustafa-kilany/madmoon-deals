@@ -9,13 +9,13 @@ import { StatusView } from '@/components/StatusView';
 import { Heading, Screen } from '@/components/ui';
 import { useLocalized } from '@/i18n';
 import type { RootScreenProps } from '@/navigation/types';
-import { useCatalog } from '../hooks/useCatalog';
+import { useCatalogMeta } from '../hooks/useCatalog';
 
 export function CategoryScreen({ route }: RootScreenProps<'Category'>) {
   const { categoryId } = route.params;
   const localized = useLocalized();
-  const { items, categories, categoryFilters, isLoading, isError, refetch } =
-    useCatalog();
+  const { categories, categoryFilters, isLoading, isError, refetch } =
+    useCatalogMeta();
   const category = categories.find(c => c.id === categoryId);
 
   return (
@@ -41,7 +41,7 @@ export function CategoryScreen({ route }: RootScreenProps<'Category'>) {
       ) : (
         <ListingBrowser
           scope={`category:${categoryId}`}
-          items={items.filter(i => i.category === categoryId)}
+          category={categoryId}
           categories={categories}
           categoryFilters={categoryFilters}
         />

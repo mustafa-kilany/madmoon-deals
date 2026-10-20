@@ -14,7 +14,14 @@ import { BackButton } from '@/components/BackButton';
 import { Icon } from '@/components/icons';
 import { Price } from '@/components/Price';
 import { StatusView } from '@/components/StatusView';
-import { Button, Card, Heading, Screen, Text, TextField } from '@/components/ui';
+import {
+  Button,
+  Card,
+  Heading,
+  Screen,
+  Text,
+  TextField,
+} from '@/components/ui';
 import { useLang, useLocalized } from '@/i18n';
 import { formatJOD } from '@/lib/money';
 import type { ChatMessage, ChatThread, Offer } from '@/lib/types';
@@ -45,11 +52,7 @@ export function ChatsScreen() {
   }
 
   return (
-    <Screen
-      header={
-        <Heading className="text-2xl">{t('chats.title')}</Heading>
-      }
-    >
+    <Screen header={<Heading className="text-2xl">{t('chats.title')}</Heading>}>
       {isLoading ? (
         <StatusView status="loading" />
       ) : isError ? (
@@ -193,9 +196,7 @@ function MessageItem({
 }) {
   const isMe = message.senderId === 'me';
   return (
-    <View
-      className={`gap-1 ${isMe ? 'items-end' : 'items-start'}`}
-    >
+    <View className={`gap-1 ${isMe ? 'items-end' : 'items-start'}`}>
       <View
         className={`max-w-[80%] rounded-2xl p-4 shadow-sm ${
           isMe

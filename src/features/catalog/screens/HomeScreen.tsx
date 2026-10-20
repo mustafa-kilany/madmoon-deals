@@ -15,15 +15,26 @@ import { useTimeLeftLabel } from '@/features/auctions/hooks/useTimeLeftLabel';
 import { useFavoritesStore } from '@/features/favorites/store';
 import { useNow } from '@/hooks/useNow';
 import { changeLanguage, useLang, useLocalized } from '@/i18n';
-import { isLiveAuction } from '@/lib/browsing';
+import { emptyFilters } from '@/lib/browsing';
 import type { Item } from '@/lib/types';
 import { useUiStore } from '@/store/uiStore';
 import { useUser } from '@/features/auth/sessionStore';
 import { colors } from '@/theme/colors';
 import { iconSize } from '@/theme/spacing';
-import { useCatalog } from '../hooks/useCatalog';
+import {
+  useCatalogMeta,
+  useItemsByIds,
+  useListings,
+} from '../hooks/useCatalog';
 import { useOpenItem } from '../hooks/useOpenItem';
 import { useHistoryStore } from '../historyStore';
+
+/** First page of live auctions, soonest ending first; Home shows the top one. */
+const FEATURED_QUERY = {
+  format: 'auction',
+  sort: 'ending_soon',
+  filters: emptyFilters(),
+} as const;
 
 export function HomeScreen() {
   const { t } = useTranslation();
@@ -34,15 +45,13 @@ export function HomeScreen() {
   const user = useUser();
   const savedCount = useFavoritesStore(s => s.ids.length);
   const recentIds = useHistoryStore(s => s.recentItemIds);
-  const { items, categories, isLoading, isError, refetch } = useCatalog();
+  const { categories, isLoading, isError, refetch } = useCatalogMeta();
+  // Small, targeted requests: the viewed items, and the soonest-ending auction.
+  const { items: recentItems } = useItemsByIds(recentIds);
+  const { items: liveAuctions } = useListings(FEATURED_QUERY);
   const now = useNow();
 
-  const recentItems = recentIds
-    .map(id => items.find(i => i.id === id))
-    .filter((i): i is Item => !!i);
-  const featured =
-    items.find(i => i.id === 'auction-tech' && isLiveAuction(i, now)) ??
-    items.find(i => isLiveAuction(i, now));
+  const featured = liveAuctions[0];
 
   const header = (
     <>

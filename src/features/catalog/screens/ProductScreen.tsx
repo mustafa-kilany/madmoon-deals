@@ -20,11 +20,13 @@ import {
   useToggleFavorite,
 } from '@/features/favorites/hooks/useFavorites';
 import { useLang, useLocalized } from '@/i18n';
+import { emptyFilters } from '@/lib/browsing';
 import { formatJOD } from '@/lib/money';
 import type { Item } from '@/lib/types';
 import type { RootScreenProps } from '@/navigation/types';
+import { ApiError } from '@/services/api/errors';
 import { colors } from '@/theme/colors';
-import { useItems } from '../hooks/useCatalog';
+import { useItem, useListings } from '../hooks/useCatalog';
 
 // Prototype's seller photo (same for every seller until real profiles exist).
 const SELLER_AVATAR =
@@ -37,16 +39,25 @@ const galleryOf = (url: string) => [
   url.replace('fit=crop', 'fit=crop&flip=h'),
 ];
 
+const isNotFound = (error: unknown) =>
+  error instanceof ApiError && error.code === 'NOT_FOUND';
+
 export function ProductScreen({
   route,
   navigation,
 }: RootScreenProps<'Product'>) {
   const { t } = useTranslation();
-  const { data: items, isPending, isError, refetch } = useItems();
-  const item = items?.find(i => i.id === route.params.itemId);
+  const {
+    data: item,
+    isPending,
+    isError,
+    error,
+    refetch,
+  } = useItem(route.params.itemId);
 
-  if (isError) return <StatusView status="error" onRetry={refetch} />;
-  if (isPending) return <StatusView status="loading" />;
+  if (isError && !isNotFound(error))
+    return <StatusView status="error" onRetry={refetch} />;
+  if (isPending && !isError) return <StatusView status="loading" />;
   if (!item)
     return (
       <StatusView
@@ -55,10 +66,10 @@ export function ProductScreen({
         onRetry={() => navigation.goBack()}
       />
     );
-  return <ProductDetail item={item} allItems={items} />;
+  return <ProductDetail item={item} />;
 }
 
-function ProductDetail({ item, allItems }: { item: Item; allItems: Item[] }) {
+function ProductDetail({ item }: { item: Item }) {
   const { t } = useTranslation();
   const lang = useLang();
   const localized = useLocalized();
@@ -70,9 +81,14 @@ function ProductDetail({ item, allItems }: { item: Item; allItems: Item[] }) {
 
   const title = localized(item.title);
   const gallery = galleryOf(item.imageUrl);
-  const similar = allItems
-    .filter(i => i.category === item.category && i.id !== item.id)
-    .slice(0, 6);
+  // One page of the same category; the server does the matching.
+  const { items: sameCategory } = useListings({
+    category: item.category,
+    format: 'all',
+    sort: 'recommended',
+    filters: emptyFilters(),
+  });
+  const similar = sameCategory.filter(i => i.id !== item.id).slice(0, 6);
   // Prototype: the seller's Chat button also starts an offer.
   const makeOffer = () =>
     requireAuth({ name: 'MakeOffer', params: { itemId: item.id } });

@@ -169,3 +169,60 @@ export type ChatThread = {
   lastMessage: string;
   updatedAt: number;
 };
+
+export type OrderStatus =
+  | 'awaiting_payment'
+  | 'escrow_held'
+  | 'completed'
+  | 'refunded';
+
+/** A purchase. Amounts are computed by the server (mock: calculateCheckoutBreakdown). */
+export type Order = {
+  id: string;
+  itemId: string;
+  itemTitle: Localized;
+  itemImageUrl: string;
+  itemPriceFils: number;
+  buyerProtectionFils: number;
+  deliveryFils: number;
+  totalFils: number;
+  status: OrderStatus;
+  /** Delivery PIN the buyer gives the courier; only present once the payment is held. */
+  pin?: string;
+  createdAt: number;
+};
+
+/** One request for a page of listings (GET /listings). The server filters, sorts and pages. */
+export type ListingQuery = {
+  /** Free-text search. */
+  q?: string;
+  /** Fixed scope (category page); filters.category narrows further on Search/Auctions. */
+  category?: CategoryId;
+  format: ListingFormat;
+  filters: ActiveFilters;
+  sort: BrowseSort;
+  /** Fetch exactly these listings (Saved, recently viewed); ignores paging. */
+  ids?: string[];
+};
+
+/** Filter options that exist among the listings in scope (before filters apply). */
+export type ListingFacets = {
+  categories: CategoryId[];
+  conditions: Condition[];
+  cities: Place[];
+  /** Types and brands per category, so the sheet follows the chosen category. */
+  byCategory: Partial<
+    Record<CategoryId, { types: string[]; brands: string[] }>
+  >;
+};
+
+export type ListingPage = {
+  items: Item[];
+  /** Opaque; pass back to get the next page. null = last page. */
+  nextCursor: string | null;
+  /** Matches for the whole query, all pages. */
+  total: number;
+  /** Matches per format with the same search and filters (the format tabs). */
+  counts: Record<ListingFormat, number>;
+  facets: ListingFacets;
+};
