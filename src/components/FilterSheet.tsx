@@ -4,7 +4,14 @@
 // server as the draft changes.
 
 import { useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
 import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -17,10 +24,15 @@ import {
   Text,
   TextField,
 } from '@/components/ui';
-import { useListingTotal } from '@/features/catalog/hooks/useCatalog';
+import {
+  useCities,
+  useListingTotal,
+} from '@/features/catalog/hooks/useCatalog';
+import { locateErrorKey, useLocate } from '@/features/location/useLocate';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useLocalized } from '@/i18n';
 import { emptyFilters, validPriceRange } from '@/lib/browsing';
+import { citiesWithin, placeLabel } from '@/lib/places';
 import type {
   ActiveFilters,
   Category,
@@ -46,6 +58,9 @@ type FilterSheetProps = {
   onClose: () => void;
   onApply: (filters: ActiveFilters) => void;
 };
+
+/** "Near me" radius: roughly a city and its suburbs. */
+const NEAR_ME_KM = 15;
 
 type ListKey = 'conditions' | 'locations' | 'types' | 'brands';
 
@@ -126,7 +141,7 @@ function SheetContent({
       title: t('filters.location'),
       options: (facets?.cities ?? []).map(place => ({
         id: place.id,
-        label: localized(place.name),
+        label: placeLabel(place, localized),
       })),
     },
     {
@@ -142,6 +157,25 @@ function SheetContent({
   ];
 
   const valid = validPriceRange(draft);
+  // "Near me": GPS → the areas in view within NEAR_ME_KM, chosen on the phone.
+  const { data: allCities = [] } = useCities();
+  const locate = useLocate();
+  const [nearMessage, setNearMessage] = useState<string | null>(null);
+  const nearMe = () => {
+    setNearMessage(null);
+    locate.mutate(undefined, {
+      onSuccess: position => {
+        const inView = new Set((facets?.cities ?? []).map(c => c.id));
+        const near = citiesWithin(allCities, position, NEAR_ME_KM)
+          .map(c => c.id)
+          .filter(id => inView.has(id));
+        if (!near.length) setNearMessage(t('filters.noneNearby'));
+        else setDraft(d => ({ ...d, locations: near }));
+      },
+      onError: error => setNearMessage(t(locateErrorKey(error))),
+    });
+  };
+
   // Asked of the server, debounced so typing a price doesn't spam requests.
   const debouncedDraft = useDebouncedValue(draft);
   const count = useListingTotal({ ...countQuery, filters: debouncedDraft });
@@ -251,6 +285,36 @@ function SheetContent({
               section.options.length > 0 && (
                 <View key={section.key}>
                   <Heading className="mb-3 text-sm">{section.title}</Heading>
+                  {section.key === 'locations' && (
+                    <View className="mb-3 gap-1">
+                      <Chip
+                        label={t('filters.nearMe', { km: NEAR_ME_KM })}
+                        onPress={nearMe}
+                        leading={
+                          locate.isPending ? (
+                            <ActivityIndicator
+                              size="small"
+                              color={colors.primary}
+                            />
+                          ) : (
+                            <Icon
+                              name="MapPin"
+                              size={16}
+                              color={colors.primary}
+                            />
+                          )
+                        }
+                      />
+                      {nearMessage && (
+                        <Text
+                          accessibilityRole="alert"
+                          className="text-xs text-brand-warmgray"
+                        >
+                          {nearMessage}
+                        </Text>
+                      )}
+                    </View>
+                  )}
                   <View className="flex-row flex-wrap gap-2">
                     {section.options.map(option => (
                       <Chip

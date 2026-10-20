@@ -28,6 +28,7 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useNow } from '@/hooks/useNow';
 import { useLocalized } from '@/i18n';
 import { emptyFilters, filterCount } from '@/lib/browsing';
+import { placeLabel } from '@/lib/places';
 import type {
   ActiveFilters,
   BrowseSort,
@@ -146,7 +147,7 @@ export function ListingBrowser({
     const place = facets?.cities.find(p => p.id === id);
     chips.push({
       key: `location:${id}`,
-      label: place ? localized(place.name) : id,
+      label: place ? placeLabel(place, localized) : id,
       remove: () => without('locations', id),
     });
   }

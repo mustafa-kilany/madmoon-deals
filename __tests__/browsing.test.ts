@@ -15,31 +15,33 @@ const ids = (list: { id: string }[]) => list.map(i => i.id);
 
 describe('filterItems', () => {
   test('format tabs split fixed-price listings and auctions', () => {
-    const tech = { ...emptyFilters(), category: 'tech' as const };
-    expect(filterItems(items, tech, 'all', start)).toHaveLength(5);
-    expect(filterItems(items, tech, 'fixed', start)).toHaveLength(4);
-    expect(ids(filterItems(items, tech, 'auction', start))).toEqual([
-      'auction-tech',
+    const mobiles = { ...emptyFilters(), category: 'mobiles' as const };
+    expect(filterItems(items, mobiles, 'all', start)).toHaveLength(5);
+    expect(filterItems(items, mobiles, 'fixed', start)).toHaveLength(4);
+    expect(ids(filterItems(items, mobiles, 'auction', start))).toEqual([
+      'auction-mobiles',
     ]);
   });
 
   test('ended auctions are hidden', () => {
-    const later = start + 46 * 60 * 1000; // tech auction ran 45 minutes
+    const later = start + 46 * 60 * 1000; // mobiles auction ran 45 minutes
     const live = filterItems(items, emptyFilters(), 'auction', later);
-    expect(ids(live)).not.toContain('auction-tech');
+    expect(ids(live)).not.toContain('auction-mobiles');
     expect(live).toHaveLength(7);
   });
 
   test('price range compares whole dinars against fils', () => {
     const f = {
       ...emptyFilters(),
-      category: 'tech' as const,
-      min: '95',
-      max: '520',
+      category: 'mobiles' as const,
+      min: '110',
+      max: '330',
     };
+    // 110 and 330 JOD are inclusive; the 520 JOD iPhone is out
     expect(ids(filterItems(items, f, 'fixed', start)).sort()).toEqual([
-      'tech-0',
-      'tech-3',
+      'mobiles-1',
+      'mobiles-2',
+      'mobiles-3',
     ]);
   });
 
@@ -56,7 +58,7 @@ describe('filterItems', () => {
       conditions: ['new' as const],
       brands: ['Apple'],
     };
-    expect(ids(filterItems(items, f, 'all', start))).toEqual(['watches-3']);
+    expect(ids(filterItems(items, f, 'all', start))).toEqual(['mobiles-3']);
     const amman = { ...emptyFilters(), locations: ['amman'] };
     expect(
       filterItems(items, amman, 'all', start).every(
@@ -69,9 +71,9 @@ describe('filterItems', () => {
     const f = { ...emptyFilters(), endingSoon: true };
     const result = filterItems(items, f, 'all', start);
     expect(result.every(i => i.saleType === 'auction')).toBe(true);
-    // vehicles (20h) qualifies; more (40h) doesn't
+    // vehicles (20h) qualifies; hobbies (40h) doesn't
     expect(ids(result)).toContain('auction-vehicles');
-    expect(ids(result)).not.toContain('auction-more');
+    expect(ids(result)).not.toContain('auction-hobbies');
   });
 });
 
@@ -86,8 +88,8 @@ describe('sortItems', () => {
     const asc = sortItems(items, 'price_asc').map(i => i.priceFils);
     expect(asc).toEqual([...asc].sort((a, b) => a - b));
     const auctions = items.filter(i => i.auction);
-    expect(sortItems(auctions, 'ending_soon')[0].id).toBe('auction-tech');
-    expect(sortItems(auctions, 'most_bids')[0].id).toBe('auction-tech');
+    expect(sortItems(auctions, 'ending_soon')[0].id).toBe('auction-mobiles');
+    expect(sortItems(auctions, 'most_bids')[0].id).toBe('auction-mobiles');
   });
 });
 
@@ -105,15 +107,16 @@ test('filterCount counts a price range once', () => {
 
 test('search matches either language and type names', () => {
   expect(ids(searchItems(items, 'macbook', categoryFilters))).toEqual([
-    'tech-1',
+    'electronics-0',
   ]);
   expect(ids(searchItems(items, 'لابتوب', categoryFilters))).toEqual([
-    'tech-1',
+    'electronics-0',
   ]);
-  // "هواتف" (Phones) appears only as the type name of both iPhones
+  // "هواتف" (Phones) appears only as a type name: both phones + the iPhone auction
   expect(ids(searchItems(items, 'هواتف', categoryFilters)).sort()).toEqual([
-    'auction-tech',
-    'tech-0',
+    'auction-mobiles',
+    'mobiles-0',
+    'mobiles-1',
   ]);
   expect(searchItems(items, '  ', categoryFilters)).toHaveLength(items.length);
 });

@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { Image, Pressable, ScrollView, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { BackButton } from '@/components/BackButton';
+import { CityPicker } from '@/components/CityPicker';
 import { Icon } from '@/components/icons';
 import { StatusView } from '@/components/StatusView';
 import {
@@ -19,6 +20,7 @@ import {
   type SelectOption,
 } from '@/components/ui';
 import { pickListingPhoto } from '@/features/auth/photoCapture';
+import { useUser } from '@/features/auth/sessionStore';
 import {
   useCategories,
   useCategoryFilters,
@@ -41,6 +43,7 @@ export function AddListingScreen({
 }: RootScreenProps<'AddListing'>) {
   const { t } = useTranslation();
   const localized = useLocalized();
+  const user = useUser();
 
   const { data: categories, isLoading: isCatLoading } = useCategories();
   const { data: categoryFilters, isLoading: isFiltersLoading } =
@@ -68,8 +71,9 @@ export function AddListingScreen({
   }
 
   // Pre-select category & city if empty
-  const activeCategory = category || categories[0]?.id || 'tech';
-  const activeCity = cityId || cities[0]?.id || 'amman';
+  const activeCategory = category || categories[0]?.id || 'mobiles';
+  // Defaults to the seller's own area (Profile); the GPS button can change it.
+  const activeCity = cityId || user?.cityId || cities[0]?.id || 'amman';
 
   const categoryOptions: SelectOption<string>[] = categories.map(c => ({
     value: c.id,
@@ -89,11 +93,6 @@ export function AddListingScreen({
     itemType && availableTypes.some(tItem => tItem.id === itemType)
       ? itemType
       : availableTypes[0]?.id || 'general';
-
-  const cityOptions: SelectOption<string>[] = cities.map(c => ({
-    value: c.id,
-    label: localized(c.name),
-  }));
 
   const handleAddPhoto = async () => {
     if (photos.length >= 5) return;
@@ -274,12 +273,10 @@ export function AddListingScreen({
           <Text className="font-sans-bold text-sm">
             {t('addListing.location')}
           </Text>
-          <Select
+          <CityPicker
             label={t('addListing.location')}
             value={activeCity}
-            options={cityOptions}
             onChange={setCityId}
-            size="md"
           />
         </View>
 

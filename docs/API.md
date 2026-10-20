@@ -57,7 +57,7 @@ export const config = {
 | **Authentication** | `Authorization: Bearer <token>` header on authenticated endpoints. |
 | **Money / Currency** | Integers in **fils** (1 JOD = 1000 fils). Never use floating point or decimals. Field names end with `Fils` (e.g. `priceFils`, `incrementFils`). |
 | **Localized Strings** | Dual-language catalog fields use `{ "ar": "...", "en": "..." }` (`Localized`). |
-| **Category IDs** | Fixed set: `clothing`, `tech`, `vehicles`, `furniture`, `shoes`, `gaming`, `watches`, `more`. |
+| **Category IDs** | Fixed set: `mobiles`, `electronics`, `vehicles`, `furniture`, `appliances`, `fashion`, `kids`, `hobbies`. Item types per category come from `GET /categories/filters` (e.g. gaming is a type under `electronics`, watches under `fashion`). |
 | **Timestamps** | ISO-8601 UTC strings (e.g. `"2026-10-19T12:00:00Z"`). |
 | **Errors** | Non-2xx responses return `{ "error": { "code": "ERROR_CODE", "message": "..." } }`. |
 
@@ -174,7 +174,7 @@ Removes the saved payment card reference.
 type Localized = { ar: string; en: string };
 
 type Category = {
-  id: string; // 'clothing', 'tech', 'vehicles', etc.
+  id: string; // 'mobiles', 'electronics', 'vehicles', etc.
   name: Localized;
   icon: string; // 'Shirt', 'Laptop', 'Car', etc.
   imageUrl: string;
@@ -212,8 +212,20 @@ Returns available item types and brands per category for the filter sheet.
 * **Response (200):** `{ [categoryId]: { types: [{ id, name: Localized }], brands: string[] } }`
 
 #### 3. `GET /cities`
-Returns available delivery/location cities in Jordan.
-* **Response (200):** `[{ id: "amman", name: { ar: "عمّان", en: "Amman" } }]`
+Every area a listing or account can be in: Jordan's 12 governorates and their main cities /
+areas (Amman by neighbourhood). The app's seed copy is `src/services/mock/places.ts` (59 areas).
+* **Response (200):**
+  ```json
+  [{ "id": "salt", "name": { "ar": "السلط", "en": "Salt" },
+     "governorate": { "ar": "البلقاء", "en": "Balqa" }, "lat": 32.039, "lng": 35.727 }]
+  ```
+  The app shows it as **"البلقاء / السلط"** (just "إربد" when the area is the governorate's capital).
+  `lat`/`lng` are the area's rough centre.
+* **Location privacy:** "Use my current location" and the "Near me" filter run **on the phone**:
+  GPS → nearest area(s) using these centres. The app only ever sends **area ids** (`cityId`,
+  `locationId`, `cities=` filter), never coordinates or streets, so the backend doesn't need to
+  store locations.
+* `Item.location` is a `Place` with `governorate` (no `lat`/`lng`): `{ id, name, governorate }`.
 
 #### 4. `GET /listings` — search, filter, sort, paginate
 The app never downloads the whole catalog. Every browsing screen (Search, Category, Auctions,
@@ -228,7 +240,7 @@ sorting and counting all happen on the server.** The mock backend's reference im
 | Param | Example | Meaning |
 |---|---|---|
 | `q` | `iphone 14` | Free text. Every word must match title (ar or en), brand or type name (ar or en). Server should normalise Arabic (أ/إ/آ→ا, ة→ه, ى→ي, strip tashkeel) and may add typo tolerance. |
-| `category` | `tech` | One category id. |
+| `category` | `mobiles` | One category id. |
 | `format` | `fixed` \| `auction` | Omit for all. Ended auctions are never returned. |
 | `types` | `phones,laptops` | Item type ids. |
 | `brands` | `Apple,Samsung` | Brand names. |
@@ -240,7 +252,7 @@ sorting and counting all happen on the server.** The mock backend's reference im
 | `sort` | `recommended` | `recommended` (verified sellers first, then relevance), `price_asc`, `price_desc`, `ending_soon`, `most_bids`. |
 | `cursor` | `eyJvZmZzZXQiOjIwfQ` | Opaque value from the previous page's `nextCursor`. |
 | `limit` | `20` | Page size, default 20, max 50. |
-| `ids` | `tech-0,tech-1` | Fetch exactly these listings, in this order (Saved, recently viewed). Other params ignored; missing ids are skipped. |
+| `ids` | `mobiles-0,mobiles-1` | Fetch exactly these listings, in this order (Saved, recently viewed). Other params ignored; missing ids are skipped. |
 
 **Response (200):**
 ```ts
@@ -322,7 +334,7 @@ type Order = {
 **The server prices every order.** The app shows the same breakdown (`calculateCheckoutBreakdown` in
 `src/lib/money.ts`) but never sends amounts.
 
-* **`POST /orders` *(Authenticated)*** → Body: `{ "listingId": "tech-0", "offerId"?: "..." }` → `Order` (`status: "awaiting_payment"`). With `offerId`, the offer must be **accepted**, on this listing, and made by this buyer; its `amountFils` becomes `itemPriceFils`. Otherwise `VALIDATION` (422).
+* **`POST /orders` *(Authenticated)*** → Body: `{ "listingId": "mobiles-0", "offerId"?: "..." }` → `Order` (`status: "awaiting_payment"`). With `offerId`, the offer must be **accepted**, on this listing, and made by this buyer; its `amountFils` becomes `itemPriceFils`. Otherwise `VALIDATION` (422).
 * **`POST /orders/:id/pay` *(Authenticated)*** → Body: `{ "cardToken": "..." }` (provider token, or `"saved"` to charge the account's saved card) → `Order` (`status: "escrow_held"`, includes the delivery `pin`)
 * **`GET /me/orders` *(Authenticated)*** → `Order[]` (Buyer order history)
 * **`GET /me/sales` *(Authenticated)*** → `Order[]` (Seller sales history)

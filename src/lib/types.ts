@@ -11,14 +11,14 @@ export type Lang = 'ar' | 'en';
 export type Localized = { ar: string; en: string };
 
 export type CategoryId =
-  | 'clothing'
-  | 'tech'
+  | 'mobiles'
+  | 'electronics'
   | 'vehicles'
   | 'furniture'
-  | 'shoes'
-  | 'gaming'
-  | 'watches'
-  | 'more';
+  | 'appliances'
+  | 'fashion'
+  | 'kids'
+  | 'hobbies';
 
 export type Category = {
   id: CategoryId;
@@ -33,7 +33,11 @@ export type Category = {
 export type ItemType = { id: string; name: Localized };
 
 /** A city a listing is in. Filters match on `id`, so they survive a language switch. */
-export type Place = { id: string; name: Localized };
+/** A city or area. `governorate` lets it show as "البلقاء / السلط". */
+export type Place = { id: string; name: Localized; governorate?: Localized };
+
+/** An area from GET /cities: always has its governorate and a rough centre. */
+export type City = Place & { governorate: Localized; lat: number; lng: number };
 
 export type CategoryFilters = { types: ItemType[]; brands: string[] };
 

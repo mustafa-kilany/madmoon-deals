@@ -1,9 +1,11 @@
-// Seed catalog ported from the prototype's data/catalog.ts: 8 categories, 4
+// Seed catalog: the 8 categories people expect on a Jordanian marketplace
+// (mobiles first, gaming under Electronics, watches under Fashion), 4
 // fixed-price listings each, plus one demo auction per category (id
 // `auction-<category>`, built from one of that category's listings). Listing
 // photos stay remote, like real listing images will; category tiles are bundled.
 
 import { jod } from '@/lib/money';
+import { cities } from './places';
 import type {
   Category,
   CategoryFilters,
@@ -11,7 +13,6 @@ import type {
   Condition,
   Item,
   Localized,
-  Place,
 } from '@/lib/types';
 
 const unsplash = (photo: string) =>
@@ -19,52 +20,52 @@ const unsplash = (photo: string) =>
 
 export const categories: Category[] = [
   {
-    id: 'clothing',
-    name: { ar: 'ملابس', en: 'Clothing' },
-    icon: 'Shirt',
-    image: require('../../../assets/images/categories/clothing.jpg'),
+    id: 'mobiles',
+    name: { ar: 'موبايلات وتابلت', en: 'Mobiles & Tablets' },
+    icon: 'Smartphone',
+    image: require('../../../assets/images/categories/mobiles.jpg'),
   },
   {
-    id: 'tech',
-    name: { ar: 'تكنولوجيا', en: 'Tech' },
+    id: 'electronics',
+    name: { ar: 'إلكترونيات', en: 'Electronics' },
     icon: 'Laptop',
-    image: require('../../../assets/images/categories/tech.jpg'),
+    image: require('../../../assets/images/categories/electronics.jpg'),
   },
   {
     id: 'vehicles',
-    name: { ar: 'مركبات', en: 'Vehicles' },
+    name: { ar: 'سيارات ومركبات', en: 'Cars & Vehicles' },
     icon: 'Car',
     image: require('../../../assets/images/categories/vehicles.jpg'),
   },
   {
     id: 'furniture',
-    name: { ar: 'أثاث', en: 'Furniture' },
+    name: { ar: 'أثاث ومنزل', en: 'Home & Furniture' },
     icon: 'Sofa',
     image: require('../../../assets/images/categories/furniture.jpg'),
   },
   {
-    id: 'shoes',
-    name: { ar: 'أحذية', en: 'Shoes' },
-    icon: 'Sneaker',
-    image: require('../../../assets/images/categories/shoes.jpg'),
+    id: 'appliances',
+    name: { ar: 'أجهزة منزلية', en: 'Home Appliances' },
+    icon: 'Refrigerator',
+    image: require('../../../assets/images/categories/appliances.jpg'),
   },
   {
-    id: 'gaming',
-    name: { ar: 'ألعاب', en: 'Gaming' },
-    icon: 'Gamepad',
-    image: require('../../../assets/images/categories/gaming.jpg'),
+    id: 'fashion',
+    name: { ar: 'أزياء', en: 'Fashion' },
+    icon: 'Shirt',
+    image: require('../../../assets/images/categories/fashion.jpg'),
   },
   {
-    id: 'watches',
-    name: { ar: 'ساعات', en: 'Watches' },
-    icon: 'Watch',
-    image: require('../../../assets/images/categories/watches.jpg'),
+    id: 'kids',
+    name: { ar: 'أطفال ومواليد', en: 'Kids & Baby' },
+    icon: 'Baby',
+    image: require('../../../assets/images/categories/kids.jpg'),
   },
   {
-    id: 'more',
-    name: { ar: 'المزيد', en: 'More' },
-    icon: 'Grid',
-    image: require('../../../assets/images/categories/more.jpg'),
+    id: 'hobbies',
+    name: { ar: 'رياضة وهوايات', en: 'Sports & Hobbies' },
+    icon: 'Dumbbell',
+    image: require('../../../assets/images/categories/hobbies.jpg'),
   },
 ];
 
@@ -74,79 +75,82 @@ const itemType = (id: string, ar: string, en: string) => ({
 });
 
 export const categoryFilters: Record<CategoryId, CategoryFilters> = {
-  clothing: {
-    types: [
-      itemType('jackets', 'جاكيتات', 'Jackets'),
-      itemType('shirts', 'قمصان', 'Shirts'),
-      itemType('dresses', 'فساتين', 'Dresses'),
-      itemType('sweaters', 'كنزات', 'Sweaters'),
-    ],
-    brands: ['Zara', 'H&M', 'Mango', 'Uniqlo', 'Nike', 'Adidas'],
-  },
-  tech: {
+  mobiles: {
     types: [
       itemType('phones', 'هواتف', 'Phones'),
-      itemType('laptops', 'لابتوبات', 'Laptops'),
-      itemType('headphones', 'سماعات', 'Headphones'),
-      itemType('watches', 'ساعات', 'Watches'),
       itemType('tablets', 'أجهزة لوحية', 'Tablets'),
+      itemType('smartwatches', 'ساعات ذكية', 'Smartwatches'),
+      itemType('accessories', 'إكسسوارات', 'Accessories'),
     ],
-    brands: ['Apple', 'Samsung', 'Sony', 'Dell', 'HP', 'Xiaomi'],
+    brands: ['Apple', 'Samsung', 'Xiaomi', 'Huawei', 'Oppo'],
+  },
+  electronics: {
+    types: [
+      itemType('laptops', 'لابتوبات', 'Laptops'),
+      itemType('gaming', 'ألعاب فيديو', 'Gaming'),
+      itemType('tvs', 'شاشات وتلفزيونات', 'TVs & Screens'),
+      itemType('cameras', 'كاميرات', 'Cameras'),
+      itemType('audio', 'سماعات وصوتيات', 'Audio'),
+    ],
+    brands: ['Apple', 'Sony', 'Samsung', 'Dell', 'HP', 'Canon', 'Microsoft'],
   },
   vehicles: {
     types: [
       itemType('cars', 'سيارات', 'Cars'),
       itemType('motorcycles', 'دراجات نارية', 'Motorcycles'),
-      itemType('bicycles', 'دراجات هوائية', 'Bicycles'),
+      itemType('parts', 'قطع غيار', 'Parts & Accessories'),
       itemType('scooters', 'سكوترات', 'Scooters'),
     ],
-    brands: ['Kia', 'Toyota', 'Honda', 'Hyundai', 'Trek', 'Xiaomi'],
+    brands: ['Kia', 'Toyota', 'Hyundai', 'Ford', 'Fiat', 'Honda'],
   },
   furniture: {
     types: [
       itemType('sofas', 'كنب', 'Sofas'),
       itemType('tables', 'طاولات', 'Tables'),
       itemType('chairs', 'كراسي', 'Chairs'),
-      itemType('storage', 'تخزين', 'Storage'),
+      itemType('storage', 'خزائن', 'Storage'),
       itemType('beds', 'أسِرّة', 'Beds'),
     ],
     brands: ['IKEA', 'Home Centre', 'Pan Emirates'],
   },
-  shoes: {
+  appliances: {
     types: [
-      itemType('sneakers', 'رياضية', 'Sneakers'),
-      itemType('formal', 'رسمية', 'Formal'),
-      itemType('sandals', 'صنادل', 'Sandals'),
-      itemType('boots', 'جزم', 'Boots'),
+      itemType('fridges', 'ثلاجات', 'Fridges'),
+      itemType('washing-machines', 'غسالات', 'Washing Machines'),
+      itemType('kitchen', 'أجهزة مطبخ', 'Kitchen'),
+      itemType('air-conditioners', 'مكيفات', 'Air Conditioners'),
+      itemType('small-appliances', 'أجهزة صغيرة', 'Small Appliances'),
     ],
-    brands: ['Nike', 'Adidas', 'Puma', 'Aldo'],
+    brands: ['Samsung', 'LG', 'Bosch', 'Smeg', 'Xiaomi', 'Black+Decker'],
   },
-  gaming: {
+  fashion: {
     types: [
-      itemType('consoles', 'أجهزة', 'Consoles'),
-      itemType('accessories', 'ملحقات', 'Accessories'),
-      itemType('games', 'ألعاب', 'Games'),
-      itemType('pcs', 'حواسيب', 'PCs'),
+      itemType('men', 'رجالي', "Men's Clothing"),
+      itemType('women', 'نسائي', "Women's Clothing"),
+      itemType('shoes', 'أحذية', 'Shoes'),
+      itemType('bags', 'حقائب', 'Bags'),
+      itemType('watches-jewelry', 'ساعات ومجوهرات', 'Watches & Jewelry'),
     ],
-    brands: ['Sony', 'Microsoft', 'Nintendo', 'Cougar'],
+    brands: ['Zara', 'H&M', 'Mango', 'Nike', 'Adidas', 'Fossil', 'Rolex'],
   },
-  watches: {
+  kids: {
     types: [
-      itemType('classic', 'كلاسيكية', 'Classic'),
-      itemType('sports', 'رياضية', 'Sports'),
-      itemType('luxury', 'فاخرة', 'Luxury'),
-      itemType('smart', 'ذكية', 'Smart'),
+      itemType('toys', 'ألعاب أطفال', 'Toys'),
+      itemType('strollers', 'عربات أطفال', 'Strollers'),
+      itemType('car-seats', 'كراسي سيارة', 'Car Seats'),
+      itemType('kids-clothing', 'ملابس أطفال', 'Kids Clothing'),
     ],
-    brands: ['Fossil', 'Casio', 'Rolex', 'Apple', 'Garmin'],
+    brands: ['LEGO', 'Chicco', 'Graco', 'Joie', 'Fisher-Price'],
   },
-  more: {
+  hobbies: {
     types: [
-      itemType('cameras', 'كاميرات', 'Cameras'),
+      itemType('bicycles', 'دراجات هوائية', 'Bicycles'),
+      itemType('fitness', 'معدات رياضية', 'Fitness'),
       itemType('instruments', 'آلات موسيقية', 'Instruments'),
       itemType('books', 'كتب', 'Books'),
-      itemType('home-garden', 'منزل وحديقة', 'Home & Garden'),
+      itemType('camping', 'تخييم ورحلات', 'Camping'),
     ],
-    brands: ['Canon', 'Nikon', 'Yamaha'],
+    brands: ['Trek', 'Giant', 'Yamaha', 'Decathlon'],
   },
 };
 
@@ -159,12 +163,19 @@ const sellers = {
   noor: { ar: 'نور', en: 'Noor' },
 } satisfies Record<string, Localized>;
 
-export const cities: Place[] = [
-  { id: 'amman', name: { ar: 'عمّان', en: 'Amman' } },
-  { id: 'irbid', name: { ar: 'إربد', en: 'Irbid' } },
-  { id: 'zarqa', name: { ar: 'الزرقاء', en: 'Zarqa' } },
-  { id: 'aqaba', name: { ar: 'العقبة', en: 'Aqaba' } },
-];
+export { cities };
+
+/** Where the seed listings are, spread across a few governorates. */
+const seedPlaces = [
+  'amman-khalda',
+  'irbid',
+  'zarqa',
+  'salt',
+  'amman-abdoun',
+  'aqaba',
+  'madaba',
+  'amman-sweileh',
+].map(id => cities.find(c => c.id === id)!);
 
 type Seed = {
   title: Localized;
@@ -197,49 +208,7 @@ const seed = (
 
 const s = sellers;
 const listings: Record<CategoryId, Seed[]> = {
-  clothing: [
-    seed(
-      'جاكيت جلد كلاسيكي',
-      'Classic Leather Jacket',
-      45,
-      'photo-1551028719-00167b16eac5',
-      'excellent',
-      s.omar,
-      'jackets',
-      'Zara',
-    ),
-    seed(
-      'قميص قطني رجالي',
-      "Men's Cotton Shirt",
-      12,
-      'photo-1596755094514-f87e34085b2c',
-      'new',
-      s.layla,
-      'shirts',
-      'H&M',
-    ),
-    seed(
-      'فستان صيفي',
-      'Summer Dress',
-      28,
-      'photo-1595777457583-95e059d581b8',
-      'good',
-      s.rania,
-      'dresses',
-      'Mango',
-    ),
-    seed(
-      'بلوفر شتوي',
-      'Winter Sweater',
-      20,
-      'photo-1576871337622-98d48d1cf531',
-      'excellent',
-      s.sami,
-      'sweaters',
-      'Uniqlo',
-    ),
-  ],
-  tech: [
+  mobiles: [
     seed(
       'آيفون 14 برو',
       'iPhone 14 Pro',
@@ -251,6 +220,38 @@ const listings: Record<CategoryId, Seed[]> = {
       'Apple',
     ),
     seed(
+      'سامسونج جالكسي S21',
+      'Samsung Galaxy S21',
+      330,
+      'photo-1610945265064-0e34e5519bbf',
+      'good',
+      s.layla,
+      'phones',
+      'Samsung',
+    ),
+    seed(
+      'آيباد إير',
+      'iPad Air',
+      290,
+      'photo-1544244015-0df4b3ffc6b0',
+      'excellent',
+      s.khaled,
+      'tablets',
+      'Apple',
+    ),
+    seed(
+      'ساعة آبل',
+      'Apple Watch',
+      110,
+      'photo-1579586337278-3befd40fd17a',
+      'new',
+      s.noor,
+      'smartwatches',
+      'Apple',
+    ),
+  ],
+  electronics: [
+    seed(
       'لابتوب ماك بوك',
       'MacBook Laptop',
       780,
@@ -261,24 +262,34 @@ const listings: Record<CategoryId, Seed[]> = {
       'Apple',
     ),
     seed(
+      'بلايستيشن 5',
+      'PlayStation 5',
+      380,
+      'photo-1606813907291-d86efa9b94db',
+      'excellent',
+      s.omar,
+      'gaming',
+      'Sony',
+    ),
+    seed(
+      'كاميرا رقمية',
+      'Digital Camera',
+      240,
+      'photo-1516035069371-29a1b244cc32',
+      'excellent',
+      s.rania,
+      'cameras',
+      'Canon',
+    ),
+    seed(
       'سماعات لاسلكية',
       'Wireless Headphones',
       60,
       'photo-1505740420928-5e560c06d30e',
       'new',
       s.noor,
-      'headphones',
+      'audio',
       'Sony',
-    ),
-    seed(
-      'ساعة ذكية',
-      'Smart Watch',
-      95,
-      'photo-1546868871-7041f2a55e12',
-      'new',
-      s.layla,
-      'watches',
-      'Samsung',
     ),
   ],
   vehicles: [
@@ -293,34 +304,34 @@ const listings: Record<CategoryId, Seed[]> = {
       'Kia',
     ),
     seed(
+      'فورد موستانج 2018',
+      'Ford Mustang 2018',
+      18500,
+      'photo-1494976388531-d1058494cdd8',
+      'good',
+      s.khaled,
+      'cars',
+      'Ford',
+    ),
+    seed(
+      'فيات 500 موديل 2016',
+      'Fiat 500 2016',
+      6200,
+      'photo-1549317661-bd32c8ce0db2',
+      'excellent',
+      s.rania,
+      'cars',
+      'Fiat',
+    ),
+    seed(
       'دراجة نارية',
       'Motorcycle',
       2200,
       'photo-1558981403-c5f9899a28bc',
       'excellent',
-      s.khaled,
+      s.omar,
       'motorcycles',
       'Honda',
-    ),
-    seed(
-      'دراجة هوائية جبلية',
-      'Mountain Bike',
-      150,
-      'photo-1485965120184-e220f721d03e',
-      'good',
-      s.noor,
-      'bicycles',
-      'Trek',
-    ),
-    seed(
-      'سكوتر كهربائي',
-      'Electric Scooter',
-      180,
-      'photo-1604868189265-219ba7bf7ea3',
-      'new',
-      s.rania,
-      'scooters',
-      'Xiaomi',
     ),
   ],
   furniture: [
@@ -365,110 +376,78 @@ const listings: Record<CategoryId, Seed[]> = {
       'IKEA',
     ),
   ],
-  shoes: [
+  appliances: [
+    seed(
+      'غسالة أوتوماتيك',
+      'Front-Load Washing Machine',
+      180,
+      'photo-1626806787461-102c1bfaaea1',
+      'good',
+      s.noor,
+      'washing-machines',
+      'Samsung',
+    ),
+    seed(
+      'ثلاجة كلاسيكية',
+      'Retro Fridge',
+      350,
+      'photo-1571175443880-49e1d25b2bc5',
+      'excellent',
+      s.layla,
+      'fridges',
+      'Smeg',
+    ),
+    seed(
+      'مكنسة روبوت',
+      'Robot Vacuum',
+      120,
+      'photo-1558317374-067fb5f30001',
+      'new',
+      s.sami,
+      'small-appliances',
+      'Xiaomi',
+    ),
+    seed(
+      'فرن كهربائي صغير',
+      'Toaster Oven',
+      35,
+      'photo-1574269909862-7e1d70bb8078',
+      'good',
+      s.khaled,
+      'kitchen',
+      'Black+Decker',
+    ),
+  ],
+  fashion: [
+    seed(
+      'جاكيت جلد كلاسيكي',
+      'Classic Leather Jacket',
+      45,
+      'photo-1551028719-00167b16eac5',
+      'excellent',
+      s.omar,
+      'men',
+      'Zara',
+    ),
+    seed(
+      'فستان صيفي',
+      'Summer Dress',
+      28,
+      'photo-1595777457583-95e059d581b8',
+      'good',
+      s.rania,
+      'women',
+      'Mango',
+    ),
     seed(
       'حذاء رياضي نايكي',
       'Nike Sneakers',
       55,
       'photo-1542291026-7eec264c27ff',
       'excellent',
-      s.omar,
-      'sneakers',
+      s.sami,
+      'shoes',
       'Nike',
-    ),
-    seed(
-      'حذاء رسمي جلد',
-      'Leather Dress Shoes',
-      40,
-      'photo-1614252369475-531eba835eb1',
-      'new',
-      s.khaled,
-      'formal',
-      'Aldo',
-    ),
-    seed(
-      'صندل صيفي',
-      'Summer Sandals',
-      15,
-      'photo-1603487742131-4160ec999306',
-      'loved',
-      s.noor,
-      'sandals',
-      'Adidas',
-    ),
-    seed(
-      'حذاء أديداس',
-      'Adidas Trainers',
-      48,
-      'photo-1600185365483-26d7a4cc7519',
-      'excellent',
-      s.sami,
-      'sneakers',
-      'Adidas',
-    ),
-  ],
-  gaming: [
-    seed(
-      'بلايستيشن 5',
-      'PlayStation 5',
-      380,
-      'photo-1606813907291-d86efa9b94db',
-      'excellent',
-      s.omar,
-      'consoles',
-      'Sony',
-    ),
-    seed(
-      'يد تحكم اكس بوكس',
-      'Xbox Controller',
-      35,
-      'photo-1592840496694-26d035b52b48',
-      'new',
-      s.layla,
-      'accessories',
-      'Microsoft',
-    ),
-    seed(
-      'نينتندو سويتش',
-      'Nintendo Switch',
-      190,
-      'photo-1578303512597-81e6cc155b3e',
-      'good',
-      s.khaled,
-      'consoles',
-      'Nintendo',
-    ),
-    seed(
-      'كرسي ألعاب',
-      'Gaming Chair',
-      120,
-      'photo-1598550476439-6847785fcea6',
-      'new',
-      s.rania,
-      'accessories',
-      'Cougar',
-    ),
-  ],
-  watches: [
-    seed(
-      'ساعة كلاسيكية',
-      'Classic Watch',
-      75,
-      'photo-1524592094714-0f0654e20314',
-      'excellent',
-      s.omar,
-      'classic',
-      'Fossil',
-    ),
-    seed(
-      'ساعة رياضية',
-      'Sports Watch',
-      50,
-      'photo-1508057198894-247b23fe5ade',
-      'new',
-      s.sami,
-      'sports',
-      'Casio',
     ),
     seed(
       'ساعة فاخرة',
@@ -477,30 +456,59 @@ const listings: Record<CategoryId, Seed[]> = {
       'photo-1523170335258-f5ed11844a49',
       'excellent',
       s.khaled,
-      'luxury',
+      'watches-jewelry',
       'Rolex',
     ),
+  ],
+  kids: [
     seed(
-      'ساعة ذكية',
-      'Smart Watch',
-      110,
-      'photo-1579586337278-3befd40fd17a',
+      'قطار خشبي للأطفال',
+      'Wooden Train Set',
+      30,
+      'photo-1596461404969-9ae70f2830c1',
+      'excellent',
+      s.layla,
+      'toys',
+    ),
+    seed(
+      'مجموعة مكعبات ليغو',
+      'LEGO Bricks Bundle',
+      40,
+      'photo-1587654780291-39c9404d746b',
+      'good',
+      s.omar,
+      'toys',
+      'LEGO',
+    ),
+    seed(
+      'بدلة شتوية لطفل',
+      'Baby Winter Suit',
+      12,
+      'photo-1522771930-78848d9293e8',
       'new',
       s.noor,
-      'smart',
-      'Apple',
+      'kids-clothing',
+    ),
+    seed(
+      'دبدوب',
+      'Teddy Bear',
+      10,
+      'photo-1530325553241-4f6e7690cf36',
+      'new',
+      s.rania,
+      'toys',
     ),
   ],
-  more: [
+  hobbies: [
     seed(
-      'كاميرا رقمية',
-      'Digital Camera',
-      240,
-      'photo-1516035069371-29a1b244cc32',
-      'excellent',
-      s.omar,
-      'cameras',
-      'Canon',
+      'دراجة هوائية جبلية',
+      'Mountain Bike',
+      150,
+      'photo-1485965120184-e220f721d03e',
+      'good',
+      s.noor,
+      'bicycles',
+      'Trek',
     ),
     seed(
       'جيتار أكوستيك',
@@ -513,6 +521,15 @@ const listings: Record<CategoryId, Seed[]> = {
       'Yamaha',
     ),
     seed(
+      'مجموعة دمبلز',
+      'Dumbbell Set',
+      70,
+      'photo-1534438327276-14e5300c3a48',
+      'excellent',
+      s.sami,
+      'fitness',
+    ),
+    seed(
       'مجموعة كتب',
       'Book Collection',
       25,
@@ -520,15 +537,6 @@ const listings: Record<CategoryId, Seed[]> = {
       'good',
       s.rania,
       'books',
-    ),
-    seed(
-      'نبتة زينة',
-      'Decorative Plant',
-      18,
-      'photo-1485955900006-10f4d324d411',
-      'new',
-      s.noor,
-      'home-garden',
     ),
   ],
 };
@@ -544,14 +552,14 @@ const auctions: Record<
     increment: number;
   }
 > = {
-  clothing: { index: 0, price: 28, minutes: 240, bids: 5, increment: 2 },
-  tech: { index: 0, price: 450, minutes: 45, bids: 18, increment: 10 },
-  vehicles: { index: 2, price: 95, minutes: 1200, bids: 3, increment: 5 },
+  mobiles: { index: 0, price: 450, minutes: 45, bids: 18, increment: 10 },
+  electronics: { index: 1, price: 250, minutes: 150, bids: 12, increment: 10 },
+  vehicles: { index: 3, price: 1800, minutes: 1200, bids: 3, increment: 50 },
   furniture: { index: 1, price: 85, minutes: 480, bids: 4, increment: 5 },
-  shoes: { index: 0, price: 32, minutes: 75, bids: 7, increment: 2 },
-  gaming: { index: 0, price: 250, minutes: 150, bids: 12, increment: 10 },
-  watches: { index: 2, price: 210, minutes: 360, bids: 9, increment: 10 },
-  more: { index: 0, price: 150, minutes: 2400, bids: 6, increment: 5 },
+  appliances: { index: 0, price: 140, minutes: 600, bids: 6, increment: 5 },
+  fashion: { index: 3, price: 210, minutes: 360, bids: 9, increment: 10 },
+  kids: { index: 1, price: 25, minutes: 240, bids: 5, increment: 2 },
+  hobbies: { index: 1, price: 60, minutes: 2400, bids: 6, increment: 5 },
 };
 
 /** All seed listings. Auction end times count from `startedAt` (app launch). */
@@ -568,14 +576,16 @@ export function buildItems(startedAt: number): Item[] {
       brand: l.brand,
       type: l.type,
       verified: index % 3 !== 0,
-      location: cities[(categoryIndex + index) % cities.length],
+      location: (({ id, name, governorate }) => ({ id, name, governorate }))(
+        seedPlaces[(categoryIndex + index) % seedPlaces.length],
+      ),
       saleType: 'fixed',
     }));
     const demo = auctions[category];
     const auction: Item = {
       ...fixed[demo.index],
       id: `auction-${category}`,
-      ...(category === 'tech' && {
+      ...(category === 'mobiles' && {
         title: {
           ar: 'آيفون 14 برو ماكس 256 جيجا',
           en: 'iPhone 14 Pro Max 256GB',

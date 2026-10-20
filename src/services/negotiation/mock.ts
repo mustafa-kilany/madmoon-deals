@@ -9,10 +9,10 @@ import type { NegotiationService } from './types';
 const catalogItems = buildItems(Date.now());
 const mockOffers: Offer[] = [];
 const mockBids: Record<string, Bid[]> = {
-  'auction-tech': [
+  'auction-mobiles': [
     {
       id: 'bid-1',
-      itemId: 'auction-tech',
+      itemId: 'auction-mobiles',
       bidderId: 'user-2',
       bidderName: 'Omar',
       amountFils: 510000,
@@ -20,7 +20,7 @@ const mockBids: Record<string, Bid[]> = {
     },
     {
       id: 'bid-2',
-      itemId: 'auction-tech',
+      itemId: 'auction-mobiles',
       bidderId: 'user-3',
       bidderName: 'Sami',
       amountFils: 520000,
@@ -31,8 +31,8 @@ const mockBids: Record<string, Bid[]> = {
 
 const mockThreads: ChatThread[] = [
   {
-    id: 'chat-tech-0',
-    itemId: 'tech-0',
+    id: 'chat-mobiles-0',
+    itemId: 'mobiles-0',
     itemTitle: { ar: 'آيفون 14 برو', en: 'iPhone 14 Pro' },
     itemImageUrl:
       'https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=600&h=600&fit=crop',
@@ -43,10 +43,10 @@ const mockThreads: ChatThread[] = [
 ];
 
 const mockMessages: Record<string, ChatMessage[]> = {
-  'chat-tech-0': [
+  'chat-mobiles-0': [
     {
       id: 'msg-1',
-      chatId: 'chat-tech-0',
+      chatId: 'chat-mobiles-0',
       senderId: 'user-2',
       senderName: 'Omar',
       text: 'Is this item still available?',

@@ -15,6 +15,7 @@ import {
   useToggleFavorite,
 } from '@/features/favorites/hooks/useFavorites';
 import { useLocalized } from '@/i18n';
+import { placeLabel } from '@/lib/places';
 import type { Item } from '@/lib/types';
 import { colors } from '@/theme/colors';
 
@@ -110,7 +111,7 @@ export function ProductCard({ item, now }: ProductCardProps) {
           <Text className="mt-1 text-xs text-brand-warmgray" numberOfLines={1}>
             {auction
               ? t('card.bids', { count: auction.bidCount })
-              : localized(item.location.name)}
+              : placeLabel(item.location, localized)}
           </Text>
         </View>
       </Pressable>

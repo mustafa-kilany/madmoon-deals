@@ -5,12 +5,12 @@ import type { IconName } from '@/components/icons';
 import type {
   Auction,
   Category,
+  City,
   CategoryFilters,
   CategoryId,
   Item,
   ListingPage,
   ListingQuery,
-  Place,
 } from '@/lib/types';
 import { jod } from '@/lib/money';
 import { api } from '../api/client';
@@ -72,7 +72,7 @@ export const httpCatalogService: CatalogService = {
     (await api.get<CategoryDto[]>('/categories')).map(toCategory),
   getCategoryFilters: () =>
     api.get<Record<CategoryId, CategoryFilters>>('/categories/filters'),
-  getCities: () => api.get<Place[]>('/cities'),
+  getCities: () => api.get<City[]>('/cities'),
   searchListings: async (query, cursor) => {
     const page = await api.get<ListingPageDto>(
       `/listings?${listingParams(query, cursor)}`,

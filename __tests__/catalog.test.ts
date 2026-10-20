@@ -21,8 +21,8 @@ describe('mock catalog', () => {
     }
   });
 
-  test('tech demo auction matches the prototype', () => {
-    const auction = items.find(i => i.id === 'auction-tech');
+  test('mobiles demo auction matches the prototype', () => {
+    const auction = items.find(i => i.id === 'auction-mobiles');
     expect(auction?.title.en).toBe('iPhone 14 Pro Max 256GB');
     expect(auction?.priceFils).toBe(450000);
     expect(auction?.auction).toEqual({

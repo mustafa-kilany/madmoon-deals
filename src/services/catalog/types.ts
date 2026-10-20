@@ -2,13 +2,13 @@
 
 import type {
   Category,
+  City,
   CategoryFilters,
   CategoryId,
   Condition,
   Item,
   ListingPage,
   ListingQuery,
-  Place,
   SaleType,
 } from '@/lib/types';
 
@@ -32,7 +32,7 @@ export interface CatalogService {
   /** Item types and brands per category, for filters. */
   getCategoryFilters(): Promise<Record<CategoryId, CategoryFilters>>;
   /** Cities a listing or account can be in. */
-  getCities(): Promise<Place[]>;
+  getCities(): Promise<City[]>;
   /**
    * One page of listings for a query (search, filters, sort). The server
    * does the work, so the app never downloads the whole catalog.

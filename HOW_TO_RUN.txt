@@ -1,0 +1,112 @@
+SAHLA - HOW TO RUN THE APP FROM ZERO (Windows, Android emulator)
+=================================================================
+
+Type all commands in the VS Code terminal (PowerShell), inside the project folder:
+    C:\Users\mustafa\Desktop\Sahla\Sahla
+
+
+-----------------------------------------------------------------
+PART 1 - ONE-TIME SETUP (only on a new computer)
+-----------------------------------------------------------------
+
+1. Install these programs:
+   - Node.js 22.11 or newer      https://nodejs.org
+   - Git                         https://git-scm.com
+   - VS Code                     https://code.visualstudio.com
+   - Android Studio              https://developer.android.com/studio
+
+2. Open Android Studio once and finish the Setup Wizard (it installs the Android SDK).
+   Then go to: More Actions > SDK Manager
+   - SDK Platforms tab: tick Android API 37
+   - SDK Tools tab (tick "Show Package Details"):
+       Build-Tools 37.0.0, NDK 27.1.12297006,
+       Android SDK Platform-Tools, Android Emulator, Command-line Tools
+   Click Apply.
+
+3. Set environment variables (Windows search > "Edit the system environment variables"
+   > Environment Variables > User variables):
+   - ANDROID_HOME = C:\Users\<you>\AppData\Local\Android\Sdk
+   - JAVA_HOME    = C:\Program Files\Android\Android Studio\jbr
+   - Add to Path:  %ANDROID_HOME%\platform-tools
+                   %ANDROID_HOME%\emulator
+   Close and reopen VS Code afterwards.
+
+4. Create an emulator: Android Studio > More Actions > Virtual Device Manager
+   > Create Device > pick a phone > pick the API 37 system image > Finish.
+   (On this PC it already exists: Medium_Phone_API_37.0)
+
+5. Get the code and install the packages:
+       git clone <repo-url>
+       cd Sahla
+       npm install
+
+6. Check everything works (optional):
+       npm test
+
+
+-----------------------------------------------------------------
+PART 2 - EVERY DAY: START THE APP
+-----------------------------------------------------------------
+
+1. Start the emulator
+   Android Studio > Device Manager > press Play next to the phone.
+   Wait until the phone's home screen shows.
+   (You do NOT need to open the project in Android Studio.)
+
+2. VS Code terminal tab 1 - start Metro (the JavaScript server):
+       npm start
+   Wait for "Dev server ready". Leave this terminal open.
+
+3. VS Code terminal tab 2 (click + to open a new terminal) - build and install the app:
+       npm run android -- --active-arch-only
+   The first build takes several minutes. Later ones are faster.
+   If it asks "Use port 8082 instead?" answer N (No).
+
+4. If the app asks to access "nearby devices", tap Allow.
+
+5. Only if you want to log in - VS Code terminal tab 3 - start the test server:
+       npm run contract-server
+   Leave it open. Demo login: ahmad@sahla.jo / sahla1234
+
+That's it. When you save a code file, the app reloads by itself.
+After you change babel.config.js, metro.config.js or tailwind.config.js,
+stop Metro (Ctrl+C) and start it with:   npm start -- --reset-cache
+
+
+-----------------------------------------------------------------
+PART 3 - IF SOMETHING GOES WRONG
+-----------------------------------------------------------------
+
+White screen / app frozen / emulator not responding
+   The emulator froze (usually low memory). Close Chrome and other heavy apps, then:
+   Android Studio > Device Manager > the 3 dots next to the phone > Cold Boot Now.
+   Then run again in tab 2:   npm run android -- --active-arch-only
+
+"Unable to load script"
+   Make sure Metro (tab 1) is running. Then in the Metro terminal press  d
+   > Change Bundle Location > type  10.0.2.2:8081  > OK.
+
+Login says "No connection"
+   The test server isn't running. Start it (Part 2, step 5).
+   Or use the built-in fake backend: in src/config.ts set  auth: true
+   (the courier demo account courier@sahla.jo / sahla1234 only works this way).
+
+Build fails with a path that is too long (CMake / 260 characters)
+   Keep the project in a short folder path, e.g. C:\Users\<you>\Desktop\Sahla\Sahla
+
+Strange errors after pulling new code
+       npm install
+       npm start -- --reset-cache
+
+
+-----------------------------------------------------------------
+USEFUL COMMANDS
+-----------------------------------------------------------------
+   npm start                 start Metro
+   npm run android           build + install on the emulator
+   npm run contract-server   local test server for login/profile (port 4000)
+   npm test                  run the tests
+   npm run typecheck         check TypeScript types
+   npm run lint              check code style
+
+More detail: DEVELOPMENT_GUIDE.md (section 6) and docs/API.md (backend endpoints).

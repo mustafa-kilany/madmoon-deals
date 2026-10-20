@@ -133,7 +133,11 @@ export function HomeScreen() {
                 <View className="aspect-square w-full overflow-hidden rounded-2xl border border-brand-border bg-brand-surface shadow-sm">
                   <CategoryImage category={category} />
                 </View>
-                <Text className="font-sans-bold text-xs" numberOfLines={1}>
+                {/* Two lines: names like "Mobiles & Tablets" wrap instead of truncating. */}
+                <Text
+                  className="text-center font-sans-bold text-xs leading-tight"
+                  numberOfLines={2}
+                >
                   {localized(category.name)}
                 </Text>
               </Pressable>

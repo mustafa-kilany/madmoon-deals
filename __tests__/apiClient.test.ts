@@ -84,17 +84,17 @@ test('no connection becomes a NETWORK error', async () => {
 test('catalog maps wire format to app types', async () => {
   respond(200, [
     {
-      id: 'tech',
+      id: 'mobiles',
       name: { ar: 'تكنولوجيا', en: 'Tech' },
       icon: 'Laptop',
-      imageUrl: 'https://cdn.test/tech.jpg',
+      imageUrl: 'https://cdn.test/mobiles.jpg',
     },
   ]);
   const [category] = await httpCatalogService.getCategories();
-  expect(category.image).toEqual({ uri: 'https://cdn.test/tech.jpg' });
+  expect(category.image).toEqual({ uri: 'https://cdn.test/mobiles.jpg' });
 
   respond(200, {
-    id: 'auction-tech',
+    id: 'auction-mobiles',
     saleType: 'auction',
     auction: {
       endsAt: '2026-10-19T12:00:00Z',
@@ -102,9 +102,9 @@ test('catalog maps wire format to app types', async () => {
       incrementFils: 10000,
     },
   });
-  const item = await httpCatalogService.getItem('auction-tech');
+  const item = await httpCatalogService.getItem('auction-mobiles');
   expect(item.auction?.endsAt).toBe(Date.parse('2026-10-19T12:00:00Z'));
   expect(fetchMock.mock.calls[1][0]).toBe(
-    'https://api.test/v1/listings/auction-tech',
+    'https://api.test/v1/listings/auction-mobiles',
   );
 });

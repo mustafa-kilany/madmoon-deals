@@ -22,6 +22,7 @@ import {
 import { useLang, useLocalized } from '@/i18n';
 import { emptyFilters } from '@/lib/browsing';
 import { formatJOD } from '@/lib/money';
+import { placeLabel } from '@/lib/places';
 import type { Item } from '@/lib/types';
 import type { RootScreenProps } from '@/navigation/types';
 import { ApiError } from '@/services/api/errors';
@@ -161,7 +162,7 @@ function ProductDetail({ item }: { item: Item }) {
               <View className="mt-0.5 flex-row items-center gap-1">
                 <Icon name="MapPin" size={14} color={colors.primary} />
                 <Text className="font-sans-bold text-sm">
-                  {localized(item.location.name)}
+                  {placeLabel(item.location, localized)}
                 </Text>
               </View>
             </Card>

@@ -208,7 +208,9 @@
     "verifiedSellers": "Verified sellers only",
     "endingWithin24h": "Auctions ending within 24h",
     "reset": "Reset",
-    "showResults": "Show {{count}} results"
+    "showResults": "Show {{count}} results",
+    "nearMe": "Near me ({{km}} km)",
+    "noneNearby": "No listings near you yet. Try more areas."
   },
   "search": {
     "label": "Search marketplace",
@@ -339,5 +341,13 @@
     "confirmed": "Delivery confirmed. Payment released to the seller.",
     "another": "Confirm Another",
     "notCourier": "Only Sahla couriers can confirm deliveries."
+  },
+  "location": {
+    "choose": "Choose your area",
+    "useCurrent": "Use my current location",
+    "search": "Search city or area",
+    "noMatch": "No matching area",
+    "denied": "Location permission is off. Allow it in Settings, or pick your area from the list.",
+    "unavailable": "Couldn't get your location. Check that location is on, or pick your area."
   }
 }

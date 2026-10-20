@@ -38,13 +38,13 @@ describe('server-side listings (GET /listings)', () => {
   });
 
   test('category, search and ids narrow the results', () => {
-    const tech = queryListings(
+    const mobiles = queryListings(
       pool,
-      { ...base, category: 'tech' },
+      { ...base, category: 'mobiles' },
       categoryFilters,
       now,
     );
-    expect(tech.items.every(i => i.category === 'tech')).toBe(true);
+    expect(mobiles.items.every(i => i.category === 'mobiles')).toBe(true);
 
     const iphone = queryListings(
       pool,
@@ -59,11 +59,11 @@ describe('server-side listings (GET /listings)', () => {
 
     const byIds = queryListings(
       pool,
-      { ...base, ids: ['tech-1', 'tech-0', 'missing'] },
+      { ...base, ids: ['mobiles-1', 'mobiles-0', 'missing'] },
       categoryFilters,
       now,
     );
-    expect(byIds.items.map(i => i.id)).toEqual(['tech-1', 'tech-0']);
+    expect(byIds.items.map(i => i.id)).toEqual(['mobiles-1', 'mobiles-0']);
   });
 
   test('query string sends only what is set, prices in fils', () => {
@@ -72,7 +72,7 @@ describe('server-side listings (GET /listings)', () => {
       listingParams(
         {
           q: ' iphone 14 ',
-          category: 'tech',
+          category: 'mobiles',
           format: 'auction',
           sort: 'ending_soon',
           filters: {
@@ -86,7 +86,7 @@ describe('server-side listings (GET /listings)', () => {
         '40',
       ),
     ).toBe(
-      'q=iphone%2014&category=tech&format=auction&brands=Apple%2CSamsung' +
+      'q=iphone%2014&category=mobiles&format=auction&brands=Apple%2CSamsung' +
         '&minPrice=10000&maxPrice=12500&verifiedOnly=true&sort=ending_soon&cursor=40',
     );
     expect(listingParams({ ...base, ids: ['a', 'b'] })).toBe('ids=a%2Cb');

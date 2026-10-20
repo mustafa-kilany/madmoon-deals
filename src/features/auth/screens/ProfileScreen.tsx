@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { Image, Pressable, ScrollView, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { BackButton } from '@/components/BackButton';
+import { CityPicker } from '@/components/CityPicker';
 import { Icon, type IconName } from '@/components/icons';
 import { Price } from '@/components/Price';
 import {
@@ -12,13 +13,12 @@ import {
   Heading,
   Ltr,
   Screen,
-  Select,
   Text,
   TextField,
 } from '@/components/ui';
 import { go, startAuth } from '@/features/auth/authFlow';
 import { pickAvatarPhoto } from '@/features/auth/photoCapture';
-import { useCities, useMyListings } from '@/features/catalog/hooks/useCatalog';
+import { useMyListings } from '@/features/catalog/hooks/useCatalog';
 import { useOpenItem } from '@/features/catalog/hooks/useOpenItem';
 import { useLocalized } from '@/i18n';
 import type { User } from '@/lib/types';
@@ -75,7 +75,6 @@ export function ProfileScreen() {
 function SignedInProfile({ user }: { user: User }) {
   const { t } = useTranslation();
   const localized = useLocalized();
-  const { data: cities = [] } = useCities();
   const { data: listings = [] } = useMyListings();
   const openItem = useOpenItem();
   const changeAvatar = useChangeAvatar();
@@ -166,14 +165,9 @@ function SignedInProfile({ user }: { user: User }) {
 
         <View>
           <SectionLabel icon="MapPin" label={t('profile.city')} />
-          <Select
-            size="lg"
+          <CityPicker
             label={t('profile.city')}
             value={user.cityId}
-            options={cities.map(c => ({
-              value: c.id,
-              label: localized(c.name),
-            }))}
             onChange={cityId => updateProfile.mutate({ cityId }, { onError })}
           />
         </View>
