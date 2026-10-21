@@ -222,6 +222,15 @@ function createStore() {
     verified: false,
     card: { brand: 'visa', last4: '4242' },
   });
+  // Demo courier (as in src/services/mock/users.ts): sees "Confirm a Delivery".
+  addAccount(store, {
+    name: 'Sahla Courier',
+    email: 'courier@sahla.jo',
+    password: 'sahla1234',
+    method: 'email',
+    verified: true,
+    role: 'courier',
+  });
   return store;
 }
 

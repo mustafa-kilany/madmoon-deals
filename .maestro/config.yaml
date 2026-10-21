@@ -1,0 +1,7 @@
+# Maestro end-to-end tests (Phase 8). Run all: `maestro test .maestro`
+# Needs: emulator running, Metro (`npm start`), contract server
+# (`npm run contract-server`) and the debug app installed. See .maestro/README.md.
+flows:
+  - "*.yaml"
+executionOrder:
+  continueOnFailure: true

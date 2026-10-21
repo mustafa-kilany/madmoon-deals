@@ -25,7 +25,6 @@ import { StatusView } from '@/components/StatusView';
 import { useBrowseState } from '@/features/catalog/browseStore';
 import { useListings } from '@/features/catalog/hooks/useCatalog';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
-import { useNow } from '@/hooks/useNow';
 import { useLocalized } from '@/i18n';
 import { emptyFilters, filterCount } from '@/lib/browsing';
 import { placeLabel } from '@/lib/places';
@@ -68,7 +67,6 @@ export function ListingBrowser({
 }: ListingBrowserProps) {
   const { t } = useTranslation();
   const localized = useLocalized();
-  const now = useNow();
   const [state, patch] = useBrowseState(scope, auctionOnly);
   const [sheetOpen, setSheetOpen] = useState(false);
 
@@ -344,7 +342,6 @@ export function ListingBrowser({
       {header}
       <ProductGrid
         items={items}
-        now={now}
         onEndReached={loadMore}
         loadingMore={listings.isFetchingNextPage}
         header={

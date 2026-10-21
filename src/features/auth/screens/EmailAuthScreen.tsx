@@ -76,7 +76,7 @@ export function EmailAuthScreen({ route }: RootScreenProps<'EmailAuth'>) {
             setStep('otp');
             toast.info(t('auth.otpSentTo', { email: values.email }));
           },
-          onError: err => {
+          onError: () => {
             // If OTP endpoint fails, fallback to direct signUp
             signUp.mutate(values);
           },

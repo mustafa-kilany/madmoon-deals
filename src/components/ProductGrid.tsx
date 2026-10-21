@@ -1,20 +1,23 @@
-// 2-column grid of ProductCards. Pads an odd last row with an empty cell so
-// a lone card keeps half width, as in the prototype's CSS grid. Lazy loading:
+// 2-column grid of ProductCards on FlashList, which recycles card views as
+// you scroll instead of creating new ones (smooth on long result lists).
+// Spacing is padding on each cell: FlashList has no column gap. Lazy loading:
 // `onEndReached` fires near the bottom, `loadingMore` shows a footer spinner.
 
 import type { ReactElement } from 'react';
-import { ActivityIndicator, FlatList, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { ProductCard } from '@/components/ProductCard';
 import type { Item } from '@/lib/types';
 import { colors } from '@/theme/colors';
 
-const SPACER = 'spacer';
+/** p-5 around the grid (prototype value). */
+const EDGE = 20;
+/** gap-3 in browsers, gap-4 on Saved (prototype values). */
+const GAP = { 'gap-3': 12, 'gap-4': 16 };
 
 type ProductGridProps = {
   items: Item[];
-  now: number;
-  /** gap-3 in browsers, gap-4 on Saved (prototype values). */
-  gap?: 'gap-3' | 'gap-4';
+  gap?: keyof typeof GAP;
   header?: ReactElement;
   empty?: ReactElement;
   /** Load the next page; called when the list is about half a screen from its end. */
@@ -24,33 +27,42 @@ type ProductGridProps = {
 
 export function ProductGrid({
   items,
-  now,
   gap = 'gap-3',
   header,
   empty,
   onEndReached,
   loadingMore = false,
 }: ProductGridProps) {
-  const data: (Item | typeof SPACER)[] =
-    items.length % 2 ? [...items, SPACER] : items;
+  const space = GAP[gap];
   return (
-    <FlatList
-      data={data}
-      keyExtractor={entry => (entry === SPACER ? SPACER : entry.id)}
+    <FlashList
+      data={items}
+      keyExtractor={item => item.id}
       numColumns={2}
-      renderItem={({ item }) =>
-        item === SPACER ? (
-          <View className="flex-1" />
-        ) : (
-          // Only auctions show a countdown; a fixed `now` lets the others skip redraws.
-          <ProductCard item={item} now={item.auction ? now : 0} />
-        )
-      }
-      columnWrapperClassName={gap}
-      contentContainerClassName={`${gap} p-5`}
+      // Auction cards are taller (Bid now button): recycle like with like.
+      getItemType={item => item.saleType}
+      renderItem={({ item, index }) => (
+        <View
+          style={{
+            flex: 1,
+            paddingBottom: space,
+            paddingStart: index % 2 ? space / 2 : 0,
+            paddingEnd: index % 2 ? 0 : space / 2,
+          }}
+        >
+          <ProductCard item={item} />
+        </View>
+      )}
+      contentContainerStyle={{
+        paddingHorizontal: EDGE,
+        paddingTop: EDGE,
+        paddingBottom: EDGE - space,
+      }}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
-      ListHeaderComponent={header}
+      ListHeaderComponent={
+        header ? <View style={{ marginBottom: space }}>{header}</View> : null
+      }
       ListEmptyComponent={empty}
       onEndReached={onEndReached}
       onEndReachedThreshold={0.5}
@@ -59,12 +71,8 @@ export function ProductGrid({
           <View className="py-4">
             <ActivityIndicator color={colors.primary} />
           </View>
-        ) : undefined
+        ) : null
       }
-      // Cards are images: keep the render window small on long lists.
-      initialNumToRender={8}
-      windowSize={7}
-      removeClippedSubviews
     />
   );
 }

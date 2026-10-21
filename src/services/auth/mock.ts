@@ -127,12 +127,12 @@ export const mockAuthService: AuthService = {
     return openSession(account);
   },
 
-  sendOtp: async ({ email }) => {
+  sendOtp: async () => {
     await mockLatency();
     // Demo OTP is sent; in mock mode any 6-digit code or "123456" passes.
   },
 
-  verifyOtp: async ({ email, code }) => {
+  verifyOtp: async ({ email }) => {
     await mockLatency();
     const address = normalizeEmail(email);
     let account = Object.values(users()).find(u => u.email === address);

@@ -480,10 +480,21 @@ Each phase ends with a working build on an Android emulator (and iOS, see §6.3)
   Cloud OAuth client IDs, Apple Developer account), the payment provider SDK (§8 #4),
   won-auction checkout (after the server closes auctions).
 
-### Phase 8 — Quality
-- Unit tests (pricing, filters, formatters, stores), component tests for the UI kit.
-- E2E flows with Maestro: browse → sign in → buy → track; seller listing; courier PIN.
-- Accessibility pass, performance pass (lists, images), crash reporting.
+### Phase 8 — Quality (in progress)
+- ✅ Unit tests (pricing, filters, formatters, stores, brands, places, clock), component tests
+  for the UI kit.
+- ✅ E2E flows with Maestro (2026-10-20, `.maestro/`, `npm run e2e`, see `.maestro/README.md`):
+  guest browse; buy → escrow → courier PIN confirms; sell with photo + brand/model. 3/3 pass.
+  They found a real bug (My Listings didn't refresh after publishing; fixed).
+- ✅ Crash reporting hooks (`ErrorBoundary`, `services/crashReporter.ts`; Sentry plugs in later).
+- ✅ Performance pass (2026-10-20):
+  - One shared clock (`hooks/useNow.ts`): countdowns redraw only their text (`TimeLeft`);
+    cards redraw only when their auction ends. Before, whole screens redrew every second.
+  - Result grids on FlashList (recycled cells), memoised cards.
+  - Polling pauses in the background (React Query `focusManager` + AppState), refreshes on return.
+  - Android release: R8 + resource shrinking on (release APK verified on the emulator).
+  - Backend asked for ~400 px card thumbnails (`imageUrl`), full size only on the product page.
+- Still to do: accessibility pass with TalkBack, iOS E2E run (needs a Mac or cloud runner).
 
 ### Phase 9 — Release
 - ✅ Logo and app icons (2026-10-20): `assets/logo/sahla-mark.svg` (winking bag + price tag),
@@ -497,6 +508,12 @@ Each phase ends with a working build on an Android emulator (and iOS, see §6.3)
 ---
 
 ## 6. Development Environment
+
+> **Windows release builds:** the native build fails with "Filename longer than 260 characters"
+> because the SDK's CMake 3.22.1 ships an old `ninja`. Fix (this machine already has it): add
+> `cmake.dir=C\:\Users\<you>\AppData\Local\Android\Sdk\cmake\4.1.2` to
+> `android/local.properties` (git-ignored; CMake 4.1.2 from SDK Manager → SDK Tools).
+> Windows "long paths" must also be on (it is here).
 
 ### 6.1 Common (Windows / macOS)
 

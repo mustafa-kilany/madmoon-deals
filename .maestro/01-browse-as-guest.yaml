@@ -1,0 +1,23 @@
+# Guest browsing: search by model, open a listing, see brand + model, save it.
+appId: com.sahla
+name: Browse as a guest
+tags: [smoke]
+---
+- runFlow: subflows/launch.yaml
+- tapOn: "Search for anything..."
+- inputText: "cerato"
+- hideKeyboard
+- extendedWaitUntil:
+    visible: "Kia Cerato 2019"
+    timeout: 10000
+- tapOn: "Kia Cerato 2019"
+- assertVisible: "Brand"
+- assertVisible: "Kia · Cerato"
+- assertVisible: "Pay Now"
+- back
+- back
+# Categories and the new areas list
+- tapOn: "Cars & Vehicles"
+- assertVisible: "Filters"
+- tapOn: "Filters"
+- assertVisible: "Brand"

@@ -198,8 +198,9 @@ type Item = {
   category: string;
   title: Localized;
   priceFils: number; // Integer fils; for auctions, the current highest bid
-  imageUrl: string;    // cover photo (= imageUrls[0])
-  imageUrls?: string[]; // every photo, cover first
+  imageUrl: string;    // cover photo: a ~400×400 thumbnail (cards, lists)
+                       // — never the full-size upload; it's shown 2 per row
+  imageUrls?: string[]; // every photo, cover first, full size (≤1200 px, product page)
   condition: 'new' | 'excellent' | 'good' | 'loved';
   seller: Localized;
   brand?: string;

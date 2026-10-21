@@ -3,7 +3,7 @@
 // custom bid input, and bid history list.
 
 import { useState } from 'react';
-import { Image, Pressable, ScrollView, View } from 'react-native';
+import { Image, ScrollView, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { BackButton } from '@/components/BackButton';
 import { ConditionTag } from '@/components/ConditionTag';
@@ -20,10 +20,10 @@ import {
   Text,
   TextField,
 } from '@/components/ui';
-import { useTimeLeftLabel } from '@/features/auctions/hooks/useTimeLeftLabel';
+import { TimeLeft } from '@/components/TimeLeft';
 import { useItem } from '@/features/catalog/hooks/useCatalog';
 import { useBids, usePlaceBid } from '@/features/offers/hooks/useNegotiation';
-import { useNow } from '@/hooks/useNow';
+import { useHasEnded } from '@/hooks/useNow';
 import { useLang, useLocalized } from '@/i18n';
 import { formatJOD } from '@/lib/money';
 import type { RootScreenProps } from '@/navigation/types';
@@ -37,8 +37,6 @@ export function AuctionBiddingScreen({
   const { t } = useTranslation();
   const lang = useLang();
   const localized = useLocalized();
-  const now = useNow();
-  const timeLeftLabel = useTimeLeftLabel();
   const itemId = route.params?.itemId;
 
   const { data: item, isLoading: isItemLoading } = useItem(itemId, {
@@ -48,6 +46,8 @@ export function AuctionBiddingScreen({
   const placeBid = usePlaceBid();
 
   const [bidJod, setBidJod] = useState('');
+  // Before the early returns: hooks run on every render.
+  const ended = useHasEnded(item?.auction?.endsAt);
 
   if (isItemLoading || isBidsLoading) return <StatusView status="loading" />;
   if (!item) {
@@ -64,7 +64,6 @@ export function AuctionBiddingScreen({
   const currentBidFils = item.priceFils;
   const incrementFils = auction?.incrementFils ?? 1000;
   const minRequiredFils = currentBidFils + incrementFils;
-  const ended = !!auction && auction.endsAt <= now;
 
   const handleQuickAdd = (addDinars: number) => {
     const targetFils = currentBidFils + addDinars * 1000;
@@ -126,13 +125,10 @@ export function AuctionBiddingScreen({
           {auction && (
             <View className="absolute bottom-3 end-3 start-3 flex-row items-center gap-2 rounded-xl bg-brand-espresso/90 px-4 py-3">
               <Icon name="Clock" size={18} color={colors.onPrimary} />
-              <Text className="font-sans-bold text-sm text-brand-on-primary">
-                {ended
-                  ? t('time.ended')
-                  : t('time.left', {
-                      time: timeLeftLabel(auction.endsAt, now),
-                    })}
-              </Text>
+              <TimeLeft
+                endsAt={auction.endsAt}
+                className="font-sans-bold text-sm text-brand-on-primary"
+              />
             </View>
           )}
         </View>

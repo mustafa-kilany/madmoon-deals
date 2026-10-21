@@ -161,9 +161,7 @@ function ActiveChatView({
           {isLoading ? (
             <StatusView status="loading" />
           ) : (
-            messages.map(msg => (
-              <MessageItem key={msg.id} message={msg} thread={thread} />
-            ))
+            messages.map(msg => <MessageItem key={msg.id} message={msg} />)
           )}
         </ScrollView>
 
@@ -188,13 +186,7 @@ function ActiveChatView({
   );
 }
 
-function MessageItem({
-  message,
-  thread,
-}: {
-  message: ChatMessage;
-  thread: ChatThread;
-}) {
+function MessageItem({ message }: { message: ChatMessage }) {
   const isMe = message.senderId === 'me';
   return (
     <View className={`gap-1 ${isMe ? 'items-end' : 'items-start'}`}>
@@ -212,7 +204,7 @@ function MessageItem({
         >
           {message.text}
         </Text>
-        {message.offer && <OfferCard offer={message.offer} thread={thread} />}
+        {message.offer && <OfferCard offer={message.offer} />}
       </View>
       <Text className="px-2 text-[10px] text-brand-warmgray">
         {new Date(message.createdAt).toLocaleTimeString([], {
@@ -224,7 +216,7 @@ function MessageItem({
   );
 }
 
-function OfferCard({ offer, thread }: { offer: Offer; thread: ChatThread }) {
+function OfferCard({ offer }: { offer: Offer }) {
   const { t } = useTranslation();
   const lang = useLang();
   const respond = useRespondToOffer();

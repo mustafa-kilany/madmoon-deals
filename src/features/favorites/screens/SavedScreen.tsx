@@ -9,7 +9,6 @@ import { ProductGrid } from '@/components/ProductGrid';
 import { StatusView } from '@/components/StatusView';
 import { Button, Heading, Screen, Text } from '@/components/ui';
 import { useItemsByIds } from '@/features/catalog/hooks/useCatalog';
-import { useNow } from '@/hooks/useNow';
 import type { RootScreenProps } from '@/navigation/types';
 import { colors } from '@/theme/colors';
 import { useFavoritesStore } from '../store';
@@ -19,7 +18,6 @@ export function SavedScreen({ navigation }: RootScreenProps<'Saved'>) {
   const ids = useFavoritesStore(s => s.ids);
   // Only the saved listings are fetched, in the order they were saved.
   const { items: saved, isPending, isError, refetch } = useItemsByIds(ids);
-  const now = useNow();
 
   return (
     <Screen
@@ -58,7 +56,7 @@ export function SavedScreen({ navigation }: RootScreenProps<'Saved'>) {
           />
         </View>
       ) : (
-        <ProductGrid items={saved} now={now} gap="gap-4" />
+        <ProductGrid items={saved} gap="gap-4" />
       )}
     </Screen>
   );

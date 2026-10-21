@@ -45,7 +45,9 @@ export const mockCatalogService: CatalogService = {
   },
   getMyListings: async () => {
     await mockLatency();
-    return userListings;
+    // A new array each time, like a real response: Query compares by
+    // reference, so returning the mutated original never redraws the list.
+    return [...userListings];
   },
   // The phone's own file stands in for the uploaded copy.
   uploadListingPhoto: async photo => {

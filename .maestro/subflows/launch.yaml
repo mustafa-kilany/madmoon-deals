@@ -1,0 +1,9 @@
+# Fresh start: wipe app data (session, saved items, language) and open Home.
+appId: com.sahla
+---
+- launchApp:
+    clearState: true
+    clearKeychain: true
+- extendedWaitUntil:
+    visible: "Welcome to Sahla"
+    timeout: 60000 # first launch of a debug build loads the JS bundle

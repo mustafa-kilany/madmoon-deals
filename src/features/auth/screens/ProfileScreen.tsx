@@ -8,14 +8,7 @@ import { BackButton } from '@/components/BackButton';
 import { CityPicker } from '@/components/CityPicker';
 import { Icon, type IconName } from '@/components/icons';
 import { Price } from '@/components/Price';
-import {
-  Button,
-  Heading,
-  Ltr,
-  Screen,
-  Text,
-  TextField,
-} from '@/components/ui';
+import { Button, Heading, Ltr, Screen, Text, TextField } from '@/components/ui';
 import { go, startAuth } from '@/features/auth/authFlow';
 import { pickAvatarPhoto } from '@/features/auth/photoCapture';
 import { useMyListings } from '@/features/catalog/hooks/useCatalog';

@@ -8,41 +8,31 @@ import { useTranslation } from 'react-i18next';
 import { ConditionTag } from '@/components/ConditionTag';
 import { Icon } from '@/components/icons';
 import { Price } from '@/components/Price';
+import { TimeLeft } from '@/components/TimeLeft';
 import { Heading, Text } from '@/components/ui';
-import { useTimeLeftLabel } from '@/features/auctions/hooks/useTimeLeftLabel';
 import { useOpenItem } from '@/features/catalog/hooks/useOpenItem';
 import {
   useIsFavorite,
   useToggleFavorite,
 } from '@/features/favorites/hooks/useFavorites';
+import { useHasEnded } from '@/hooks/useNow';
 import { useLocalized } from '@/i18n';
 import { placeLabel } from '@/lib/places';
 import type { Item } from '@/lib/types';
 import { colors } from '@/theme/colors';
 
-type ProductCardProps = {
-  item: Item;
-  /** Current time from the parent list, so all countdowns tick together. */
-  now: number;
-};
-
 /**
- * Memoised: lists tick `now` every second for countdowns, and only auction
- * cards need it (ProductGrid passes 0 to the others), so the rest don't redraw.
+ * Memoised, and never redraws for the clock: the countdown text (TimeLeft)
+ * ticks on its own, and the card itself only redraws when its auction ends.
  */
-export const ProductCard = memo(function ProductCard({
-  item,
-  now,
-}: ProductCardProps) {
+export const ProductCard = memo(function ProductCard({ item }: { item: Item }) {
   const { t } = useTranslation();
   const localized = useLocalized();
   const openItem = useOpenItem();
   const saved = useIsFavorite(item.id);
   const toggleFavorite = useToggleFavorite();
-  const timeLeftLabel = useTimeLeftLabel();
-
   const auction = item.saleType === 'auction' ? item.auction : undefined;
-  const ended = !!auction && auction.endsAt <= now;
+  const ended = useHasEnded(auction?.endsAt);
   const title = localized(item.title);
 
   return (
@@ -81,18 +71,12 @@ export const ProductCard = memo(function ProductCard({
                 size={14}
                 color={ended ? colors.warmgray : colors.onPrimary}
               />
-              <Text
+              <TimeLeft
+                endsAt={auction.endsAt}
                 className={`font-sans-bold text-xs ${
                   ended ? 'text-brand-warmgray' : 'text-brand-on-primary'
                 }`}
-                numberOfLines={1}
-              >
-                {ended
-                  ? t('time.ended')
-                  : t('time.left', {
-                      time: timeLeftLabel(auction.endsAt, now),
-                    })}
-              </Text>
+              />
             </View>
           )}
         </View>

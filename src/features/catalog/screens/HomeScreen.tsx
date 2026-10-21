@@ -12,9 +12,8 @@ import { ItemRail } from '@/components/ItemRail';
 import { Price } from '@/components/Price';
 import { StatusView } from '@/components/StatusView';
 import { Heading, Screen, Text } from '@/components/ui';
-import { useTimeLeftLabel } from '@/features/auctions/hooks/useTimeLeftLabel';
+import { TimeLeft } from '@/components/TimeLeft';
 import { useFavoritesStore } from '@/features/favorites/store';
-import { useNow } from '@/hooks/useNow';
 import { changeLanguage, useLang, useLocalized } from '@/i18n';
 import { emptyFilters } from '@/lib/browsing';
 import type { Item } from '@/lib/types';
@@ -50,7 +49,6 @@ export function HomeScreen() {
   // Small, targeted requests: the viewed items, and the soonest-ending auction.
   const { items: recentItems } = useItemsByIds(recentIds);
   const { items: liveAuctions } = useListings(FEATURED_QUERY);
-  const now = useNow();
 
   const featured = liveAuctions[0];
 
@@ -155,19 +153,18 @@ export function HomeScreen() {
             </View>
           )}
 
-          {featured?.auction && <FeaturedAuction item={featured} now={now} />}
+          {featured?.auction && <FeaturedAuction item={featured} />}
         </ScrollView>
       )}
     </Screen>
   );
 }
 
-function FeaturedAuction({ item, now }: { item: Item; now: number }) {
+function FeaturedAuction({ item }: { item: Item }) {
   const { t } = useTranslation();
   const navigation = useNavigation();
   const localized = useLocalized();
   const openItem = useOpenItem();
-  const timeLeftLabel = useTimeLeftLabel();
   const title = localized(item.title);
 
   return (
@@ -200,9 +197,11 @@ function FeaturedAuction({ item, now }: { item: Item; now: number }) {
           </View>
           <View className="absolute bottom-3 start-3 flex-row items-center gap-2 rounded-xl border border-brand-surface/10 bg-brand-espresso/80 px-3 py-1.5">
             <Icon name="Clock" size={16} color={colors.onPrimary} />
-            <Text className="font-sans-bold text-sm text-brand-on-primary">
-              {timeLeftLabel(item.auction!.endsAt, now)}
-            </Text>
+            <TimeLeft
+              endsAt={item.auction!.endsAt}
+              suffix={false}
+              className="font-sans-bold text-sm text-brand-on-primary"
+            />
           </View>
           <View className="absolute bottom-3 end-3 items-end rounded-xl bg-brand-surface px-3 py-1 shadow-md">
             <Text className="font-sans-bold text-[10px] leading-tight text-brand-warmgray">

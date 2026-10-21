@@ -1,0 +1,50 @@
+# Seller lists a phone: photo from the gallery, brand + model pickers
+# (the model fills the title), price, publish, then finds it in My Listings.
+appId: com.sahla
+name: Sell an item
+---
+- addMedia:
+    - "media/listing-photo.jpg"
+- runFlow: subflows/launch.yaml
+- runFlow:
+    file: subflows/sign-in.yaml
+    env:
+      EMAIL: ahmad@sahla.jo
+      PASSWORD: sahla1234
+- tapOn: "Sell"
+- assertVisible: "List an Item"
+
+# Photo: Android's photo picker, newest photo first
+- tapOn: "Add Photo"
+- runFlow: subflows/pick-first-photo.yaml
+- assertVisible: "Remove photo 1"
+
+# Brand and model (Mobiles & Tablets → Phones is the default)
+- tapOn: "Brand (optional)"
+- tapOn: "Search"
+- inputText: "sams"
+- tapOn: "Samsung"
+- tapOn: "Model (optional)"
+- tapOn: "Search"
+- inputText: "s24 ultra"
+- tapOn: "Galaxy S24 Ultra"
+- assertVisible: "Samsung Galaxy S24 Ultra" # title filled from the model
+
+- scrollUntilVisible:
+    element:
+        text: "Price (JOD)"
+- tapOn: "Price (JOD)"
+- inputText: "650"
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+        text: "Publish Listing"
+- tapOn: "Publish Listing"
+- extendedWaitUntil:
+    visible: "Listing published successfully!"
+    timeout: 15000
+
+- tapOn: "Profile"
+- scrollUntilVisible:
+    element:
+        text: "Samsung Galaxy S24 Ultra"

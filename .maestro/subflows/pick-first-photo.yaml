@@ -1,0 +1,14 @@
+# Android photo picker (Android 13+): tap the newest photo. The flow adds a
+# test photo with addMedia first, so the gallery is never empty.
+appId: com.sahla
+---
+- extendedWaitUntil:
+    visible: "Photo taken on.*"
+    timeout: 10000
+- tapOn:
+    text: "Photo taken on.*"
+    index: 0
+# Newer pickers wait for "Done" even with a single photo allowed.
+- tapOn:
+    text: "Done"
+    optional: true

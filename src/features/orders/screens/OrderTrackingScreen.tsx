@@ -98,7 +98,7 @@ function OrderCard({ order }: { order: Order }) {
             {localized(order.itemTitle)}
           </Heading>
           <Price fils={order.totalFils} className="text-base" />
-          <Text className="text-xs text-brand-warmgray">
+          <Text testID="order-number" className="text-xs text-brand-warmgray">
             {t('orders.number', { id: order.id })}
           </Text>
         </View>
@@ -150,7 +150,10 @@ function OrderCard({ order }: { order: Order }) {
       {order.pin && order.status === 'escrow_held' && (
         <View className="items-center gap-1 rounded-xl bg-brand-lightgray p-3">
           <Text className="text-xs text-brand-warmgray">{t('orders.pin')}</Text>
-          <Ltr className="font-heading-black text-3xl tracking-[8px]">
+          <Ltr
+            testID="order-pin"
+            className="font-heading-black text-3xl tracking-[8px]"
+          >
             {order.pin}
           </Ltr>
           <Text className="text-center text-xs text-brand-warmgray">
