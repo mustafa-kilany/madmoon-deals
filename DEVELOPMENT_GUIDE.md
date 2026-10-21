@@ -245,7 +245,8 @@ Porting classes: prototype `font-heading font-black` → `font-heading-black`; p
    Minimum touch target 44×44.
 8. Prettier + ESLint and the type check must pass before committing (`npm run lint`, `npm run typecheck`).
 9. Commits follow **Conventional Commits**: `feat:`, `fix:`, `refactor:`, `chore:`, `test:`, `docs:`.
-10. Work on feature branches (`feat/home-screen`), merge to `main` through pull requests.
+10. Work on feature branches (`feat/home-screen`), merge to `main` through pull requests
+    (see §3.6).
 11. **NativeWind:** a component must not *gain* shadow / ring / transform / animation classes
     after its first render (they use CSS variables; NativeWind then remounts it, and in
     development its warning crashes the app). Toggle between two values instead:
@@ -258,6 +259,25 @@ Porting classes: prototype `font-heading font-black` → `font-heading-black`; p
 14. Reanimated `Animated.View`s take `style`, not `className`.
 15. **Data flow:** screens → feature hooks (`features/*/hooks`, TanStack Query) → services
     (`services/*`) → mock or HTTP. Screens never import a service or mock data directly. See §4.4.
+
+### 3.6 Git and GitHub
+
+Repo: `github.com/mustafa-kilany/Sahla`, using **GitHub Flow**: one long-lived branch (`main`)
+plus short-lived branches for each piece of work.
+
+- `main` always builds and passes CI. Nobody pushes to it directly.
+- Start each piece of work from an up-to-date `main`:
+  `git switch main`, `git pull`, then `git switch -c feat/<short-name>`.
+  Prefixes match the commit types: `feat/`, `fix/`, `refactor/`, `chore/`, `test/`, `docs/`.
+- Push the branch (`git push -u origin feat/<short-name>`) and open a pull request into `main`.
+  The PR template has the checklist. CI (`.github/workflows/ci.yml`) runs the type check,
+  lint and unit tests.
+- Merge with **Squash and merge** when CI is green, then delete the branch.
+- Each finished roadmap phase gets a tag (`phase-1` … `phase-7` so far). Store releases are
+  tagged `v1.0.0`, `v1.0.1`, … (Phase 9).
+- One-time GitHub settings (done in the browser by the repo owner), under **Settings** →
+  **Rules** → **Rulesets**: protect `main` (require a pull request, require the `CI` check,
+  block force pushes and deletion).
 
 ---
 
@@ -399,7 +419,7 @@ Each phase ends with a working build on an Android emulator (and iOS, see §6.3)
 - Add Prettier/ESLint config, path aliases (`@/` → `src/`), strict TypeScript.
 - **Done when:** the default app runs and `npm run lint` + `npm test` pass.
 
-### Phase 1 — Foundation ✅ Done on Android (2026-10-18; branch `feat/phase-1-foundation`; iOS cloud build still to run)
+### Phase 1 — Foundation ✅ Done on Android (2026-10-18; tag `phase-1`; iOS cloud build still to run)
 - Install core dependencies (§7).
 - Theme tokens (`src/theme`), NativeWind config (`tailwind.config.js` reads the tokens, so classes
   match the prototype: `bg-brand-primary`, …; `inlineRem: 16` in `metro.config.js` so spacing matches
@@ -415,7 +435,7 @@ Each phase ends with a working build on an Android emulator (and iOS, see §6.3)
   bundled in `assets/images/categories`; listing photos stay remote URLs, like real listing images.
 - **Done when:** empty tab screens navigate correctly in both languages.
 
-### Phase 2 — Browsing (guest) ✅ Done on Android (2026-10-19; branch `feat/phase-2-browsing`)
+### Phase 2 — Browsing (guest) ✅ Done on Android (2026-10-19; tag `phase-2`)
 - Home dashboard, category screen + filter sheet, search (recent searches), product detail,
   saved items (local favourites), Auctions tab (browsing only; the auction page itself is Phase 5).
 - Verified sellers ranked first.
@@ -428,7 +448,7 @@ Each phase ends with a working build on an Android emulator (and iOS, see §6.3)
   FlashList / cached images when real data arrives (Phase 7).
 - **Done when:** a guest can browse, filter, search and save items, in Arabic and English.
 
-### Phase 3 — Accounts and trust (branch `feat/phase-3-accounts`)
+### Phase 3 — Accounts and trust (tag `phase-3`)
 - Backend-ready data layer (§4.4): `config.ts`, HTTP client, `ApiError`, token storage, catalog /
   auth / payments services each with mock + HTTP implementations, `docs/API.md`.
 - Auth choice, email sign-up **and log-in** (log-in isn't in the prototype; a real backend needs
