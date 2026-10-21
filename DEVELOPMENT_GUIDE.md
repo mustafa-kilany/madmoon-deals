@@ -486,7 +486,10 @@ Each phase ends with a working build on an Android emulator (and iOS, see §6.3)
 - Accessibility pass, performance pass (lists, images), crash reporting.
 
 ### Phase 9 — Release
-- App icons, splash screen, app name in Arabic and English.
+- ✅ Logo and app icons (2026-10-20): `assets/logo/sahla-mark.svg` (winking bag + price tag),
+  `SahlaLogo` / `SahlaMark` in `src/components/SahlaLogo.tsx`, Android adaptive + legacy icons,
+  iOS AppIcon set, `assets/logo/play-store-icon-512.png`. Still to do: splash screen, app name
+  in Arabic and English.
 - Android: release keystore, signed AAB, Google Play listing.
 - iOS: bundle ID, signing, TestFlight, App Store listing.
 - Privacy policy (ID documents and payment data are sensitive).

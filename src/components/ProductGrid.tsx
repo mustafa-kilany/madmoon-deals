@@ -42,7 +42,8 @@ export function ProductGrid({
         item === SPACER ? (
           <View className="flex-1" />
         ) : (
-          <ProductCard item={item} now={now} />
+          // Only auctions show a countdown; a fixed `now` lets the others skip redraws.
+          <ProductCard item={item} now={item.auction ? now : 0} />
         )
       }
       columnWrapperClassName={gap}

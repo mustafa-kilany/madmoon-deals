@@ -13,6 +13,7 @@ import { useEffect, useState } from 'react';
 import { StatusBar, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { SidebarMenu } from '@/components/SidebarMenu';
 import { Toast } from '@/components/Toast';
 import { useSessionRefresh } from '@/features/auth/hooks/useAccount';
@@ -47,12 +48,14 @@ function App() {
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <StatusBar barStyle="dark-content" />
-          <NavigationContainer ref={navigationRef} theme={navigationTheme}>
-            <SessionRefresh />
-            <RootNavigator />
-            <SidebarMenu />
-            <Toast />
-          </NavigationContainer>
+          <ErrorBoundary>
+            <NavigationContainer ref={navigationRef} theme={navigationTheme}>
+              <SessionRefresh />
+              <RootNavigator />
+              <SidebarMenu />
+              <Toast />
+            </NavigationContainer>
+          </ErrorBoundary>
         </QueryClientProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

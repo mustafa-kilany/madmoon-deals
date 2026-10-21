@@ -30,7 +30,14 @@ export type Category = {
 };
 
 /** A sub-type within a category (e.g. Phones under Tech), used for filtering. */
-export type ItemType = { id: string; name: Localized };
+export type ItemType = {
+  id: string;
+  name: Localized;
+  /** Brands sellers pick from for this type (most popular first). */
+  brands?: string[];
+  /** Models per brand, where buyers search by model (phones, cars, …). */
+  models?: Record<string, string[]>;
+};
 
 /** A city a listing is in. Filters match on `id`, so they survive a language switch. */
 /** A city or area. `governorate` lets it show as "البلقاء / السلط". */
@@ -67,6 +74,8 @@ export type Item = {
   condition: Condition;
   seller: Localized;
   brand?: string;
+  /** e.g. "iPhone 14 Pro", "Camry"; free text, usually from ItemType.models. */
+  model?: string;
   /** ItemType id within the category. */
   type: string;
   verified: boolean;

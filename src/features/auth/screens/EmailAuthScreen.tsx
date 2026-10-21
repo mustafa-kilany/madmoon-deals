@@ -274,6 +274,7 @@ export function EmailAuthScreen({ route }: RootScreenProps<'EmailAuth'>) {
                     },
                   )
                 }
+                accessibilityRole="button"
                 className="min-h-11 justify-center self-center"
               >
                 <Text className="font-sans-bold text-sm text-brand-primary">

@@ -98,6 +98,7 @@ export function CityPicker({
         <Animated.View entering={FadeIn.duration(150)} style={styles.fill}>
           <Pressable
             onPress={() => setOpen(false)}
+            accessibilityRole="button"
             accessibilityLabel={t('common.close')}
             className="flex-1 bg-brand-espresso/60"
           />

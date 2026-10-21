@@ -3,6 +3,7 @@
 // items and the current time.
 
 import { jod } from './money';
+import { foldText } from './text';
 import type {
   ActiveFilters,
   BrowseSort,
@@ -127,29 +128,32 @@ export function filterCount(filters: ActiveFilters): number {
 
 /**
  * Every word must appear in the listing's title (either language), brand,
- * or type name (either language), so an Arabic query finds English titles too.
+ * model or type name (either language), so an Arabic query finds English
+ * titles too.
  */
 export function searchItems(
   items: Item[],
   query: string,
   categoryFilters: Record<CategoryId, CategoryFilters>,
 ): Item[] {
-  const words = query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
+  const words = foldText(query).split(/\s+/).filter(Boolean);
   if (!words.length) return items;
   return items.filter(item => {
     const type = categoryFilters[item.category]?.types.find(
       t => t.id === item.type,
     );
-    const text = [
-      item.title.en,
-      item.title.ar,
-      item.brand,
-      type?.name.en,
-      type?.name.ar,
-    ]
-      .filter(Boolean)
-      .join(' ')
-      .toLocaleLowerCase();
+    const text = foldText(
+      [
+        item.title.en,
+        item.title.ar,
+        item.brand,
+        item.model,
+        type?.name.en,
+        type?.name.ar,
+      ]
+        .filter(Boolean)
+        .join(' '),
+    );
     return words.every(word => text.includes(word));
   });
 }

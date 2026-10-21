@@ -1,11 +1,17 @@
 {
   "common": {
+    "appName": "Sahla",
     "back": "Back",
     "comingSoon": "This screen is coming soon.",
     "close": "Close",
     "clear": "Clear",
     "loadError": "Something went wrong loading this page.",
     "retry": "Try again"
+  },
+  "crash": {
+    "title": "Something went wrong",
+    "body": "This screen ran into a problem. Try again, or restart the app — your account and saved items are safe.",
+    "restart": "Restart app"
   },
   "language": {
     "toggle": "عربي",
@@ -62,7 +68,6 @@
   },
   "auth": {
     "or": "OR",
-    "logoLetter": "S",
     "subtitle": "Browse as a guest — but you need an account to buy or sell.",
     "continueWithGoogle": "Continue with Google",
     "continueWithApple": "Continue with Apple",
@@ -243,9 +248,11 @@
     "similar": "Similar items",
     "makeOffer": "Make an Offer",
     "payNow": "Pay Now",
-    "notFound": "This listing is no longer available."
+    "notFound": "This listing is no longer available.",
+    "brand": "Brand"
   },
   "addListing": {
+    "removePhoto": "Remove photo {{n}}",
     "photoRequired": "Add at least one photo.",
     "photos": "Photos (up to 5)",
     "addPhoto": "Add Photo",
@@ -255,7 +262,7 @@
     "itemType": "Item Type",
     "condition": "Condition",
     "brand": "Brand (optional)",
-    "brandPlaceholder": "e.g. Apple, Nike, BMW",
+    "brandPlaceholder": "Choose or type a brand",
     "location": "Location / City",
     "saleType": "Sale Format",
     "fixedPrice": "Fixed Price (Buy Now)",
@@ -269,7 +276,10 @@
     "duration7d": "7 Days",
     "submit": "Publish Listing",
     "success": "Listing published successfully!",
-    "error": "Failed to publish listing. Please check the form."
+    "error": "Failed to publish listing. Please check the form.",
+    "model": "Model (optional)",
+    "modelPlaceholder": "Choose the model",
+    "modelTypeIt": "Type the model"
   },
   "offers": {
     "title": "Make an Offer",
@@ -350,5 +360,11 @@
     "noMatch": "No matching area",
     "denied": "Location permission is off. Allow it in Settings, or pick your area from the list.",
     "unavailable": "Couldn't get your location. Check that location is on, or pick your area."
+  },
+  "picker": {
+    "search": "Search",
+    "useCustom": "Use “{{value}}”",
+    "none": "Not specified",
+    "typeYourOwn": "Not in the list? Type it in the search box."
   }
 }

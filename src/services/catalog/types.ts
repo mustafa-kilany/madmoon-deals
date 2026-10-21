@@ -22,6 +22,7 @@ export type CreateListingInput = {
   imageUrls: string[];
   condition: Condition;
   brand?: string;
+  model?: string;
   type: string;
   locationId: string;
   saleType: SaleType;

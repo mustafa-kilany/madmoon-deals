@@ -203,6 +203,7 @@ type Item = {
   condition: 'new' | 'excellent' | 'good' | 'loved';
   seller: Localized;
   brand?: string;
+  model?: string;    // e.g. "iPhone 14 Pro", "Camry" (usually from types[].models)
   type: string;
   verified: boolean;
   location: { id: string; name: Localized; governorate: Localized };
@@ -222,12 +223,32 @@ Returns all marketplace root categories.
 * **Response (200):** `Category[]`
 
 #### 2. `GET /categories/filters`
-Returns available item types and brands per category for the filter sheet.
-* **Response (200):** `{ [categoryId]: { types: [{ id, name: Localized }], brands: string[] } }`
+Item types per category, each with the brands sellers pick from and, where buyers search by
+model, the models per brand. Feeds the filter sheet and the Add Listing brand / model pickers.
+The app's seed copy is `src/services/mock/brands.ts` (~400 brands, ~1,000 models, popular in
+Jordan first; models newest first).
+* **Response (200):**
+  ```ts
+  {
+    [categoryId]: {
+      types: {
+        id: string;
+        name: Localized;
+        brands?: string[];                   // most popular first; [] or missing = no brand picker
+        models?: { [brand: string]: string[] }; // phones, tablets, laptops, consoles, cameras, cars, …
+      }[];
+      brands: string[];                      // every type's brands, de-duplicated
+    }
+  }
+  ```
+* Brands and models are suggestions, not a closed list: a seller may type one that isn't listed,
+  so `POST /listings` accepts any `brand` / `model` string (trim it, max ~60 chars).
 
 #### 3. `GET /cities`
 Every area a listing or account can be in: Jordan's 12 governorates and their main cities /
-areas (Amman by neighbourhood). The app's seed copy is `src/services/mock/places.ts` (59 areas).
+cities and towns, and the neighbourhoods of Amman, Irbid, Zarqa and Aqaba. The app's seed copy
+is `src/services/mock/places.ts` (170 areas). Ids are stable: add areas, never rename or reuse
+an id (listings and accounts store them).
 * **Response (200):**
   ```json
   [{ "id": "salt", "name": { "ar": "السلط", "en": "Salt" },
@@ -253,7 +274,7 @@ sorting and counting all happen on the server.** The mock backend's reference im
 
 | Param | Example | Meaning |
 |---|---|---|
-| `q` | `iphone 14` | Free text. Every word must match title (ar or en), brand or type name (ar or en). Server should normalise Arabic (أ/إ/آ→ا, ة→ه, ى→ي, strip tashkeel) and may add typo tolerance. |
+| `q` | `iphone 14` | Free text. Every word must match title (ar or en), brand, model or type name (ar or en). Server should normalise Arabic (أ/إ/آ→ا, ة→ه, ى→ي, strip tashkeel) and may add typo tolerance. |
 | `category` | `mobiles` | One category id. |
 | `format` | `fixed` \| `auction` | Omit for all. Ended auctions are never returned. |
 | `types` | `phones,laptops` | Item type ids. |
@@ -316,7 +337,7 @@ the listing with the returned URLs.
     contain the seller's GPS position); resize (e.g. 1600 px long side) and serve from a CDN.
     Uploads that no listing uses within ~24 h can be deleted.
 * **`POST /listings` *(Authenticated)***
-  * **Request (JSON):** `category`, `titleAr`, `titleEn`, `priceFils`, `imageUrls` (1–5 URLs from the upload above, cover first), `condition`, `brand?`, `type`, `locationId` (area id), `saleType` (`fixed` or `auction`), `auctionEndsAt?` (ISO-8601), `incrementFils?`.
+  * **Request (JSON):** `category`, `titleAr`, `titleEn`, `priceFils`, `imageUrls` (1–5 URLs from the upload above, cover first), `condition`, `brand?`, `model?`, `type`, `locationId` (area id), `saleType` (`fixed` or `auction`), `auctionEndsAt?` (ISO-8601), `incrementFils?`.
   * Only accept `imageUrls` that this server issued. For auctions, `priceFils` is the starting bid.
   * **Response (201):** `Item`
 * **`PATCH /listings/:id` *(Authenticated)***

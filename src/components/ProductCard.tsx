@@ -2,6 +2,7 @@
 // with Verified badge and save heart, auction countdown band, title,
 // condition · seller, price, location or bid count, and Bid now for auctions.
 
+import { memo } from 'react';
 import { Image, Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { ConditionTag } from '@/components/ConditionTag';
@@ -25,7 +26,14 @@ type ProductCardProps = {
   now: number;
 };
 
-export function ProductCard({ item, now }: ProductCardProps) {
+/**
+ * Memoised: lists tick `now` every second for countdowns, and only auction
+ * cards need it (ProductGrid passes 0 to the others), so the rest don't redraw.
+ */
+export const ProductCard = memo(function ProductCard({
+  item,
+  now,
+}: ProductCardProps) {
   const { t } = useTranslation();
   const localized = useLocalized();
   const openItem = useOpenItem();
@@ -155,4 +163,4 @@ export function ProductCard({ item, now }: ProductCardProps) {
       </Pressable>
     </View>
   );
-}
+});

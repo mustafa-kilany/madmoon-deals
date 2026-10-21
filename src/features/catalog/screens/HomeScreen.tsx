@@ -7,6 +7,7 @@ import { Image, Pressable, ScrollView, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { CategoryImage } from '@/components/CategoryImage';
 import { Icon } from '@/components/icons';
+import { SahlaMark } from '@/components/SahlaLogo';
 import { ItemRail } from '@/components/ItemRail';
 import { Price } from '@/components/Price';
 import { StatusView } from '@/components/StatusView';
@@ -55,7 +56,7 @@ export function HomeScreen() {
 
   const header = (
     <>
-      <View className="flex-1 flex-row items-center gap-3">
+      <View className="flex-1 flex-row items-center gap-2">
         <Pressable
           onPress={openSidebar}
           accessibilityRole="button"
@@ -64,6 +65,7 @@ export function HomeScreen() {
         >
           <Icon name="Menu" size={iconSize.nav} />
         </Pressable>
+        <SahlaMark size={36} />
         <Heading className="flex-1 text-xl" numberOfLines={1}>
           {user
             ? t('home.welcomeUser', { name: user.name })

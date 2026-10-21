@@ -1,6 +1,6 @@
 // Add listing screen (Phase 4): multi-field form for listing photos, title,
-// category & item type, condition, brand, city location, and sale format
-// (fixed price vs. live auction).
+// category & item type, condition, brand & model (searchable lists for the
+// chosen type), city location, and sale format (fixed price vs. live auction).
 
 import { useState } from 'react';
 import { Image, Pressable, ScrollView, View } from 'react-native';
@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { BackButton } from '@/components/BackButton';
 import { CityPicker } from '@/components/CityPicker';
 import { Icon } from '@/components/icons';
+import { SearchablePicker } from '@/components/SearchablePicker';
 import { StatusView } from '@/components/StatusView';
 import {
   Button,
@@ -54,6 +55,7 @@ export function AddListingScreen({
   const [itemType, setItemType] = useState<string>('');
   const [condition, setCondition] = useState<Condition>('excellent');
   const [brand, setBrand] = useState('');
+  const [model, setModel] = useState('');
   const [cityId, setCityId] = useState<string>('');
   const [saleType, setSaleType] = useState<SaleType>('fixed');
   const [priceJod, setPriceJod] = useState('');
@@ -90,6 +92,24 @@ export function AddListingScreen({
     itemType && availableTypes.some(tItem => tItem.id === itemType)
       ? itemType
       : availableTypes[0]?.id || 'general';
+  const typeInfo = availableTypes.find(tItem => tItem.id === activeType);
+  const brandOptions = typeInfo?.brands ?? [];
+  const modelOptions = (brand && typeInfo?.models?.[brand]) || [];
+
+  // Brands and models belong to the type, so a new type starts them over.
+  const changeType = (update: () => void) => {
+    update();
+    setBrand('');
+    setModel('');
+  };
+
+  // Picking a model fills an empty title ("Toyota Camry").
+  const chooseModel = (value: string) => {
+    setModel(value);
+    if (value && !title.trim()) {
+      setTitle(value.startsWith(brand) ? value : `${brand} ${value}`);
+    }
+  };
 
   const handleAddPhoto = async () => {
     if (photos.length >= 5) return;
@@ -133,6 +153,7 @@ export function AddListingScreen({
         photos,
         condition,
         brand: brand.trim() || undefined,
+        model: (brand.trim() && model.trim()) || undefined,
         type: activeType,
         locationId: activeCity,
         saleType,
@@ -144,7 +165,7 @@ export function AddListingScreen({
             : undefined,
       },
       {
-        onSuccess: item => {
+        onSuccess: () => {
           toast.success(t('addListing.success'));
           navigation.goBack();
         },
@@ -183,6 +204,11 @@ export function AddListingScreen({
                   />
                   <Pressable
                     onPress={() => handleRemovePhoto(i)}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('addListing.removePhoto', {
+                      n: i + 1,
+                    })}
+                    hitSlop={10}
                     className="absolute -end-1.5 -top-1.5 h-6 w-6 items-center justify-center rounded-full bg-brand-danger shadow-sm"
                   >
                     <Icon name="X" size={12} color={colors.onPrimary} />
@@ -223,7 +249,7 @@ export function AddListingScreen({
             label={t('addListing.category')}
             value={activeCategory}
             options={categoryOptions}
-            onChange={setCategory}
+            onChange={value => changeType(() => setCategory(value))}
             size="md"
           />
         </View>
@@ -237,7 +263,7 @@ export function AddListingScreen({
               label={t('addListing.itemType')}
               value={activeType}
               options={typeOptions}
-              onChange={setItemType}
+              onChange={value => changeType(() => setItemType(value))}
               size="md"
             />
           </View>
@@ -260,13 +286,41 @@ export function AddListingScreen({
           </View>
         </View>
 
-        {/* Brand */}
-        <TextField
-          label={t('addListing.brand')}
-          value={brand}
-          onChangeText={setBrand}
-          placeholder={t('addListing.brandPlaceholder')}
-        />
+        {/* Brand & model */}
+        <View className="gap-2">
+          <Text className="font-sans-bold text-sm">
+            {t('addListing.brand')}
+          </Text>
+          <SearchablePicker
+            label={t('addListing.brand')}
+            value={brand}
+            options={brandOptions}
+            onChange={value => {
+              setBrand(value);
+              setModel('');
+            }}
+            placeholder={t('addListing.brandPlaceholder')}
+          />
+        </View>
+
+        {brand !== '' && (
+          <View className="gap-2">
+            <Text className="font-sans-bold text-sm">
+              {t('addListing.model')}
+            </Text>
+            <SearchablePicker
+              label={t('addListing.model')}
+              value={model}
+              options={modelOptions}
+              onChange={chooseModel}
+              placeholder={t(
+                modelOptions.length
+                  ? 'addListing.modelPlaceholder'
+                  : 'addListing.modelTypeIt',
+              )}
+            />
+          </View>
+        )}
 
         {/* City Location */}
         <View className="gap-2">
@@ -288,6 +342,8 @@ export function AddListingScreen({
           <View className="flex-row gap-3">
             <Pressable
               onPress={() => setSaleType('fixed')}
+              accessibilityRole="radio"
+              accessibilityState={{ checked: saleType === 'fixed' }}
               className={`flex-1 items-center rounded-xl border p-3 ${
                 saleType === 'fixed'
                   ? 'border-brand-primary bg-brand-success-soft'
@@ -300,6 +356,8 @@ export function AddListingScreen({
             </Pressable>
             <Pressable
               onPress={() => setSaleType('auction')}
+              accessibilityRole="radio"
+              accessibilityState={{ checked: saleType === 'auction' }}
               className={`flex-1 items-center rounded-xl border p-3 ${
                 saleType === 'auction'
                   ? 'border-brand-primary bg-brand-success-soft'

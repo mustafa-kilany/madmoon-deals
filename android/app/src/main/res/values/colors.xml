@@ -1,0 +1,4 @@
+<resources>
+    <!-- colors.primary in src/theme/colors.ts -->
+    <color name="ic_launcher_background">#7D9C65</color>
+</resources>

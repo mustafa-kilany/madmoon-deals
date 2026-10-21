@@ -5,6 +5,7 @@
 // photos stay remote, like real listing images will; category tiles are bundled.
 
 import { jod } from '@/lib/money';
+import { brandsByType } from './brands';
 import { cities } from './places';
 import type {
   Category,
@@ -12,6 +13,7 @@ import type {
   CategoryId,
   Condition,
   Item,
+  ItemType,
   Localized,
 } from '@/lib/types';
 
@@ -69,90 +71,88 @@ export const categories: Category[] = [
   },
 ];
 
-const itemType = (id: string, ar: string, en: string) => ({
+const itemType = (id: string, ar: string, en: string): ItemType => ({
   id,
   name: { ar, en },
 });
 
-export const categoryFilters: Record<CategoryId, CategoryFilters> = {
-  mobiles: {
-    types: [
-      itemType('phones', 'هواتف', 'Phones'),
-      itemType('tablets', 'أجهزة لوحية', 'Tablets'),
-      itemType('smartwatches', 'ساعات ذكية', 'Smartwatches'),
-      itemType('accessories', 'إكسسوارات', 'Accessories'),
-    ],
-    brands: ['Apple', 'Samsung', 'Xiaomi', 'Huawei', 'Oppo'],
-  },
-  electronics: {
-    types: [
-      itemType('laptops', 'لابتوبات', 'Laptops'),
-      itemType('gaming', 'ألعاب فيديو', 'Gaming'),
-      itemType('tvs', 'شاشات وتلفزيونات', 'TVs & Screens'),
-      itemType('cameras', 'كاميرات', 'Cameras'),
-      itemType('audio', 'سماعات وصوتيات', 'Audio'),
-    ],
-    brands: ['Apple', 'Sony', 'Samsung', 'Dell', 'HP', 'Canon', 'Microsoft'],
-  },
-  vehicles: {
-    types: [
-      itemType('cars', 'سيارات', 'Cars'),
-      itemType('motorcycles', 'دراجات نارية', 'Motorcycles'),
-      itemType('parts', 'قطع غيار', 'Parts & Accessories'),
-      itemType('scooters', 'سكوترات', 'Scooters'),
-    ],
-    brands: ['Kia', 'Toyota', 'Hyundai', 'Ford', 'Fiat', 'Honda'],
-  },
-  furniture: {
-    types: [
-      itemType('sofas', 'كنب', 'Sofas'),
-      itemType('tables', 'طاولات', 'Tables'),
-      itemType('chairs', 'كراسي', 'Chairs'),
-      itemType('storage', 'خزائن', 'Storage'),
-      itemType('beds', 'أسِرّة', 'Beds'),
-    ],
-    brands: ['IKEA', 'Home Centre', 'Pan Emirates'],
-  },
-  appliances: {
-    types: [
-      itemType('fridges', 'ثلاجات', 'Fridges'),
-      itemType('washing-machines', 'غسالات', 'Washing Machines'),
-      itemType('kitchen', 'أجهزة مطبخ', 'Kitchen'),
-      itemType('air-conditioners', 'مكيفات', 'Air Conditioners'),
-      itemType('small-appliances', 'أجهزة صغيرة', 'Small Appliances'),
-    ],
-    brands: ['Samsung', 'LG', 'Bosch', 'Smeg', 'Xiaomi', 'Black+Decker'],
-  },
-  fashion: {
-    types: [
-      itemType('men', 'رجالي', "Men's Clothing"),
-      itemType('women', 'نسائي', "Women's Clothing"),
-      itemType('shoes', 'أحذية', 'Shoes'),
-      itemType('bags', 'حقائب', 'Bags'),
-      itemType('watches-jewelry', 'ساعات ومجوهرات', 'Watches & Jewelry'),
-    ],
-    brands: ['Zara', 'H&M', 'Mango', 'Nike', 'Adidas', 'Fossil', 'Rolex'],
-  },
-  kids: {
-    types: [
-      itemType('toys', 'ألعاب أطفال', 'Toys'),
-      itemType('strollers', 'عربات أطفال', 'Strollers'),
-      itemType('car-seats', 'كراسي سيارة', 'Car Seats'),
-      itemType('kids-clothing', 'ملابس أطفال', 'Kids Clothing'),
-    ],
-    brands: ['LEGO', 'Chicco', 'Graco', 'Joie', 'Fisher-Price'],
-  },
-  hobbies: {
-    types: [
-      itemType('bicycles', 'دراجات هوائية', 'Bicycles'),
-      itemType('fitness', 'معدات رياضية', 'Fitness'),
-      itemType('instruments', 'آلات موسيقية', 'Instruments'),
-      itemType('books', 'كتب', 'Books'),
-      itemType('camping', 'تخييم ورحلات', 'Camping'),
-    ],
-    brands: ['Trek', 'Giant', 'Yamaha', 'Decathlon'],
-  },
+/**
+ * Each type with its brands / models from brands.ts, and the category's
+ * brands: every type's, de-duplicated.
+ */
+const withBrands = (category: CategoryId, plain: ItemType[]) => {
+  const types = plain.map(type => ({
+    ...type,
+    ...brandsByType[category][type.id],
+  }));
+  return {
+    types,
+    brands: [...new Set(types.flatMap(type => type.brands ?? []))],
+  };
 };
+
+const filters: Record<CategoryId, ItemType[]> = {
+  mobiles: [
+    itemType('phones', 'هواتف', 'Phones'),
+    itemType('tablets', 'أجهزة لوحية', 'Tablets'),
+    itemType('smartwatches', 'ساعات ذكية', 'Smartwatches'),
+    itemType('accessories', 'إكسسوارات', 'Accessories'),
+  ],
+  electronics: [
+    itemType('laptops', 'لابتوبات', 'Laptops'),
+    itemType('gaming', 'ألعاب فيديو', 'Gaming'),
+    itemType('tvs', 'شاشات وتلفزيونات', 'TVs & Screens'),
+    itemType('cameras', 'كاميرات', 'Cameras'),
+    itemType('audio', 'سماعات وصوتيات', 'Audio'),
+  ],
+  vehicles: [
+    itemType('cars', 'سيارات', 'Cars'),
+    itemType('motorcycles', 'دراجات نارية', 'Motorcycles'),
+    itemType('parts', 'قطع غيار', 'Parts & Accessories'),
+    itemType('scooters', 'سكوترات', 'Scooters'),
+  ],
+  furniture: [
+    itemType('sofas', 'كنب', 'Sofas'),
+    itemType('tables', 'طاولات', 'Tables'),
+    itemType('chairs', 'كراسي', 'Chairs'),
+    itemType('storage', 'خزائن', 'Storage'),
+    itemType('beds', 'أسِرّة', 'Beds'),
+  ],
+  appliances: [
+    itemType('fridges', 'ثلاجات', 'Fridges'),
+    itemType('washing-machines', 'غسالات', 'Washing Machines'),
+    itemType('kitchen', 'أجهزة مطبخ', 'Kitchen'),
+    itemType('air-conditioners', 'مكيفات', 'Air Conditioners'),
+    itemType('small-appliances', 'أجهزة صغيرة', 'Small Appliances'),
+  ],
+  fashion: [
+    itemType('men', 'رجالي', "Men's Clothing"),
+    itemType('women', 'نسائي', "Women's Clothing"),
+    itemType('shoes', 'أحذية', 'Shoes'),
+    itemType('bags', 'حقائب', 'Bags'),
+    itemType('watches-jewelry', 'ساعات ومجوهرات', 'Watches & Jewelry'),
+  ],
+  kids: [
+    itemType('toys', 'ألعاب أطفال', 'Toys'),
+    itemType('strollers', 'عربات أطفال', 'Strollers'),
+    itemType('car-seats', 'كراسي سيارة', 'Car Seats'),
+    itemType('kids-clothing', 'ملابس أطفال', 'Kids Clothing'),
+  ],
+  hobbies: [
+    itemType('bicycles', 'دراجات هوائية', 'Bicycles'),
+    itemType('fitness', 'معدات رياضية', 'Fitness'),
+    itemType('instruments', 'آلات موسيقية', 'Instruments'),
+    itemType('books', 'كتب', 'Books'),
+    itemType('camping', 'تخييم ورحلات', 'Camping'),
+  ],
+};
+
+export const categoryFilters = Object.fromEntries(
+  Object.entries(filters).map(([id, types]) => [
+    id,
+    withBrands(id as CategoryId, types),
+  ]),
+) as Record<CategoryId, CategoryFilters>;
 
 const sellers = {
   omar: { ar: 'عمر', en: 'Omar' },
@@ -541,6 +541,17 @@ const listings: Record<CategoryId, Seed[]> = {
   ],
 };
 
+/** Models of the seed listings that have one (by listing id). */
+const seedModels: Record<string, string> = {
+  'mobiles-0': 'iPhone 14 Pro',
+  'mobiles-1': 'Galaxy S21',
+  'mobiles-2': 'iPad Air (5th gen)',
+  'electronics-1': 'PlayStation 5 (Disc)',
+  'vehicles-0': 'Cerato',
+  'vehicles-1': 'Mustang',
+  'vehicles-2': '500',
+};
+
 /** Demo auction per category: which listing it copies, opening bid, time left. */
 const auctions: Record<
   CategoryId,
@@ -574,6 +585,7 @@ export function buildItems(startedAt: number): Item[] {
       condition: l.condition,
       seller: l.seller,
       brand: l.brand,
+      model: seedModels[`${category}-${index}`],
       type: l.type,
       verified: index % 3 !== 0,
       location: (({ id, name, governorate }) => ({ id, name, governorate }))(
@@ -590,6 +602,7 @@ export function buildItems(startedAt: number): Item[] {
           ar: 'آيفون 14 برو ماكس 256 جيجا',
           en: 'iPhone 14 Pro Max 256GB',
         },
+        model: 'iPhone 14 Pro Max',
       }),
       priceFils: jod(demo.price),
       saleType: 'auction',

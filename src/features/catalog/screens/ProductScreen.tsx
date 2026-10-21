@@ -171,6 +171,17 @@ function ProductDetail({ item }: { item: Item }) {
             </Card>
           </View>
 
+          {item.brand && (
+            <Card className="p-3">
+              <Text className="font-sans-bold text-[11px] text-brand-warmgray">
+                {t('product.brand')}
+              </Text>
+              <Text className="mt-0.5 font-sans-bold text-sm">
+                {[item.brand, item.model].filter(Boolean).join(' · ')}
+              </Text>
+            </Card>
+          )}
+
           <View className="flex-row gap-2">
             <Card className="flex-1 flex-row items-center gap-2 p-3">
               <Icon name="Shield" size={20} color={colors.success} />

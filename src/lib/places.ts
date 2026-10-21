@@ -1,6 +1,7 @@
 // Place helpers: the "Governorate / Area" label, and distance maths used to
 // turn a GPS fix into the nearest area on the phone (no coordinates leave it).
 
+import { foldText } from './text';
 import type { City, Localized, Place } from './types';
 
 /**
@@ -63,12 +64,13 @@ export function citiesWithin(
     .map(x => x.city);
 }
 
-/** Case-insensitive match on area or governorate, either language. */
+/** Match on area or governorate, either language ("اربد" finds "إربد"). */
 export const matchesPlace = (city: City, query: string): boolean => {
-  const q = query.trim().toLocaleLowerCase();
+  const q = foldText(query);
   if (!q) return true;
-  return [city.name.ar, city.name.en, city.governorate.ar, city.governorate.en]
-    .join(' ')
-    .toLocaleLowerCase()
-    .includes(q);
+  return foldText(
+    [city.name.ar, city.name.en, city.governorate.ar, city.governorate.en].join(
+      ' ',
+    ),
+  ).includes(q);
 };

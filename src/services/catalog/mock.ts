@@ -65,6 +65,7 @@ export const mockCatalogService: CatalogService = {
       condition: input.condition,
       seller: { ar: 'Ahmad', en: 'Ahmad' },
       brand: input.brand,
+      model: input.model,
       type: input.type,
       verified: true,
       location: city,

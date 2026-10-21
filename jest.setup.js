@@ -34,3 +34,14 @@ jest.mock('react-native-keychain', () => {
     resetGenericPassword: async ({ service } = {}) => saved.delete(service),
   };
 });
+
+// Reanimated (sheet animations): its official test double.
+jest.mock('react-native-reanimated', () =>
+  require('react-native-reanimated/mock'),
+);
+
+// Switching to Arabic restarts the app for RTL layout; tests just carry on.
+jest.mock('react-native-restart', () => ({
+  __esModule: true,
+  default: { restart: jest.fn() },
+}));

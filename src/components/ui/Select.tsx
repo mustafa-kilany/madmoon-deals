@@ -69,6 +69,7 @@ export function Select<T extends string>({
         <Animated.View entering={FadeIn.duration(150)} style={styles.fill}>
           <Pressable
             onPress={() => setOpen(false)}
+            accessibilityRole="button"
             accessibilityLabel={label}
             className="flex-1 bg-brand-espresso/60"
           />

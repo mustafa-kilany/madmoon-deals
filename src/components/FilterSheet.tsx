@@ -191,6 +191,7 @@ function SheetContent({
       <Animated.View entering={FadeIn.duration(150)} style={styles.fill}>
         <Pressable
           onPress={onClose}
+          accessibilityRole="button"
           accessibilityLabel={t('filters.close')}
           className="flex-1 bg-brand-espresso/60"
         />

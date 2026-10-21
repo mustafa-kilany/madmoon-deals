@@ -46,6 +46,30 @@ describe('Jordan places', () => {
     expect(matchesPlace(find('salt'), 'irbid')).toBe(false);
   });
 
+  test('search forgives hamza, taa marbuta and alef maqsura', () => {
+    expect(matchesPlace(find('irbid'), 'اربد')).toBe(true);
+    expect(matchesPlace(find('amman-ashrafieh'), 'الاشرفيه')).toBe(true);
+    expect(matchesPlace(find('amman-um-uthaina'), 'ام اذينة')).toBe(true);
+  });
+
+  test('every area sits inside Jordan', () => {
+    for (const c of cities) {
+      expect(c.lat).toBeGreaterThan(29.1);
+      expect(c.lat).toBeLessThan(33.4);
+      expect(c.lng).toBeGreaterThan(34.9);
+      expect(c.lng).toBeLessThan(39.3);
+    }
+  });
+
+  test('Amman neighbourhoods resolve from GPS', () => {
+    expect(nearestCity(cities, { lat: 32.051, lng: 35.913 })?.id).toBe(
+      'amman-shafa-badran',
+    );
+    expect(nearestCity(cities, { lat: 31.958, lng: 35.919 })?.id).toBe(
+      'amman-weibdeh',
+    );
+  });
+
   test('listings carry their governorate but never coordinates', () => {
     for (const item of buildItems(0)) {
       expect(item.location.governorate).toBeDefined();
