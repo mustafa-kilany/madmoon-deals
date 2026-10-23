@@ -157,7 +157,8 @@
   },
   "favorites": {
     "saved": "Saved to your list",
-    "removed": "Removed from saved"
+    "removed": "Removed from saved",
+    "signInRequired": "Please log in to save items"
   },
   "browse": {
     "listingFormat": "Listing format",

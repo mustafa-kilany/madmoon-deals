@@ -47,7 +47,7 @@ export function EmailAuthScreen({ route }: RootScreenProps<'EmailAuth'>) {
   const fieldError = useFieldError();
 
   const [mode, setMode] = useState<'signup' | 'login'>(
-    route.params?.mode ?? 'signup',
+    route.params?.mode ?? 'login',
   );
   const [step, setStep] = useState<'credentials' | 'otp'>('credentials');
   const [otpCode, setOtpCode] = useState('');

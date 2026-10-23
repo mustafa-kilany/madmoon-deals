@@ -106,7 +106,7 @@ export function AuthScreen({ navigation }: RootScreenProps<'Auth'>) {
             size="lg"
             icon="Mail"
             label={t('auth.continueWithEmail')}
-            onPress={() => navigation.navigate('EmailAuth', { mode: 'signup' })}
+            onPress={() => navigation.navigate('EmailAuth', { mode: 'login' })}
           />
         </View>
       </ScrollView>

@@ -1,4 +1,5 @@
-// Saved (favourited) listing ids, kept on the device. Guests can save too.
+// Saved (favourited) listing ids, kept on the device. Only signed-in users can
+// save; the list is cleared on sign out.
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
@@ -9,6 +10,7 @@ type FavoritesState = {
   ids: string[];
   /** Returns true if the item is now saved. */
   toggle: (id: string) => boolean;
+  clear: () => void;
 };
 
 export const useFavoritesStore = create<FavoritesState>()(
@@ -22,6 +24,7 @@ export const useFavoritesStore = create<FavoritesState>()(
         });
         return !saved;
       },
+      clear: () => set({ ids: [] }),
     }),
     { name: 'favorites', storage: zustandStorage },
   ),

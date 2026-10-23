@@ -86,19 +86,23 @@ describe('session', () => {
     useSessionStore.setState({ user: null });
   });
 
-  test('sign in keeps the token; sign out forgets user and token', () => {
+  test('sign in keeps the token; sign out forgets user, token and saved items', () => {
     useSessionStore.getState().signIn({ token: 'tok', user });
+    useFavoritesStore.getState().toggle('mobiles-1');
     expect(useSessionStore.getState().user).toEqual(user);
     expect(tokenStorage.get()).toBe('tok');
     useSessionStore.getState().signOut();
     expect(useSessionStore.getState().user).toBeNull();
     expect(tokenStorage.get()).toBeUndefined();
+    expect(useFavoritesStore.getState().ids).toEqual([]);
   });
 
-  test('launch: a saved user without a token is a guest', async () => {
+  test('launch: a saved user without a token is a guest with nothing saved', async () => {
     useSessionStore.setState({ user });
+    useFavoritesStore.setState({ ids: ['mobiles-1'] });
     await restoreSession();
     expect(useSessionStore.getState().user).toBeNull();
+    expect(useFavoritesStore.getState().ids).toEqual([]);
   });
 
   test('launch: the token comes back from the keychain', async () => {

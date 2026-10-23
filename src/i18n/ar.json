@@ -157,7 +157,8 @@
   },
   "favorites": {
     "saved": "حُفظ في قائمتك",
-    "removed": "أُزيل من المحفوظات"
+    "removed": "أُزيل من المحفوظات",
+    "signInRequired": "يرجى تسجيل الدخول لحفظ العناصر"
   },
   "browse": {
     "listingFormat": "نوع البيع",

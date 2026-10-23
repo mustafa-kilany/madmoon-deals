@@ -4,6 +4,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { useFavoritesStore } from '@/features/favorites/store';
 import { zustandStorage } from '@/lib/storage';
 import type { Session, User } from '@/lib/types';
 import { setUnauthorizedHandler } from '@/services/api/client';
@@ -30,6 +31,7 @@ export const useSessionStore = create<SessionState>()(
       signOut: () => {
         tokenStorage.clear();
         queryClient.removeQueries({ queryKey: queryKeys.me });
+        useFavoritesStore.getState().clear();
         set({ user: null });
       },
     }),
@@ -40,7 +42,10 @@ export const useSessionStore = create<SessionState>()(
 /** Launch: load the token from the keychain; a saved user without one isn't signed in. */
 export async function restoreSession(): Promise<void> {
   await tokenStorage.load();
-  if (!tokenStorage.get()) useSessionStore.setState({ user: null });
+  if (!tokenStorage.get()) {
+    useSessionStore.setState({ user: null });
+    useFavoritesStore.getState().clear();
+  }
 }
 
 setUnauthorizedHandler(() => {
