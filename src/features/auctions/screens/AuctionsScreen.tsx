@@ -1,9 +1,11 @@
-// Auctions tab (prototype AuctionsScreen): title with a Live badge, saved
-// shortcut, and an auction-only ListingBrowser with its own search box.
+// Auctions tab (prototype AuctionsScreen): back button, title with a
+// Live badge, saved shortcut, and an auction-only ListingBrowser with its own
+// search box.
 
 import { useNavigation } from '@react-navigation/native';
 import { Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { BackButton } from '@/components/BackButton';
 import { Icon } from '@/components/icons';
 import { ListingBrowser } from '@/components/ListingBrowser';
 import { StatusView } from '@/components/StatusView';
@@ -22,6 +24,7 @@ export function AuctionsScreen() {
     <Screen
       header={
         <>
+          <BackButton />
           <View className="flex-1">
             <View className="flex-row items-center gap-2">
               <Heading className="text-2xl">{t('screens.auctions')}</Heading>

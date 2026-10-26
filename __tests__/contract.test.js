@@ -82,6 +82,7 @@ test('email sign-up → session; bad input → VALIDATION; duplicate → EMAIL_T
     name: 'Lina',
     email: 'Lina@Example.com',
     password: 'longenough',
+    code: '123456',
   });
   expect(session.token.length).toBeGreaterThan(20);
   expect(session.user).toMatchObject({
@@ -97,6 +98,7 @@ test('email sign-up → session; bad input → VALIDATION; duplicate → EMAIL_T
       name: 'L',
       email: 'new@example.com',
       password: 'x'.repeat(8),
+      code: '123456',
     }),
   );
   expect([invalid.code, invalid.status]).toEqual(['VALIDATION', 422]);
@@ -105,6 +107,7 @@ test('email sign-up → session; bad input → VALIDATION; duplicate → EMAIL_T
       name: 'Lina',
       email: 'lina@example.com',
       password: 'x'.repeat(8),
+      code: '123456',
     }),
   );
   expect([taken.code, taken.status]).toEqual(['EMAIL_TAKEN', 409]);
@@ -131,6 +134,7 @@ test('profile, ID verification upload and card, with the session token', async (
     name: 'Omar',
     email: 'omar@sahla.jo',
     password: 'longenough',
+    code: '123456',
   });
   tokenStorage.set(token);
 
@@ -182,4 +186,83 @@ test('log-out revokes the token; using it again signs the app out', async () => 
 test('calls without a token are refused', async () => {
   expect((await failure(api.getMe())).code).toBe('UNAUTHORIZED');
   expect((await failure(api.verifyId(jpeg))).code).toBe('UNAUTHORIZED');
+});
+
+test('sign-up needs the emailed code; send-otp refuses a taken email', async () => {
+  const wrong = await failure(
+    api.signUpWithEmail({
+      name: 'Rami',
+      email: 'rami@sahla.jo',
+      password: 'longenough',
+      code: '000000',
+    }),
+  );
+  expect([wrong.code, wrong.status]).toEqual(['INVALID_CODE', 422]);
+  await api.sendOtp({ email: 'rami@sahla.jo' });
+  const taken = await failure(api.sendOtp({ email: 'ahmad@sahla.jo' }));
+  expect(taken.code).toBe('EMAIL_TAKEN');
+});
+
+test('password reset: code + new password signs in and ends old sessions', async () => {
+  await api.signUpWithEmail({
+    name: 'Huda',
+    email: 'huda@sahla.jo',
+    password: 'oldpassword',
+    code: '123456',
+  });
+  const old = await api.logInWithEmail({
+    email: 'huda@sahla.jo',
+    password: 'oldpassword',
+  });
+  // Same answer whether or not the account exists.
+  await api.forgotPassword({ email: 'huda@sahla.jo' });
+  await api.forgotPassword({ email: 'nobody@sahla.jo' });
+
+  const wrong = await failure(
+    api.resetPassword({
+      email: 'huda@sahla.jo',
+      code: '999999',
+      password: 'newpassword',
+    }),
+  );
+  expect(wrong.code).toBe('INVALID_CODE');
+
+  const session = await api.resetPassword({
+    email: 'huda@sahla.jo',
+    code: '123456',
+    password: 'newpassword',
+  });
+  expect(session.user.email).toBe('huda@sahla.jo');
+  expect(
+    (
+      await failure(
+        api.logInWithEmail({ email: 'huda@sahla.jo', password: 'oldpassword' }),
+      )
+    ).code,
+  ).toBe('INVALID_CREDENTIALS');
+  await api.logInWithEmail({ email: 'huda@sahla.jo', password: 'newpassword' });
+
+  tokenStorage.set(old.token);
+  expect((await failure(api.getMe())).code).toBe('UNAUTHORIZED');
+});
+
+test('delete account: the token stops working and the email is free again', async () => {
+  const { token } = await api.signUpWithEmail({
+    name: 'Tala',
+    email: 'tala@sahla.jo',
+    password: 'longenough',
+    code: '123456',
+  });
+  tokenStorage.set(token);
+  await api.deleteAccount();
+  tokenStorage.set(token);
+  expect((await failure(api.getMe())).code).toBe('UNAUTHORIZED');
+  expect(
+    (
+      await failure(
+        api.logInWithEmail({ email: 'tala@sahla.jo', password: 'longenough' }),
+      )
+    ).code,
+  ).toBe('INVALID_CREDENTIALS');
+  await api.sendOtp({ email: 'tala@sahla.jo' });
 });

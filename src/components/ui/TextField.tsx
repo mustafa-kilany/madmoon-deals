@@ -1,5 +1,6 @@
 // Text input from the prototype's ui/Input: 2px border, radius 12, bold text,
-// sage border while focused, optional label above and error below. Optional
+// sage border while focused, optional label above and error (or hint and
+// character count) below. Optional
 // leading/trailing slots (search icon, clear button) sit inside the field.
 
 import { useState, type ReactNode } from 'react';
@@ -18,9 +19,13 @@ type TextFieldProps = Omit<TextInputProps, 'className'> & {
   /** Prototype uses small gray labels in sheets: "font-sans-bold text-xs text-brand-warmgray". */
   labelClassName?: string;
   error?: string;
+  /** Gray help text below the field; an error replaces it. */
+  hint?: string;
+  /** "12 / 2000" below the field, at the end edge. Needs maxLength. */
+  showCount?: boolean;
   /**
    * surface = default; muted = cream background (search fields);
-   * form = large field with a faint cream border (sign-up forms).
+   * form = large field (sign-up and log-in forms).
    */
   variant?: 'surface' | 'muted' | 'form';
   leading?: ReactNode;
@@ -35,6 +40,8 @@ export function TextField({
   label,
   labelClassName = 'font-sans-bold text-sm',
   error,
+  hint,
+  showCount = false,
   variant = 'surface',
   leading,
   trailing,
@@ -51,14 +58,17 @@ export function TextField({
     ? 'border-brand-danger'
     : focused
     ? 'border-brand-primary'
-    : form
-    ? 'border-brand-lightgray'
     : 'border-brand-border';
   const background =
     variant === 'muted' ? 'bg-brand-lightgray' : 'bg-brand-surface';
   const size = form ? 'py-4 text-base' : 'py-3 text-sm';
   const startPad = leading ? 'ps-10' : form ? 'ps-4' : 'ps-3';
   const endPad = trailing ? 'pe-9' : form ? 'pe-4' : 'pe-3';
+  const message = error ?? hint;
+  const count =
+    showCount && props.maxLength
+      ? `${(props.value ?? '').length} / ${props.maxLength}`
+      : undefined;
 
   return (
     <View className={`gap-2 ${className}`}>
@@ -86,10 +96,26 @@ export function TextField({
         )}
         {trailing && <View className="absolute end-2">{trailing}</View>}
       </View>
-      {error && (
-        <Text className="font-sans-bold text-xs text-brand-danger">
-          {error}
-        </Text>
+      {(message || count) && (
+        <View className="flex-row items-start gap-3">
+          <Text
+            className={`flex-1 text-xs ${
+              error
+                ? 'font-sans-bold text-brand-danger'
+                : 'font-sans-medium text-brand-warmgray'
+            }`}
+          >
+            {message}
+          </Text>
+          {count && (
+            <Text
+              className="font-sans-bold text-xs text-brand-warmgray"
+              style={styles.ltr}
+            >
+              {count}
+            </Text>
+          )}
+        </View>
       )}
     </View>
   );

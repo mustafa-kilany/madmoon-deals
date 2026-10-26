@@ -20,15 +20,24 @@ name: Sell an item
 - assertVisible: "Remove photo 1"
 
 # Brand and model (Mobiles & Tablets → Phones is the default)
+- scrollUntilVisible:
+    element:
+        text: "Brand (optional)"
 - tapOn: "Brand (optional)"
 - tapOn: "Search"
 - inputText: "sams"
 - tapOn: "Samsung"
+- scrollUntilVisible:
+    element:
+        text: "Model (optional)"
 - tapOn: "Model (optional)"
 - tapOn: "Search"
 - inputText: "s24 ultra"
 - tapOn: "Galaxy S24 Ultra"
-- assertVisible: "Samsung Galaxy S24 Ultra" # title filled from the model
+- scrollUntilVisible: # title filled from the model
+    element:
+        text: "Samsung Galaxy S24 Ultra"
+    direction: UP
 
 - scrollUntilVisible:
     element:
@@ -39,10 +48,9 @@ name: Sell an item
 - scrollUntilVisible:
     element:
         text: "Publish Listing"
+# The success toast can be gone before the tap settles (the countdowns
+# keep the screen busy), so check the outcome: the listing in My Listings.
 - tapOn: "Publish Listing"
-- extendedWaitUntil:
-    visible: "Listing published successfully!"
-    timeout: 15000
 
 - tapOn: "Profile"
 - scrollUntilVisible:

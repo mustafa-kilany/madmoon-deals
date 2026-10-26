@@ -58,7 +58,12 @@ export type Auction = {
   endsAt: number;
   bidCount: number;
   incrementFils: number;
+  /** Set once the auction has ended with bids: the highest bidder, who may check out. */
+  winnerId?: string;
 };
+
+/** active = for sale; reserved = paid, waiting for delivery; sold = delivered. */
+export type ListingStatus = 'active' | 'reserved' | 'sold';
 
 /** A marketplace listing. */
 export type Item = {
@@ -73,6 +78,11 @@ export type Item = {
   imageUrls?: string[];
   condition: Condition;
   seller: Localized;
+  /** The seller's user id: the app hides Buy / Offer / Bid on your own listings. */
+  sellerId: string;
+  /** What the seller wrote, as typed (one language). */
+  description?: string;
+  status: ListingStatus;
   brand?: string;
   /** e.g. "iPhone 14 Pro", "Camry"; free text, usually from ItemType.models. */
   model?: string;
@@ -82,9 +92,11 @@ export type Item = {
   location: Place;
   saleType: SaleType;
   auction?: Auction;
+  /** Times the listing was opened; ranks "most viewed". Missing = 0. */
+  views?: number;
 };
 
-export type AuthMethod = 'email' | 'id' | 'google' | 'apple';
+export type AuthMethod = 'email' | 'google' | 'apple';
 
 /** A saved payment card. Only the provider's reference + last 4 digits ever reach the app. */
 export type PaymentCard = { brand: string; last4: string };
@@ -94,7 +106,7 @@ export type User = {
   id: string;
   name: string;
   email?: string;
-  /** How the account was created; ID sign-ups start verified. */
+  /** How the account was created. */
   method: AuthMethod;
   /** National ID checked → Verified Seller badge, listings ranked first. */
   verified: boolean;
@@ -119,7 +131,8 @@ export type BrowseSort =
   | 'ending_soon'
   | 'price_asc'
   | 'price_desc'
-  | 'most_bids';
+  | 'most_bids'
+  | 'most_viewed';
 
 /**
  * Filter selections. Values are ids (type id, brand, Condition, Place id), so
@@ -144,6 +157,10 @@ export type BrowseState = {
   query: string;
 };
 
+/**
+ * pending: the seller answers (accept, counter, reject). countered: the buyer
+ * answers the seller's counterAmountFils (accept or reject).
+ */
 export type OfferStatus = 'pending' | 'accepted' | 'countered' | 'rejected';
 
 export type Offer = {
@@ -153,8 +170,12 @@ export type Offer = {
   itemImageUrl: string;
   buyerId: string;
   buyerName: string;
+  sellerId: string;
   sellerName: string;
+  /** The agreed price once accepted (a countered offer accepted at the counter amount). */
   amountFils: number;
+  /** The seller's counter price while status is countered. */
+  counterAmountFils?: number;
   status: OfferStatus;
   createdAt: number;
 };
@@ -183,6 +204,8 @@ export type ChatThread = {
   itemId: string;
   itemTitle: Localized;
   itemImageUrl: string;
+  /** The other person's user id (for Block and Report). */
+  otherPartyId: string;
   otherPartyName: string;
   lastMessage: string;
   updatedAt: number;
@@ -193,6 +216,17 @@ export type OrderStatus =
   | 'escrow_held'
   | 'completed'
   | 'refunded';
+
+/** Where the courier delivers. `phone` is a Jordanian mobile, e.g. 0791234567. */
+export type DeliveryDetails = {
+  name: string;
+  phone: string;
+  /** Area id from GET /cities. */
+  cityId: string;
+  /** Street, building, floor, landmark. */
+  address: string;
+  notes?: string;
+};
 
 /** A purchase. Amounts are computed by the server (mock: calculateCheckoutBreakdown). */
 export type Order = {
@@ -209,6 +243,12 @@ export type Order = {
   pin?: string;
   /** Set when the checkout price came from an accepted offer. */
   offerId?: string;
+  delivery: DeliveryDetails;
+  /**
+   * The bank's card check (3-D Secure) page, while status is still
+   * awaiting_payment after POST /orders/:id/pay. The app opens it.
+   */
+  paymentUrl?: string;
   createdAt: number;
   /** When the courier confirmed delivery (escrow released). */
   deliveredAt?: number;
@@ -248,3 +288,16 @@ export type ListingPage = {
   counts: Record<ListingFormat, number>;
   facets: ListingFacets;
 };
+
+/** Why something is reported (POST /reports). */
+export type ReportReason =
+  | 'scam'
+  | 'prohibited'
+  | 'offensive'
+  | 'wrong_info'
+  | 'other';
+
+export type ReportTarget = { type: 'listing' | 'user'; id: string };
+
+/** Someone the signed-in user blocked: their listings and chats are hidden. */
+export type BlockedUser = { id: string; name: string };

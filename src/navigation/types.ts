@@ -3,7 +3,7 @@
 
 import type { NavigatorScreenParams } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { CategoryId } from '@/lib/types';
+import type { CategoryId, ReportTarget } from '@/lib/types';
 
 /** Bottom tabs: Home · Auctions · Sell · Chats · Profile. */
 export type TabParamList = {
@@ -34,8 +34,12 @@ export type RootStackParamList = {
   /** Sign-in choice; reached through startAuth / useRequireAuth. */
   Auth: undefined;
   EmailAuth: { mode: 'signup' | 'login' } | undefined;
+  /** Forgot password: email → code + new password → signed in. */
+  ResetPassword: { email?: string } | undefined;
   /** signup = create a verified account; verify = upgrade the signed-in account. */
   IdVerification: undefined;
+  /** Report a listing or a user (App Store guideline 1.2). */
+  Report: ReportTarget;
 };
 
 export type RootScreenProps<T extends keyof RootStackParamList> =

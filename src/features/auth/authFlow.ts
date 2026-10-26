@@ -16,7 +16,12 @@ export type AppRoute = {
 }[keyof RootStackParamList];
 
 /** Screens of the sign-in flow, removed from history once signed in. */
-const AUTH_ROUTES: string[] = ['Auth', 'EmailAuth', 'IdVerification'];
+const AUTH_ROUTES: string[] = [
+  'Auth',
+  'EmailAuth',
+  'ResetPassword',
+  'IdVerification',
+];
 
 type AuthFlowState = {
   pending: AppRoute | null;

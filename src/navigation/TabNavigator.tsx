@@ -20,7 +20,12 @@ const renderTabBar = (props: BottomTabBarProps) => <BottomNav {...props} />;
 
 export function TabNavigator() {
   return (
-    <Tab.Navigator tabBar={renderTabBar} screenOptions={{ headerShown: false }}>
+    // "history": Back from a tab returns to the tab you came from, not Home.
+    <Tab.Navigator
+      tabBar={renderTabBar}
+      screenOptions={{ headerShown: false }}
+      backBehavior="history"
+    >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Auctions" component={AuctionsScreen} />
       <Tab.Screen name="Sell" component={Empty} />

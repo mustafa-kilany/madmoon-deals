@@ -1,4 +1,5 @@
-// Email sign-up & log-in with OTP verification support.
+// Email sign-up & log-in. Sign-up proves the email first: the server emails
+// a 6-digit code (send-otp) and the account is created with it (signup).
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
@@ -13,18 +14,19 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 import { BackButton } from '@/components/BackButton';
-import { Icon } from '@/components/icons';
+import { Icon, type IconName } from '@/components/icons';
+import { SahlaLogo } from '@/components/SahlaLogo';
 import { Button, Heading, Screen, Text, TextField } from '@/components/ui';
 import { config } from '@/config';
 import type { RootScreenProps } from '@/navigation/types';
 import { errorMessageKey } from '@/services/api/errors';
 import { toast } from '@/store/toastStore';
 import { colors } from '@/theme/colors';
+import { go } from '../authFlow';
 import {
   useLogInWithEmail,
   useSendOtp,
   useSignUpWithEmail,
-  useVerifyOtp,
 } from '../hooks/useAccount';
 import { useFieldError } from '../hooks/useFieldError';
 
@@ -41,6 +43,13 @@ const signUpSchema = logInSchema.extend({
 
 type FormValues = z.infer<typeof logInSchema>;
 
+/** Footer reassurance: what an account on Sahla gets you. */
+const TRUST = [
+  { icon: 'Shield', label: 'product.buyerProtection' },
+  { icon: 'Truck', label: 'product.delivery48h' },
+  { icon: 'BadgeCheck', label: 'auth.verifiedSellers' },
+] as const satisfies readonly { icon: IconName; label: string }[];
+
 export function EmailAuthScreen({ route }: RootScreenProps<'EmailAuth'>) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -55,7 +64,6 @@ export function EmailAuthScreen({ route }: RootScreenProps<'EmailAuth'>) {
   const signUp = useSignUpWithEmail();
   const logIn = useLogInWithEmail();
   const sendOtp = useSendOtp();
-  const verifyOtp = useVerifyOtp();
 
   const isSignUp = mode === 'signup';
 
@@ -68,17 +76,12 @@ export function EmailAuthScreen({ route }: RootScreenProps<'EmailAuth'>) {
 
   const handleCredentialsSubmit = handleSubmit(values => {
     if (isSignUp) {
-      // Request OTP code to be sent to the email
       sendOtp.mutate(
         { email: values.email },
         {
           onSuccess: () => {
             setStep('otp');
             toast.info(t('auth.otpSentTo', { email: values.email }));
-          },
-          onError: () => {
-            // If OTP endpoint fails, fallback to direct signUp
-            signUp.mutate(values);
           },
         },
       );
@@ -88,21 +91,11 @@ export function EmailAuthScreen({ route }: RootScreenProps<'EmailAuth'>) {
   });
 
   const handleVerifyOtpSubmit = () => {
-    const email = getValues('email');
-    if (!otpCode || otpCode.trim().length < 4) {
-      toast.error(t('validation.passwordRequired'));
+    if (!/^\d{6}$/.test(otpCode.trim())) {
+      toast.error(t('validation.codeInvalid'));
       return;
     }
-
-    verifyOtp.mutate(
-      { email, code: otpCode.trim() },
-      {
-        onError: () => {
-          // Fallback to complete signup mutation with initial values
-          signUp.mutate(getValues());
-        },
-      },
-    );
+    signUp.mutate({ ...getValues(), code: otpCode.trim() });
   };
 
   const switchMode = () => {
@@ -112,208 +105,259 @@ export function EmailAuthScreen({ route }: RootScreenProps<'EmailAuth'>) {
     signUp.reset();
     logIn.reset();
     sendOtp.reset();
-    verifyOtp.reset();
     setMode(isSignUp ? 'login' : 'signup');
   };
 
-  const activeMutation =
+  const activeMutation = step === 'otp' ? signUp : isSignUp ? sendOtp : logIn;
+
+  const title =
     step === 'otp'
-      ? verifyOtp.isPending
-        ? verifyOtp
-        : signUp
-      : isSignUp
-      ? sendOtp.isPending
-        ? sendOtp
-        : signUp
-      : logIn;
+      ? t('auth.enterOtp')
+      : t(isSignUp ? 'auth.signUpTitle' : 'auth.logInTitle');
+  const subtitle =
+    step === 'otp'
+      ? t('auth.otpSentTo', { email: getValues('email') })
+      : t(isSignUp ? 'auth.signUpSubtitle' : 'auth.logInSubtitle');
 
   return (
     <Screen
       tone="white"
-      headerBorder
       header={
-        <>
-          <BackButton
-            onPress={step === 'otp' ? () => setStep('credentials') : undefined}
-          />
-          <Heading className="text-xl">
-            {t(
-              step === 'otp'
-                ? 'auth.enterOtp'
-                : isSignUp
-                ? 'screens.emailSignUp'
-                : 'screens.emailLogIn',
-            )}
-          </Heading>
-        </>
+        <BackButton
+          onPress={step === 'otp' ? () => setStep('credentials') : undefined}
+        />
       }
     >
       <KeyboardAvoidingView className="flex-1" behavior="padding">
         <ScrollView
           className="flex-1"
-          contentContainerClassName="gap-5 p-6"
+          contentContainerClassName="grow px-6"
+          contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 16) }}
           keyboardShouldPersistTaps="handled"
         >
-          {step === 'credentials' ? (
-            <>
-              {isSignUp && (
+          <View className="flex-1 justify-center gap-6 pb-8">
+            <View className="items-center gap-2">
+              <View className="mb-2">
+                <SahlaLogo size={64} />
+              </View>
+              <Heading className="text-center text-3xl">{title}</Heading>
+              <Text className="text-center font-sans-medium text-sm leading-relaxed text-brand-warmgray">
+                {subtitle}
+              </Text>
+            </View>
+
+            {step === 'credentials' ? (
+              <View className="gap-4">
+                {isSignUp && (
+                  <Controller
+                    control={control}
+                    name="name"
+                    render={({ field }) => (
+                      <TextField
+                        variant="form"
+                        value={field.value}
+                        onChangeText={field.onChange}
+                        onBlur={field.onBlur}
+                        placeholder={t('auth.fullName')}
+                        accessibilityLabel={t('auth.fullName')}
+                        autoComplete="name"
+                        textContentType="name"
+                        leading={
+                          <Icon
+                            name="Profile"
+                            size={20}
+                            color={colors.warmgray}
+                          />
+                        }
+                        error={fieldError(errors.name)}
+                      />
+                    )}
+                  />
+                )}
                 <Controller
                   control={control}
-                  name="name"
+                  name="email"
                   render={({ field }) => (
                     <TextField
                       variant="form"
                       value={field.value}
                       onChangeText={field.onChange}
                       onBlur={field.onBlur}
-                      placeholder={t('auth.fullName')}
-                      accessibilityLabel={t('auth.fullName')}
-                      autoComplete="name"
-                      textContentType="name"
-                      error={fieldError(errors.name)}
+                      placeholder={t('auth.email')}
+                      accessibilityLabel={t('auth.email')}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoComplete="email"
+                      textContentType="emailAddress"
+                      ltr
+                      leading={
+                        <Icon name="Mail" size={20} color={colors.warmgray} />
+                      }
+                      error={fieldError(errors.email)}
                     />
                   )}
                 />
-              )}
-              <Controller
-                control={control}
-                name="email"
-                render={({ field }) => (
-                  <TextField
-                    variant="form"
-                    value={field.value}
-                    onChangeText={field.onChange}
-                    onBlur={field.onBlur}
-                    placeholder={t('auth.email')}
-                    accessibilityLabel={t('auth.email')}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoComplete="email"
-                    textContentType="emailAddress"
-                    ltr
-                    error={fieldError(errors.email)}
-                  />
-                )}
-              />
-              <Controller
-                control={control}
-                name="password"
-                render={({ field }) => (
-                  <TextField
-                    variant="form"
-                    value={field.value}
-                    onChangeText={field.onChange}
-                    onBlur={field.onBlur}
-                    placeholder={t('auth.password')}
-                    accessibilityLabel={t('auth.password')}
-                    secureTextEntry
-                    autoComplete={
-                      isSignUp ? 'new-password' : 'current-password'
+                <Controller
+                  control={control}
+                  name="password"
+                  render={({ field }) => (
+                    <TextField
+                      variant="form"
+                      value={field.value}
+                      onChangeText={field.onChange}
+                      onBlur={field.onBlur}
+                      placeholder={t('auth.password')}
+                      accessibilityLabel={t('auth.password')}
+                      secureTextEntry
+                      autoComplete={
+                        isSignUp ? 'new-password' : 'current-password'
+                      }
+                      textContentType={isSignUp ? 'newPassword' : 'password'}
+                      onSubmitEditing={() => handleCredentialsSubmit()}
+                      leading={
+                        <Icon name="Lock" size={20} color={colors.warmgray} />
+                      }
+                      error={fieldError(errors.password)}
+                    />
+                  )}
+                />
+
+                {isSignUp ? (
+                  <View className="flex-row items-center gap-2 rounded-xl bg-brand-lightgray p-3">
+                    <Icon name="IdCard" size={20} color={colors.warmgray} />
+                    <Text className="flex-1 font-sans-bold text-xs text-brand-warmgray">
+                      {t('auth.emailUnverifiedNote')}
+                    </Text>
+                  </View>
+                ) : (
+                  <Pressable
+                    onPress={() =>
+                      go({
+                        name: 'ResetPassword',
+                        params: { email: getValues('email').trim() },
+                      })
                     }
-                    textContentType={isSignUp ? 'newPassword' : 'password'}
-                    onSubmitEditing={() => handleCredentialsSubmit()}
-                    error={fieldError(errors.password)}
-                  />
+                    accessibilityRole="button"
+                    className="-mt-1 min-h-11 justify-center self-end"
+                  >
+                    <Text className="font-sans-bold text-sm text-brand-primary">
+                      {t('auth.forgotPassword')}
+                    </Text>
+                  </Pressable>
                 )}
-              />
-
-              {isSignUp && (
-                <View className="flex-row items-center gap-2 rounded-xl bg-brand-lightgray p-3">
-                  <Icon name="IdCard" size={20} color={colors.warmgray} />
-                  <Text className="flex-1 font-sans-bold text-xs text-brand-warmgray">
-                    {t('auth.emailUnverifiedNote')}
+              </View>
+            ) : (
+              <View className="gap-2">
+                <TextField
+                  variant="form"
+                  value={otpCode}
+                  onChangeText={setOtpCode}
+                  placeholder="123456"
+                  accessibilityLabel={t('auth.otpCode')}
+                  keyboardType="number-pad"
+                  autoComplete="one-time-code"
+                  textContentType="oneTimeCode"
+                  maxLength={6}
+                  ltr
+                  onSubmitEditing={handleVerifyOtpSubmit}
+                />
+                <Pressable
+                  onPress={() =>
+                    sendOtp.mutate(
+                      { email: getValues('email') },
+                      {
+                        onSuccess: () =>
+                          toast.info(
+                            t('auth.otpSentTo', { email: getValues('email') }),
+                          ),
+                      },
+                    )
+                  }
+                  accessibilityRole="button"
+                  className="min-h-11 justify-center self-center"
+                >
+                  <Text className="font-sans-bold text-sm text-brand-primary">
+                    {t('auth.resendOtp')}
                   </Text>
-                </View>
-              )}
+                </Pressable>
+              </View>
+            )}
 
-              <Pressable
-                onPress={switchMode}
-                accessibilityRole="button"
-                className="min-h-11 justify-center self-center"
-              >
-                <Text className="font-sans-bold text-sm text-brand-primary">
-                  {t(isSignUp ? 'auth.haveAccount' : 'auth.noAccount')}
+            <View className="gap-3">
+              {activeMutation.isError && (
+                <Text
+                  accessibilityRole="alert"
+                  className="text-center font-sans-bold text-sm text-brand-danger"
+                >
+                  {t(errorMessageKey(activeMutation.error))}
                 </Text>
-              </Pressable>
-
-              {!isSignUp && config.mock.auth && (
+              )}
+              <Button
+                size="lg"
+                label={t(
+                  step === 'otp'
+                    ? 'auth.verifyAndSignIn'
+                    : isSignUp
+                    ? 'auth.createAccount'
+                    : 'auth.logIn',
+                )}
+                loading={activeMutation.isPending}
+                onPress={
+                  step === 'otp'
+                    ? handleVerifyOtpSubmit
+                    : () => handleCredentialsSubmit()
+                }
+              />
+              {step === 'credentials' && !isSignUp && config.mock.auth && (
                 <Text className="text-center text-xs text-brand-warmgray">
                   {t('auth.demoHint')}
                 </Text>
               )}
-            </>
-          ) : (
-            <View className="gap-5 pt-4">
-              <View className="items-center gap-2">
-                <Heading className="text-2xl">{t('auth.enterOtp')}</Heading>
-                <Text className="text-center font-sans-medium text-sm text-brand-warmgray">
-                  {t('auth.otpSentTo', { email: getValues('email') })}
+              {step === 'otp' && __DEV__ && (
+                <Text className="text-center text-xs text-brand-warmgray">
+                  {t('auth.demoCode')}
                 </Text>
-              </View>
+              )}
+            </View>
+          </View>
 
-              <TextField
-                variant="form"
-                value={otpCode}
-                onChangeText={setOtpCode}
-                placeholder="123456"
-                keyboardType="number-pad"
-                maxLength={6}
-                ltr
-                onSubmitEditing={handleVerifyOtpSubmit}
-              />
-
+          <View className="gap-5 border-t border-brand-border pt-4">
+            {step === 'credentials' && (
               <Pressable
-                onPress={() =>
-                  sendOtp.mutate(
-                    { email: getValues('email') },
-                    {
-                      onSuccess: () =>
-                        toast.info(
-                          t('auth.otpSentTo', { email: getValues('email') }),
-                        ),
-                    },
-                  )
-                }
+                onPress={switchMode}
                 accessibilityRole="button"
-                className="min-h-11 justify-center self-center"
+                className="min-h-11 flex-row flex-wrap items-center justify-center gap-1"
               >
+                <Text className="font-sans-medium text-sm text-brand-warmgray">
+                  {t(
+                    isSignUp
+                      ? 'auth.haveAccountQuestion'
+                      : 'auth.noAccountQuestion',
+                  )}
+                </Text>
                 <Text className="font-sans-bold text-sm text-brand-primary">
-                  {t('auth.resendOtp')}
+                  {t(
+                    isSignUp
+                      ? 'auth.haveAccountAction'
+                      : 'auth.noAccountAction',
+                  )}
                 </Text>
               </Pressable>
-            </View>
-          )}
-        </ScrollView>
-
-        <View
-          className="gap-3 border-t border-brand-border p-6"
-          style={{ paddingBottom: Math.max(insets.bottom, 24) }}
-        >
-          {activeMutation.isError && (
-            <Text
-              accessibilityRole="alert"
-              className="text-center font-sans-bold text-sm text-brand-danger"
-            >
-              {t(errorMessageKey(activeMutation.error))}
-            </Text>
-          )}
-          <Button
-            size="lg"
-            label={t(
-              step === 'otp'
-                ? 'auth.verifyAndSignIn'
-                : isSignUp
-                ? 'auth.createAccount'
-                : 'auth.logIn',
             )}
-            loading={activeMutation.isPending}
-            onPress={
-              step === 'otp'
-                ? handleVerifyOtpSubmit
-                : () => handleCredentialsSubmit()
-            }
-          />
-        </View>
+            <View className="flex-row">
+              {TRUST.map(item => (
+                <View key={item.icon} className="flex-1 items-center gap-1.5">
+                  <View className="h-9 w-9 items-center justify-center rounded-full bg-brand-success-soft">
+                    <Icon name={item.icon} size={18} color={colors.primary} />
+                  </View>
+                  <Text className="text-center font-sans-bold text-[11px] text-brand-warmgray">
+                    {t(item.label)}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </Screen>
   );

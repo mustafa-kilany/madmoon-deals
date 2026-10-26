@@ -21,6 +21,7 @@ export type CreateListingInput = {
   /** URLs from uploadListingPhoto, cover first (1 to 5). */
   imageUrls: string[];
   condition: Condition;
+  description?: string;
   brand?: string;
   model?: string;
   type: string;
@@ -45,6 +46,8 @@ export interface CatalogService {
     cursor?: string | null,
   ): Promise<ListingPage>;
   getItem(id: string): Promise<Item>;
+  /** Count one view of a listing (when someone opens it). */
+  recordView(id: string): Promise<void>;
   /** The signed-in user's own listings (Profile → My Listings). */
   getMyListings(): Promise<Item[]>;
   /** Upload one listing photo to storage; returns its public URL. */

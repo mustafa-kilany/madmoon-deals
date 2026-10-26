@@ -1,18 +1,31 @@
 // Profile & Settings tab (prototype Profile): avatar, verification status,
-// city, payment card, own listings, log out. Guests see a sign-in prompt.
+// city, payment card, own listings, blocked users, log out, delete account.
+// Guests see a sign-in prompt.
 
 import { useState } from 'react';
-import { Image, Pressable, ScrollView, View } from 'react-native';
+import { Alert, Image, Pressable, ScrollView, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { BackButton } from '@/components/BackButton';
 import { CityPicker } from '@/components/CityPicker';
 import { Icon, type IconName } from '@/components/icons';
 import { Price } from '@/components/Price';
-import { Button, Heading, Ltr, Screen, Text, TextField } from '@/components/ui';
+import {
+  Badge,
+  Button,
+  Heading,
+  Ltr,
+  Screen,
+  Text,
+  TextField,
+} from '@/components/ui';
 import { go, startAuth } from '@/features/auth/authFlow';
 import { pickAvatarPhoto } from '@/features/auth/photoCapture';
 import { useMyListings } from '@/features/catalog/hooks/useCatalog';
 import { useOpenItem } from '@/features/catalog/hooks/useOpenItem';
+import {
+  useBlockedUsers,
+  useUnblockUser,
+} from '@/features/offers/hooks/useNegotiation';
 import { useLocalized } from '@/i18n';
 import type { User } from '@/lib/types';
 import { errorMessageKey } from '@/services/api/errors';
@@ -20,14 +33,13 @@ import { toast } from '@/store/toastStore';
 import { colors } from '@/theme/colors';
 import {
   useChangeAvatar,
+  useDeleteAccount,
   useLogOut,
   useRemovePaymentCard,
   useSavePaymentCard,
   useUpdateProfile,
 } from '../hooks/useAccount';
 import { useUser } from '../sessionStore';
-
-const toHome = () => go({ name: 'Tabs', params: { screen: 'Home' } });
 
 export function ProfileScreen() {
   const { t } = useTranslation();
@@ -40,7 +52,7 @@ export function ProfileScreen() {
         headerBorder
         header={
           <>
-            <BackButton onPress={toHome} />
+            <BackButton />
             <Heading className="text-xl">{t('screens.myProfile')}</Heading>
           </>
         }
@@ -75,6 +87,9 @@ function SignedInProfile({ user }: { user: User }) {
   const saveCard = useSavePaymentCard();
   const removeCard = useRemovePaymentCard();
   const logOut = useLogOut();
+  const deleteAccount = useDeleteAccount();
+  const { data: blockedUsers = [] } = useBlockedUsers();
+  const unblock = useUnblockUser();
   const [cardNumber, setCardNumber] = useState('');
 
   const onError = (error: unknown) => toast.info(t(errorMessageKey(error)));
@@ -87,13 +102,26 @@ function SignedInProfile({ user }: { user: User }) {
     }
   };
   const cardDigits = cardNumber.replace(/\D/g, '');
+  const confirmDelete = () =>
+    Alert.alert(
+      t('profile.deleteConfirmTitle'),
+      t('profile.deleteConfirmBody'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('profile.deleteConfirm'),
+          style: 'destructive',
+          onPress: () => deleteAccount.mutate(undefined, { onError }),
+        },
+      ],
+    );
 
   return (
     <Screen
       headerBorder
       header={
         <>
-          <BackButton onPress={toHome} />
+          <BackButton />
           <Heading className="text-xl">{t('screens.profile')}</Heading>
         </>
       }
@@ -238,6 +266,13 @@ function SignedInProfile({ user }: { user: User }) {
                     source={{ uri: item.imageUrl }}
                     className="aspect-square w-full"
                   />
+                  {item.status !== 'active' && (
+                    <Badge
+                      label={t(`listing.${item.status}`)}
+                      tone={item.status === 'sold' ? 'neutral' : 'warning'}
+                      className="absolute start-1 top-1"
+                    />
+                  )}
                   <Price
                     fils={item.priceFils}
                     className="p-1.5 text-[11px] text-brand-primary"
@@ -249,12 +284,54 @@ function SignedInProfile({ user }: { user: User }) {
           )}
         </View>
 
+        <View>
+          <SectionLabel icon="Shield" label={t('profile.blockedUsers')} />
+          {blockedUsers.length === 0 ? (
+            <Text className="font-sans-bold text-sm text-brand-warmgray">
+              {t('profile.noBlocked')}
+            </Text>
+          ) : (
+            <View className="gap-2">
+              {blockedUsers.map(blockedUser => (
+                <View
+                  key={blockedUser.id}
+                  className="flex-row items-center justify-between rounded-xl bg-brand-surface p-3"
+                >
+                  <Text className="font-sans-bold text-sm">
+                    {blockedUser.name}
+                  </Text>
+                  <Pressable
+                    onPress={() => unblock.mutate(blockedUser.id, { onError })}
+                    disabled={unblock.isPending}
+                    accessibilityRole="button"
+                    hitSlop={8}
+                  >
+                    <Text className="font-sans-bold text-xs text-brand-primary">
+                      {t('profile.unblock')}
+                    </Text>
+                  </Pressable>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+
         <Button
           variant="secondary"
           label={t('profile.logOut')}
           loading={logOut.isPending}
           onPress={() => logOut.mutate()}
         />
+        <Pressable
+          onPress={confirmDelete}
+          disabled={deleteAccount.isPending}
+          accessibilityRole="button"
+          className="min-h-11 items-center justify-center"
+        >
+          <Text className="font-sans-bold text-sm text-brand-danger">
+            {t('profile.deleteAccount')}
+          </Text>
+        </Pressable>
       </ScrollView>
     </Screen>
   );

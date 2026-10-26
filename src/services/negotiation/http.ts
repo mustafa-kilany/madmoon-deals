@@ -1,6 +1,13 @@
-// Negotiation & chat API endpoints (docs/API.md → Negotiation & Chat).
+// Negotiation, chat and safety API endpoints (docs/API.md → Negotiation &
+// Chat, Safety).
 
-import type { Bid, ChatMessage, ChatThread, Offer } from '@/lib/types';
+import type {
+  Bid,
+  BlockedUser,
+  ChatMessage,
+  ChatThread,
+  Offer,
+} from '@/lib/types';
 import { api } from '../api/client';
 import { fromIso, type Dated } from '../api/wire';
 import type { NegotiationService } from './types';
@@ -76,4 +83,23 @@ export const httpNegotiationService: NegotiationService = {
         { text },
       ),
     ),
+
+  report: async ({ target, reason, details }) => {
+    await api.post('/reports', {
+      targetType: target.type,
+      targetId: target.id,
+      reason,
+      details,
+    });
+  },
+
+  blockUser: async userId => {
+    await api.post('/me/blocked', { userId });
+  },
+
+  unblockUser: async userId => {
+    await api.delete(`/me/blocked/${encodeURIComponent(userId)}`);
+  },
+
+  getBlockedUsers: () => api.get<BlockedUser[]>('/me/blocked'),
 };

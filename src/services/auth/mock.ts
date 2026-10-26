@@ -17,11 +17,13 @@ import type { AuthService } from './types';
 
 const USERS = 'users'; // id → MockAccount
 const SESSIONS = 'sessions'; // token → user id
+const DELETED = 'deleted'; // id → true (keeps deleted demo accounts gone)
 
 function users(): Record<string, MockAccount> {
   const table = readMockTable<MockAccount>(USERS);
+  const deleted = readMockTable<boolean>(DELETED);
   for (const seed of [demoAccount, courierAccount])
-    if (!table[seed.id]) table[seed.id] = seed;
+    if (!table[seed.id] && !deleted[seed.id]) table[seed.id] = seed;
   return table;
 }
 
@@ -60,12 +62,21 @@ const update = (patch: Partial<MockAccount>): User => {
 
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
 
+/** The mock "emails" this code for sign-up and password reset. */
+export const MOCK_CODE = '123456';
+
+const checkCode = (code: string) => {
+  if (code.trim() !== MOCK_CODE)
+    throw new ApiError('INVALID_CODE', 'Wrong or expired code', 422);
+};
+
 export const mockAuthService: AuthService = {
-  signUpWithEmail: async ({ name, email, password }) => {
+  signUpWithEmail: async ({ name, email, password, code }) => {
     await mockLatency();
     const address = normalizeEmail(email);
     if (Object.values(users()).some(u => u.email === address))
       throw new ApiError('EMAIL_TAKEN', 'Email already registered', 409);
+    checkCode(code);
     const account: MockAccount = {
       id: `user-${newId()}`,
       name: name.trim(),
@@ -127,28 +138,40 @@ export const mockAuthService: AuthService = {
     return openSession(account);
   },
 
-  sendOtp: async () => {
+  sendOtp: async ({ email }) => {
     await mockLatency();
-    // Demo OTP is sent; in mock mode any 6-digit code or "123456" passes.
+    if (Object.values(users()).some(u => u.email === normalizeEmail(email)))
+      throw new ApiError('EMAIL_TAKEN', 'Email already registered', 409);
+    // Mock: nothing is sent; the code is always MOCK_CODE.
   },
 
-  verifyOtp: async ({ email }) => {
+  forgotPassword: async () => {
     await mockLatency();
-    const address = normalizeEmail(email);
-    let account = Object.values(users()).find(u => u.email === address);
-    if (!account) {
-      account = {
-        id: `user-${newId()}`,
-        name: address.split('@')[0] || 'User',
-        email: address,
-        method: 'email',
-        verified: false,
-        cityId: 'amman',
-        avatarUrl: avatarOptions[0],
-      };
-      saveUser(account);
-    }
-    return openSession(account);
+    // Mock: nothing is sent; the code is always MOCK_CODE.
+  },
+
+  resetPassword: async ({ email, code, password }) => {
+    await mockLatency();
+    checkCode(code);
+    const account = Object.values(users()).find(
+      u => u.email === normalizeEmail(email),
+    );
+    if (!account)
+      throw new ApiError('INVALID_CODE', 'Wrong or expired code', 422);
+    if (password.length < 8)
+      throw new ApiError('VALIDATION', 'password: at least 8 characters', 422);
+    const updated = { ...account, password };
+    saveUser(updated);
+    // Every other session ends: the old password may have leaked.
+    writeMockTable(
+      SESSIONS,
+      Object.fromEntries(
+        Object.entries(readMockTable<string>(SESSIONS)).filter(
+          ([, id]) => id !== account.id,
+        ),
+      ),
+    );
+    return openSession(updated);
   },
 
   verifyId: async () => {
@@ -182,6 +205,26 @@ export const mockAuthService: AuthService = {
   removePaymentCard: async () => {
     await mockLatency();
     return update({ card: undefined });
+  },
+
+  deleteAccount: async () => {
+    await mockLatency();
+    const account = currentAccount();
+    const table = users();
+    delete table[account.id];
+    writeMockTable(USERS, table);
+    writeMockTable(DELETED, {
+      ...readMockTable<boolean>(DELETED),
+      [account.id]: true,
+    });
+    writeMockTable(
+      SESSIONS,
+      Object.fromEntries(
+        Object.entries(readMockTable<string>(SESSIONS)).filter(
+          ([, id]) => id !== account.id,
+        ),
+      ),
+    );
   },
 
   logOut: async () => {

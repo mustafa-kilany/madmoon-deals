@@ -82,6 +82,9 @@ export const httpCatalogService: CatalogService = {
   },
   getItem: async id =>
     toItem(await api.get<ItemDto>(`/listings/${encodeURIComponent(id)}`)),
+  recordView: async id => {
+    await api.post(`/listings/${encodeURIComponent(id)}/views`);
+  },
   getMyListings: async () =>
     (await api.get<ItemDto[]>('/me/listings')).map(toItem),
   uploadListingPhoto: async photo =>

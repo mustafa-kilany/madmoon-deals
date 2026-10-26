@@ -1,10 +1,12 @@
 // Direction-aware back button for screen headers: points left in English,
-// right in Arabic. Defaults to going back in the navigation stack.
+// right in Arabic. Defaults to going back to the previous screen (or tab),
+// and to Home when there is nothing to go back to.
 
 import { useNavigation } from '@react-navigation/native';
 import { I18nManager, Pressable } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '@/components/icons';
+import { go } from '@/features/auth/authFlow';
 import { iconSize } from '@/theme/spacing';
 
 type BackButtonProps = {
@@ -16,10 +18,14 @@ type BackButtonProps = {
 export function BackButton({ onPress, variant = 'default' }: BackButtonProps) {
   const { t } = useTranslation();
   const navigation = useNavigation();
+  const back = () =>
+    navigation.canGoBack()
+      ? navigation.goBack()
+      : go({ name: 'Tabs', params: { screen: 'Home' } });
 
   return (
     <Pressable
-      onPress={onPress ?? (() => navigation.goBack())}
+      onPress={onPress ?? back}
       accessibilityRole="button"
       accessibilityLabel={t('common.back')}
       hitSlop={4}

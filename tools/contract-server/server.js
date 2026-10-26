@@ -360,6 +360,19 @@ function detectImage(b) {
 }
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// The emailed code for sign-up and password reset. A real backend sends a
+// random code that expires (~10 minutes) and allows ~5 attempts.
+const DEMO_CODE = '123456';
+
+function checkCode(code) {
+  if (code !== DEMO_CODE)
+    throw new HttpError(422, 'INVALID_CODE', 'Wrong or expired code');
+}
+
+function endSessions(store, accountId) {
+  for (const [token, id] of store.sessions)
+    if (id === accountId) store.sessions.delete(token);
+}
 
 function validateSignUp({ name, email, password }) {
   if (typeof name !== 'string' || name.trim().length < 2)
@@ -388,6 +401,7 @@ function routes(store) {
       const email = body.email.trim().toLowerCase();
       if (findByEmail(store, email))
         throw new HttpError(409, 'EMAIL_TAKEN', 'Email already registered');
+      checkCode(body.code);
       const account = addAccount(store, {
         name: body.name.trim(),
         email,
@@ -433,18 +447,43 @@ function routes(store) {
       ),
     ],
 
-    // OTP: the demo code is always 123456.
+    // Codes: the demo code is always 123456 (DEMO_CODE).
     'POST /auth/send-otp': async req => {
       const { email } = await readJson(req);
       if (typeof email !== 'string' || !EMAIL.test(email.trim()))
         throw new HttpError(422, 'VALIDATION', 'email: invalid');
-      return [200, {}];
+      if (findByEmail(store, email.trim().toLowerCase()))
+        throw new HttpError(409, 'EMAIL_TAKEN', 'Email already registered');
+      return [204];
     },
-    'POST /auth/verify-otp': async req => {
-      const { email, code } = await readJson(req);
-      const account = findByEmail(store, String(email).trim().toLowerCase());
-      if (!account || code !== '123456')
-        throw new HttpError(401, 'INVALID_CREDENTIALS', 'Wrong code');
+
+    // Always 204, account or not, so it can't be used to find accounts.
+    'POST /auth/forgot-password': async req => {
+      const { email } = await readJson(req);
+      if (typeof email !== 'string' || !EMAIL.test(email.trim()))
+        throw new HttpError(422, 'VALIDATION', 'email: invalid');
+      return [204];
+    },
+
+    'POST /auth/reset-password': async req => {
+      const { email, code, password } = await readJson(req);
+      checkCode(code);
+      const account =
+        typeof email === 'string' &&
+        findByEmail(store, email.trim().toLowerCase());
+      if (!account)
+        throw new HttpError(422, 'INVALID_CODE', 'Wrong or expired code');
+      if (typeof password !== 'string' || password.length < 8)
+        throw new HttpError(
+          422,
+          'VALIDATION',
+          'password: at least 8 characters',
+        );
+      const { salt, hash } = hashPassword(password);
+      account.salt = salt;
+      account.passwordHash = hash;
+      // Signed out everywhere else: the old password may have leaked.
+      endSessions(store, account.id);
       return [200, openSession(store, account)];
     },
 
@@ -455,6 +494,16 @@ function routes(store) {
     },
 
     'GET /me': async req => [200, publicUser(authenticate(store, req).account)],
+
+    // A real backend also refuses (409 OPEN_ORDERS) while the user has orders
+    // in escrow, deletes their listings, photos and card reference, and keeps
+    // only what the law requires (e.g. completed payments).
+    'DELETE /me': async req => {
+      const { account } = authenticate(store, req);
+      endSessions(store, account.id);
+      store.users.delete(account.id);
+      return [204];
+    },
 
     'PATCH /me': async req => {
       const { account } = authenticate(store, req);

@@ -22,6 +22,22 @@ name: Buy, then courier confirms delivery
 - tapOn: "iPhone 14 Pro"
 - tapOn: "Pay Now"
 - assertVisible: "Secure Checkout"
+
+# Delivery details: name and area come from the profile
+- scrollUntilVisible:
+    element:
+        id: "delivery-phone"
+- tapOn:
+    id: "delivery-phone"
+- inputText: "0791234567"
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+        id: "delivery-address"
+- tapOn:
+    id: "delivery-address"
+- inputText: "Mecca St, Building 12, 3rd floor"
+- hideKeyboard
 - scrollUntilVisible:
     element:
         text: 'Pay \d.*'

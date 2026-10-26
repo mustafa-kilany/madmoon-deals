@@ -181,6 +181,7 @@ export function ListingBrowser({
     ...(format === 'auction'
       ? [{ value: 'most_bids' as const, label: t('browse.sortMostBids') }]
       : []),
+    { value: 'most_viewed', label: t('browse.sortMostViewed') },
   ];
   const sortLabel = sorts.find(s => s.value === state.sort)?.label ?? '';
 

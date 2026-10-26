@@ -16,6 +16,8 @@ export const usePayOrder = () =>
       ordersService.payOrder(input.orderId, input.cardToken),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.orders });
+      // The listing is now reserved.
+      queryClient.invalidateQueries({ queryKey: queryKeys.items });
     },
   });
 

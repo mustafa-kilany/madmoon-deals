@@ -9,6 +9,10 @@ export type ApiErrorCode =
   | 'EMAIL_TAKEN'
   | 'INVALID_CREDENTIALS'
   | 'INVALID_PIN'
+  | 'INVALID_CODE'
+  | 'FORBIDDEN'
+  | 'ITEM_UNAVAILABLE'
+  | 'OPEN_ORDERS'
   | 'UNKNOWN';
 
 export class ApiError extends Error {
@@ -30,6 +34,10 @@ const KNOWN: ApiErrorCode[] = [
   'EMAIL_TAKEN',
   'INVALID_CREDENTIALS',
   'INVALID_PIN',
+  'INVALID_CODE',
+  'FORBIDDEN',
+  'ITEM_UNAVAILABLE',
+  'OPEN_ORDERS',
 ];
 
 /** i18n key for an error's user-facing message (src/i18n: errors.*). */

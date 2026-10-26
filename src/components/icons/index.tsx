@@ -271,6 +271,21 @@ const paths = {
       <Line x1="10" y1="18" x2="14" y2="18" />
     </>
   ),
+  // Lucide "flag": Report.
+  Flag: (
+    <>
+      <Path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+      <Line x1="4" y1="22" x2="4" y2="15" />
+    </>
+  ),
+  // Lucide "more-vertical": chat options.
+  More: (
+    <>
+      <Circle cx="12" cy="5" r="1" />
+      <Circle cx="12" cy="12" r="1" />
+      <Circle cx="12" cy="19" r="1" />
+    </>
+  ),
 } satisfies Record<string, ReactElement>;
 
 export type IconName = keyof typeof paths;

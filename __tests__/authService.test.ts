@@ -27,6 +27,7 @@ test('email sign-up creates an unverified account and a session', async () => {
     name: ' Lina ',
     email: 'Lina@Example.com',
     password: 'longenough',
+    code: '123456',
   });
   expect(session.token).toBeTruthy();
   expect(session.user).toMatchObject({
@@ -39,7 +40,12 @@ test('email sign-up creates an unverified account and a session', async () => {
 });
 
 test('the same email cannot sign up twice', async () => {
-  const input = { name: 'A', email: 'a@b.co', password: 'longenough' };
+  const input = {
+    name: 'A',
+    email: 'a@b.co',
+    password: 'longenough',
+    code: '123456',
+  };
   await auth.signUpWithEmail(input);
   expect(await code(auth.signUpWithEmail(input))).toBe('EMAIL_TAKEN');
 });
@@ -64,6 +70,7 @@ test('authenticated calls need a valid token', async () => {
     name: 'Sara',
     email: 'sara@x.jo',
     password: 'longenough',
+    code: '123456',
   });
   tokenStorage.set(session.token);
   expect((await auth.getMe()).verified).toBe(false);
@@ -85,6 +92,7 @@ test('profile changes persist on the account', async () => {
     name: 'Omar',
     email: 'omar@x.jo',
     password: 'longenough',
+    code: '123456',
   });
   tokenStorage.set(token);
   await auth.updateProfile({ cityId: 'irbid' });
@@ -104,4 +112,56 @@ test('the payment mock never keeps more than the last 4 digits', async () => {
   const token = await paymentProvider.tokenizeCard('5555 4444 3333 1111');
   expect(token).toBe('mock_mastercard_1111');
   await expect(paymentProvider.tokenizeCard('123')).rejects.toThrow();
+});
+
+test('sign-up refuses a wrong emailed code', async () => {
+  expect(
+    await code(
+      auth.signUpWithEmail({
+        name: 'Rami',
+        email: 'rami@x.jo',
+        password: 'longenough',
+        code: '000000',
+      }),
+    ),
+  ).toBe('INVALID_CODE');
+});
+
+test('password reset changes the password and signs in', async () => {
+  await auth.forgotPassword({ email: 'ahmad@sahla.jo' });
+  expect(
+    await code(
+      auth.resetPassword({
+        email: 'ahmad@sahla.jo',
+        code: '111111',
+        password: 'newpassword',
+      }),
+    ),
+  ).toBe('INVALID_CODE');
+  const session = await auth.resetPassword({
+    email: 'ahmad@sahla.jo',
+    code: '123456',
+    password: 'newpassword',
+  });
+  expect(session.user.name).toBe('Ahmad');
+  expect(
+    await code(
+      auth.logInWithEmail({ email: 'ahmad@sahla.jo', password: 'sahla1234' }),
+    ),
+  ).toBe('INVALID_CREDENTIALS');
+});
+
+test('a deleted account is gone, demo accounts included', async () => {
+  const { token } = await auth.logInWithEmail({
+    email: 'ahmad@sahla.jo',
+    password: 'sahla1234',
+  });
+  tokenStorage.set(token);
+  await auth.deleteAccount();
+  expect(await code(auth.getMe())).toBe('UNAUTHORIZED');
+  expect(
+    await code(
+      auth.logInWithEmail({ email: 'ahmad@sahla.jo', password: 'sahla1234' }),
+    ),
+  ).toBe('INVALID_CREDENTIALS');
 });

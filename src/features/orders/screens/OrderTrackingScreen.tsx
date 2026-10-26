@@ -1,16 +1,19 @@
 // Order tracking (prototype BuyerTracking): the buyer's orders with their
 // order number, an escrow timeline and, while the payment is held, the PIN to
-// give the courier. Pull down to refresh after the courier confirms.
+// give the courier. Pull down to refresh after the courier confirms. An order
+// waiting for the bank's card check can reopen the bank page.
 
-import { FlatList, Image, RefreshControl, View } from 'react-native';
+import { FlatList, Image, Linking, RefreshControl, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { BackButton } from '@/components/BackButton';
 import { Icon } from '@/components/icons';
 import { Price } from '@/components/Price';
 import { StatusView } from '@/components/StatusView';
-import { Card, Heading, Ltr, Screen, Text } from '@/components/ui';
+import { Button, Card, Heading, Ltr, Screen, Text } from '@/components/ui';
+import { useCities } from '@/features/catalog/hooks/useCatalog';
 import { useMyOrders } from '@/features/checkout/hooks/useOrders';
 import { useLocalized } from '@/i18n';
+import { placeLabel } from '@/lib/places';
 import type { Order, OrderStatus } from '@/lib/types';
 import { colors } from '@/theme/colors';
 
@@ -84,7 +87,9 @@ export function OrderTrackingScreen() {
 function OrderCard({ order }: { order: Order }) {
   const { t } = useTranslation();
   const localized = useLocalized();
+  const { data: cities } = useCities();
   const done = stepsDone(order.status);
+  const area = cities?.find(c => c.id === order.delivery.cityId);
 
   return (
     <Card className="gap-3 p-3">
@@ -107,6 +112,25 @@ function OrderCard({ order }: { order: Order }) {
       <Text className="font-sans-bold text-xs text-brand-primary">
         {t(STATUS_KEY[order.status])}
       </Text>
+      <Text className="text-xs text-brand-warmgray" numberOfLines={2}>
+        {t('orders.deliverTo', {
+          name: order.delivery.name,
+          area: area ? placeLabel(area, localized) : order.delivery.cityId,
+        })}
+      </Text>
+
+      {order.status === 'awaiting_payment' && order.paymentUrl && (
+        <View className="gap-2 rounded-xl bg-brand-lightgray p-3">
+          <Text className="text-xs">{t('orders.awaitingBank')}</Text>
+          <Button
+            size="sm"
+            variant="secondary"
+            icon="CreditCard"
+            label={t('orders.openBank')}
+            onPress={() => Linking.openURL(order.paymentUrl!)}
+          />
+        </View>
+      )}
 
       {order.status === 'refunded' ? (
         <Text className="text-xs text-brand-warmgray">

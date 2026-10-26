@@ -106,6 +106,8 @@ export function sortItems(items: Item[], sort: BrowseSort): Item[] {
         );
       case 'most_bids':
         return (b.auction?.bidCount ?? 0) - (a.auction?.bidCount ?? 0);
+      case 'most_viewed':
+        return (b.views ?? 0) - (a.views ?? 0);
       default:
         return Number(b.verified) - Number(a.verified);
     }

@@ -52,9 +52,14 @@ export const useSendOtp = () =>
     mutationFn: authService.sendOtp,
   });
 
-export const useVerifyOtp = () =>
+export const useForgotPassword = () =>
   useMutation({
-    mutationFn: authService.verifyOtp,
+    mutationFn: authService.forgotPassword,
+  });
+
+export const useResetPassword = () =>
+  useMutation({
+    mutationFn: authService.resetPassword,
     onSuccess: useFinishAuth(),
   });
 
@@ -94,6 +99,20 @@ export function useLogOut() {
     onSettled: () => {
       signOut();
       go({ name: 'Tabs', params: { screen: 'Home' } });
+    },
+  });
+}
+
+/** Delete the account on the server, then sign out locally and go Home. */
+export function useDeleteAccount() {
+  const { t } = useTranslation();
+  const signOut = useSessionStore(s => s.signOut);
+  return useMutation({
+    mutationFn: authService.deleteAccount,
+    onSuccess: () => {
+      signOut();
+      go({ name: 'Tabs', params: { screen: 'Home' } });
+      toast.success(t('profile.accountDeleted'));
     },
   });
 }

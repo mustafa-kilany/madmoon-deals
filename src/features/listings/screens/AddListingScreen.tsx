@@ -1,9 +1,9 @@
 // Add listing screen (Phase 4): multi-field form for listing photos, title,
-// category & item type, condition, brand & model (searchable lists for the
+// description (shown to buyers on the item page), category & item type, condition, brand & model (searchable lists for the
 // chosen type), city location, and sale format (fixed price vs. live auction).
 
 import { useState } from 'react';
-import { Image, Pressable, ScrollView, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { BackButton } from '@/components/BackButton';
 import { CityPicker } from '@/components/CityPicker';
@@ -35,6 +35,8 @@ import { toast } from '@/store/toastStore';
 import { colors } from '@/theme/colors';
 
 const conditions: Condition[] = ['new', 'excellent', 'good', 'loved'];
+/** Same limit as POST /listings (docs/API.md). */
+const DESCRIPTION_MAX = 2000;
 
 export function AddListingScreen({
   navigation,
@@ -51,6 +53,7 @@ export function AddListingScreen({
 
   const [photos, setPhotos] = useState<LocalPhoto[]>([]);
   const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
   const [category, setCategory] = useState<string>('');
   const [itemType, setItemType] = useState<string>('');
   const [condition, setCondition] = useState<Condition>('excellent');
@@ -152,6 +155,7 @@ export function AddListingScreen({
         priceFils,
         photos,
         condition,
+        description: description.trim() || undefined,
         brand: brand.trim() || undefined,
         model: (brand.trim() && model.trim()) || undefined,
         type: activeType,
@@ -238,6 +242,19 @@ export function AddListingScreen({
           value={title}
           onChangeText={setTitle}
           placeholder={t('addListing.titlePlaceholder')}
+        />
+
+        {/* Grows as the seller types, then scrolls inside */}
+        <TextField
+          label={t('addListing.description')}
+          value={description}
+          onChangeText={setDescription}
+          placeholder={t('addListing.descriptionPlaceholder')}
+          hint={t('addListing.descriptionHint')}
+          multiline
+          maxLength={DESCRIPTION_MAX}
+          showCount
+          style={styles.multiline}
         />
 
         {/* Category & Item Type */}
@@ -436,3 +453,7 @@ export function AddListingScreen({
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  multiline: { minHeight: 140, maxHeight: 320, textAlignVertical: 'top' },
+});

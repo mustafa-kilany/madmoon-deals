@@ -74,6 +74,7 @@ function safeJson(text: string): unknown {
 
 function statusCode(status: number): ApiErrorCode {
   if (status === 401) return 'UNAUTHORIZED';
+  if (status === 403) return 'FORBIDDEN';
   if (status === 404) return 'NOT_FOUND';
   if (status === 400 || status === 422) return 'VALIDATION';
   return 'UNKNOWN';

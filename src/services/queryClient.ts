@@ -30,5 +30,8 @@ export const queryKeys = {
   me: ['me'],
   myListings: ['me', 'listings'],
   chats: ['chats'],
+  chatMessages: (chatId: string) => ['chats', chatId, 'messages'],
+  offer: (offerId: string) => ['offers', offerId],
+  blocked: ['me', 'blocked'],
   orders: ['me', 'orders'],
 } as const;

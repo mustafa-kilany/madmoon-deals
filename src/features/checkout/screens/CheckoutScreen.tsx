@@ -1,12 +1,15 @@
-// Secure checkout (prototype Checkout): item, price breakdown, card, Pay.
-// The price is the listing's, or an accepted offer's when opened from chat.
-// Paying puts the money in escrow; the buyer then tracks the order and gets
-// the delivery PIN (features/orders).
+// Secure checkout (prototype Checkout): item, price breakdown, delivery
+// details, card, Pay. The price is the listing's, an accepted offer's (from
+// chat) or the winning bid's (auction). Paying puts the money in escrow; if
+// the bank wants its card check (3-D Secure), its page opens in the browser.
+// The buyer then tracks the order and gets the delivery PIN (features/orders).
+// The delivery details are remembered on the phone for next time.
 
 import { useState } from 'react';
-import { Image, ScrollView, View } from 'react-native';
+import { Image, Linking, ScrollView, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { BackButton } from '@/components/BackButton';
+import { CityPicker } from '@/components/CityPicker';
 import { Icon } from '@/components/icons';
 import { Price } from '@/components/Price';
 import { StatusView } from '@/components/StatusView';
@@ -22,7 +25,10 @@ import {
 import { useUser } from '@/features/auth/sessionStore';
 import { useItem } from '@/features/catalog/hooks/useCatalog';
 import { useLang, useLocalized } from '@/i18n';
+import { deliveryProblems } from '@/lib/delivery';
 import { calculateCheckoutBreakdown, formatJOD } from '@/lib/money';
+import { storage } from '@/lib/storage';
+import type { DeliveryDetails } from '@/lib/types';
 import type { RootScreenProps } from '@/navigation/types';
 import { errorMessageKey } from '@/services/api/errors';
 import { paymentProvider } from '@/services/payments';
@@ -33,6 +39,16 @@ import { useCreateOrder, usePayOrder } from '../hooks/useOrders';
 
 /** Token that tells the server to charge the account's saved card. */
 const SAVED_CARD = 'saved';
+
+const LAST_DELIVERY = 'checkout.lastDelivery';
+
+function lastDelivery(): Partial<DeliveryDetails> {
+  try {
+    return JSON.parse(storage.getString(LAST_DELIVERY) ?? '{}');
+  } catch {
+    return {};
+  }
+}
 
 export function CheckoutScreen({
   route,
@@ -50,6 +66,17 @@ export function CheckoutScreen({
   const payOrder = usePayOrder();
   const [cardNumber, setCardNumber] = useState('');
   const [tokenizing, setTokenizing] = useState(false);
+  const [delivery, setDelivery] = useState<DeliveryDetails>(() => ({
+    name: user?.name ?? '',
+    phone: '',
+    cityId: user?.cityId ?? 'amman',
+    address: '',
+    ...lastDelivery(),
+  }));
+  // Field errors show after the first Pay attempt, not while typing.
+  const [showErrors, setShowErrors] = useState(false);
+  const setField = (field: keyof DeliveryDetails) => (value: string) =>
+    setDelivery(d => ({ ...d, [field]: value }));
 
   if (isLoading || offer.isLoading) return <StatusView status="loading" />;
   const offerUsable =
@@ -80,8 +107,15 @@ export function CheckoutScreen({
   const cardDigits = cardNumber.replace(/\D/g, '');
   const cardReady = !!savedCard || cardDigits.length >= 12;
   const busy = tokenizing || createOrder.isPending || payOrder.isPending;
+  const problems = deliveryProblems(delivery);
+  const fieldError = (field: keyof DeliveryDetails, message: string) =>
+    showErrors && problems.includes(field) ? message : undefined;
 
   const pay = async () => {
+    if (problems.length) {
+      setShowErrors(true);
+      return;
+    }
     try {
       setTokenizing(true);
       const cardToken = savedCard
@@ -91,9 +125,17 @@ export function CheckoutScreen({
       const order = await createOrder.mutateAsync({
         listingId: item.id,
         offerId,
+        delivery,
       });
-      await payOrder.mutateAsync({ orderId: order.id, cardToken });
-      toast.success(t('checkout.paid'));
+      storage.set(LAST_DELIVERY, JSON.stringify(delivery));
+      const paid = await payOrder.mutateAsync({ orderId: order.id, cardToken });
+      if (paid.status === 'awaiting_payment' && paid.paymentUrl) {
+        // The bank's card check; the order screen shows when it's done.
+        toast.info(t('checkout.bankCheck'));
+        Linking.openURL(paid.paymentUrl);
+      } else {
+        toast.success(t('checkout.paid'));
+      }
       navigation.replace('OrderTracking');
     } catch (error) {
       setTokenizing(false);
@@ -155,6 +197,61 @@ export function CheckoutScreen({
             />
           </View>
         </Card>
+
+        <View className="gap-3">
+          <Heading className="text-sm">{t('checkout.deliveryDetails')}</Heading>
+          <TextField
+            label={t('checkout.name')}
+            labelClassName="font-sans-bold text-xs text-brand-warmgray"
+            value={delivery.name}
+            onChangeText={setField('name')}
+            autoComplete="name"
+            textContentType="name"
+            error={fieldError('name', t('validation.nameRequired'))}
+          />
+          <TextField
+            label={t('checkout.phone')}
+            labelClassName="font-sans-bold text-xs text-brand-warmgray"
+            value={delivery.phone}
+            onChangeText={setField('phone')}
+            testID="delivery-phone"
+            placeholder="07X XXX XXXX"
+            keyboardType="phone-pad"
+            autoComplete="tel"
+            textContentType="telephoneNumber"
+            ltr
+            error={fieldError('phone', t('validation.phoneInvalid'))}
+          />
+          <View className="gap-2">
+            <Text className="font-sans-bold text-xs text-brand-warmgray">
+              {t('checkout.area')}
+            </Text>
+            <CityPicker
+              label={t('checkout.area')}
+              value={delivery.cityId}
+              onChange={setField('cityId')}
+            />
+          </View>
+          <TextField
+            label={t('checkout.address')}
+            labelClassName="font-sans-bold text-xs text-brand-warmgray"
+            value={delivery.address}
+            onChangeText={setField('address')}
+            testID="delivery-address"
+            placeholder={t('checkout.addressPlaceholder')}
+            autoComplete="street-address"
+            textContentType="fullStreetAddress"
+            maxLength={200}
+            error={fieldError('address', t('validation.addressRequired'))}
+          />
+          <TextField
+            label={t('checkout.notes')}
+            labelClassName="font-sans-bold text-xs text-brand-warmgray"
+            value={delivery.notes ?? ''}
+            onChangeText={setField('notes')}
+            maxLength={200}
+          />
+        </View>
 
         <View className="gap-3">
           <Heading className="text-sm">{t('checkout.payWith')}</Heading>

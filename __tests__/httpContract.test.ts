@@ -34,6 +34,12 @@ const photo = {
 const T = '2026-10-19T12:00:00Z';
 const offer = { id: 'o1', createdAt: T };
 const order = { id: 'SA-1', createdAt: T };
+const delivery = {
+  name: 'Ahmad',
+  phone: '0791234567',
+  cityId: 'amman-khalda',
+  address: 'Mecca St, Building 12',
+};
 const page = { items: [], nextCursor: null, total: 0 };
 
 type Row = {
@@ -56,9 +62,10 @@ const rows: Row[] = [
         name: 'A',
         email: 'a@b.co',
         password: 'x',
+        code: '123456',
       }),
     url: '/auth/signup',
-    body: { name: 'A', email: 'a@b.co', password: 'x' },
+    body: { name: 'A', email: 'a@b.co', password: 'x', code: '123456' },
   },
   {
     endpoint: 'POST /auth/login',
@@ -86,10 +93,21 @@ const rows: Row[] = [
     body: { email: 'a@b.co' },
   },
   {
-    endpoint: 'POST /auth/verify-otp',
-    call: () => httpAuthService.verifyOtp({ email: 'a@b.co', code: '1' }),
-    url: '/auth/verify-otp',
-    body: { email: 'a@b.co', code: '1' },
+    endpoint: 'POST /auth/forgot-password',
+    call: () => httpAuthService.forgotPassword({ email: 'a@b.co' }),
+    url: '/auth/forgot-password',
+    body: { email: 'a@b.co' },
+  },
+  {
+    endpoint: 'POST /auth/reset-password',
+    call: () =>
+      httpAuthService.resetPassword({
+        email: 'a@b.co',
+        code: '123456',
+        password: 'newpassword',
+      }),
+    url: '/auth/reset-password',
+    body: { email: 'a@b.co', code: '123456', password: 'newpassword' },
   },
   {
     endpoint: 'POST /auth/logout',
@@ -97,6 +115,11 @@ const rows: Row[] = [
     url: '/auth/logout',
   },
   { endpoint: 'GET /me', call: () => httpAuthService.getMe(), url: '/me' },
+  {
+    endpoint: 'DELETE /me',
+    call: () => httpAuthService.deleteAccount(),
+    url: '/me',
+  },
   {
     endpoint: 'PATCH /me',
     call: () => httpAuthService.updateProfile({ cityId: 'salt' }),
@@ -270,14 +293,52 @@ const rows: Row[] = [
     url: '/chats/c1/messages',
     body: { text: 'hi' },
   },
+  // Safety
+  {
+    endpoint: 'POST /reports',
+    call: () =>
+      httpNegotiationService.report({
+        target: { type: 'listing', id: 'mobiles-1' },
+        reason: 'scam',
+        details: 'Asks for payment outside Sahla',
+      }),
+    url: '/reports',
+    body: {
+      targetType: 'listing',
+      targetId: 'mobiles-1',
+      reason: 'scam',
+      details: 'Asks for payment outside Sahla',
+    },
+  },
+  {
+    endpoint: 'POST /me/blocked',
+    call: () => httpNegotiationService.blockUser('u2'),
+    url: '/me/blocked',
+    body: { userId: 'u2' },
+  },
+  {
+    endpoint: 'DELETE /me/blocked/:userId',
+    call: () => httpNegotiationService.unblockUser('u2'),
+    url: '/me/blocked/u2',
+  },
+  {
+    endpoint: 'GET /me/blocked',
+    call: () => httpNegotiationService.getBlockedUsers(),
+    reply: [],
+    url: '/me/blocked',
+  },
   // Orders
   {
     endpoint: 'POST /orders',
     call: () =>
-      httpOrdersService.createOrder({ listingId: 'mobiles-1', offerId: 'o1' }),
+      httpOrdersService.createOrder({
+        listingId: 'mobiles-1',
+        offerId: 'o1',
+        delivery,
+      }),
     reply: order,
     url: '/orders',
-    body: { listingId: 'mobiles-1', offerId: 'o1' },
+    body: { listingId: 'mobiles-1', offerId: 'o1', delivery },
   },
   {
     endpoint: 'POST /orders/:id/pay',

@@ -5,6 +5,7 @@ import { AuctionBiddingScreen } from '@/features/auctions/screens/AuctionBidding
 import { AuthScreen } from '@/features/auth/screens/AuthScreen';
 import { EmailAuthScreen } from '@/features/auth/screens/EmailAuthScreen';
 import { IdVerificationScreen } from '@/features/auth/screens/IdVerificationScreen';
+import { ResetPasswordScreen } from '@/features/auth/screens/ResetPasswordScreen';
 import { CourierConfirmScreen } from '@/features/courier/screens/CourierConfirmScreen';
 import { CategoryScreen } from '@/features/catalog/screens/CategoryScreen';
 import { ProductScreen } from '@/features/catalog/screens/ProductScreen';
@@ -14,6 +15,7 @@ import { SavedScreen } from '@/features/favorites/screens/SavedScreen';
 import { AddListingScreen } from '@/features/listings/screens/AddListingScreen';
 import { MakeOfferScreen } from '@/features/offers/screens/MakeOfferScreen';
 import { OrderTrackingScreen } from '@/features/orders/screens/OrderTrackingScreen';
+import { ReportScreen } from '@/features/safety/screens/ReportScreen';
 import { colors } from '@/theme/colors';
 import { TabNavigator } from './TabNavigator';
 import type { RootStackParamList } from './types';
@@ -39,6 +41,7 @@ export function RootNavigator() {
       <Stack.Screen name="Saved" component={SavedScreen} />
       <Stack.Screen name="OrderTracking" component={OrderTrackingScreen} />
       <Stack.Screen name="CourierConfirm" component={CourierConfirmScreen} />
+      <Stack.Screen name="Report" component={ReportScreen} />
       {/* Sign-in flow (removed from history once signed in, see authFlow). */}
       <Stack.Screen
         name="Auth"
@@ -46,6 +49,7 @@ export function RootNavigator() {
         options={{ animation: 'slide_from_bottom' }}
       />
       <Stack.Screen name="EmailAuth" component={EmailAuthScreen} />
+      <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
       <Stack.Screen name="IdVerification" component={IdVerificationScreen} />
     </Stack.Navigator>
   );

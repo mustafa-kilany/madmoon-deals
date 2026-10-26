@@ -1,15 +1,19 @@
 // Orders answered by the in-app mock backend (in memory, like negotiation).
+// Same rules as the API: delivery details required, nobody buys their own
+// listing, a listing sells once (paid → reserved, delivered → sold), an ended
+// auction only to its winner, at the winning bid.
 
+import { deliveryProblems, normalizeJordanMobile } from '@/lib/delivery';
 import { calculateCheckoutBreakdown } from '@/lib/money';
 import type { Order } from '@/lib/types';
 import { ApiError } from '../api/errors';
-import { buildItems } from '../mock/catalog';
 import { mockLatency } from '../mock/delay';
+import { blocked, findItem, me, publicItem } from '../mock/marketplace';
 import { findMockOffer } from '../negotiation/mock';
 import type { OrdersService } from './types';
 
-const catalogItems = buildItems(Date.now());
-const orders: Order[] = [];
+/** Orders with who bought them (the API keeps that server-side). */
+const orders: (Order & { buyerId: string })[] = [];
 
 /** Short, readable order numbers the buyer can read out to the courier. */
 const nextOrderNumber = () =>
@@ -21,53 +25,96 @@ const find = (orderId: string) => {
   return order;
 };
 
+const publicOrder = ({
+  buyerId: _buyerId,
+  ...order
+}: Order & { buyerId: string }): Order => ({
+  ...order,
+  delivery: { ...order.delivery },
+});
+
 export const mockOrdersService: OrdersService = {
-  createOrder: async ({ listingId, offerId }) => {
+  createOrder: async ({ listingId, offerId, delivery }) => {
     await mockLatency();
-    const item = catalogItems.find(i => i.id === listingId);
-    if (!item) throw new ApiError('NOT_FOUND', 'Listing not found', 404);
-    // An accepted offer on this listing sets the price; anything else is refused.
+    const problems = deliveryProblems(delivery);
+    if (problems.length)
+      throw new ApiError('VALIDATION', `delivery: ${problems.join(', ')}`, 422);
+    const item = findItem(listingId);
+    const buyer = me();
+    if (item.sellerId === buyer.id)
+      throw new ApiError('FORBIDDEN', 'Your own listing', 403);
+    if (item.status !== 'active' || blocked.has(item.sellerId))
+      throw new ApiError('ITEM_UNAVAILABLE', 'No longer for sale', 409);
+
     let priceFils = item.priceFils;
-    if (offerId) {
+    if (item.auction) {
+      // A running auction can't be bought; an ended one only by its winner.
+      if (publicItem(item).auction?.winnerId !== buyer.id)
+        throw new ApiError('ITEM_UNAVAILABLE', 'Auction not won', 409);
+    } else if (offerId) {
+      // An accepted offer by this buyer on this listing sets the price.
       const offer = findMockOffer(offerId);
-      if (!offer || offer.itemId !== listingId || offer.status !== 'accepted')
+      if (
+        !offer ||
+        offer.itemId !== listingId ||
+        offer.buyerId !== buyer.id ||
+        offer.status !== 'accepted'
+      )
         throw new ApiError('VALIDATION', 'Offer is not accepted', 422);
       priceFils = offer.amountFils;
     }
-    const order: Order = {
+
+    const order = {
       id: nextOrderNumber(),
+      buyerId: buyer.id,
       itemId: item.id,
       itemTitle: item.title,
       itemImageUrl: item.imageUrl,
       ...calculateCheckoutBreakdown(priceFils),
       offerId,
-      status: 'awaiting_payment',
+      delivery: {
+        ...delivery,
+        name: delivery.name.trim(),
+        phone: normalizeJordanMobile(delivery.phone)!,
+        address: delivery.address.trim(),
+        notes: delivery.notes?.trim() || undefined,
+      },
+      status: 'awaiting_payment' as const,
       createdAt: Date.now(),
     };
     orders.unshift(order);
-    return { ...order };
+    return publicOrder(order);
   },
 
+  // The mock bank never asks for its card check, so there is no paymentUrl.
   payOrder: async (orderId, cardToken) => {
     await mockLatency();
     const order = find(orderId);
+    if (order.buyerId !== me().id)
+      throw new ApiError('FORBIDDEN', 'Not your order', 403);
     if (!cardToken)
       throw new ApiError('VALIDATION', 'Card token required', 422);
     if (order.status !== 'awaiting_payment')
       throw new ApiError('VALIDATION', 'Order is not awaiting payment', 422);
+    // First to pay wins: someone else may have bought it meanwhile.
+    const item = findItem(order.itemId);
+    if (item.status !== 'active')
+      throw new ApiError('ITEM_UNAVAILABLE', 'No longer for sale', 409);
+    item.status = 'reserved';
     order.status = 'escrow_held';
     order.pin = String(1000 + Math.floor(Math.random() * 9000));
-    return { ...order };
+    return publicOrder(order);
   },
 
   getOrder: async orderId => {
     await mockLatency();
-    return { ...find(orderId) };
+    return publicOrder(find(orderId));
   },
 
   getMyOrders: async () => {
     await mockLatency();
-    return orders.map(o => ({ ...o }));
+    const buyer = me().id;
+    return orders.filter(o => o.buyerId === buyer).map(publicOrder);
   },
 
   confirmDelivery: async (orderId, pin) => {
@@ -82,6 +129,7 @@ export const mockOrdersService: OrdersService = {
       throw new ApiError('INVALID_PIN', 'Wrong delivery PIN', 422);
     order.status = 'completed';
     order.deliveredAt = Date.now();
-    return { ...order };
+    findItem(order.itemId).status = 'sold';
+    return publicOrder(order);
   },
 };

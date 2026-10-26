@@ -552,6 +552,18 @@ const seedModels: Record<string, string> = {
   'vehicles-2': '500',
 };
 
+/** A few seed listings with a seller-written description (one language, as typed). */
+const seedDescriptions: Record<string, string> = {
+  'mobiles-0':
+    'Bought new from an official store in Amman and used with a case and screen protector from day one. Battery health 89%.\n\n' +
+    'No scratches or dents, never repaired or opened. Face ID, all three cameras and the speakers work perfectly.\n\n' +
+    'Comes with the original box, the cable and two cases. Selling only because I upgraded.',
+  'vehicles-0':
+    'السيارة بحالة ممتازة، ماشية 85 ألف كم، صيانة دورية بالوكالة وكل الفواتير موجودة.\n\n' +
+    'فحص كامل بدون ملاحظات، لون فضي، فتحة سقف، شاشة وكاميرا خلفية، والترخيص ساري لآخر السنة.\n\n' +
+    'سبب البيع: السفر. الإطارات جديدة من شهرين والمكيف بارد.',
+};
+
 /** Demo auction per category: which listing it copies, opening bid, time left. */
 const auctions: Record<
   CategoryId,
@@ -573,6 +585,10 @@ const auctions: Record<
   hobbies: { index: 1, price: 60, minutes: 2400, bids: 6, increment: 5 },
 };
 
+/** Made-up but stable view counts, so "most viewed" has an order. */
+const seedViews = (categoryIndex: number, index: number) =>
+  40 + ((categoryIndex * 37 + index * 83) % 260);
+
 /** All seed listings. Auction end times count from `startedAt` (app launch). */
 export function buildItems(startedAt: number): Item[] {
   return categories.flatMap(({ id: category }, categoryIndex) => {
@@ -584,6 +600,9 @@ export function buildItems(startedAt: number): Item[] {
       imageUrl: unsplash(l.photo),
       condition: l.condition,
       seller: l.seller,
+      sellerId: `user-${l.seller.en.toLowerCase()}`,
+      description: seedDescriptions[`${category}-${index}`],
+      status: 'active',
       brand: l.brand,
       model: seedModels[`${category}-${index}`],
       type: l.type,
@@ -592,6 +611,7 @@ export function buildItems(startedAt: number): Item[] {
         seedPlaces[(categoryIndex + index) % seedPlaces.length],
       ),
       saleType: 'fixed',
+      views: seedViews(categoryIndex, index),
     }));
     const demo = auctions[category];
     const auction: Item = {
@@ -606,6 +626,7 @@ export function buildItems(startedAt: number): Item[] {
       }),
       priceFils: jod(demo.price),
       saleType: 'auction',
+      views: seedViews(categoryIndex, demo.index) * 3,
       verified: true,
       auction: {
         endsAt: startedAt + demo.minutes * 60 * 1000,

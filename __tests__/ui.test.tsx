@@ -5,6 +5,7 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import { changeLanguage } from '@/i18n';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Price } from '@/components/Price';
+import { ReadMoreText } from '@/components/ReadMoreText';
 import { StatusView } from '@/components/StatusView';
 import { Button, Chip, Text, TextField } from '@/components/ui';
 import { crashReporter } from '@/services/crashReporter';
@@ -61,6 +62,56 @@ test('TextField: label, typing, and the error message', async () => {
   await fireEvent.changeText(screen.getByLabelText('Email Address'), 'a@b.co');
   expect(onChangeText).toHaveBeenCalledWith('a@b.co');
   expect(screen.getByText('Enter a valid email')).toBeOnTheScreen();
+});
+
+test('TextField: hint and character count; an error replaces the hint', async () => {
+  const field = (error?: string) => (
+    <TextField
+      label="Description"
+      value="Like new"
+      maxLength={2000}
+      showCount
+      hint="Buyers see this"
+      error={error}
+    />
+  );
+  await render(field());
+  expect(screen.getByText('Buyers see this')).toBeOnTheScreen();
+  expect(screen.getByText('8 / 2000')).toBeOnTheScreen();
+
+  await screen.rerender(field('Too long'));
+  expect(screen.queryByText('Buyers see this')).not.toBeOnTheScreen();
+  expect(screen.getByText('Too long')).toBeOnTheScreen();
+  expect(screen.getByText('8 / 2000')).toBeOnTheScreen();
+});
+
+describe('ReadMoreText', () => {
+  const text = 'Battery 89%, box and cable included.';
+  // The invisible full copy reports how many lines the whole text takes.
+  const layout = (lines: number) =>
+    fireEvent(
+      screen.getAllByText(text, { includeHiddenElements: true })[0],
+      'textLayout',
+      { nativeEvent: { lines: Array.from({ length: lines }, () => ({})) } },
+    );
+
+  test('short text: shown in full, no link', async () => {
+    await render(<ReadMoreText text={text} />);
+    await layout(3);
+    expect(screen.queryByRole('button')).not.toBeOnTheScreen();
+  });
+
+  test('long text: cut to 5 lines, Read more opens it, Show less closes it', async () => {
+    await render(<ReadMoreText text={text} />);
+    await layout(9);
+    expect(screen.getByText(text).props.numberOfLines).toBe(5);
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Read more' }));
+    expect(screen.getByText(text).props.numberOfLines).toBeUndefined();
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Show less' }));
+    expect(screen.getByText(text).props.numberOfLines).toBe(5);
+  });
 });
 
 // The amount is wrapped in left-to-right marks (U+2066…U+2069) so it reads

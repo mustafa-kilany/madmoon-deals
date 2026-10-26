@@ -6,7 +6,10 @@
     "close": "Close",
     "clear": "Clear",
     "loadError": "Something went wrong loading this page.",
-    "retry": "Try again"
+    "retry": "Try again",
+    "cancel": "Cancel",
+    "readMore": "Read more",
+    "showLess": "Show less"
   },
   "crash": {
     "title": "Something went wrong",
@@ -59,8 +62,6 @@
     "orderTracking": "Track Order",
     "auth": "Join Sahla",
     "auctionBidding": "Auction",
-    "emailSignUp": "Sign Up with Email",
-    "emailLogIn": "Log In with Email",
     "idVerification": "ID Verification",
     "myProfile": "My Profile",
     "makeOffer": "Make an Offer",
@@ -78,22 +79,40 @@
     "emailUnverifiedNote": "Email accounts are unverified. You can verify later by adding your ID in Settings.",
     "createAccount": "CREATE ACCOUNT",
     "logIn": "LOG IN",
-    "haveAccount": "Already have an account? Log in",
-    "noAccount": "New to Sahla? Create an account",
+    "logInTitle": "Welcome back",
+    "logInSubtitle": "Log in to buy, sell and chat on Sahla.",
+    "signUpTitle": "Create your account",
+    "signUpSubtitle": "Join Sahla to buy and sell across Jordan.",
+    "haveAccountQuestion": "Already have an account?",
+    "haveAccountAction": "Log in",
+    "noAccountQuestion": "New to Sahla?",
+    "noAccountAction": "Create an account",
+    "verifiedSellers": "Verified sellers",
     "enterOtp": "Enter Verification Code",
     "otpSentTo": "We sent a 6-digit code to {{email}}",
     "otpCode": "Verification Code",
     "verifyAndSignIn": "VERIFY & SIGN IN",
     "resendOtp": "Resend Code",
     "demoHint": "Demo account: ahmad@sahla.jo / sahla1234",
-    "welcome": "Welcome, {{name}}!"
+    "welcome": "Welcome, {{name}}!",
+    "forgotPassword": "Forgot password?",
+    "resetBody": "Enter your account's email and we'll send you a 6-digit code.",
+    "sendCode": "SEND CODE",
+    "resetCodeSent": "If {{email}} has a Sahla account, a code is on its way.",
+    "newPassword": "New password",
+    "resetAndSignIn": "SAVE & LOG IN",
+    "demoCode": "Demo code: 123456"
   },
   "validation": {
     "nameRequired": "Enter your name.",
     "emailInvalid": "Enter a valid email address.",
     "passwordShort": "Use at least 8 characters.",
     "passwordRequired": "Enter your password.",
-    "cardInvalid": "Enter a valid card number."
+    "cardInvalid": "Enter a valid card number.",
+    "codeInvalid": "Enter the 6-digit code",
+    "phoneInvalid": "Enter a Jordanian mobile number, e.g. 0791234567",
+    "addressRequired": "Enter the street, building and floor",
+    "counterTooLow": "The counter price must be above the offer"
   },
   "idVerification": {
     "title": "Scan Jordanian ID",
@@ -120,7 +139,15 @@
     "remove": "Remove",
     "myListings": "My Listings",
     "noListings": "No listings yet.",
-    "logOut": "Log Out"
+    "logOut": "Log Out",
+    "blockedUsers": "Blocked users",
+    "noBlocked": "You haven't blocked anyone.",
+    "unblock": "Unblock",
+    "deleteAccount": "Delete account",
+    "deleteConfirmTitle": "Delete your account?",
+    "deleteConfirmBody": "Your profile, listings, chats and saved card will be deleted. This can't be undone.",
+    "deleteConfirm": "Delete",
+    "accountDeleted": "Your account was deleted."
   },
   "errors": {
     "NETWORK": "No connection. Check your internet and try again.",
@@ -130,7 +157,11 @@
     "EMAIL_TAKEN": "This email is already registered. Log in instead.",
     "INVALID_CREDENTIALS": "Wrong email or password.",
     "UNKNOWN": "Something went wrong. Please try again.",
-    "INVALID_PIN": "That PIN doesn't match this order. Ask the buyer to check it."
+    "INVALID_PIN": "That PIN doesn't match this order. Ask the buyer to check it.",
+    "INVALID_CODE": "Wrong or expired code. Check your email or send a new one.",
+    "FORBIDDEN": "You can't do that.",
+    "ITEM_UNAVAILABLE": "Sorry, this item is no longer available.",
+    "OPEN_ORDERS": "You have orders in progress. Finish them before deleting your account."
   },
   "condition": {
     "new": "New",
@@ -175,6 +206,7 @@
     "sortPriceAsc": "Price: low to high",
     "sortPriceDesc": "Price: high to low",
     "sortMostBids": "Most bids",
+    "sortMostViewed": "Most viewed",
     "clearAll": "Clear all",
     "remove": "Remove: {{label}}",
     "priceChip": "{{min}} – {{max}} JOD",
@@ -245,8 +277,11 @@
     "replies": "Replies in ~1h",
     "chat": "Chat",
     "description": "Description",
-    "descriptionDefault": "Excellent condition, gently used with all original accessories and box included. No scratches or defects. Ready for immediate use. Price is negotiable.",
     "similar": "Similar items",
+    "similarPrice": "Priced {{min}} – {{max}}",
+    "similarCategory": "More in this category",
+    "similarMostViewed": "Most viewed first",
+    "similarCategoryMostViewed": "More in this category, most viewed first",
     "makeOffer": "Make an Offer",
     "payNow": "Pay Now",
     "notFound": "This listing is no longer available.",
@@ -280,7 +315,10 @@
     "error": "Failed to publish listing. Please check the form.",
     "model": "Model (optional)",
     "modelPlaceholder": "Choose the model",
-    "modelTypeIt": "Type the model"
+    "modelTypeIt": "Type the model",
+    "description": "Description (optional)",
+    "descriptionPlaceholder": "Condition, what's included, any faults, why you're selling…",
+    "descriptionHint": "Buyers see this on your listing page."
   },
   "offers": {
     "title": "Make an Offer",
@@ -295,29 +333,42 @@
     "statusPending": "Pending Seller Review",
     "statusAccepted": "Offer Accepted! Proceed to Checkout",
     "statusRejected": "Offer Rejected",
-    "statusCountered": "Seller Countered: {{amount}} JOD",
+    "statusCountered": "Seller countered: {{amount}}",
     "accept": "Accept Offer",
     "counter": "Counter Offer",
     "reject": "Reject Offer",
-    "proceedToCheckout": "Proceed to Checkout"
+    "proceedToCheckout": "Proceed to Checkout",
+    "counterPrice": "Your counter price (JOD)",
+    "sendCounter": "Send counter",
+    "waitingSeller": "Waiting for the seller to answer",
+    "waitingBuyer": "Waiting for the buyer to answer",
+    "acceptCounter": "Accept {{amount}}"
   },
   "auctionBidding": {
     "title": "Live Auction",
     "currentBid": "Current Highest Bid",
-    "minBidNote": "Minimum required bid: {{amount}} JOD",
+    "minBidNote": "Minimum required bid: {{amount}}",
     "placeBid": "Place Bid",
     "yourBidJod": "Your Bid (JOD)",
     "quickAdd": "Quick Add",
     "bidSuccess": "Your bid was placed successfully!",
     "bidHistory": "Bid History",
-    "noBidsYet": "No bids placed yet. Be the first to bid!"
+    "noBidsYet": "No bids placed yet. Be the first to bid!",
+    "won": "You won this auction! Pay to get it delivered.",
+    "ended": "This auction has ended."
   },
   "chats": {
     "title": "Messages & Offers",
     "emptyTitle": "No messages yet",
     "emptyBody": "Offers and conversations with buyers and sellers will appear here.",
     "typeMessage": "Type a message...",
-    "send": "Send"
+    "send": "Send",
+    "options": "More options",
+    "report": "Report",
+    "block": "Block",
+    "blockTitle": "Block {{name}}?",
+    "blockBody": "You won't see their listings or messages, and they can't contact you. You can unblock them in Profile.",
+    "blocked": "{{name}} is blocked."
   },
   "checkout": {
     "title": "Secure Checkout",
@@ -328,7 +379,15 @@
     "escrowNote": "Your payment is held safely in escrow and only released to the seller after you receive the item and confirm with your delivery PIN.",
     "paid": "Payment held in escrow!",
     "agreedPrice": "Agreed price (accepted offer)",
-    "offerNotReady": "This offer is no longer accepted."
+    "offerNotReady": "This offer is no longer accepted.",
+    "deliveryDetails": "Delivery details",
+    "name": "Recipient name",
+    "phone": "Mobile number",
+    "area": "Area",
+    "address": "Street, building, floor",
+    "addressPlaceholder": "e.g. Mecca St, Building 12, 3rd floor",
+    "notes": "Notes for the courier (optional)",
+    "bankCheck": "Your bank needs to confirm this payment. Finish on the page that opened, then come back to Sahla."
   },
   "orders": {
     "empty": "No orders yet",
@@ -342,7 +401,10 @@
     "stepPaid": "Payment held in escrow",
     "stepDelivery": "Out for delivery: give the courier your PIN",
     "stepDelivered": "Delivered, payment released to the seller",
-    "refundedNote": "Your payment was refunded from escrow."
+    "refundedNote": "Your payment was refunded from escrow.",
+    "awaitingBank": "Waiting for your bank to confirm the payment.",
+    "openBank": "Open bank page",
+    "deliverTo": "Deliver to {{name}} · {{area}}"
   },
   "courier": {
     "title": "Confirm a Delivery",
@@ -367,5 +429,25 @@
     "useCustom": "Use “{{value}}”",
     "none": "Not specified",
     "typeYourOwn": "Not in the list? Type it in the search box."
+  },
+  "listing": {
+    "reserved": "Reserved",
+    "sold": "Sold",
+    "unavailable": "This item is no longer for sale.",
+    "yours": "This is your listing.",
+    "report": "Report this listing"
+  },
+  "report": {
+    "listingTitle": "Report listing",
+    "userTitle": "Report user",
+    "why": "What's wrong?",
+    "scam": "Scam or fraud",
+    "prohibited": "Prohibited item",
+    "offensive": "Offensive or abusive",
+    "wrong_info": "Wrong or misleading details",
+    "other": "Something else",
+    "details": "Details (optional)",
+    "submit": "SEND REPORT",
+    "thanks": "Thanks. Our team will review it within 24 hours."
   }
 }

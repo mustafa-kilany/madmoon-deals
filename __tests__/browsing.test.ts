@@ -91,6 +91,11 @@ describe('sortItems', () => {
     expect(sortItems(auctions, 'ending_soon')[0].id).toBe('auction-mobiles');
     expect(sortItems(auctions, 'most_bids')[0].id).toBe('auction-mobiles');
   });
+
+  test('most viewed first', () => {
+    const views = sortItems(items, 'most_viewed').map(i => i.views ?? 0);
+    expect(views).toEqual([...views].sort((a, b) => b - a));
+  });
 });
 
 test('filterCount counts a price range once', () => {
