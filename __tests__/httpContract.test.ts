@@ -201,6 +201,20 @@ const rows: Row[] = [
     form: 'photo',
   },
   {
+    endpoint: 'POST /test-certificates',
+    call: () =>
+      httpCatalogService.checkTestCertificate({
+        photo,
+        category: 'mobiles',
+        type: 'phones',
+        brand: 'Apple',
+        model: 'iPhone 14 Pro',
+      }),
+    reply: { id: 'cert-1', status: 'passed', problems: [], specs: [] },
+    url: '/test-certificates',
+    form: 'photo',
+  },
+  {
     endpoint: 'POST /listings',
     call: () =>
       httpCatalogService.createListing({
@@ -210,11 +224,13 @@ const rows: Row[] = [
         priceFils: 5000,
         imageUrls: ['https://cdn/p.jpg'],
         condition: 'new',
+        description: 'd',
         type: 'phones',
         locationId: 'salt',
         saleType: 'auction',
         auctionEndsAt: Date.parse(T),
         incrementFils: 1000,
+        testCertificateId: 'cert-1',
       }),
     url: '/listings',
     body: {
@@ -224,12 +240,24 @@ const rows: Row[] = [
       priceFils: 5000,
       imageUrls: ['https://cdn/p.jpg'],
       condition: 'new',
+      description: 'd',
       type: 'phones',
       locationId: 'salt',
       saleType: 'auction',
       auctionEndsAt: '2026-10-19T12:00:00.000Z',
       incrementFils: 1000,
+      testCertificateId: 'cert-1',
     },
+  },
+  {
+    endpoint: 'GET /geocode/reverse',
+    call: () =>
+      httpCatalogService.reverseGeocode(
+        { lat: 31.953949, lng: 35.910632 },
+        'ar',
+      ),
+    reply: { address: 'شارع مكة' },
+    url: '/geocode/reverse?lat=31.95395&lng=35.91063&lang=ar',
   },
   // Negotiation
   {
@@ -389,6 +417,57 @@ test.each(rows)('$endpoint', async row => {
     expect(JSON.parse(init.body)).toEqual(row.body);
   }
   expect(doc).toContain(`\`${row.endpoint}\``);
+});
+
+test('the test certificate form names the device', async () => {
+  fetchMock.mockResolvedValueOnce({
+    ok: true,
+    status: 201,
+    text: async () =>
+      JSON.stringify({
+        id: 'cert-1',
+        status: 'passed',
+        problems: [],
+        testedAt: '2026-10-20T00:00:00Z',
+        specs: ['128GB'],
+      }),
+  });
+  const check = await httpCatalogService.checkTestCertificate({
+    photo,
+    category: 'mobiles',
+    type: 'phones',
+    brand: 'Apple',
+  });
+  const form = fetchMock.mock.calls[0][1].body as FormData;
+  expect(form.getAll('category')).toEqual(['mobiles']);
+  expect(form.getAll('type')).toEqual(['phones']);
+  expect(form.getAll('brand')).toEqual(['Apple']);
+  expect(form.getAll('model')).toEqual([]); // no model: no field
+  expect(check.testedAt).toBe(Date.parse('2026-10-20T00:00:00Z'));
+});
+
+test('a listing test certificate becomes an image source and epoch ms', async () => {
+  fetchMock.mockResolvedValueOnce({
+    ok: true,
+    status: 200,
+    text: async () =>
+      JSON.stringify({
+        id: 'mobiles-0',
+        testCertificate: {
+          imageUrl: 'https://cdn/cert.jpg',
+          shopName: 'Smart Fix',
+          testedAt: '2026-10-20T00:00:00Z',
+          specs: ['128GB'],
+        },
+      }),
+  });
+  const item = await httpCatalogService.getItem('mobiles-0');
+  expect(item.testCertificate).toEqual({
+    image: { uri: 'https://cdn/cert.jpg' },
+    shopName: 'Smart Fix',
+    testedAt: Date.parse('2026-10-20T00:00:00Z'),
+    specs: ['128GB'],
+  });
 });
 
 test('dates arrive as ISO strings and become epoch ms', async () => {

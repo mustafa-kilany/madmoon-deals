@@ -6,8 +6,8 @@ types and checks what's on screen. Three journeys are covered:
 | Flow | What it checks |
 | --- | --- |
 | `01-browse-as-guest.yaml` | Search by model, open a listing (brand · model shown), category filters |
-| `02-buy-and-deliver.yaml` | Ahmad pays into escrow → gets order number + PIN → courier signs in and confirms delivery |
-| `03-sell-an-item.yaml` | Photo from the gallery, brand + model pickers (model fills the title), publish, shows in My Listings |
+| `02-buy-and-deliver.yaml` | Ahmad skips the location prompt, types the address, pays into escrow → gets order number + PIN → courier signs in and confirms delivery |
+| `03-sell-an-item.yaml` | Photo from the gallery, brand + model pickers (model fills the title), 10-word description, shop test certificate, publish, shows in My Listings |
 
 `subflows/` holds shared steps (fresh launch, sign in, sign out, pick a photo).
 

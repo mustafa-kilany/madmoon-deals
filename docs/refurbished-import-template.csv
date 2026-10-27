@@ -1,0 +1,3 @@
+﻿sku,titleEn,titleAr,category,type,brand,model,grade,warrantyMonths,priceJod,imageUrls,locationId,description,auctionEndsAt,auctionIncrementJod
+iphone-13-128,iPhone 13 128GB,آيفون 13 - 128 جيجا,mobiles,phones,Apple,iPhone 13,like_new,12,365,https://cdn.example.com/iphone13-front.jpg|https://cdn.example.com/iphone13-back.jpg,amman-abdali,"Certified refurbished by Apple with a new battery (100%) and outer shell. Original charger and box included.",,
+ps5-disc,PlayStation 5 Disc Edition,بلايستيشن 5 - نسخة الأقراص,electronics,gaming,Sony,PlayStation 5 (Disc),excellent,6,260,https://cdn.example.com/ps5.jpg,amman-abdali,"Tested on games, disc drive, Wi-Fi and every port. Includes one DualSense controller and all the cables.",2026-11-30T18:00:00Z,10

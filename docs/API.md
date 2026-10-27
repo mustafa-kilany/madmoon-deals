@@ -4,6 +4,44 @@ This document defines the REST API contract expected by the **Sahla** mobile app
 
 The app's HTTP service layer (`src/services/*/http.ts`) and API client (`src/services/api/client.ts`) are fully implemented and integrated. Connecting to a real API server requires only a configuration update in `src/config.ts`.
 
+## Changes on 2026-10-26, part 2 (backend: please read)
+
+**Breaking**
+* **Every listing has a description of at least 10 words** (max 2000 characters). `Item.description`
+  is no longer optional; `POST /listings` and the refurbished import reject a missing or shorter one
+  (`VALIDATION`). Give existing listings without one a description before deploying (or hide them).
+* **Phones and electronics need a shop test certificate.** Item types with
+  `requiresTestCertificate: true` in `GET /categories/filters` (today: phones, tablets, smartwatches,
+  laptops, gaming, TVs, cameras, audio) can only be listed with a photo of a shop's stamped test report
+  that the server has read (OCR) and checked: `POST /listings` takes `testCertificateId` and rejects
+  those types without a passed one (`VALIDATION`).
+
+**New**
+* `POST /test-certificates`: upload the report photo; the server reads it and checks the stamp, the
+  shop, the device, the specs and the date (see [Shop test certificates](#shop-test-certificates-phones--electronics)).
+* `Item.testCertificate`: the passed report on the listing (photo, shop, date, specs). Buyers see it.
+* `GET /geocode/reverse`: the street at the buyer's GPS position, so checkout can fill in the delivery
+  address (see [Phase 6](#phase-6-checkout-orders--escrow)). Coordinates are only sent for this lookup;
+  orders still carry only the typed `DeliveryDetails`.
+
+## Changes on 2026-10-26 (backend: please read)
+
+**Certified Refurbished store.** Brand-certified refurbished listings, sold by each brand's
+official store account (e.g. "Apple Certified") with a warranty. Nobody lists them in the app:
+they are **imported**, by the brand's system through the API or from the Excel sheet in the admin
+dashboard, with the new endpoint `POST /admin/refurbished/import` (see
+[Certified Refurbished import](#certified-refurbished-import-admin-dashboard--brand-systems)).
+Once imported they are ordinary listings in their normal category, so search, category and auction
+browsing show them too; the app has a store screen, a Home banner and a Refurbished switch beside
+the All / Buy now / Auctions tabs.
+* `Item` has optional `refurbished: { warrantyMonths }` (0 = brand-inspected, no warranty).
+* `Item.condition` has three more values, `refurbished_like_new`, `refurbished_excellent`,
+  `refurbished_good`, used only on imported refurbished listings. `POST /listings` rejects them
+  (`VALIDATION`).
+* `GET /listings` takes `refurbished=true` (refurbished listings only). The response has
+  `refurbishedCounts: { all, refurbished }` and `facets.maxWarrantyMonths`.
+* New endpoints `POST /admin/refurbished/import` and `DELETE /admin/refurbished/:storeId/:sku`.
+
 ## Changes on 2026-10-23 (backend: please read)
 
 * `Item` has `views` (times the listing was opened). `GET /listings` takes `sort=most_viewed`.
@@ -246,10 +284,11 @@ type Item = {
   imageUrl: string;    // cover photo: a ~400×400 thumbnail (cards, lists)
                        // — never the full-size upload; it's shown 2 per row
   imageUrls?: string[]; // every photo, cover first, full size (≤1200 px, product page)
-  condition: 'new' | 'excellent' | 'good' | 'loved';
+  condition: 'new' | 'excellent' | 'good' | 'loved'
+    | 'refurbished_like_new' | 'refurbished_excellent' | 'refurbished_good'; // refurbished_* only with `refurbished`
   seller: Localized;
   sellerId: string;  // the app hides Buy / Offer / Bid on the user's own listings
-  description?: string; // as the seller typed it (one language), max 2000 chars
+  description: string; // as the seller typed it (one language): at least 10 words, max 2000 chars
   status: 'active' | 'reserved' | 'sold'; // reserved = paid, waiting for delivery
   brand?: string;
   model?: string;    // e.g. "iPhone 14 Pro", "Camry" (usually from types[].models)
@@ -264,8 +303,21 @@ type Item = {
     winnerId?: string; // once ended with bids: the highest bidder
   };
   views: number; // times the listing was opened (POST /listings/:id/views)
+  refurbished?: {  // brand-certified refurbished, sold by the brand's official store account
+    warrantyMonths: number; // 0 = brand-inspected, no warranty
+  };
+  testCertificate?: { // the shop's test report (types with requiresTestCertificate; not on refurbished)
+    imageUrl: string;  // the report photo, IMEI / serial blurred (see Shop test certificates)
+    shopName: string;  // as read off the letterhead / stamp
+    testedAt: string;  // ISO-8601: the date printed on the report
+    specs: string[];   // as read, e.g. ["128GB", "Battery 89%"]
+  };
 };
 ```
+
+**Certified refurbished listings** belong to a brand's official store account (`seller` e.g.
+`{ "en": "Apple Certified", "ar": "Apple المعتمد" }`, `verified: true`). They come only from the
+import (`POST /admin/refurbished/import`); sellers can't publish one from the app.
 
 **Listing status:** `active` until an order for it is paid (`escrow_held`) → `reserved`; the courier
 confirms delivery → `sold`; a refund puts it back to `active`. Auctions stay `active` after they end
@@ -291,6 +343,7 @@ Jordan first; models newest first).
         name: Localized;
         brands?: string[];                   // most popular first; [] or missing = no brand picker
         models?: { [brand: string]: string[] }; // phones, tablets, laptops, consoles, cameras, cars, …
+        requiresTestCertificate?: boolean;   // listing one needs a shop test certificate (electronics)
       }[];
       brands: string[];                      // every type's brands, de-duplicated
     }
@@ -298,6 +351,9 @@ Jordan first; models newest first).
   ```
 * Brands and models are suggestions, not a closed list: a seller may type one that isn't listed,
   so `POST /listings` accepts any `brand` / `model` string (trim it, max ~60 chars).
+* `requiresTestCertificate` is the switch for the test certificate rule, so the list of types can
+  change without an app update. Today (`src/services/mock/catalog.ts`, `testedTypes`): mobiles →
+  phones, tablets, smartwatches; electronics → laptops, gaming, tvs, cameras, audio.
 
 #### 3. `GET /cities`
 Every area a listing or account can be in: Jordan's 12 governorates and their main cities /
@@ -312,9 +368,10 @@ an id (listings and accounts store them).
   The app shows it as **"البلقاء / السلط"** (just "إربد" when the area is the governorate's capital).
   `lat`/`lng` are the area's rough centre.
 * **Location privacy:** "Use my current location" and the "Near me" filter run **on the phone**:
-  GPS → nearest area(s) using these centres. The app only ever sends **area ids** (`cityId`,
-  `locationId`, `cities=` filter), never coordinates or streets, so the backend doesn't need to
-  store locations.
+  GPS → nearest area(s) using these centres. Listings, accounts and filters only ever send **area
+  ids** (`cityId`, `locationId`, `cities=` filter), never coordinates, so the backend doesn't need to
+  store locations. The one exception is checkout: when the buyer taps "Use my location", the app sends
+  the position once to `GET /geocode/reverse` to name the street; don't store or log it.
 * `Item.location` is a `Place` with `governorate` (no `lat`/`lng`): `{ id, name, governorate }`.
 
 #### 4. `GET /listings` — search, filter, sort, paginate
@@ -332,6 +389,7 @@ sorting and counting all happen on the server.** The mock backend's reference im
 | `q` | `iphone 14` | Free text. Every word must match title (ar or en), brand, model or type name (ar or en). Server should normalise Arabic (أ/إ/آ→ا, ة→ه, ى→ي, strip tashkeel) and may add typo tolerance. |
 | `category` | `mobiles` | One category id. |
 | `format` | `fixed` \| `auction` | Omit for all. Ended auctions are never returned. |
+| `refurbished` | `true` | Certified refurbished listings only (`Item.refurbished`): the Refurbished switch, and always on the Certified Refurbished store. |
 | `types` | `phones,laptops` | Item type ids. |
 | `brands` | `Apple,Samsung` | Brand names. |
 | `conditions` | `new,excellent` | |
@@ -352,15 +410,19 @@ Without `ids`, only `active` listings are returned, and never listings from user
   items: Item[];               // this page only
   nextCursor: string | null;   // null = last page
   total: number;               // matches for the whole query
-  counts: { all: number; fixed: number; auction: number }; // same filters, per format (tabs)
-  facets: {                    // options that exist in scope, before filters (Filters sheet)
+  counts: { all: number; fixed: number; auction: number }; // same `refurbished` + filters, per format (tabs)
+  refurbishedCounts: { all: number; refurbished: number }; // same format + filters, without / with `refurbished=true`
+  facets: {                    // options that exist in scope (q, category, format, refurbished), before filters
     categories: string[];
     conditions: Condition[];
     cities: { id: string; name: Localized }[];
     byCategory: { [categoryId]: { types: string[]; brands: string[] } };
+    maxWarrantyMonths?: number; // longest refurbished warranty in scope; omit when none
   };
 }
 ```
+The store and the Home banner show `facets.byCategory` types and brands as quick chips, and
+"from N JOD" from the first item of `refurbished=true&sort=price_asc`.
 
 * **Errors:** `VALIDATION` (422) for a bad `sort`, `minPrice > maxPrice`, unknown `cursor`.
 * **Backend notes:** use cursor (keyset) pagination, not page numbers, so new listings don't
@@ -400,10 +462,85 @@ the listing with the returned URLs.
     contain the seller's GPS position); resize (e.g. 1600 px long side) and serve from a CDN.
     Uploads that no listing uses within ~24 h can be deleted.
 * **`POST /listings` *(Authenticated)***
-  * **Request (JSON):** `category`, `titleAr`, `titleEn`, `priceFils`, `imageUrls` (1–5 URLs from the upload above, cover first), `condition`, `description?` (max 2000 characters), `brand?`, `model?`, `type`, `locationId` (area id), `saleType` (`fixed` or `auction`), `auctionEndsAt?` (ISO-8601), `incrementFils?`.
+  * **Request (JSON):** `category`, `titleAr`, `titleEn`, `priceFils`, `imageUrls` (1–5 URLs from the upload above, cover first), `condition`, `description` (required, see below), `brand?`, `model?`, `type`, `locationId` (area id), `saleType` (`fixed` or `auction`), `auctionEndsAt?` (ISO-8601), `incrementFils?`, `testCertificateId?` (required for types with `requiresTestCertificate`, see below).
   * The seller is the caller: set `sellerId` and `seller` from the token, `status: "active"`.
   * Only accept `imageUrls` that this server issued. For auctions, `priceFils` is the starting bid.
+  * `condition` must be `new`, `excellent`, `good` or `loved`; `refurbished_*` → `VALIDATION` (422)
+    (refurbished stock comes only from the import below).
+  * **`description`:** at least **10 words** and at most 2000 characters, else `VALIDATION` (422). A word
+    is a whitespace-separated piece with at least one letter or digit (Latin or Arabic), so "- - -" or
+    emoji don't count. The app's copy of the rule: `countWords()` / `descriptionValid()` in
+    `src/lib/listing.ts`.
+  * **`testCertificateId`:** for a type with `requiresTestCertificate`, a certificate from
+    `POST /test-certificates` that is the caller's, `passed`, not on another listing, and was checked
+    for the same `type`, `brand` and `model` as this listing; otherwise `VALIDATION` (422). Ignored for
+    other types. The listing gets `testCertificate` and the certificate is used up.
   * **Response (201):** `Item`
+
+#### Shop test certificates (phones & electronics)
+
+Sellers of phones, laptops, consoles and other electronics a shop can test must show a **test report
+from a phone or electronics shop**: a paper with the shop's stamp that names the device (brand, model)
+and its specifications. The app has the seller photograph it after choosing the brand and model, sends
+it here, and shows the result; Publish stays blocked until it passes. If the seller then changes the
+type, brand or model, the app asks them to check it again.
+
+* **`POST /test-certificates` *(Authenticated)***
+  * **Request:** `multipart/form-data` with `photo` (JPEG/PNG/WebP, up to 10 MB; the app sends up to
+    2000 px, sharp enough to read) and the device the seller chose: `category`, `type`, `brand`,
+    `model?` (no field when there is no model).
+  * **Response (201):**
+    ```ts
+    type CertificateCheck = {
+      id: string;              // the app sends it as testCertificateId with POST /listings
+      status: 'passed' | 'failed';
+      problems: (              // empty when passed; the app shows a message for each
+        | 'unreadable'         // too blurry / dark / cut off to read
+        | 'no_stamp'           // no shop stamp found
+        | 'no_shop'            // no shop name or phone number
+        | 'device_mismatch'    // brand / model on the paper ≠ the ones sent
+        | 'no_specs'           // no specifications (storage, RAM, battery, …)
+        | 'too_old'            // no date, a future date, or older than 30 days
+        | 'already_used'       // this report is on another listing
+      )[];
+      shopName?: string;       // as read
+      testedAt?: string;       // ISO-8601, the date on the report
+      device?: string;         // brand + model as written, e.g. "Apple iPhone 14 Pro"
+      specs: string[];         // normalised, e.g. ["128GB", "8GB RAM", "Battery 89%"]
+    };
+    ```
+  * A failed check is a normal **201** with `status: "failed"` (the app shows the problems). Errors are
+    only for bad requests: no photo, unknown `category` / `type`, or a type without
+    `requiresTestCertificate` → `VALIDATION` (422).
+  * Answer within ~10 s (the app's upload timeout is 60 s, but the seller is waiting).
+* **How the server checks the photo (OCR + stamp detection)**
+  1. **Read the text** with an OCR service that reads Arabic and English, e.g. Google Cloud Vision
+     (`DOCUMENT_TEXT_DETECTION`), Azure AI Vision (Read) or AWS Textract. Keep the text and the
+     per-word confidence. Too little text or low confidence → `unreadable` (stop here).
+  2. **Shop:** a shop name (letterhead or stamp text) and a Jordanian phone number (mobile
+     `07[789]XXXXXXX` or landline `0[2356]XXXXXXX`, with or without spaces, Arabic digits too) →
+     `shopName`; missing → `no_shop`.
+  3. **Stamp:** OCR alone can't see a stamp, so detect it in the image: a round or oval ink mark
+     (usually blue, purple or red), often with text around the rim. A first version can be a heuristic
+     (colour-segment the ink, look for a roughly circular blob 8–35% of the page width with text
+     inside); better, a small image classifier / object detector (e.g. Vertex AI AutoML or Azure Custom
+     Vision) trained on a few hundred photos of stamped and unstamped papers. None → `no_stamp`.
+  4. **Device:** the text must contain the `brand` (any case and the Arabic spellings, e.g. Apple /
+     آبل / ابل, Samsung / سامسونج, Xiaomi / شاومي) and, when sent, the `model` (ignore case and
+     spaces; take the longest match, so "iPhone 14 Pro Max" on the paper doesn't pass for "iPhone 14
+     Pro") → `device`; else `device_mismatch`.
+  5. **Specs:** at least one, e.g. storage (`128GB`, `1TB`, `128 جيجا`), RAM, battery health (`89%`),
+     screen size, processor → `specs`; none → `no_specs`.
+  6. **Date:** a date on the report (`dd/mm/yyyy`, `yyyy-mm-dd`, Arabic digits) within the last 30
+     days and not in the future → `testedAt`; otherwise `too_old`.
+  7. **Not reused:** the same photo (perceptual hash) or the same IMEI / serial on another active
+     listing → `already_used`.
+  8. `passed` only when there are no problems. Store the photo, the OCR text and the result so admins
+     can review disputes; reports from shops that keep getting flagged can be blocked.
+* **What buyers see** (`Item.testCertificate`): the photo, shop, date and specs. Serve a copy of the
+  photo with the IMEI / serial **blurred** (OCR gives its position) and never return the OCR text.
+* Refurbished imports (`POST /admin/refurbished/import`) don't need a certificate: the brand
+  certifies them.
 * **`PATCH /listings/:id` *(Authenticated)***
   * **Request:** `{ "priceFils"?: 50000, "condition"?: "excellent" }`
   * **Response (200):** `Item`
@@ -512,6 +649,24 @@ type DeliveryDetails = {
 The app remembers the last delivery details on the phone and fills them in next time. Show
 `delivery` to the courier (and the seller's pickup address, once that exists) but never to other users.
 
+**Filling the address from the buyer's location.** When checkout opens with no saved address, the
+app asks the buyer whether to use their location (there is also a "Use my current location" button
+above the fields). It takes one precise GPS fix, picks the area itself (nearest area centre from
+`GET /cities`), and asks the server for the street; the buyer then checks the fields, adds the
+building and floor, and can change anything. The order is unchanged: it carries only the
+`DeliveryDetails` as finally typed, no coordinates.
+
+* **`GET /geocode/reverse?lat=31.95395&lng=35.91063&lang=ar` *(Authenticated)*** → `{ "address": "شارع مكة، تلاع العلي" }`
+  * `lat` / `lng`: WGS-84 degrees, 5 decimals. `lang`: `ar` or `en` (the app's language).
+  * `address`: street and neighbourhood in that language, without city or country (the app has the
+    area), e.g. `"Mecca St, Tla' Al-Ali"`. `""` when the maps service has no street there.
+  * Use a reverse-geocoding service, e.g. Google Geocoding API (`latlng=…&language=ar&result_type=route|street_address`),
+    HERE, Mapbox, or a self-hosted Nominatim (OpenStreetMap). Keep its API key on the server.
+  * **Privacy:** don't store or log the coordinates. Rate-limit per user (e.g. 20 per hour).
+  * The app only asks when the fix is accurate to ~150 m (with "approximate location" it fills just the
+    area) and only for positions in Jordan; if the request fails, the buyer still gets the area.
+  * `VALIDATION` (422) for a missing or out-of-range `lat` / `lng`.
+
 **The server prices every order.** The app shows the same breakdown (`calculateCheckoutBreakdown` in
 `src/lib/money.ts`) but never sends amounts.
 
@@ -547,6 +702,77 @@ be able to report content and block people, and the team must act on reports wit
 * **`GET /me/blocked` *(Authenticated)*** → `{ "id": string, "name": string }[]` (Profile → Blocked users)
 * **`DELETE /me/blocked/:userId` *(Authenticated)*** → 204
 * **What a block does, both ways:** hide each other's listings (`GET /listings`) and chats (`GET /chats`); refuse messages, offers and orders between them (`FORBIDDEN` / `ITEM_UNAVAILABLE`). Orders already paid continue.
+
+### Certified Refurbished import (admin dashboard & brand systems)
+
+Refurbished stock never comes from the app. Each brand has an official **store account** (its
+`id` is the listings' `sellerId`, e.g. `store-apple`; its name is their `seller`, e.g. "Apple
+Certified"). Its stock arrives in one of two ways, both through the same endpoint:
+
+1. **Admin dashboard → Excel.** An admin uploads the store's sheet (columns =
+   `docs/refurbished-import-template.csv`, open it in Excel and save as `.xlsx` or `.csv`). The
+   dashboard reads the rows, calls the endpoint with `dryRun: true` to show the problems per row,
+   then again without `dryRun` to publish.
+2. **Brand's system → API.** The brand calls the endpoint itself with its store API key, e.g.
+   nightly or whenever stock or prices change.
+
+The app's reference copy of the row rules is `validateImportRow()` / `importRowToItem()` in
+`src/lib/refurbishedImport.ts` (the mock store is imported through it).
+
+* **`POST /admin/refurbished/import`** *(Authenticated: an admin, or the store's API key)*
+  * **Request (JSON):**
+    ```ts
+    {
+      storeId: string;              // "store-apple"; a store API key may only import its own store
+      mode?: 'upsert' | 'replace';  // default upsert. replace = the sheet is the store's whole stock:
+                                    // its listings missing from `items` are withdrawn
+      dryRun?: boolean;             // check every row, save nothing (the dashboard's preview)
+      items: {                      // up to 1000 per request
+        sku: string;                // the store's own id (≤ 64); same sku again = update that listing
+        titleEn: string;            // ≤ 120
+        titleAr: string;            // ≤ 120
+        category: string;           // category id (GET /categories)
+        type: string;               // item type id of that category (GET /categories/filters)
+        brand: string;              // ≤ 60
+        model?: string;             // ≤ 60
+        grade: 'like_new' | 'excellent' | 'good'; // → condition refurbished_<grade>
+        warrantyMonths: number;     // whole months 0–36; 0 = brand-inspected, no warranty
+        priceJod: number;           // JOD, up to 3 decimals (Excel-friendly) → priceFils
+        imageUrls: string[];        // 1–5 public https URLs, cover first; Excel: one cell, "|" between URLs
+        locationId: string;         // area id (GET /cities), where the store ships from
+        description: string;        // at least 10 words, ≤ 2000 characters (same rule as POST /listings)
+        auctionEndsAt?: string;     // ISO-8601 in the future: sell by auction (priceJod = opening bid)
+        auctionIncrementJod?: number; // required with auctionEndsAt
+      }[];
+    }
+    ```
+  * **Response (200):**
+    ```ts
+    {
+      dryRun: boolean;
+      created: number;   // new listings
+      updated: number;   // existing skus whose fields changed
+      withdrawn: number; // replace mode: the store's listings not in this import
+      errors: {          // rows with errors are skipped; the others are still imported
+        row: number;     // 1-based position in `items` (Excel row = row + 1, after the header)
+        sku?: string;
+        field: string;   // e.g. "priceJod"
+        message: string; // e.g. "Above 0, at most 3 decimals"
+      }[];
+    }
+    ```
+  * **Each imported row becomes an `Item`:** `id` = server-generated (stable per `storeId` + `sku`),
+    `condition: "refurbished_<grade>"`, `refurbished: { warrantyMonths }`, `seller` / `sellerId` = the
+    store, `verified: true`, `status: "active"`, `saleType: "auction"` when `auctionEndsAt` is set.
+  * **Updating** a sku changes its listing in place (price, photos, warranty, …), so Saved items and
+    links keep working. A sku with an open order (paid, not delivered) is not changed; the row gets
+    an error. Copy the photos to Sahla's CDN instead of linking the brand's URLs.
+  * **Errors:** `UNAUTHORIZED` (401), `FORBIDDEN` (403) for another store's id, `NOT_FOUND` (404) for
+    an unknown `storeId`, `VALIDATION` (422) for a malformed body or more than 1000 items. Row
+    problems are not errors: they come back in `errors` with status 200.
+* **`DELETE /admin/refurbished/:storeId/:sku`** *(same auth)* → 204. Withdraws one listing (sold
+  out elsewhere). Withdrawn listings leave browsing, `GET /listings/:id` answers `NOT_FOUND`, and
+  `ids=` skips them, unless an order is open, in which case they stay until it completes.
 
 ---
 

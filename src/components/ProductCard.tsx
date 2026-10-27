@@ -1,6 +1,7 @@
 // Listing card for result grids (prototype components/ProductCard): photo
 // with Verified badge and save heart, auction countdown band, title,
-// condition · seller, price, location or bid count, and Bid now for auctions.
+// condition · seller, price, location or bid count (warranty on certified
+// refurbished listings), and Bid now for auctions.
 
 import { memo } from 'react';
 import { Image, Pressable, View } from 'react-native';
@@ -88,8 +89,12 @@ export const ProductCard = memo(function ProductCard({ item }: { item: Item }) {
           <View className="mt-1 flex-row items-center gap-1.5">
             <ConditionTag condition={item.condition} />
             {!auction && (
+              // Refurbished: grade and seller share the row (both shrink), as
+              // in the prototype; otherwise the seller takes what's left.
               <Text
-                className="flex-1 font-sans-bold text-xs text-brand-warmgray"
+                className={`font-sans-bold text-xs text-brand-warmgray ${
+                  item.refurbished ? 'shrink' : 'flex-1'
+                }`}
                 numberOfLines={1}
               >
                 {t('card.by', { name: localized(item.seller) })}
@@ -100,11 +105,30 @@ export const ProductCard = memo(function ProductCard({ item }: { item: Item }) {
             {auction ? t('card.currentBid') : t('card.buyNow')}
           </Text>
           <Price fils={item.priceFils} className="text-lg" />
-          <Text className="mt-1 text-xs text-brand-warmgray" numberOfLines={1}>
-            {auction
-              ? t('card.bids', { count: auction.bidCount })
-              : placeLabel(item.location, localized)}
-          </Text>
+          {item.refurbished && !auction ? (
+            <View className="mt-1 flex-row items-center gap-1">
+              <Icon name="Shield" size={14} color={colors.primary} />
+              <Text
+                className="flex-1 font-sans-bold text-xs text-brand-primary"
+                numberOfLines={1}
+              >
+                {item.refurbished.warrantyMonths
+                  ? t('card.warranty', {
+                      months: item.refurbished.warrantyMonths,
+                    })
+                  : t('card.brandInspected')}
+              </Text>
+            </View>
+          ) : (
+            <Text
+              className="mt-1 text-xs text-brand-warmgray"
+              numberOfLines={1}
+            >
+              {auction
+                ? t('card.bids', { count: auction.bidCount })
+                : placeLabel(item.location, localized)}
+            </Text>
+          )}
         </View>
       </Pressable>
 

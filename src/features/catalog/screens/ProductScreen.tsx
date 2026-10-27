@@ -1,16 +1,18 @@
 // Product page (prototype ProductDetail): photo gallery with floating back /
 // share / save, title and price, condition and location, trust badges,
 // seller card, description, similar items, and the Make an Offer / Pay Now bar.
+// Certified refurbished listings add the brand's guarantee box; phones and
+// electronics, the shop's test certificate.
 // Buying actions need an account: guests sign in first, then continue. Your
 // own listings and reserved / sold ones show a note instead of the buy bar.
 
 import { useState } from 'react';
-import { Image, Pressable, ScrollView, Share, View } from 'react-native';
+import { Image, Modal, Pressable, ScrollView, Share, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { BackButton } from '@/components/BackButton';
 import { ConditionTag } from '@/components/ConditionTag';
-import { Icon } from '@/components/icons';
+import { Icon, type IconName } from '@/components/icons';
 import { ItemRail } from '@/components/ItemRail';
 import { Price } from '@/components/Price';
 import { ReadMoreText } from '@/components/ReadMoreText';
@@ -23,9 +25,10 @@ import {
   useToggleFavorite,
 } from '@/features/favorites/hooks/useFavorites';
 import { useLang, useLocalized } from '@/i18n';
+import { formatDate } from '@/lib/dates';
 import { formatJOD, jod } from '@/lib/money';
 import { placeLabel } from '@/lib/places';
-import type { Item } from '@/lib/types';
+import type { Item, TestCertificate } from '@/lib/types';
 import type { RootScreenProps } from '@/navigation/types';
 import { ApiError } from '@/services/api/errors';
 import { colors } from '@/theme/colors';
@@ -179,6 +182,17 @@ function ProductDetail({ item }: { item: Item }) {
               </View>
             </Card>
           </View>
+
+          {item.refurbished && (
+            <RefurbishedGuarantee
+              brand={item.brand}
+              warrantyMonths={item.refurbished.warrantyMonths}
+            />
+          )}
+
+          {item.testCertificate && (
+            <ShopTested certificate={item.testCertificate} />
+          )}
 
           {item.brand && (
             <Card className="p-3">
@@ -344,6 +358,118 @@ function ProductDetail({ item }: { item: Item }) {
             />
           </>
         )}
+      </View>
+    </View>
+  );
+}
+
+/** The shop's test report on a phone or electronics listing; tap to see it. */
+function ShopTested({ certificate }: { certificate: TestCertificate }) {
+  const { t } = useTranslation();
+  const lang = useLang();
+  const insets = useSafeAreaInsets();
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Pressable
+        onPress={() => setOpen(true)}
+        accessibilityRole="button"
+        accessibilityHint={t('certificate.view')}
+        className="flex-row items-center gap-3 rounded-2xl border border-brand-success bg-brand-success-soft p-3 active:opacity-80"
+      >
+        <Image
+          source={certificate.image}
+          className="h-14 w-11 rounded-md bg-brand-surface"
+        />
+        <View className="flex-1">
+          <View className="flex-row items-center gap-1">
+            <Icon name="ClipboardCheck" size={16} color={colors.success} />
+            <Text className="flex-1 font-sans-bold text-sm text-brand-success">
+              {t('certificate.testedBy', { shop: certificate.shopName })}
+            </Text>
+          </View>
+          <Text className="mt-0.5 font-sans-medium text-xs">
+            {[
+              formatDate(certificate.testedAt, lang),
+              ...certificate.specs,
+            ].join(' · ')}
+          </Text>
+          <Text className="mt-0.5 font-sans-bold text-xs text-brand-primary">
+            {t('certificate.view')}
+          </Text>
+        </View>
+      </Pressable>
+
+      <Modal
+        visible={open}
+        transparent
+        statusBarTranslucent
+        animationType="fade"
+        onRequestClose={() => setOpen(false)}
+      >
+        <View className="flex-1 bg-black">
+          <Image
+            source={certificate.image}
+            className="flex-1"
+            resizeMode="contain"
+            accessibilityLabel={t('certificate.testedBy', {
+              shop: certificate.shopName,
+            })}
+          />
+          <Pressable
+            onPress={() => setOpen(false)}
+            accessibilityRole="button"
+            accessibilityLabel={t('common.close')}
+            className="absolute end-5 rounded-full bg-brand-surface/80 p-2"
+            style={{ top: insets.top + 12 }}
+          >
+            <Icon name="X" size={20} />
+          </Pressable>
+        </View>
+      </Modal>
+    </>
+  );
+}
+
+/** What the brand promises on a certified refurbished listing. */
+function RefurbishedGuarantee({
+  brand,
+  warrantyMonths,
+}: {
+  brand?: string;
+  warrantyMonths: number;
+}) {
+  const { t } = useTranslation();
+  const points: [IconName, string][] = [
+    [
+      'Shield',
+      warrantyMonths
+        ? t('refurbished.warranty', { months: warrantyMonths })
+        : t('card.brandInspected'),
+    ],
+    ['Check', t('refurbished.fullyTested')],
+    ['Box', t('refurbished.returns')],
+  ];
+  return (
+    <View className="rounded-2xl bg-brand-espresso p-4">
+      <View className="flex-row items-center gap-2">
+        <Icon name="BadgeCheck" size={20} color={colors.onPrimary} />
+        <Heading className="flex-1 text-base text-brand-on-primary">
+          {t('refurbished.certifiedBy', { brand: brand ?? '' })}
+        </Heading>
+      </View>
+      <View className="mt-3 flex-row gap-2">
+        {points.map(([icon, label]) => (
+          <View
+            key={icon}
+            className="flex-1 gap-1.5 rounded-xl bg-brand-surface/10 p-2.5"
+          >
+            <Icon name={icon} size={16} color={colors.primary} />
+            <Text className="font-sans-bold text-xs leading-tight text-brand-on-primary">
+              {label}
+            </Text>
+          </View>
+        ))}
       </View>
     </View>
   );

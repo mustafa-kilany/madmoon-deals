@@ -37,19 +37,34 @@ export type ItemType = {
   brands?: string[];
   /** Models per brand, where buyers search by model (phones, cars, …). */
   models?: Record<string, string[]>;
+  /** Electronics a shop can test: listing one needs a test certificate. */
+  requiresTestCertificate?: boolean;
 };
 
 /** A city a listing is in. Filters match on `id`, so they survive a language switch. */
 /** A city or area. `governorate` lets it show as "البلقاء / السلط". */
 export type Place = { id: string; name: Localized; governorate?: Localized };
 
+/** A GPS fix on the phone. */
+export type Position = { lat: number; lng: number };
+
 /** An area from GET /cities: always has its governorate and a rough centre. */
 export type City = Place & { governorate: Localized; lat: number; lng: number };
 
 export type CategoryFilters = { types: ItemType[]; brands: string[] };
 
-/** Condition keys; labels and tag colors come from i18n and ConditionTag. */
-export type Condition = 'new' | 'excellent' | 'good' | 'loved';
+/**
+ * Condition keys; labels and tag colors come from i18n and ConditionTag.
+ * refurbished_* grades are only on brand-certified listings (Item.refurbished).
+ */
+export type Condition =
+  | 'new'
+  | 'excellent'
+  | 'good'
+  | 'loved'
+  | 'refurbished_like_new'
+  | 'refurbished_excellent'
+  | 'refurbished_good';
 
 export type SaleType = 'fixed' | 'auction';
 
@@ -80,8 +95,8 @@ export type Item = {
   seller: Localized;
   /** The seller's user id: the app hides Buy / Offer / Bid on your own listings. */
   sellerId: string;
-  /** What the seller wrote, as typed (one language). */
-  description?: string;
+  /** What the seller wrote, as typed (one language), at least 10 words. */
+  description: string;
   status: ListingStatus;
   brand?: string;
   /** e.g. "iPhone 14 Pro", "Camry"; free text, usually from ItemType.models. */
@@ -94,6 +109,49 @@ export type Item = {
   auction?: Auction;
   /** Times the listing was opened; ranks "most viewed". Missing = 0. */
   views?: number;
+  /**
+   * Brand-certified refurbished, sold by the brand's official store (the
+   * Certified Refurbished store). 0 months = brand-inspected, no warranty.
+   */
+  refurbished?: { warrantyMonths: number };
+  /** The shop's test report, on phones and electronics (ItemType.requiresTestCertificate). */
+  testCertificate?: TestCertificate;
+};
+
+/** A shop's test report that passed the server's check, as buyers see it. */
+export type TestCertificate = {
+  /** The photo of the stamped paper. */
+  image: ImageSourcePropType;
+  /** As read off the stamp / letterhead. */
+  shopName: string;
+  /** Epoch ms of the date printed on the report. */
+  testedAt: number;
+  /** As read off the report, e.g. ["256GB", "Battery 89%"]. */
+  specs: string[];
+};
+
+/** Why the check turned a test certificate down (labels under `certificate.problem.*`). */
+export type CertificateProblem =
+  | 'unreadable'
+  | 'no_stamp'
+  | 'no_shop'
+  | 'device_mismatch'
+  | 'no_specs'
+  | 'too_old'
+  | 'already_used';
+
+/** POST /test-certificates: the server read the photo (OCR) and checked it against the device. */
+export type CertificateCheck = {
+  /** Sent as testCertificateId when the listing is published. */
+  id: string;
+  status: 'passed' | 'failed';
+  /** Empty when passed. */
+  problems: CertificateProblem[];
+  shopName?: string;
+  testedAt?: number;
+  /** Brand and model as written on the report. */
+  device?: string;
+  specs: string[];
 };
 
 export type AuthMethod = 'email' | 'google' | 'apple';
@@ -152,6 +210,8 @@ export type ActiveFilters = {
 
 export type BrowseState = {
   format: ListingFormat;
+  /** The Refurbished switch beside the format tabs. */
+  refurbished: boolean;
   sort: BrowseSort;
   filters: ActiveFilters;
   query: string;
@@ -261,6 +321,8 @@ export type ListingQuery = {
   /** Fixed scope (category page); filters.category narrows further on Search/Auctions. */
   category?: CategoryId;
   format: ListingFormat;
+  /** Certified refurbished listings only (the store, and the Refurbished switch). */
+  refurbished?: boolean;
   filters: ActiveFilters;
   sort: BrowseSort;
   /** Fetch exactly these listings (Saved, recently viewed); ignores paging. */
@@ -276,6 +338,8 @@ export type ListingFacets = {
   byCategory: Partial<
     Record<CategoryId, { types: string[]; brands: string[] }>
   >;
+  /** Longest refurbished warranty in scope; missing when none is refurbished. */
+  maxWarrantyMonths?: number;
 };
 
 export type ListingPage = {
@@ -284,8 +348,10 @@ export type ListingPage = {
   nextCursor: string | null;
   /** Matches for the whole query, all pages. */
   total: number;
-  /** Matches per format with the same search and filters (the format tabs). */
+  /** Matches per format with the same search, switch and filters (the format tabs). */
   counts: Record<ListingFormat, number>;
+  /** Matches with the same search, format and filters: everything, and refurbished only. */
+  refurbishedCounts: { all: number; refurbished: number };
   facets: ListingFacets;
 };
 

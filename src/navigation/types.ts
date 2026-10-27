@@ -19,6 +19,8 @@ export type RootStackParamList = {
   Tabs: NavigatorScreenParams<TabParamList>;
   Search: undefined;
   Category: { categoryId: CategoryId };
+  /** Certified Refurbished store: brand-certified listings with a warranty. */
+  Refurbished: undefined;
   Product: { itemId: string };
   /** Auction detail + bidding (Phase 5). */
   AuctionBidding: { itemId: string };

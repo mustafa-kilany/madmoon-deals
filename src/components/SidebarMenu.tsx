@@ -39,6 +39,7 @@ const links: {
   label:
     | 'sidebar.profileSettings'
     | 'sidebar.myPurchases'
+    | 'sidebar.refurbished'
     | 'sidebar.myListings'
     | 'sidebar.savedItems'
     | 'sidebar.settings'
@@ -50,6 +51,11 @@ const links: {
     icon: 'Box',
     label: 'sidebar.myPurchases',
     route: { name: 'OrderTracking' },
+  },
+  {
+    icon: 'BadgeCheck',
+    label: 'sidebar.refurbished',
+    route: { name: 'Refurbished' },
   },
   { icon: 'Tag', label: 'sidebar.myListings', route: profile },
   { icon: 'Heart', label: 'sidebar.savedItems', route: { name: 'Saved' } },

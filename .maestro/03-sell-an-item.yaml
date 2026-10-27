@@ -1,5 +1,6 @@
-# Seller lists a phone: photo from the gallery, brand + model pickers
-# (the model fills the title), price, publish, then finds it in My Listings.
+# Seller lists a phone: photo from the gallery, brand + model pickers (the
+# model fills the title), a description, the shop test certificate, price,
+# publish, then finds it in My Listings.
 appId: com.sahla
 name: Sell an item
 ---
@@ -38,6 +39,22 @@ name: Sell an item
     element:
         text: "Samsung Galaxy S24 Ultra"
     direction: UP
+
+# Description: at least 10 words
+- tapOn:
+    id: "listing-description"
+- inputText: "Used for a year with a case and screen protector, battery health 90 percent, never repaired."
+- hideKeyboard
+
+# Phones need a shop test certificate; the mock check passes any photo
+- scrollUntilVisible:
+    element:
+        text: "Add certificate photo"
+- tapOn: "Add certificate photo"
+- runFlow: subflows/pick-first-photo.yaml
+- extendedWaitUntil:
+    visible: "Certificate accepted"
+    timeout: 15000
 
 - scrollUntilVisible:
     element:

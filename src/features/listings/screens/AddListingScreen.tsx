@@ -1,6 +1,8 @@
 // Add listing screen (Phase 4): multi-field form for listing photos, title,
-// description (shown to buyers on the item page), category & item type, condition, brand & model (searchable lists for the
-// chosen type), city location, and sale format (fixed price vs. live auction).
+// description (required, 10+ words; shown to buyers on the item page),
+// category & item type, condition, brand & model (searchable lists for the
+// chosen type), a shop's test certificate for phones and electronics, city
+// location, and sale format (fixed price vs. live auction).
 
 import { useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -20,23 +22,50 @@ import {
   TextField,
   type SelectOption,
 } from '@/components/ui';
-import { pickListingPhoto } from '@/features/auth/photoCapture';
+import {
+  pickCertificatePhoto,
+  pickListingPhoto,
+} from '@/features/auth/photoCapture';
 import { useUser } from '@/features/auth/sessionStore';
 import {
   useCategories,
   useCategoryFilters,
+  useCheckTestCertificate,
   useCities,
   useCreateListing,
 } from '@/features/catalog/hooks/useCatalog';
 import { useLocalized } from '@/i18n';
-import type { Condition, LocalPhoto, SaleType } from '@/lib/types';
+import {
+  countWords,
+  DESCRIPTION_MAX,
+  DESCRIPTION_MIN_WORDS,
+  descriptionValid,
+  needsTestCertificate,
+} from '@/lib/listing';
+import type {
+  CategoryId,
+  CertificateCheck,
+  Condition,
+  LocalPhoto,
+  SaleType,
+} from '@/lib/types';
 import type { RootScreenProps } from '@/navigation/types';
 import { toast } from '@/store/toastStore';
 import { colors } from '@/theme/colors';
+import { TestCertificateField } from '../TestCertificateField';
 
 const conditions: Condition[] = ['new', 'excellent', 'good', 'loved'];
-/** Same limit as POST /listings (docs/API.md). */
-const DESCRIPTION_MAX = 2000;
+
+/** A test report photo and the device it was checked against. */
+type Certificate = {
+  photo: LocalPhoto;
+  /** Device key (deviceKey) at check time; the result counts only for it. */
+  device: string;
+  check?: CertificateCheck;
+};
+
+const deviceKey = (d: { type: string; brand?: string; model?: string }) =>
+  JSON.stringify([d.type, d.brand ?? '', d.model ?? '']);
 
 export function AddListingScreen({
   navigation,
@@ -65,6 +94,10 @@ export function AddListingScreen({
   const [startingBidJod, setStartingBidJod] = useState('');
   const [incrementJod, setIncrementJod] = useState('1');
   const [durationDays, setDurationDays] = useState<'1' | '3' | '7'>('3');
+  const [certificate, setCertificate] = useState<Certificate>();
+  const checkCertificate = useCheckTestCertificate();
+  // Field errors show after the first Publish attempt, not while typing.
+  const [showErrors, setShowErrors] = useState(false);
 
   const isLoading = isCatLoading || isFiltersLoading || isCitiesLoading;
 
@@ -98,6 +131,45 @@ export function AddListingScreen({
   const typeInfo = availableTypes.find(tItem => tItem.id === activeType);
   const brandOptions = typeInfo?.brands ?? [];
   const modelOptions = (brand && typeInfo?.models?.[brand]) || [];
+
+  // What the listing and the certificate check both send.
+  const device = {
+    category: activeCategory as CategoryId,
+    type: activeType,
+    brand: brand.trim() || undefined,
+    model: (brand.trim() && model.trim()) || undefined,
+  };
+  const needsCertificate = needsTestCertificate(typeInfo);
+  const certificateStale =
+    !!certificate && certificate.device !== deviceKey(device);
+  const certificateOk =
+    !needsCertificate ||
+    (certificate?.check?.status === 'passed' && !certificateStale);
+  const words = countWords(description);
+  const descriptionOk = descriptionValid(description);
+
+  const runCheck = (photo: LocalPhoto) => {
+    if (!device.brand) return;
+    const checked = { photo, device: deviceKey(device) };
+    setCertificate(checked);
+    checkCertificate.mutate(
+      { photo, ...device, brand: device.brand },
+      {
+        onSuccess: check =>
+          // Only if no newer photo or check replaced this one meanwhile.
+          setCertificate(c => (c === checked ? { ...checked, check } : c)),
+      },
+    );
+  };
+
+  const handleAddCertificate = async () => {
+    try {
+      const photo = await pickCertificatePhoto();
+      if (photo) runCheck(photo);
+    } catch {
+      toast.error(t('addListing.error'));
+    }
+  };
 
   // Brands and models belong to the type, so a new type starts them over.
   const changeType = (update: () => void) => {
@@ -137,6 +209,17 @@ export function AddListingScreen({
       toast.error(t('validation.nameRequired'));
       return;
     }
+    if (!descriptionOk) {
+      setShowErrors(true);
+      toast.error(
+        t('addListing.descriptionTooShort', { min: DESCRIPTION_MIN_WORDS }),
+      );
+      return;
+    }
+    if (!certificateOk) {
+      toast.error(t('certificate.missing'));
+      return;
+    }
 
     const numericPrice = parseFloat(priceJod || startingBidJod || '0');
     if (isNaN(numericPrice) || numericPrice <= 0) {
@@ -149,16 +232,16 @@ export function AddListingScreen({
 
     createListing.mutate(
       {
-        category: activeCategory as any,
+        ...device,
         titleAr: title.trim(),
         titleEn: title.trim(),
         priceFils,
         photos,
         condition,
-        description: description.trim() || undefined,
-        brand: brand.trim() || undefined,
-        model: (brand.trim() && model.trim()) || undefined,
-        type: activeType,
+        description: description.trim(),
+        testCertificateId: needsCertificate
+          ? certificate?.check?.id
+          : undefined,
         locationId: activeCity,
         saleType,
         auctionEndsAt:
@@ -249,8 +332,23 @@ export function AddListingScreen({
           label={t('addListing.description')}
           value={description}
           onChangeText={setDescription}
+          testID="listing-description"
           placeholder={t('addListing.descriptionPlaceholder')}
-          hint={t('addListing.descriptionHint')}
+          hint={
+            words < DESCRIPTION_MIN_WORDS
+              ? t('addListing.descriptionWords', {
+                  n: words,
+                  min: DESCRIPTION_MIN_WORDS,
+                })
+              : t('addListing.descriptionHint')
+          }
+          error={
+            showErrors && !descriptionOk
+              ? t('addListing.descriptionTooShort', {
+                  min: DESCRIPTION_MIN_WORDS,
+                })
+              : undefined
+          }
           multiline
           maxLength={DESCRIPTION_MAX}
           showCount
@@ -337,6 +435,19 @@ export function AddListingScreen({
               )}
             />
           </View>
+        )}
+
+        {needsCertificate && (
+          <TestCertificateField
+            ready={!!device.brand}
+            photo={certificate?.photo}
+            check={certificate?.check}
+            checking={checkCertificate.isPending}
+            error={checkCertificate.error}
+            stale={certificateStale}
+            onPick={handleAddCertificate}
+            onRecheck={() => certificate && runCheck(certificate.photo)}
+          />
         )}
 
         {/* City Location */}

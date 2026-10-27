@@ -2,7 +2,8 @@
 // (mobiles first, gaming under Electronics, watches under Fashion), 4
 // fixed-price listings each, plus one demo auction per category (id
 // `auction-<category>`, built from one of that category's listings). Listing
-// photos stay remote, like real listing images will; category tiles are bundled.
+// photos stay remote, like real listing images will; category tiles and the
+// phones' and electronics' shop test certificates are bundled.
 
 import { jod } from '@/lib/money';
 import { brandsByType } from './brands';
@@ -76,6 +77,12 @@ const itemType = (id: string, ar: string, en: string): ItemType => ({
   name: { ar, en },
 });
 
+/** Electronics a shop can test: listing one needs a test certificate. */
+const testedTypes: Partial<Record<CategoryId, string[]>> = {
+  mobiles: ['phones', 'tablets', 'smartwatches'],
+  electronics: ['laptops', 'gaming', 'tvs', 'cameras', 'audio'],
+};
+
 /**
  * Each type with its brands / models from brands.ts, and the category's
  * brands: every type's, de-duplicated.
@@ -84,6 +91,9 @@ const withBrands = (category: CategoryId, plain: ItemType[]) => {
   const types = plain.map(type => ({
     ...type,
     ...brandsByType[category][type.id],
+    ...(testedTypes[category]?.includes(type.id) && {
+      requiresTestCertificate: true,
+    }),
   }));
   return {
     types,
@@ -552,16 +562,156 @@ const seedModels: Record<string, string> = {
   'vehicles-2': '500',
 };
 
-/** A few seed listings with a seller-written description (one language, as typed). */
+/** What each seller wrote (one language, as typed; at least 10 words). */
 const seedDescriptions: Record<string, string> = {
   'mobiles-0':
     'Bought new from an official store in Amman and used with a case and screen protector from day one. Battery health 89%.\n\n' +
     'No scratches or dents, never repaired or opened. Face ID, all three cameras and the speakers work perfectly.\n\n' +
     'Comes with the original box, the cable and two cases. Selling only because I upgraded.',
+  'mobiles-1':
+    'الجهاز شغال 100% بدون أي مشاكل، فيه خدوش خفيفة على الإطار من الاستعمال. البطارية بتكفي يوم كامل والذاكرة 128 جيجا. معه الشاحن الأصلي والكفر.',
+  'mobiles-2':
+    'iPad Air 5th gen, 64GB Wi-Fi in space grey. Used mostly for reading and university notes, always in a folio case. ' +
+    'The screen is flawless and the battery holds well. Comes with the original box and USB-C cable.',
+  'mobiles-3':
+    'ساعة آبل جديدة، فُتحت الكرتونة للفحص فقط ولم تُستعمل. وصلتني هدية ولا أحتاجها. المقاس 41 ملم، لون أسود، ومعها كل الملحقات الأصلية.',
+  'electronics-0':
+    'MacBook Air M1 13-inch with 8GB RAM and a 256GB SSD. Battery cycle count is 210 and health is 91%. ' +
+    'No dents, and the keyboard and trackpad work perfectly. Charger included; selling because I switched to a desktop.',
+  'electronics-1':
+    'بلايستيشن 5 نسخة الأقراص، استعمال خفيف بالبيت ونظيف جداً. معه يدّين أصليتين وكل الكوابل، ولعبة FIFA مجاناً. ما انفتح ولا تصلّح أبداً.',
+  'electronics-2':
+    'Canon EOS 250D with the 18-55mm kit lens, about 8,000 shutter clicks. The sensor and lens are clean with no fungus or scratches. ' +
+    'Comes with two batteries, a 64GB card, the charger and a shoulder bag.',
+  'electronics-3':
+    'سماعات سوني لاسلكية جديدة، استعملتها مرتين فقط. عزل الضوضاء ممتاز والبطارية بتدوم حوالي 30 ساعة. معها العلبة والكابل وحقيبة الحمل الأصلية.',
   'vehicles-0':
     'السيارة بحالة ممتازة، ماشية 85 ألف كم، صيانة دورية بالوكالة وكل الفواتير موجودة.\n\n' +
     'فحص كامل بدون ملاحظات، لون فضي، فتحة سقف، شاشة وكاميرا خلفية، والترخيص ساري لآخر السنة.\n\n' +
     'سبب البيع: السفر. الإطارات جديدة من شهرين والمكيف بارد.',
+  'vehicles-1':
+    'Ford Mustang 2018 EcoBoost, 2.3L turbo, automatic, 96,000 km. Imported from the US with a clean history report and serviced regularly at a known garage. ' +
+    'Small scratch on the rear bumper, otherwise clean inside and out. Licensed until March.',
+  'vehicles-2':
+    'فيات 500 موديل 2016، ماشية 61 ألف كم، اقتصادية جداً بالبنزين ومناسبة للمدينة. فحص كامل، فتحة سقف بانوراما، وما فيها أي ضربة. صاحبة أولى والسيارة بحالة الوكالة.',
+  'vehicles-3':
+    'Honda CB500F, 2020, 14,000 km. Serviced every 4,000 km, with a new chain and tyres this year, and never dropped. ' +
+    'Comes with a helmet and a phone mount. Papers are complete and the licence is valid.',
+  'furniture-0':
+    'كنبة ثلاث مقاعد من ايكيا، لون رمادي، القماش نظيف والأغطية بتنفك وبتنغسل. فيها علامات استعمال خفيفة على الذراع. الاستلام من البيت، وبنساعد بالتنزيل.',
+  'furniture-1':
+    'Solid wood dining table for six, 180 x 90 cm, with a natural oak finish. No scratches or water marks; we always used placemats. ' +
+    'It comes apart for transport. Chairs not included.',
+  'furniture-2':
+    'كرسي مكتب جديد من هوم سنتر، ظهر شبك مريح ومسند للرقبة، والارتفاع قابل للتعديل. ركّبته وما استعملته لأنه ما ناسب المكتب. مع الكرتونة.',
+  'furniture-3':
+    'Large two-door wardrobe with a hanging rail and four shelves, 150 cm wide. Well used, with some marks on the side panels, ' +
+    'but the doors close properly. Needs to be taken apart for pickup.',
+  'appliances-0':
+    'غسالة سامسونج أوتوماتيك 8 كيلو، تحميل أمامي، شغالة ممتاز وبدون تسريب. عمرها 4 سنين وتغيّر الكلتش السنة الماضية. البيع بسبب الانتقال لشقة مفروشة.',
+  'appliances-1':
+    'Smeg retro fridge in pastel blue, 248 litres with a small freezer compartment. Cools well and runs quietly, with no rust or dents. ' +
+    'Bought in 2022, original manual included. Pickup from the ground floor.',
+  'appliances-2':
+    'مكنسة روبوت شاومي جديدة، بتكنس وبتمسح، وبتشتغل من التطبيق على الموبايل. فتحت الكرتونة للتجربة فقط. معها القاعدة والفرشاة الإضافية وكل القطع.',
+  'appliances-3':
+    'Black+Decker toaster oven, 20 litres, with grill and timer. Works perfectly; the glass door has a small mark that affects nothing. ' +
+    'Tray and rack included. Great for a small kitchen or an office.',
+  'fashion-0':
+    'جاكيت جلد من زارا مقاس L، لون أسود، لبسته موسم واحد بس. الجلد طري وما فيه أي تشققات، والسحّابات كلها شغالة. مناسب للشتوية.',
+  'fashion-1':
+    'Mango summer dress, size M, floral print on light cotton. Worn a few times and always hand washed, so the colours are still bright. ' +
+    'Midi length with adjustable straps.',
+  'fashion-2':
+    'حذاء نايكي رياضي مقاس 43، أصلي ومعه الفاتورة. ملبوس كم مرة بس، النعل نظيف وما فيه أي اهتراء. بيعه لأنه صغير علي شوي.',
+  'fashion-3':
+    'Rolex Oyster Perpetual 36mm, bought from an authorised dealer in 2019. Box, papers and receipt included. ' +
+    'Serviced last year and keeps perfect time. Light hairlines on the bracelet only.',
+  'kids-0':
+    'مجموعة قطار خشبي للأطفال، فيها سكة دائرية وجسر وثلاث عربات. كل القطع موجودة ونظيفة. مناسبة من عمر 3 سنين وفوق.',
+  'kids-1':
+    'About two kilos of mixed LEGO bricks, including wheels, windows and around 15 minifigures. Washed and sorted in a storage box. ' +
+    'No original instructions, but great for free building.',
+  'kids-2':
+    'بدلة شتوية لطفل جديدة مع التيكت، مقاس 6 إلى 9 شهور، مبطنة ودافية مع كبّوت. وصلتنا هدية مكررة وما انلبست.',
+  'kids-3':
+    'Soft brown teddy bear, about 40 cm tall, brand new with the tag still on. It was a gift we never used, kept in its bag.',
+  'hobbies-0':
+    'دراجة جبلية تريك مقاس 27.5، الإطار ألمنيوم، 21 سرعة وفرامل ديسك. صيانة كاملة الشهر الماضي وتغيّر الجنزير والفرامل. فيها خدوش خفيفة على الإطار.',
+  'hobbies-1':
+    'Yamaha F310 acoustic guitar, great for beginners. New strings fitted last month and the neck is straight. ' +
+    'A few small marks on the body. Comes with a soft case, a strap and spare picks.',
+  'hobbies-2':
+    'مجموعة دمبلز قابلة للتعديل من 2 لـ 20 كيلو لكل إيد، مع الحامل. الأقراص مغلفة بالمطاط وما بتعمل صوت. استعمال بيتي خفيف.',
+  'hobbies-3':
+    'Collection of 25 English novels, mostly classics and bestsellers, all paperback. A few have pencil notes but every page is there. ' +
+    'Selling as one bundle.',
+};
+
+/** The shop test reports on the seed phones and electronics (photos bundled). */
+const seedCertificates: Record<
+  string,
+  { image: number; shopName: string; testedAt: string; specs: string[] }
+> = {
+  'mobiles-0': {
+    image: require('../../../assets/images/certificates/mobiles-0.jpg'),
+    shopName: 'Smart Fix Mobile',
+    testedAt: '2026-10-20',
+    specs: ['128GB', 'Battery 89%'],
+  },
+  'mobiles-1': {
+    image: require('../../../assets/images/certificates/mobiles-1.jpg'),
+    shopName: 'Al-Wafa Electronics',
+    testedAt: '2026-10-23',
+    specs: ['128GB', '8GB RAM'],
+  },
+  'mobiles-2': {
+    image: require('../../../assets/images/certificates/mobiles-2.jpg'),
+    shopName: 'Smart Fix Mobile',
+    testedAt: '2026-10-16',
+    specs: ['64GB', 'Wi-Fi'],
+  },
+  'mobiles-3': {
+    image: require('../../../assets/images/certificates/mobiles-3.jpg'),
+    shopName: 'Tech Care Center',
+    testedAt: '2026-10-24',
+    specs: ['41mm', 'Battery 100%'],
+  },
+  'electronics-0': {
+    image: require('../../../assets/images/certificates/electronics-0.jpg'),
+    shopName: 'Tech Care Center',
+    testedAt: '2026-10-21',
+    specs: ['8GB RAM', '256GB SSD', 'Battery 91%'],
+  },
+  'electronics-1': {
+    image: require('../../../assets/images/certificates/electronics-1.jpg'),
+    shopName: 'Al-Wafa Electronics',
+    testedAt: '2026-10-22',
+    specs: ['825GB', 'Disc drive OK'],
+  },
+  'electronics-2': {
+    image: require('../../../assets/images/certificates/electronics-2.jpg'),
+    shopName: 'Tech Care Center',
+    testedAt: '2026-10-19',
+    specs: ['24.1MP', '8,000 shots'],
+  },
+  'electronics-3': {
+    image: require('../../../assets/images/certificates/electronics-3.jpg'),
+    shopName: 'Al-Wafa Electronics',
+    testedAt: '2026-10-25',
+    specs: ['Bluetooth OK', 'Noise cancelling OK'],
+  },
+  'auction-mobiles': {
+    image: require('../../../assets/images/certificates/auction-mobiles.jpg'),
+    shopName: 'Smart Fix Mobile',
+    testedAt: '2026-10-24',
+    specs: ['256GB', 'Battery 92%'],
+  },
+};
+
+const certificateOf = (id: string) => {
+  const cert = seedCertificates[id];
+  return cert && { ...cert, testedAt: Date.parse(cert.testedAt) };
 };
 
 /** Demo auction per category: which listing it copies, opening bid, time left. */
@@ -602,6 +752,7 @@ export function buildItems(startedAt: number): Item[] {
       seller: l.seller,
       sellerId: `user-${l.seller.en.toLowerCase()}`,
       description: seedDescriptions[`${category}-${index}`],
+      testCertificate: certificateOf(`${category}-${index}`),
       status: 'active',
       brand: l.brand,
       model: seedModels[`${category}-${index}`],
@@ -623,6 +774,10 @@ export function buildItems(startedAt: number): Item[] {
           en: 'iPhone 14 Pro Max 256GB',
         },
         model: 'iPhone 14 Pro Max',
+        description:
+          'iPhone 14 Pro Max 256GB in deep purple. Battery health 92%, always used with a case and screen protector. ' +
+          'No repairs; Face ID and the cameras work perfectly. Box and cable included.',
+        testCertificate: certificateOf('auction-mobiles'),
       }),
       priceFils: jod(demo.price),
       saleType: 'auction',

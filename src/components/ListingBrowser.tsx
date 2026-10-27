@@ -1,11 +1,12 @@
-// Shared browsing UI for Search results, Auctions and Category pages
-// (prototype components/ListingBrowser): optional search box, All / Buy now /
-// Auctions tabs with counts, category chips, Filters + Sort, removable
-// filter chips, and the 2-column results grid. Choices are kept per `scope`.
-// Results come from the server a page at a time (useListings); scrolling to
-// the end loads the next page.
+// Shared browsing UI for Search results, Auctions, Category pages and the
+// Certified Refurbished store (prototype components/ListingBrowser): optional
+// search box, one bar with the All / Buy now / Auctions tabs (with counts) and
+// the Refurbished switch, item-type and category chips, Filters + Sort,
+// removable filter chips, an optional "Shop by brand" row, and the 2-column
+// results grid. Choices are kept per `scope`. Results come from the server a
+// page at a time (useListings); scrolling to the end loads the next page.
 
-import { useState } from 'react';
+import { useState, type ReactElement } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { CategoryImage } from '@/components/CategoryImage';
@@ -39,6 +40,8 @@ import type {
 } from '@/lib/types';
 import { colors } from '@/theme/colors';
 
+const unique = <T,>(values: T[]) => [...new Set(values)];
+
 type ListingBrowserProps = {
   scope: string;
   /** Search text from the screen (Search); `searchable` browsers have their own box. */
@@ -53,6 +56,14 @@ type ListingBrowserProps = {
   searchable?: boolean;
   /** Category chips + category in the filter sheet (Search, Auctions). */
   showCategories?: boolean;
+  /** Only brand-certified listings, no Refurbished switch (the store). */
+  refurbishedOnly?: boolean;
+  /** Row of item-type chips under the tabs (e.g. Phones, Laptops). */
+  quickTypes?: boolean;
+  /** "Shop by brand" row above the results. */
+  quickBrands?: boolean;
+  /** Shown at the top of the scrolling results. */
+  intro?: ReactElement;
 };
 
 export function ListingBrowser({
@@ -64,6 +75,10 @@ export function ListingBrowser({
   auctionOnly = false,
   searchable = false,
   showCategories = false,
+  refurbishedOnly = false,
+  quickTypes = false,
+  quickBrands = false,
+  intro,
 }: ListingBrowserProps) {
   const { t } = useTranslation();
   const localized = useLocalized();
@@ -71,16 +86,18 @@ export function ListingBrowser({
   const [sheetOpen, setSheetOpen] = useState(false);
 
   const format: ListingFormat = auctionOnly ? 'auction' : state.format;
+  const refurbished = refurbishedOnly || state.refurbished;
   const q = useDebouncedValue(searchable ? state.query : screenQuery);
   const listingQuery: ListingQuery = {
     q,
     category: scopeCategory,
     format,
+    refurbished,
     filters: state.filters,
     sort: state.sort,
   };
   const listings = useListings(listingQuery);
-  const { items, total, counts, facets } = listings;
+  const { items, total, counts, refurbishedCounts, facets } = listings;
   const loadMore = () => {
     if (listings.hasNextPage && !listings.isFetchingNextPage)
       listings.fetchNextPage();
@@ -89,9 +106,25 @@ export function ListingBrowser({
   const availableCategories = categories.filter(c =>
     facets?.categories.includes(c.id),
   );
+  const inScope = Object.values(facets?.byCategory ?? {});
+  const facetTypes = unique(inScope.flatMap(c => c.types));
+  const facetBrands = unique(inScope.flatMap(c => c.brands));
+  const typeName = (id: string) => {
+    const type = Object.values(categoryFilters)
+      .flatMap(c => c.types)
+      .find(x => x.id === id);
+    return type ? localized(type.name) : id;
+  };
 
   const changeFilters = (filters: ActiveFilters) => patch({ filters });
   const clear = () => changeFilters(emptyFilters());
+  const toggle = (key: 'types' | 'brands', value: string) =>
+    changeFilters({
+      ...state.filters,
+      [key]: state.filters[key].includes(value)
+        ? state.filters[key].filter(x => x !== value)
+        : [...state.filters[key], value],
+    });
   const setFormat = (selection: ListingFormat) =>
     patch({
       format: selection,
@@ -119,16 +152,12 @@ export function ListingBrowser({
       ...f,
       [key]: (f[key] as string[]).filter(x => x !== value),
     });
-  for (const id of f.types) {
-    const type = Object.values(categoryFilters)
-      .flatMap(c => c.types)
-      .find(x => x.id === id);
+  for (const id of f.types)
     chips.push({
       key: `type:${id}`,
-      label: type ? localized(type.name) : id,
+      label: typeName(id),
       remove: () => without('types', id),
     });
-  }
   for (const brand of f.brands)
     chips.push({
       key: `brand:${brand}`,
@@ -190,6 +219,46 @@ export function ListingBrowser({
     ['fixed', t('browse.buyNow')],
     ['auction', t('browse.auctions')],
   ];
+  // Auctions tab: All / Refurbished tabs with counts. Elsewhere: a Refurbished
+  // switch that combines with the format (e.g. Auctions + Refurbished).
+  const showSwitch = !refurbishedOnly;
+  const refurbishedMatches = refurbishedCounts?.refurbished ?? 0;
+  const tabClass = (active: boolean) =>
+    `min-h-11 grow flex-row items-center justify-center gap-1.5 rounded-xl px-2 py-2.5 ${
+      // Both branches set a shadow: NativeWind can't add shadow
+      // (CSS-variable) styles after the first render.
+      active ? 'bg-brand-surface shadow-sm' : 'shadow-none'
+    }`;
+  const tab = (
+    key: string,
+    label: string,
+    active: boolean,
+    onPress: () => void,
+    matches?: number,
+  ) => (
+    <Pressable
+      key={key}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityState={{ selected: active }}
+      className={tabClass(active)}
+    >
+      <Text
+        className={`font-sans-bold text-xs ${
+          active ? 'text-brand-espresso' : 'text-brand-warmgray'
+        }`}
+      >
+        {label}
+      </Text>
+      <Text
+        className={`font-sans-bold text-xs ${
+          active ? 'text-brand-primary' : 'text-brand-warmgray'
+        }`}
+      >
+        {matches ?? ''}
+      </Text>
+    </Pressable>
+  );
 
   const header = (
     <View className="gap-3 border-b border-brand-border bg-brand-surface px-5 pb-4">
@@ -205,43 +274,108 @@ export function ListingBrowser({
         />
       )}
 
-      {!auctionOnly && (
-        <View
-          accessibilityLabel={t('browse.listingFormat')}
-          className="flex-row gap-1 rounded-2xl border border-brand-border bg-brand-lightgray p-1"
-        >
-          {formats.map(([id, label]) => {
-            const active = format === id;
-            return (
-              <Pressable
-                key={id}
-                onPress={() => setFormat(id)}
-                accessibilityRole="button"
-                accessibilityState={{ selected: active }}
-                className={`min-h-11 flex-1 flex-row items-center justify-center gap-1.5 rounded-xl px-2 py-2.5 ${
-                  // Both branches set a shadow: NativeWind can't add shadow
-                  // (CSS-variable) styles after the first render.
-                  active ? 'bg-brand-surface shadow-sm' : 'shadow-none'
-                }`}
+      {(!auctionOnly || showSwitch) && (
+        // Scrolls sideways if the tabs don't fit a narrow phone.
+        <View className="overflow-hidden rounded-2xl border border-brand-border bg-brand-lightgray">
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerClassName="grow gap-1 p-1"
+          >
+            {!auctionOnly && (
+              <View
+                accessibilityLabel={t('browse.listingFormat')}
+                className="grow flex-row gap-1"
               >
-                <Text
-                  className={`font-sans-bold text-xs ${
-                    active ? 'text-brand-espresso' : 'text-brand-warmgray'
-                  }`}
+                {formats.map(([id, label]) =>
+                  tab(
+                    id,
+                    label,
+                    format === id,
+                    () => setFormat(id),
+                    counts?.[id],
+                  ),
+                )}
+              </View>
+            )}
+            {!auctionOnly && showSwitch && (
+              <View className="my-2 w-px bg-brand-border" />
+            )}
+            {showSwitch &&
+              (auctionOnly ? (
+                <View
+                  accessibilityLabel={t('browse.itemCondition')}
+                  className="grow flex-row gap-1"
                 >
-                  {label}
-                </Text>
-                <Text
-                  className={`font-sans-bold text-xs ${
-                    active ? 'text-brand-primary' : 'text-brand-warmgray'
-                  }`}
+                  {tab(
+                    'all',
+                    t('browse.all'),
+                    !refurbished,
+                    () => patch({ refurbished: false }),
+                    refurbishedCounts?.all,
+                  )}
+                  {tab(
+                    'refurbished',
+                    t('browse.refurbished'),
+                    refurbished,
+                    () => patch({ refurbished: true }),
+                    refurbishedCounts?.refurbished,
+                  )}
+                </View>
+              ) : (
+                // A switch: press again to go back to everything.
+                <Pressable
+                  onPress={() => patch({ refurbished: !refurbished })}
+                  disabled={!refurbished && !refurbishedMatches}
+                  accessibilityRole="switch"
+                  accessibilityLabel={`${t(
+                    'browse.refurbished',
+                  )} (${refurbishedMatches})`}
+                  accessibilityState={{
+                    checked: refurbished,
+                    disabled: !refurbished && !refurbishedMatches,
+                  }}
+                  className={`min-h-11 flex-row items-center justify-center rounded-xl px-3 py-2.5 ${
+                    refurbished ? 'bg-brand-espresso shadow-sm' : 'shadow-none'
+                  } ${!refurbished && !refurbishedMatches ? 'opacity-40' : ''}`}
                 >
-                  {counts?.[id] ?? ''}
-                </Text>
-              </Pressable>
-            );
-          })}
+                  <Text
+                    className={`font-sans-bold text-xs ${
+                      refurbished
+                        ? 'text-brand-on-primary'
+                        : 'text-brand-warmgray'
+                    }`}
+                  >
+                    {t('browse.refurbished')}
+                  </Text>
+                </Pressable>
+              ))}
+          </ScrollView>
         </View>
+      )}
+
+      {quickTypes && facetTypes.length > 0 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          className="-mx-5"
+          contentContainerClassName="gap-2 px-5"
+          accessibilityLabel={t('filters.type')}
+        >
+          <Chip
+            label={t('browse.allTypes')}
+            selected={!f.types.length}
+            onPress={() => changeFilters({ ...f, types: [] })}
+          />
+          {facetTypes.map(id => (
+            <Chip
+              key={id}
+              label={typeName(id)}
+              selected={f.types.includes(id)}
+              onPress={() => toggle('types', id)}
+            />
+          ))}
+        </ScrollView>
       )}
 
       {showCategories && (
@@ -346,27 +480,70 @@ export function ListingBrowser({
         onEndReached={loadMore}
         loadingMore={listings.isFetchingNextPage}
         header={
-          <View className="mb-1 flex-row items-center justify-between gap-2">
-            <Text
-              accessibilityLiveRegion="polite"
-              className="font-sans-bold text-xs text-brand-warmgray"
-            >
-              {auctionsView
-                ? t(
-                    many ? 'browse.liveAuctionsMany' : 'browse.liveAuctionsOne',
-                    {
-                      count: total,
-                    },
-                  )
-                : t(many ? 'browse.resultsMany' : 'browse.resultsOne', {
-                    count: total,
+          <View>
+            {intro}
+            {quickBrands && facetBrands.length > 0 && (
+              <View className="mb-5">
+                <Heading className="mb-3 text-sm">
+                  {t('browse.shopByBrand')}
+                </Heading>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  className="-mx-5"
+                  contentContainerClassName="gap-2 px-5 pb-1"
+                  accessibilityLabel={t('filters.brand')}
+                >
+                  {facetBrands.map(brand => {
+                    const active = f.brands.includes(brand);
+                    return (
+                      <Pressable
+                        key={brand}
+                        onPress={() => toggle('brands', brand)}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: active }}
+                        className={`h-14 min-w-24 flex-row items-center justify-center gap-1.5 rounded-2xl border px-4 shadow-sm ${
+                          active
+                            ? 'border-brand-primary bg-brand-success-soft'
+                            : 'border-brand-border bg-brand-surface'
+                        }`}
+                      >
+                        {active && (
+                          <Icon name="Check" size={16} color={colors.primary} />
+                        )}
+                        <Text className="font-heading-black text-sm">
+                          {brand}
+                        </Text>
+                      </Pressable>
+                    );
                   })}
-            </Text>
-            {auctionsView && (
-              <Text className="text-xs text-brand-warmgray">
-                {t('browse.pricesAreBids')}
-              </Text>
+                </ScrollView>
+              </View>
             )}
+            <View className="mb-1 flex-row items-center justify-between gap-2">
+              <Text
+                accessibilityLiveRegion="polite"
+                className="font-sans-bold text-xs text-brand-warmgray"
+              >
+                {auctionsView
+                  ? t(
+                      many
+                        ? 'browse.liveAuctionsMany'
+                        : 'browse.liveAuctionsOne',
+                      {
+                        count: total,
+                      },
+                    )
+                  : t(many ? 'browse.resultsMany' : 'browse.resultsOne', {
+                      count: total,
+                    })}
+              </Text>
+              {auctionsView && (
+                <Text className="text-xs text-brand-warmgray">
+                  {t('browse.pricesAreBids')}
+                </Text>
+              )}
+            </View>
           </View>
         }
         empty={
@@ -393,11 +570,14 @@ export function ListingBrowser({
               <Text className="text-center text-sm text-brand-warmgray">
                 {t('browse.tryAnother')}
               </Text>
-              {count > 0 && (
+              {/* state.refurbished: the store's own scope isn't a filter to clear. */}
+              {(count > 0 || state.refurbished) && (
                 <Button
                   className="mt-2"
                   label={t('browse.clearFilters')}
-                  onPress={clear}
+                  onPress={() =>
+                    patch({ filters: emptyFilters(), refurbished: false })
+                  }
                 />
               )}
             </View>

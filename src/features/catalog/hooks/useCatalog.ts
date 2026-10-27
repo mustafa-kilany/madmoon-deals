@@ -48,7 +48,35 @@ export function useListings(query: ListingQuery, enabled = true) {
     items: result.data?.pages.flatMap(p => p.items) ?? [],
     total: first?.total ?? 0,
     counts: first?.counts,
+    refurbishedCounts: first?.refurbishedCounts,
     facets: first?.facets,
+  };
+}
+
+/** Cheapest first, so the first page's first item is the "from" price. */
+const REFURBISHED_QUERY: ListingQuery = {
+  refurbished: true,
+  format: 'all',
+  sort: 'price_asc',
+  filters: emptyFilters(),
+};
+
+/**
+ * The Certified Refurbished store at a glance (Home banner, store intro), from
+ * one small request: how many listings, the lowest price, the brands and the
+ * longest warranty.
+ */
+export function useRefurbishedSummary() {
+  const { items, total, facets } = useListings(REFURBISHED_QUERY);
+  return {
+    total,
+    fromFils: items[0]?.priceFils,
+    brands: [
+      ...new Set(
+        Object.values(facets?.byCategory ?? {}).flatMap(c => c.brands),
+      ),
+    ],
+    maxWarrantyMonths: facets?.maxWarrantyMonths ?? 0,
   };
 }
 
@@ -120,6 +148,10 @@ export const useCreateListing = () =>
       queryClient.invalidateQueries({ queryKey: queryKeys.myListings });
     },
   });
+
+/** Upload a shop's test report for the server's check (Sell form). */
+export const useCheckTestCertificate = () =>
+  useMutation({ mutationFn: catalogService.checkTestCertificate });
 
 /** Categories and their filter options: small tables every browser needs. */
 export function useCatalogMeta() {

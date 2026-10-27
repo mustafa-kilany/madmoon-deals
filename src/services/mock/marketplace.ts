@@ -6,9 +6,14 @@ import { useSessionStore } from '@/features/auth/sessionStore';
 import type { Bid, Item } from '@/lib/types';
 import { ApiError } from '../api/errors';
 import { buildItems } from './catalog';
+import { buildRefurbishedItems } from './refurbished';
 
 // Auction end times count from app launch, as in the prototype.
-const seedItems = buildItems(Date.now());
+const startedAt = Date.now();
+const seedItems = [
+  ...buildItems(startedAt),
+  ...buildRefurbishedItems(startedAt),
+];
 
 /** Listings published in this session, newest first. */
 export const userListings: Item[] = [];

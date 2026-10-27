@@ -23,6 +23,11 @@ name: Buy, then courier confirms delivery
 - tapOn: "Pay Now"
 - assertVisible: "Secure Checkout"
 
+# No saved address yet (fresh app), so checkout offers to use the location.
+# Type it instead: the emulator's GPS is in California.
+- assertVisible: "Deliver to where you are?"
+- tapOn: "I'll type it myself"
+
 # Delivery details: name and area come from the profile
 - scrollUntilVisible:
     element:

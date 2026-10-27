@@ -38,22 +38,23 @@ Tone: warm, local, trustworthy.
 | 1 | Home dashboard | `HomeDashboard.tsx` | No |
 | 2 | Search | `SearchScreen.tsx` | No |
 | 2b | Auctions tab (live auctions, search, category chips) | `AuctionsScreen.tsx` | No |
+| 2c | Certified Refurbished store (brand-store listings with warranty; type chips, Shop by brand). Stock is imported, never listed in the app: `POST /admin/refurbished/import` (docs/API.md) | `RefurbishedScreen.tsx` | No |
 | 3 | Category (+ filter sheet) | `CategoryScreen.tsx`, `FilterSheet.tsx` | No |
-| 4 | Product detail | `ProductDetail.tsx` | No |
+| 4 | Product detail (+ the shop test certificate on phones / electronics) | `ProductDetail.tsx` | No |
 | 5 | Saved items | `SavedItems.tsx` | No (local) |
 | 6 | Auth (choose method) | `AuthScreen.tsx` | — |
 | 7 | Email auth | `EmailAuth.tsx` | — |
 | 8 | ID verification | `IDVerification.tsx` | — |
 | 9 | Profile | `Profile.tsx` | Yes |
-| 10 | Add listing | `AddListing.tsx` | Yes |
+| 10 | Add listing: description of 10+ words required; phones and electronics need a shop test certificate photo, checked by the server (OCR) via `POST /test-certificates` | `AddListing.tsx` | Yes |
 | 11 | Make offer | `MakeOffer.tsx` | Yes |
 | 12 | Secure chat | `SecureChat.tsx` | Yes |
 | 13 | Auction detail + bidding | `AuctionBidding.tsx` | To bid |
-| 14 | Checkout | `Checkout.tsx` | Yes |
+| 14 | Checkout: with no saved address, a prompt offers to fill the area and street from the buyer's location (`GET /geocode/reverse`); fields stay editable | `Checkout.tsx` | Yes |
 | 15 | Order tracking | `BuyerTracking.tsx` | Yes |
 | 16 | Courier app | `CourierApp.tsx` | Yes (courier role) |
 | — | Sidebar menu, bottom nav (Home · Auctions · Sell · Chats · Profile), toast, back button | `components/` | — |
-| — | Shared listing browser: format tabs (All / Buy now / Auctions), category chips, filters, sort, result grid. Used by Search results, Auctions and Category. | `components/ListingBrowser.tsx`, `lib/browsing.ts` | — |
+| — | Shared listing browser: format tabs (All / Buy now / Auctions) + Refurbished switch, category chips, filters, sort, result grid. Used by Search results, Auctions, Category and the Refurbished store. The prototype's "New" switch is left out on purpose: the marketplace has no brand-new stock. | `components/ListingBrowser.tsx`, `lib/browsing.ts` | — |
 | — | UI primitives (Button, Input, Select, Heading) | `components/ui/` | — |
 
 The prototype's `*.py` helper scripts (`fix_app*.py`, `translate_*.py`, …) are build leftovers

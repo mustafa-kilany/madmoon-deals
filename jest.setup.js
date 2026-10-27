@@ -45,3 +45,13 @@ jest.mock('react-native-restart', () => ({
   __esModule: true,
   default: { restart: jest.fn() },
 }));
+
+// Geolocation is native; the GPS → address logic is tested without it.
+jest.mock('@react-native-community/geolocation', () => ({
+  __esModule: true,
+  default: {
+    setRNConfiguration: jest.fn(),
+    requestAuthorization: jest.fn(),
+    getCurrentPosition: jest.fn(),
+  },
+}));

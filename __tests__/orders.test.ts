@@ -80,12 +80,14 @@ describe('Phase 6 — orders and escrow', () => {
   it('refuses buying your own listing', async () => {
     const mine = await catalog.createListing({
       category: 'mobiles',
-      titleAr: 'هاتف',
-      titleEn: 'Phone',
+      titleAr: 'كفر هاتف',
+      titleEn: 'Phone case',
       priceFils: jod(100),
       imageUrls: ['file:///p.jpg'],
       condition: 'good',
-      type: 'phones',
+      description:
+        'A clear silicone case, used for two months, with no cracks or yellowing.',
+      type: 'accessories',
       locationId: 'salt',
       saleType: 'fixed',
     });

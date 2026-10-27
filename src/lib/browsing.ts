@@ -34,6 +34,7 @@ export const emptyFilters = (): ActiveFilters => ({
 /** Auction-only browsers (the Auctions tab) start sorted by ending soonest. */
 export const initialBrowseState = (auctionOnly = false): BrowseState => ({
   format: auctionOnly ? 'auction' : 'all',
+  refurbished: false,
   sort: auctionOnly ? 'ending_soon' : 'recommended',
   filters: emptyFilters(),
   query: '',
@@ -51,12 +52,16 @@ export function validPriceRange({ min, max }: ActiveFilters): boolean {
 export const isLiveAuction = (item: Item, now: number): boolean =>
   item.saleType === 'auction' && !!item.auction && item.auction.endsAt > now;
 
-/** Ended auctions never show up in browsing. */
+/**
+ * Ended auctions never show up in browsing. `refurbished`: brand-certified
+ * listings only (Item.refurbished).
+ */
 export function filterItems(
   items: Item[],
   filters: ActiveFilters,
   format: ListingFormat,
   now: number,
+  refurbished = false,
 ): Item[] {
   if (!validPriceRange(filters)) return [];
   const min = filters.min ? jod(Number(filters.min)) : undefined;
@@ -65,6 +70,7 @@ export function filterItems(
     const auction = item.saleType === 'auction';
     if (auction && !isLiveAuction(item, now)) return false;
     if (format !== 'all' && item.saleType !== format) return false;
+    if (refurbished && !item.refurbished) return false;
     if (filters.category && item.category !== filters.category) return false;
     if (filters.types.length && !filters.types.includes(item.type))
       return false;
@@ -202,19 +208,30 @@ export function queryListings(
       nextCursor: null,
       total: items.length,
       counts: { all: items.length, fixed: 0, auction: 0 },
+      refurbishedCounts: { all: items.length, refurbished: 0 },
       facets: { categories: [], conditions: [], cities: [], byCategory: {} },
     };
   }
 
+  const refurbished = !!query.refurbished;
   const scoped = searchItems(
     query.category ? pool.filter(i => i.category === query.category) : pool,
     query.q ?? '',
     categoryFilters,
   );
-  const inFormat = filterItems(scoped, emptyFilters(), query.format, now);
-  const matches = (format: ListingFormat) =>
-    filterItems(scoped, query.filters, format, now);
+  const inFormat = filterItems(
+    scoped,
+    emptyFilters(),
+    query.format,
+    now,
+    refurbished,
+  );
+  const matches = (format: ListingFormat, onlyRefurbished = refurbished) =>
+    filterItems(scoped, query.filters, format, now, onlyRefurbished);
   const sorted = sortItems(matches(query.format), query.sort);
+  const warranties = inFormat
+    .map(i => i.refurbished?.warrantyMonths)
+    .filter((m): m is number => m !== undefined);
 
   const start = cursor ? Number(cursor) : 0;
   const end = start + limit;
@@ -237,6 +254,10 @@ export function queryListings(
       fixed: matches('fixed').length,
       auction: matches('auction').length,
     },
+    refurbishedCounts: {
+      all: matches(query.format, false).length,
+      refurbished: matches(query.format, true).length,
+    },
     facets: {
       categories: unique(inFormat.map(i => i.category)),
       conditions: unique(inFormat.map(i => i.condition)),
@@ -244,6 +265,9 @@ export function queryListings(
         .map(i => i.location)
         .filter((p, i, all) => all.findIndex(x => x.id === p.id) === i),
       byCategory,
+      ...(warranties.length > 0 && {
+        maxWarrantyMonths: Math.max(...warranties),
+      }),
     },
   };
 }

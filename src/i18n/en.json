@@ -51,7 +51,8 @@
     "signIn": "Sign Up / Log In",
     "logOut": "Log Out",
     "close": "Close menu",
-    "courier": "Confirm a Delivery"
+    "courier": "Confirm a Delivery",
+    "refurbished": "Certified Refurbished"
   },
   "screens": {
     "auctions": "Auctions",
@@ -65,7 +66,8 @@
     "idVerification": "ID Verification",
     "myProfile": "My Profile",
     "makeOffer": "Make an Offer",
-    "checkout": "Secure Checkout"
+    "checkout": "Secure Checkout",
+    "refurbished": "Certified Refurbished"
   },
   "auth": {
     "or": "OR",
@@ -167,7 +169,10 @@
     "new": "New",
     "excellent": "Used - Excellent",
     "good": "Used - Good",
-    "loved": "Used - Loved"
+    "loved": "Used - Loved",
+    "refurbished_like_new": "Refurbished - Like new",
+    "refurbished_excellent": "Refurbished - Excellent",
+    "refurbished_good": "Refurbished - Good"
   },
   "time": {
     "days": "{{days}}d {{hours}}h",
@@ -184,7 +189,9 @@
     "currentBid": "Current bid",
     "buyNow": "Buy now",
     "bids": "{{count}} bids",
-    "bidNow": "Bid now"
+    "bidNow": "Bid now",
+    "warranty": "{{months}}-mo warranty",
+    "brandInspected": "Brand-inspected"
   },
   "favorites": {
     "saved": "Saved to your list",
@@ -223,7 +230,11 @@
     "tryAnother": "Try another search or a little less filtering.",
     "clearFilters": "Clear filters",
     "searchAuctions": "Search auctions",
-    "findNextBid": "Find your next bid..."
+    "findNextBid": "Find your next bid...",
+    "itemCondition": "Item condition",
+    "refurbished": "Refurbished",
+    "allTypes": "All types",
+    "shopByBrand": "Shop by brand"
   },
   "filters": {
     "title": "Filters",
@@ -259,6 +270,20 @@
     "live": "Live",
     "tagline": "Great finds. Your next winning bid.",
     "savedItems": "Saved items"
+  },
+  "refurbished": {
+    "tagline": "From official brand stores, like new.",
+    "upToWarranty": "Up to {{months}}-mo warranty",
+    "brandCertified": "Brand-certified",
+    "inspected": "Inspected & tested",
+    "bannerTitle": "Top brands, like new",
+    "bannerBody": "Tested, up to {{months}}-mo warranty · from {{price}}",
+    "bannerBodyNoWarranty": "Inspected by the brand · from {{price}}",
+    "shop": "Shop refurbished",
+    "certifiedBy": "Certified refurbished by {{brand}}",
+    "warranty": "{{months}}-month warranty",
+    "fullyTested": "Fully tested",
+    "returns": "14-day returns"
   },
   "saved": {
     "emptyTitle": "No saved items yet",
@@ -316,9 +341,36 @@
     "model": "Model (optional)",
     "modelPlaceholder": "Choose the model",
     "modelTypeIt": "Type the model",
-    "description": "Description (optional)",
+    "description": "Description",
     "descriptionPlaceholder": "Condition, what's included, any faults, why you're selling…",
-    "descriptionHint": "Buyers see this on your listing page."
+    "descriptionHint": "Buyers see this on your listing page.",
+    "descriptionWords": "{{n}} of {{min}} words at least: the condition, what's included, any faults.",
+    "descriptionTooShort": "Write at least {{min}} words about the item."
+  },
+  "certificate": {
+    "title": "Shop test certificate",
+    "required": "Required",
+    "explain": "Phones and electronics need a test report from a phone or electronics shop. Take a photo of the paper: it must have the shop's stamp and show this device's brand, model and specs, dated within the last 30 days.",
+    "add": "Add certificate photo",
+    "brandFirst": "Choose the brand (and model) first: we check the report against them.",
+    "checking": "Checking the certificate…",
+    "passed": "Certificate accepted",
+    "failed": "We couldn't accept this certificate:",
+    "stale": "You changed the device details. Check the certificate again.",
+    "checkAgain": "Check again",
+    "replace": "Use another photo",
+    "missing": "Add a shop test certificate that passes the check.",
+    "testedBy": "Tested by {{shop}}",
+    "view": "View the test certificate",
+    "problem": {
+      "unreadable": "The photo is too blurry, dark or cut off to read.",
+      "no_stamp": "We couldn't find the shop's stamp.",
+      "no_shop": "The shop's name or phone number isn't on it.",
+      "device_mismatch": "The brand or model on it doesn't match this listing.",
+      "no_specs": "It doesn't list the device's specs (e.g. storage, RAM).",
+      "too_old": "It's more than 30 days old.",
+      "already_used": "This certificate is already on another listing."
+    }
   },
   "offers": {
     "title": "Make an Offer",
@@ -387,7 +439,16 @@
     "address": "Street, building, floor",
     "addressPlaceholder": "e.g. Mecca St, Building 12, 3rd floor",
     "notes": "Notes for the courier (optional)",
-    "bankCheck": "Your bank needs to confirm this payment. Finish on the page that opened, then come back to Sahla."
+    "bankCheck": "Your bank needs to confirm this payment. Finish on the page that opened, then come back to Sahla.",
+    "locationPrompt": {
+      "title": "Deliver to where you are?",
+      "body": "Share your location and we'll fill in your area and street. You can change anything that's wrong before you pay.",
+      "use": "Use my location",
+      "skip": "I'll type it myself"
+    },
+    "locatedStreet": "We filled in your area and street from your location. Add the building and floor, and fix anything that's wrong.",
+    "locatedArea": "We found your area from your location. Type the street, building and floor.",
+    "locationOutside": "Your location doesn't seem to be in Jordan. Choose your area from the list."
   },
   "orders": {
     "empty": "No orders yet",

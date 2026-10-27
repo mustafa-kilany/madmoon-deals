@@ -5,12 +5,14 @@ import type { IconName } from '@/components/icons';
 import type {
   Auction,
   Category,
+  CertificateCheck,
   City,
   CategoryFilters,
   CategoryId,
   Item,
   ListingPage,
   ListingQuery,
+  TestCertificate,
 } from '@/lib/types';
 import { jod } from '@/lib/money';
 import { api, photoForm } from '../api/client';
@@ -21,16 +23,24 @@ type CategoryDto = Omit<Category, 'image' | 'icon'> & {
   imageUrl: string;
   icon: string;
 };
-/** Auction end time is an ISO-8601 string on the wire. */
-type ItemDto = Omit<Item, 'auction'> & {
+type TestCertificateDto = Omit<TestCertificate, 'image' | 'testedAt'> & {
+  imageUrl: string;
+  testedAt: string;
+};
+/** Auction end time and test date are ISO-8601 strings on the wire. */
+type ItemDto = Omit<Item, 'auction' | 'testCertificate'> & {
   auction?: Omit<Auction, 'endsAt'> & { endsAt: string };
+  testCertificate?: TestCertificateDto;
+};
+type CertificateCheckDto = Omit<CertificateCheck, 'testedAt'> & {
+  testedAt?: string;
 };
 
 type ListingPageDto = Omit<ListingPage, 'items'> & { items: ItemDto[] };
 
 /** ListingQuery → GET /listings query string (docs/API.md). Prices go as fils. */
 export function listingParams(
-  { q, category, format, filters: f, sort, ids }: ListingQuery,
+  { q, category, format, refurbished, filters: f, sort, ids }: ListingQuery,
   cursor?: string | null,
 ): string {
   const params: [string, string][] = [];
@@ -43,6 +53,7 @@ export function listingParams(
     add('q', q?.trim());
     add('category', f.category || category);
     add('format', format !== 'all' && format);
+    add('refurbished', refurbished && 'true');
     add('types', f.types.join(','));
     add('brands', f.brands.join(','));
     add('conditions', f.conditions.join(','));
@@ -63,9 +74,15 @@ const toCategory = ({ imageUrl, icon, ...rest }: CategoryDto): Category => ({
   icon: icon as IconName,
 });
 
-const toItem = ({ auction, ...rest }: ItemDto): Item => ({
+const toItem = ({ auction, testCertificate, ...rest }: ItemDto): Item => ({
   ...rest,
   auction: auction && { ...auction, endsAt: Date.parse(auction.endsAt) },
+  testCertificate: testCertificate && {
+    image: { uri: testCertificate.imageUrl },
+    shopName: testCertificate.shopName,
+    testedAt: Date.parse(testCertificate.testedAt),
+    specs: testCertificate.specs,
+  },
 });
 
 export const httpCatalogService: CatalogService = {
@@ -94,6 +111,16 @@ export const httpCatalogService: CatalogService = {
         photoForm('photo', photo),
       )
     ).url,
+  checkTestCertificate: async ({ photo, ...device }) => {
+    const { testedAt, ...check } = await api.post<CertificateCheckDto>(
+      '/test-certificates',
+      photoForm('photo', photo, device),
+    );
+    return {
+      ...check,
+      testedAt: testedAt === undefined ? undefined : Date.parse(testedAt),
+    };
+  },
   createListing: async ({ auctionEndsAt, ...input }) =>
     toItem(
       await api.post<ItemDto>('/listings', {
@@ -102,4 +129,13 @@ export const httpCatalogService: CatalogService = {
           auctionEndsAt === undefined ? undefined : toIso(auctionEndsAt),
       }),
     ),
+  // ~1 m precision is plenty for a street; the server doesn't keep it.
+  reverseGeocode: async ({ lat, lng }, lang) =>
+    (
+      await api.get<{ address: string }>(
+        `/geocode/reverse?lat=${lat.toFixed(5)}&lng=${lng.toFixed(
+          5,
+        )}&lang=${lang}`,
+      )
+    ).address,
 };

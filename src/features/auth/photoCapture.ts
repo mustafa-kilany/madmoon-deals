@@ -51,6 +51,19 @@ export const pickAvatarPhoto = async (): Promise<LocalPhoto | null> =>
     'avatar.jpg',
   );
 
+// A shop's test report: sharp enough for the server to read (OCR), like IDs.
+export const pickCertificatePhoto = async (): Promise<LocalPhoto | null> =>
+  toPhoto(
+    await launchImageLibrary({
+      mediaType: 'photo',
+      selectionLimit: 1,
+      quality: 0.9,
+      maxWidth: 2000,
+      maxHeight: 2000,
+    }),
+    'test-certificate.jpg',
+  );
+
 export const pickListingPhoto = async (): Promise<LocalPhoto | null> =>
   toPhoto(
     await launchImageLibrary({

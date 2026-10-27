@@ -80,8 +80,12 @@ function statusCode(status: number): ApiErrorCode {
   return 'UNKNOWN';
 }
 
-/** multipart/form-data body with one image field. */
-export function photoForm(field: string, photo: LocalPhoto): FormData {
+/** multipart/form-data body with one image field, plus any text fields. */
+export function photoForm(
+  field: string,
+  photo: LocalPhoto,
+  fields: Record<string, string | undefined> = {},
+): FormData {
   const form = new FormData();
   // React Native's FormData takes { uri, type, name } for files.
   form.append(field, {
@@ -89,6 +93,8 @@ export function photoForm(field: string, photo: LocalPhoto): FormData {
     type: photo.mimeType,
     name: photo.fileName,
   } as unknown as Blob);
+  for (const [name, value] of Object.entries(fields))
+    if (value !== undefined) form.append(name, value);
   return form;
 }
 

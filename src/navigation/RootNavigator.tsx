@@ -9,6 +9,7 @@ import { ResetPasswordScreen } from '@/features/auth/screens/ResetPasswordScreen
 import { CourierConfirmScreen } from '@/features/courier/screens/CourierConfirmScreen';
 import { CategoryScreen } from '@/features/catalog/screens/CategoryScreen';
 import { ProductScreen } from '@/features/catalog/screens/ProductScreen';
+import { RefurbishedScreen } from '@/features/catalog/screens/RefurbishedScreen';
 import { SearchScreen } from '@/features/catalog/screens/SearchScreen';
 import { CheckoutScreen } from '@/features/checkout/screens/CheckoutScreen';
 import { SavedScreen } from '@/features/favorites/screens/SavedScreen';
@@ -33,6 +34,7 @@ export function RootNavigator() {
       <Stack.Screen name="Tabs" component={TabNavigator} />
       <Stack.Screen name="Search" component={SearchScreen} />
       <Stack.Screen name="Category" component={CategoryScreen} />
+      <Stack.Screen name="Refurbished" component={RefurbishedScreen} />
       <Stack.Screen name="Product" component={ProductScreen} />
       <Stack.Screen name="AuctionBidding" component={AuctionBiddingScreen} />
       <Stack.Screen name="MakeOffer" component={MakeOfferScreen} />

@@ -1,9 +1,9 @@
 // Home tab (prototype HomeDashboard): header with menu, greeting, saved and
-// language switch; search shortcut, category grid, recently viewed rail, and
-// the featured live auction.
+// language switch; search shortcut, category grid, the Certified Refurbished
+// banner, recently viewed rail, and the featured live auction.
 
 import { useNavigation } from '@react-navigation/native';
-import { Image, Pressable, ScrollView, View } from 'react-native';
+import { I18nManager, Image, Pressable, ScrollView, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { CategoryImage } from '@/components/CategoryImage';
 import { Icon } from '@/components/icons';
@@ -16,6 +16,7 @@ import { TimeLeft } from '@/components/TimeLeft';
 import { useFavoritesStore } from '@/features/favorites/store';
 import { changeLanguage, useLang, useLocalized } from '@/i18n';
 import { emptyFilters } from '@/lib/browsing';
+import { formatJOD } from '@/lib/money';
 import type { Item } from '@/lib/types';
 import { useUiStore } from '@/store/uiStore';
 import { useUser } from '@/features/auth/sessionStore';
@@ -25,6 +26,7 @@ import {
   useCatalogMeta,
   useItemsByIds,
   useListings,
+  useRefurbishedSummary,
 } from '../hooks/useCatalog';
 import { useOpenItem } from '../hooks/useOpenItem';
 import { useHistoryStore } from '../historyStore';
@@ -144,6 +146,8 @@ export function HomeScreen() {
             ))}
           </View>
 
+          <RefurbishedBanner />
+
           {recentItems.length > 0 && (
             <View>
               <Heading className="mb-4 text-xl">
@@ -157,6 +161,67 @@ export function HomeScreen() {
         </ScrollView>
       )}
     </Screen>
+  );
+}
+
+/** Entry to the Certified Refurbished store; hidden while it has no listings. */
+function RefurbishedBanner() {
+  const { t } = useTranslation();
+  const navigation = useNavigation();
+  const lang = useLang();
+  const { total, fromFils, brands, maxWarrantyMonths } =
+    useRefurbishedSummary();
+  if (!total || fromFils === undefined) return null;
+  const price = formatJOD(fromFils, lang);
+
+  return (
+    <Pressable
+      onPress={() => navigation.navigate('Refurbished')}
+      accessibilityRole="button"
+      accessibilityLabel={`${t('screens.refurbished')}: ${t(
+        'refurbished.bannerTitle',
+      )}`}
+      className="flex-row overflow-hidden rounded-2xl border border-brand-border bg-brand-surface shadow-sm active:scale-[0.99]"
+    >
+      <View className="min-w-0 flex-1 p-4">
+        <View className="flex-row items-center gap-1 self-start rounded-full bg-brand-espresso px-2.5 py-1">
+          <Icon name="BadgeCheck" size={14} color={colors.onPrimary} />
+          <Text className="font-sans-bold text-xs text-brand-on-primary">
+            {t('screens.refurbished')}
+          </Text>
+        </View>
+        <Heading className="mt-3 text-lg leading-snug">
+          {t('refurbished.bannerTitle')}
+        </Heading>
+        <Text className="mt-1 text-xs leading-relaxed text-brand-warmgray">
+          {maxWarrantyMonths
+            ? t('refurbished.bannerBody', { months: maxWarrantyMonths, price })
+            : t('refurbished.bannerBodyNoWarranty', { price })}
+        </Text>
+        <Text className="mt-2 font-sans-bold text-xs" numberOfLines={1}>
+          {brands.slice(0, 4).join(' · ')}
+        </Text>
+        <View className="mt-auto flex-row items-center gap-1 pt-3">
+          <Text className="font-sans-bold text-sm text-brand-primary">
+            {t('refurbished.shop')}
+          </Text>
+          <Icon
+            name={I18nManager.isRTL ? 'ChevronLeft' : 'ChevronRight'}
+            size={16}
+            color={colors.primary}
+          />
+        </View>
+      </View>
+      {/* The photo fills the text column's height instead of setting it. */}
+      <View className="w-2/5 bg-brand-lightgray">
+        <Image
+          source={require('../../../../assets/images/refurbished-banner.jpg')}
+          className="absolute inset-0 h-full w-full"
+          resizeMode="cover"
+          accessibilityIgnoresInvertColors
+        />
+      </View>
+    </Pressable>
   );
 }
 

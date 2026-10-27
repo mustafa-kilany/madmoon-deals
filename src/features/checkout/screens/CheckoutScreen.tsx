@@ -3,10 +3,19 @@
 // chat) or the winning bid's (auction). Paying puts the money in escrow; if
 // the bank wants its card check (3-D Secure), its page opens in the browser.
 // The buyer then tracks the order and gets the delivery PIN (features/orders).
-// The delivery details are remembered on the phone for next time.
+// The delivery details are remembered on the phone for next time; the first
+// time, a prompt offers to fill the area and street from the buyer's location
+// (they stay editable).
 
 import { useState } from 'react';
-import { Image, Linking, ScrollView, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Image,
+  Linking,
+  Pressable,
+  ScrollView,
+  View,
+} from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { BackButton } from '@/components/BackButton';
 import { CityPicker } from '@/components/CityPicker';
@@ -34,8 +43,11 @@ import { errorMessageKey } from '@/services/api/errors';
 import { paymentProvider } from '@/services/payments';
 import { toast } from '@/store/toastStore';
 import { colors } from '@/theme/colors';
+import { locateErrorKey } from '@/features/location/useLocate';
 import { useOffer } from '@/features/offers/hooks/useNegotiation';
+import { useDeliveryLocation } from '../hooks/useDeliveryLocation';
 import { useCreateOrder, usePayOrder } from '../hooks/useOrders';
+import { LocationPrompt } from '../LocationPrompt';
 
 /** Token that tells the server to charge the account's saved card. */
 const SAVED_CARD = 'saved';
@@ -66,17 +78,41 @@ export function CheckoutScreen({
   const payOrder = usePayOrder();
   const [cardNumber, setCardNumber] = useState('');
   const [tokenizing, setTokenizing] = useState(false);
+  const [saved] = useState(lastDelivery);
   const [delivery, setDelivery] = useState<DeliveryDetails>(() => ({
     name: user?.name ?? '',
     phone: '',
     cityId: user?.cityId ?? 'amman',
     address: '',
-    ...lastDelivery(),
+    ...saved,
   }));
   // Field errors show after the first Pay attempt, not while typing.
   const [showErrors, setShowErrors] = useState(false);
   const setField = (field: keyof DeliveryDetails) => (value: string) =>
     setDelivery(d => ({ ...d, [field]: value }));
+
+  // No address from last time: offer to fill it from the buyer's location.
+  const [promptOpen, setPromptOpen] = useState(!saved.address);
+  const locateAddress = useDeliveryLocation();
+  /** What the location filled in, for the "check it" note. */
+  const [located, setLocated] = useState<'street' | 'area'>();
+  const fillFromLocation = () =>
+    locateAddress.mutate(undefined, {
+      onSuccess: ({ cityId, address }) => {
+        if (!cityId) {
+          toast.info(t('checkout.locationOutside'));
+          return;
+        }
+        setDelivery(d => ({ ...d, cityId, address: address || d.address }));
+        setLocated(address ? 'street' : 'area');
+      },
+      onError: error => toast.error(t(locateErrorKey(error))),
+      onSettled: () => setPromptOpen(false),
+    });
+  const skipLocation = () => {
+    locateAddress.reset(); // a fix arriving later won't overwrite typing
+    setPromptOpen(false);
+  };
 
   if (isLoading || offer.isLoading) return <StatusView status="loading" />;
   const offerUsable =
@@ -199,7 +235,39 @@ export function CheckoutScreen({
         </Card>
 
         <View className="gap-3">
-          <Heading className="text-sm">{t('checkout.deliveryDetails')}</Heading>
+          <View className="flex-row items-center justify-between gap-3">
+            <Heading className="text-sm">
+              {t('checkout.deliveryDetails')}
+            </Heading>
+            <Pressable
+              onPress={fillFromLocation}
+              disabled={locateAddress.isPending}
+              accessibilityRole="button"
+              hitSlop={8}
+              className="min-h-11 flex-row items-center gap-1.5 active:opacity-70"
+            >
+              {locateAddress.isPending ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <Icon name="MapPin" size={16} color={colors.primary} />
+              )}
+              <Text className="font-sans-bold text-xs text-brand-primary">
+                {t('location.useCurrent')}
+              </Text>
+            </Pressable>
+          </View>
+          {located && (
+            <View className="flex-row items-start gap-2 rounded-xl bg-brand-success-soft p-3">
+              <Icon name="MapPin" size={16} color={colors.primary} />
+              <Text className="flex-1 font-sans-medium text-xs leading-relaxed">
+                {t(
+                  located === 'street'
+                    ? 'checkout.locatedStreet'
+                    : 'checkout.locatedArea',
+                )}
+              </Text>
+            </View>
+          )}
           <TextField
             label={t('checkout.name')}
             labelClassName="font-sans-bold text-xs text-brand-warmgray"
@@ -299,6 +367,12 @@ export function CheckoutScreen({
           onPress={pay}
         />
       </ScrollView>
+      <LocationPrompt
+        visible={promptOpen}
+        locating={locateAddress.isPending}
+        onUseLocation={fillFromLocation}
+        onSkip={skipLocation}
+      />
     </Screen>
   );
 }
