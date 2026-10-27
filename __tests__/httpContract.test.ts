@@ -188,6 +188,11 @@ const rows: Row[] = [
     url: '/listings/mobiles-1',
   },
   {
+    endpoint: 'POST /listings/:id/views',
+    call: () => httpCatalogService.recordView('mobiles-1'),
+    url: '/listings/mobiles-1/views',
+  },
+  {
     endpoint: 'GET /me/listings',
     call: () => httpCatalogService.getMyListings(),
     reply: [],

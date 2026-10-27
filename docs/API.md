@@ -415,7 +415,7 @@ Without `ids`, only `active` listings are returned, and never listings from user
   facets: {                    // options that exist in scope (q, category, format, refurbished), before filters
     categories: string[];
     conditions: Condition[];
-    cities: { id: string; name: Localized }[];
+    cities: { id: string; name: Localized; governorate: Localized }[]; // shown as "البلقاء / السلط"
     byCategory: { [categoryId]: { types: string[]; brands: string[] } };
     maxWarrantyMonths?: number; // longest refurbished warranty in scope; omit when none
   };
@@ -610,7 +610,7 @@ Anyone else answering, or answering out of turn: `FORBIDDEN` (403). Answering a 
 * **`GET /chats/:id/messages` *(Authenticated)*** → `ChatMessage[]`, the latest 50 (oldest first). Older ones: `?before=<messageId>&limit=50` (the app doesn't page back yet).
 * **`POST /chats/:id/messages` *(Authenticated)*** → Body: `{ "text": "Is this still available?" }` → `ChatMessage`
 * **`POST /listings/:id/offers` *(Authenticated)*** → Body: `{ "amountFils": 450000 }` → `{ "offer": Offer, "chatId": "..." }`. Fixed-price `active` listings only (`ITEM_UNAVAILABLE` otherwise); not your own (`FORBIDDEN`).
-* **`POST /offers/:id/respond` *(Authenticated, seller)*** → Body: `{ "status": "accepted" | "countered" | "rejected", "counterAmountFils"?: 480000 }` → `Offer`
+* **`POST /offers/:id/respond` *(Authenticated: the seller for a `pending` offer, the buyer for a `countered` one)*** → Body: `{ "status": "accepted" | "countered" | "rejected", "counterAmountFils"?: 480000 }` → `Offer` (only the seller may send `countered`)
 * **`POST /listings/:id/bids` *(Authenticated)*** → Body: `{ "amountFils": 530000 }` → `Bid` (the item's `priceFils` and `bidCount` update; refetch the item)
   * `VALIDATION` (422) if `amountFils` < current bid + `incrementFils` or the auction has ended; `FORBIDDEN` (403) if the bidder is the seller. Check and update in one transaction so two bids at the same moment can't both win.
   * **Auction end:** when `endsAt` passes, the highest bidder wins: set `auction.winnerId`. The app shows the winner a Pay button; they check out with `POST /orders` like a fixed-price buyer, at the winning bid.
