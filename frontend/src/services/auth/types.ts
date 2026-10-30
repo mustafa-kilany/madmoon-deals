@@ -2,6 +2,9 @@
 
 import type { LocalPhoto, Session, User } from '@/lib/types';
 
+/** Where to send the user to approve the check in Sanad (Jordan's digital ID app). */
+export type IdVerificationStart = { redirectUrl: string };
+
 /** `code` is the 6-digit code POST /auth/send-otp emailed (proves the address). */
 export type EmailSignUp = {
   name: string;
@@ -31,8 +34,12 @@ export interface AuthService {
   forgotPassword(input: SendOtpInput): Promise<void>;
   /** New password with the emailed code; signs in. */
   resetPassword(input: ResetPasswordInput): Promise<Session>;
-  /** Verify the signed-in (email) account with a photo of the national ID. */
-  verifyId(idPhoto: LocalPhoto): Promise<User>;
+  /**
+   * Start verifying the signed-in account with Sanad. The app opens redirectUrl;
+   * Sanad sends the user back to the server, then GET /me shows verified: true.
+   * SANAD_UNAVAILABLE until Sahla has Sanad access.
+   */
+  startIdVerification(): Promise<IdVerificationStart>;
   /** The signed-in account, fresh from the server. */
   getMe(): Promise<User>;
   updateProfile(patch: ProfilePatch): Promise<User>;

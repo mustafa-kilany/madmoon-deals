@@ -24,25 +24,22 @@ enum Role {
 
 // API `User`. `card` is stored as cardBrand + cardLast4 (never the card number).
 model User {
-  id             String                @id @default(cuid())
-  name           String
-  email          String?               @unique // lower-cased; Apple may give a relay address
-  passwordHash   String? // null for Google / Apple accounts
-  googleId       String?               @unique // Google account id ("sub"), set by POST /auth/google
-  appleId        String?               @unique // Apple account id ("sub"), set by POST /auth/apple
-  method         AuthMethod            @default(email)
-  verified       Boolean               @default(false)
-  // The ID check in progress: pending (photo sent, waiting for an admin) or rejected
-  // (try again). Approved = verified true and this back to null. Sanad later (B11).
-  idVerification IdVerificationStatus?
-  cityId         String                @default("amman") // an area id from GET /cities
-  avatarUrl      String                @default("")
-  cardBrand      String?
-  cardLast4      String?
-  role           Role?
-  suspended      Boolean               @default(false) // set by an admin only (never by the risk checker)
-  createdAt      DateTime              @default(now())
-  updatedAt      DateTime              @updatedAt
+  id           String     @id @default(cuid())
+  name         String
+  email        String?    @unique // lower-cased; Apple may give a relay address
+  passwordHash String? // null for Google / Apple accounts
+  googleId     String?    @unique // Google account id ("sub"), set by POST /auth/google
+  appleId      String?    @unique // Apple account id ("sub"), set by POST /auth/apple
+  method       AuthMethod @default(email)
+  verified     Boolean    @default(false)
+  cityId       String     @default("amman") // an area id from GET /cities
+  avatarUrl    String     @default("")
+  cardBrand    String?
+  cardLast4    String?
+  role         Role?
+  suspended    Boolean    @default(false) // set by an admin only (never by the risk checker)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
   sessions         Session[]
   listings         Listing[]
@@ -302,9 +299,9 @@ model TestCertificate {
 
 // ─── ID verification (Sanad, or a manual photo review until Sanad is live) ──
 
+// Sanad only (decided 2026-10-30: no ID photos, no manual review).
 enum IdProvider {
   sanad
-  manual
 }
 
 enum IdVerificationStatus {
@@ -317,13 +314,13 @@ model IdVerification {
   id             String               @id @default(cuid())
   userId         String
   user           User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  provider       IdProvider
+  provider       IdProvider           @default(sanad)
   status         IdVerificationStatus @default(pending)
   providerRef    String? // the provider's request / transaction id
   nationalIdHash String? // one national ID, one verified account; never the number itself
-  photoUrl       String? // manual review only; delete it after the decision
+  // Hash of the one-time state sent to Sanad; cleared once Sanad answers.
+  stateHash      String?              @unique
   rejectReason   String?
-  reviewedById   String? // the admin who decided a manual review
   createdAt      DateTime             @default(now())
   decidedAt      DateTime?
 

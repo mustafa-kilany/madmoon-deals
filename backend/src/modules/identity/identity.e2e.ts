@@ -1,104 +1,106 @@
-// ID verification until Sanad (BACKEND_PLAN B3.5): photo → pending → an admin
-// approves (Verified badge) or rejects (try again). The photo is never public.
+// ID verification with Sanad (backend/docs/ID-VERIFICATION.md), against the fake
+// Sanad (SANAD_MODE=fake in npm run test:api): start → Sanad → callback → Verified.
 
 import assert from 'node:assert/strict';
-import { existsSync } from 'node:fs';
-import path from 'node:path';
 import type { AddressInfo } from 'node:net';
 import { after, before, test } from 'node:test';
-import sharp from 'sharp';
 import { app } from '../../app';
 import { prisma } from '../../db';
-import { privateDir } from '../../lib/storage';
-import { decideIdVerification } from './manualReview';
+import { env } from '../../env';
 
 let base = '';
-let token = '';
 const server = app.listen(0);
-const EMAIL = 'id.check@example.com';
+const EMAILS = ['sanad.one@example.com', 'sanad.two@example.com'];
+const tokens: string[] = [];
 
-const idPhoto = () =>
-  sharp({ create: { width: 1200, height: 760, channels: 3, background: '#ffffff', noise: { type: 'gaussian', mean: 128, sigma: 40 } } })
-    .jpeg()
-    .toBuffer();
-
-const send = async (data: Buffer, auth = token) => {
-  const form = new FormData();
-  form.append('idPhoto', new Blob([new Uint8Array(data)], { type: 'image/jpeg' }), 'id.jpg');
-  const r = await fetch(`${base}/me/id-verification`, { method: 'POST', body: form, headers: { Authorization: `Bearer ${auth}` } });
+const start = async (token = tokens[0]) => {
+  const r = await fetch(`${base}/me/id-verification/sanad`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
   return { status: r.status, body: await r.json() };
 };
-const me = async () => (await fetch(`${base}/me`, { headers: { Authorization: `Bearer ${token}` } })).json();
-const pendingPhotos = async () =>
-  (await prisma.idVerification.findMany({ where: { user: { email: EMAIL }, status: 'pending' } })).map(p => p.photoUrl!);
-const onDisk = (ref: string) => existsSync(path.join(privateDir, ref.replace(/^private:/, '')));
+/** What Sanad does: send the browser to our callback (here with any code we like). */
+const callback = async (redirectUrl: string, override: Record<string, string> = {}) => {
+  const url = new URL(redirectUrl);
+  for (const [key, value] of Object.entries(override)) url.searchParams.set(key, value);
+  const r = await fetch(url);
+  return { status: r.status, html: await r.text() };
+};
+const me = async (token = tokens[0]) => (await fetch(`${base}/me`, { headers: { Authorization: `Bearer ${token}` } })).json();
 
 before(async () => {
   await new Promise(resolve => server.once('listening', resolve));
   base = `http://127.0.0.1:${(server.address() as AddressInfo).port}/v1`;
-  const signup = await fetch(`${base}/auth/signup`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: 'Nour', email: EMAIL, password: 'longenough', code: '123456' }),
-  });
-  token = (await signup.json()).token;
+  for (const email of EMAILS) {
+    const r = await fetch(`${base}/auth/signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Nour', email, password: 'longenough', code: '123456' }),
+    });
+    tokens.push((await r.json()).token);
+  }
 });
 after(async () => {
   server.close();
-  await prisma.listing.deleteMany({ where: { id: 'id-check-listing' } });
-  await prisma.user.deleteMany({ where: { email: EMAIL } });
+  env.SANAD_MODE = 'fake';
+  await prisma.listing.deleteMany({ where: { id: 'sanad-listing' } });
+  await prisma.user.deleteMany({ where: { email: { in: EMAILS } } });
   await prisma.$disconnect();
 });
 
-test('sending the ID photo makes the account pending, not verified', async () => {
-  assert.deepEqual([(await me()).verified, (await me()).idVerification], [false, undefined]);
-  const r = await send(await idPhoto());
-  assert.equal(r.status, 200);
-  assert.deepEqual([r.body.verified, r.body.idVerification], [false, 'pending']);
-
-  const [ref] = await pendingPhotos();
-  assert.match(ref, /^private:id\//);
-  assert.ok(onDisk(ref), 'saved for the admin');
-  // Never public: it isn't under /files at all.
-  const origin = base.replace('/v1', '');
-  assert.equal((await fetch(`${origin}/files/${ref.replace('private:', '')}`)).status, 404);
+test('until Sanad is switched on, starting a check answers 503 SANAD_UNAVAILABLE', async () => {
+  env.SANAD_MODE = 'off';
+  const r = await start();
+  env.SANAD_MODE = 'fake';
+  assert.deepEqual([r.status, r.body.error.code], [503, 'SANAD_UNAVAILABLE']);
 });
 
-test('a new photo replaces the pending one; not-photos are refused', async () => {
-  const [first] = await pendingPhotos();
-  await send(await idPhoto());
-  const now = await pendingPhotos();
-  assert.equal(now.length, 1);
-  assert.notEqual(now[0], first);
-  assert.ok(!onDisk(first), 'the replaced photo is deleted');
-  const pdf = await send(Buffer.concat([Buffer.from('%PDF-1.7\n'), Buffer.alloc(4096, 1)]));
-  assert.deepEqual([pdf.status, pdf.body.error.code], [422, 'VALIDATION']);
+test('the old ID photo upload is gone', async () => {
+  const r = await fetch(`${base}/me/id-verification`, { method: 'POST', headers: { Authorization: `Bearer ${tokens[0]}` } });
+  assert.equal(r.status, 404);
 });
 
-test('rejected → they can try again → approved: Verified badge, also on their listings', async () => {
-  const user = await prisma.user.findUniqueOrThrow({ where: { email: EMAIL } });
+test('cancelled in Sanad: not verified, and the link only works once', async () => {
+  const { body } = await start();
+  const cancelled = await callback(body.redirectUrl, { error: 'access_denied', code: '' });
+  assert.equal(cancelled.status, 400);
+  assert.match(cancelled.html, /cancelled/);
+  assert.equal((await me()).verified, false);
+  assert.match((await callback(body.redirectUrl)).html, /expired/);
+});
+
+test('approved in Sanad: Verified badge on the account and its listings; no national number stored', async () => {
+  const user = await prisma.user.findUniqueOrThrow({ where: { email: EMAILS[0] } });
   await prisma.listing.create({
     data: {
-      id: 'id-check-listing', category: 'kids', type: 'toys', titleAr: 'لعبة', titleEn: 'Toy', priceFils: 5000,
+      id: 'sanad-listing', category: 'kids', type: 'toys', titleAr: 'لعبة', titleEn: 'Toy', priceFils: 5000,
       imageUrls: ['https://images.example.com/toy.jpg'], condition: 'good', locationId: 'amman-khalda',
       description: 'A wooden toy train set with twelve pieces, complete and in good condition.',
       sellerUserId: user.id,
     },
   });
-  const [photo] = await pendingPhotos();
-  await decideIdVerification(EMAIL, 'reject', null, 'Blurry');
-  assert.deepEqual([(await me()).verified, (await me()).idVerification], [false, 'rejected']);
-  assert.ok(!onDisk(photo), 'deleted once decided');
+  const { body } = await start();
+  const answered = await callback(body.redirectUrl, { code: 'fake-2000000001' });
+  assert.equal(answered.status, 200);
+  assert.match(answered.html, /verified/);
+  assert.equal((await me()).verified, true);
+  assert.equal((await prisma.listing.findUniqueOrThrow({ where: { id: 'sanad-listing' } })).sellerVerified, true);
 
-  await send(await idPhoto());
-  assert.equal((await me()).idVerification, 'pending');
-  await decideIdVerification(EMAIL, 'approve', null);
-  const after = await me();
-  assert.deepEqual([after.verified, after.idVerification], [true, undefined]);
-  const listing = await prisma.listing.findUniqueOrThrow({ where: { id: 'id-check-listing' } });
-  assert.equal(listing.sellerVerified, true);
-  const history = await prisma.idVerification.findMany({ where: { userId: user.id }, orderBy: { createdAt: 'asc' } });
-  assert.deepEqual(history.map(h => [h.status, h.photoUrl]), [['rejected', null], ['approved', null]]);
+  const [check] = await prisma.idVerification.findMany({ where: { userId: user.id, status: 'approved' } });
+  assert.ok(check.nationalIdHash && !check.nationalIdHash.includes('2000000001'));
+  assert.equal(check.stateHash, null);
+  assert.equal((await start()).status, 422); // already verified
+});
 
-  await assert.rejects(decideIdVerification(EMAIL, 'approve', null)); // nothing pending any more
+test('one national ID verifies one account', async () => {
+  const { body } = await start(tokens[1]);
+  const answered = await callback(body.redirectUrl, { code: 'fake-2000000001' });
+  assert.match(answered.html, /another Sahla account/);
+  assert.equal((await me(tokens[1])).verified, false);
+});
+
+test('a made-up state or code does nothing', async () => {
+  const forged = await fetch(`${base}/id-verification/sanad/callback?state=nope&code=fake-2000000002`);
+  assert.match(await forged.text(), /expired/);
+  const { body } = await start(tokens[1]);
+  assert.match((await callback(body.redirectUrl, { code: 'not-from-sanad' })).html, /couldn't check/);
+  assert.equal((await me(tokens[1])).verified, false);
 });

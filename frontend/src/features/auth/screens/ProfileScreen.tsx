@@ -163,47 +163,22 @@ function SignedInProfile({ user }: { user: User }) {
               </Text>
             </View>
           </View>
-        ) : user.idVerification === 'pending' ? (
-          // ID photo sent: an admin reviews it (Sanad later).
-          <View className="flex-row items-center gap-3 rounded-2xl border-2 border-brand-border bg-brand-lightgray p-4">
-            <Icon name="IdCard" size={28} color={colors.warmgray} />
-            <View className="flex-1">
-              <Text className="font-sans-bold text-base">
-                {t('profile.idPendingTitle')}
-              </Text>
-              <Text className="font-sans-bold text-xs text-brand-warmgray">
-                {t('profile.idPendingBody')}
-              </Text>
-            </View>
-          </View>
         ) : (
           <View className="gap-3 rounded-2xl border-2 border-brand-secondary bg-brand-secondary/15 p-4">
             <View className="flex-row items-center gap-3">
               <Icon name="IdCard" size={28} color={colors.primary} />
               <View className="flex-1">
                 <Text className="font-sans-bold text-base">
-                  {t(
-                    user.idVerification === 'rejected'
-                      ? 'profile.idRejectedTitle'
-                      : 'profile.becomeVerified',
-                  )}
+                  {t('profile.becomeVerified')}
                 </Text>
                 <Text className="font-sans-bold text-xs text-brand-warmgray">
-                  {t(
-                    user.idVerification === 'rejected'
-                      ? 'profile.idRejectedBody'
-                      : 'profile.becomeVerifiedBody',
-                  )}
+                  {t('profile.becomeVerifiedBody')}
                 </Text>
               </View>
             </View>
             <Button
               size="sm"
-              label={t(
-                user.idVerification === 'rejected'
-                  ? 'profile.idTryAgain'
-                  : 'profile.addIdVerify',
-              )}
+              label={t('profile.addIdVerify')}
               onPress={() => go({ name: 'IdVerification' })}
             />
           </View>

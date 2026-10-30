@@ -266,7 +266,7 @@ function addAccount(store, { password, ...fields }) {
 
 /** User as the contract defines it: no password data, no undefined fields. */
 function publicUser(account) {
-  const { salt, passwordHash, idPhoto, ...user } = account; // the ID photo stays private
+  const { salt, passwordHash, ...user } = account;
   return JSON.parse(JSON.stringify(user));
 }
 
@@ -531,13 +531,14 @@ function routes(store) {
       return [200, publicUser(account), photo];
     },
 
-    'POST /me/id-verification': async req => {
-      const { account } = authenticate(store, req);
-      const photo = await readPhoto(req, 'idPhoto');
-      // Waits for an admin's review, like the real backend (backend/: B3.5).
-      if (!account.verified) account.idVerification = 'pending';
-      account.idPhoto = photo.name;
-      return [200, publicUser(account), photo];
+    // Like the real backend until Sahla has Sanad access (backend/docs/ID-VERIFICATION.md).
+    'POST /me/id-verification/sanad': async req => {
+      authenticate(store, req);
+      throw new HttpError(
+        503,
+        'SANAD_UNAVAILABLE',
+        'ID verification with Sanad is coming soon',
+      );
     },
 
     // A real backend exchanges the token with the payment provider; the

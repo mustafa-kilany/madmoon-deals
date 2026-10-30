@@ -166,10 +166,8 @@ export type User = {
   email?: string;
   /** How the account was created. */
   method: AuthMethod;
-  /** National ID checked → Verified Seller badge, listings ranked first. */
+  /** National ID checked with Sanad → Verified Seller badge, listings ranked first. */
   verified: boolean;
-  /** The ID check in progress: photo sent and waiting for review, or rejected (try again). */
-  idVerification?: 'pending' | 'rejected';
   /** Place id (amman, irbid, …). */
   cityId: string;
   avatarUrl: string;

@@ -174,10 +174,15 @@ export const mockAuthService: AuthService = {
     return openSession(updated);
   },
 
-  // Like the server: the photo waits for an admin's review (Sanad later).
-  verifyId: async () => {
+  // Like the server until Sahla has Sanad access.
+  startIdVerification: async () => {
     await mockLatency();
-    return update({ idVerification: 'pending' });
+    currentAccount();
+    throw new ApiError(
+      'SANAD_UNAVAILABLE',
+      'ID verification with Sanad is coming soon',
+      503,
+    );
   },
 
   getMe: async () => {

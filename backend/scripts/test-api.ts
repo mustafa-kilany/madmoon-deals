@@ -14,6 +14,7 @@ const env = {
   NODE_ENV: 'test',
   DATABASE_URL: testUrl.toString(),
   DEV_EMAIL_CODE: '123456',
+  SANAD_MODE: 'fake',
 };
 const run = (command: string) => execSync(command, { stdio: 'inherit', env });
 

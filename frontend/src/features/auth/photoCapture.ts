@@ -1,9 +1,8 @@
-// Photos for the account: the national ID (camera) and the profile picture
-// (gallery). Uses the phone's own camera / photo picker, so the app needs no
+// Photos from the phone: profile picture, listing photos, test certificates.
+// Uses the phone's own photo picker, so the app needs no
 // camera permission. Returns null if the user cancels.
 
 import {
-  launchCamera,
   launchImageLibrary,
   type ImagePickerResponse,
 } from 'react-native-image-picker';
@@ -25,20 +24,6 @@ function toPhoto(result: ImagePickerResponse, fallbackName: string) {
   } satisfies LocalPhoto;
 }
 
-// IDs need to stay readable; 2000px JPEG at 80% keeps uploads around 0.5–1 MB.
-export const captureIdPhoto = async (): Promise<LocalPhoto | null> =>
-  toPhoto(
-    await launchCamera({
-      mediaType: 'photo',
-      cameraType: 'back',
-      quality: 0.8,
-      maxWidth: 2000,
-      maxHeight: 2000,
-      saveToPhotos: false,
-    }),
-    'national-id.jpg',
-  );
-
 export const pickAvatarPhoto = async (): Promise<LocalPhoto | null> =>
   toPhoto(
     await launchImageLibrary({
@@ -51,7 +36,7 @@ export const pickAvatarPhoto = async (): Promise<LocalPhoto | null> =>
     'avatar.jpg',
   );
 
-// A shop's test report: sharp enough for the server to read (OCR), like IDs.
+// A shop's test report: sharp enough for the server to read (OCR).
 export const pickCertificatePhoto = async (): Promise<LocalPhoto | null> =>
   toPhoto(
     await launchImageLibrary({

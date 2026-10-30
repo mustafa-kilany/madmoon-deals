@@ -1,34 +1,49 @@
-// ID verification (the Verified badge). Sanad, Jordan's national digital ID
-// app, is the goal; until Sahla has a Sanad agreement, a person reviews a photo
-// of the ID card (manual). See docs/ID-VERIFICATION.md.
+import { randomInt } from 'node:crypto';
+import { env } from '../../env';
+
+// ID verification (the Verified badge) with Sanad, Jordan's national digital ID
+// app. Sahla never sees or stores an ID photo. See backend/docs/ID-VERIFICATION.md.
+//
+// Flow (to be confirmed with MoDEE's integration documents):
+//   app → POST /me/id-verification/sanad → { redirectUrl } → the user approves in Sanad
+//   Sanad → GET /v1/id-verification/sanad/callback?code&state (this server)
+//   server → exchange(code) with Sanad, server to server → User.verified = true
 
 export type VerifiedIdentity = {
-  /** Hash of the national number: one ID, one verified account. Never store the number. */
-  nationalIdHash: string;
-  fullNameAr?: string;
-  fullNameEn?: string;
-  /** The provider's own reference for this check, for audits. */
+  /** Only ever hashed (ID_HASH_SECRET), never stored. */
+  nationalId: string;
+  /** Sanad's reference for this check, for audits. */
   providerRef: string;
 };
 
 export interface IdVerificationProvider {
-  readonly name: 'sanad' | 'manual';
-  /**
-   * Starts a check for the user. Sanad: returns where to send the user (the
-   * Sanad app / consent page). Manual: the photo is queued for an admin.
-   */
-  start(userId: string, input: { photo?: Buffer }): Promise<{ redirectUrl?: string; pending: true }>;
-  /**
-   * Sanad only: the user comes back from Sanad with a code; exchange it for
-   * the verified identity. Shape to be confirmed with MoDEE's onboarding docs.
-   */
-  complete?(userId: string, callback: Record<string, string>): Promise<VerifiedIdentity>;
+  /** Sanad's consent page for this user, carrying our one-time `state`. */
+  authorizeUrl(state: string, callbackUrl: string): string;
+  /** Sanad's one-time code → the verified identity (server to server). */
+  exchange(code: string, callbackUrl: string): Promise<VerifiedIdentity>;
 }
 
-/** Placeholder until MoDEE gives Sahla Sanad API access (docs/ID-VERIFICATION.md). */
-export const sanadNotConfigured: IdVerificationProvider = {
-  name: 'sanad',
-  async start() {
-    throw new Error('Sanad is not configured yet: see backend/docs/ID-VERIFICATION.md');
+/**
+ * Development and tests (SANAD_MODE=fake): "approves" straight away by sending the
+ * user to our callback with a code that carries a made-up 10-digit national number.
+ */
+export const fakeSanad: IdVerificationProvider = {
+  authorizeUrl(state, callbackUrl) {
+    const code = `fake-${randomInt(2_000_000_000, 2_999_999_999)}`;
+    return `${callbackUrl}?${new URLSearchParams({ code, state })}`;
+  },
+  async exchange(code) {
+    const nationalId = /^fake-(\d{10})$/.exec(code)?.[1];
+    if (!nationalId) throw new Error('Sanad refused the code');
+    return { nationalId, providerRef: `fake-${Date.now()}` };
   },
 };
+
+/**
+ * The provider in use, or null while Sanad is off (503 SANAD_UNAVAILABLE).
+ * When MoDEE gives Sahla access: add `sanad` here, built from their documents
+ * (client id/secret, authorize and token URLs in .env).
+ */
+export function idProvider(): IdVerificationProvider | null {
+  return env.SANAD_MODE === 'fake' ? fakeSanad : null;
+}

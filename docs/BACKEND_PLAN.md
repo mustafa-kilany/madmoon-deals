@@ -78,10 +78,11 @@ Two kinds (decided 2026-10-30): **users' listing photos** and **admins changing 
   resize to 1600 px + a 400 px thumbnail, WebP/JPEG.
 - ✅ **B3.3** `POST /uploads/listing-photo` (issued URLs remembered, so `POST /listings` accepts only ours).
 - ✅ **B3.4** `POST /me/avatar`.
-- ✅ **B3.5** `POST /me/id-verification` (decided 2026-10-30: pending until an admin approves; Sanad later): private
-  photo → `User.idVerification: pending` → approve (Verified badge, also on listings) or reject (try again);
-  photo deleted once decided. `npm run staff -- ids` / `id approve|reject <email>` until the dashboard (B8.3).
-  App: "ID under review" / "Try again" on the profile.
+- ✅ **B3.5** ID verification is **Sanad only** (decided 2026-10-30: no ID photos, no manual review):
+  `POST /me/id-verification/sanad` → `{ redirectUrl }`, Sanad's answer at `GET /id-verification/sanad/callback`
+  → `User.verified` (and the badge on their listings); national number only as a keyed hash (one ID, one
+  account). `503 SANAD_UNAVAILABLE` until MoDEE gives access; `SANAD_MODE=fake` for development and tests.
+  The real Sanad calls go in `src/modules/identity/provider.ts` (B11). App: "Verify with Sanad".
 - ✅ **B3.6** Clean-up job: delete uploads no listing uses after 24 h.
 - ✅ **B3.7** Category pictures from the database: a `Category` table (`id`, `imageUrl`, `updatedById`,
   `updatedAt`); `GET /categories` uses it, falling back to the bundled tiles.
@@ -182,7 +183,8 @@ Tasks:
 
 ## B11 — Sanad ID verification ⏸ (MoDEE agreement, see `backend/docs/ID-VERIFICATION.md`)
 - ⬜ **B11.1** Apply to MoDEE (company registration, privacy policy).
-- ⬜ **B11.2** Sanad provider + the two new endpoints (start / complete), contract + app update.
+- ⬜ **B11.2** The real Sanad provider in `src/modules/identity/provider.ts` from MoDEE's documents (the endpoints,
+  app screen and database are ready since B3.5); register the callback URL with MoDEE; set `ID_HASH_SECRET`.
 
 ## B12 — Production and launch ⬜ (D4)
 - ⬜ **B12.1** Production settings: `trust proxy`, security headers (`helmet`), request size limits,

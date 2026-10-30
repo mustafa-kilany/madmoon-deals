@@ -15,8 +15,6 @@ export function toApiUser(user: User, req: Request) {
     ...(user.email && { email: user.email }),
     method: user.method,
     verified: user.verified,
-    // pending: ID photo sent, waiting for review; rejected: try again. Absent otherwise.
-    ...(!user.verified && user.idVerification && { idVerification: user.idVerification }),
     cityId: user.cityId,
     avatarUrl: !user.avatarUrl
       ? DEFAULT_AVATAR

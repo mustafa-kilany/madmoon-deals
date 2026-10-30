@@ -117,13 +117,11 @@
     "counterTooLow": "The counter price must be above the offer"
   },
   "idVerification": {
-    "title": "Scan Jordanian ID",
-    "verifyBody": "Scan your ID to verify your existing account.",
-    "secure": "Your data is encrypted & secure",
-    "capture": "CAPTURE & VERIFY",
-    "verified": "Your account is now verified",
-    "submitted": "ID sent. We'll review it within 24 hours.",
-    "cameraError": "Couldn't open the camera. Check camera access and try again."
+    "title": "Verify with Sanad",
+    "verifyBody": "Confirm your identity in the Sanad app (Jordan's digital ID). Verified sellers get a badge and appear first.",
+    "secure": "Sahla never sees or stores your ID",
+    "withSanad": "Verify with Sanad",
+    "verified": "Your account is now verified"
   },
   "profile": {
     "signInPrompt": "Sign in to view your profile",
@@ -133,13 +131,8 @@
     "verifiedTitle": "Verified Account",
     "verifiedBody": "Your listings appear first.",
     "becomeVerified": "Become Verified",
-    "becomeVerifiedBody": "Add your National ID to verify your account.",
-    "addIdVerify": "Add ID & Verify",
-    "idPendingTitle": "ID under review",
-    "idPendingBody": "We're checking your ID. You'll get the Verified badge once it's approved.",
-    "idRejectedTitle": "ID not verified",
-    "idRejectedBody": "We couldn't verify your ID from that photo. Please try again with a clear photo.",
-    "idTryAgain": "Try Again",
+    "becomeVerifiedBody": "Verify your identity with Sanad.",
+    "addIdVerify": "Verify with Sanad",
     "city": "City",
     "paymentCard": "Payment Card",
     "cardNumber": "Card Number",
@@ -169,7 +162,8 @@
     "INVALID_CODE": "Wrong or expired code. Check your email or send a new one.",
     "FORBIDDEN": "You can't do that.",
     "ITEM_UNAVAILABLE": "Sorry, this item is no longer available.",
-    "OPEN_ORDERS": "You have orders in progress. Finish them before deleting your account."
+    "OPEN_ORDERS": "You have orders in progress. Finish them before deleting your account.",
+    "SANAD_UNAVAILABLE": "Verification with Sanad is coming soon."
   },
   "condition": {
     "new": "New",

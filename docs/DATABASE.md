@@ -110,13 +110,12 @@ erDiagram
   IdVerification {
     text id PK
     text userId FK
-    IdProvider provider "sanad | manual"
+    IdProvider provider "sanad"
     IdVerificationStatus status "pending | approved | rejected"
     text providerRef
     text nationalIdHash "one ID = one account"
-    text photoUrl "manual only, deleted after"
+    text stateHash UK "one-time, cleared on answer"
     text rejectReason
-    text reviewedById "admin"
     timestamp createdAt
     timestamp decidedAt
   }
@@ -142,7 +141,7 @@ erDiagram
 | **User** | ✅ B1 | Every person: buyers, sellers, couriers, admins. `role` is null for normal users; couriers and admins are **staff accounts** made by an admin with the company email domain, never by sign-up (B14). `suspended` is set only by an admin. Deleting a user cascades to sessions, certificates, ID checks, reports, blocks, signals, flags; their listings are withdrawn and keep no link. | `email` unique |
 | **Session** | ✅ B1 | One signed-in device. The JWT names the session (`sid`); deleting the row signs that device out. Log-out deletes one, password reset all. | `tokenHash` unique, `userId`, `deviceId` |
 | **EmailCode** | ✅ B1 | 6-digit codes for sign-up and password reset. Deleted once used. | `(email, purpose)` |
-| **IdVerification** | ✅ table, flow B3 / B11 | Verified badge requests: a manual photo review now, Sanad later. Approving sets `User.verified` (and `Listing.sellerVerified` on their listings). | `userId`, `nationalIdHash` |
+| **IdVerification** | ✅ B3.5 (Sanad: B11) | One check with **Sanad** (no ID photos, no manual review). `stateHash` finds the check when Sanad answers; the national number is kept only as a keyed hash (one ID, one verified account). Approving sets `User.verified` (and `Listing.sellerVerified` on their listings). | `userId`, `nationalIdHash` |
 | **Device** | planned B9 | Push notification tokens; removed on log-out. | `userId` |
 | **PaymentMethod** | planned B7 | The saved card as the payment provider's token (never the number). Replaces `User.cardBrand/cardLast4`. | — |
 

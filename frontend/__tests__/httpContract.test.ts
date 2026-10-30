@@ -133,10 +133,10 @@ const rows: Row[] = [
     form: 'avatar',
   },
   {
-    endpoint: 'POST /me/id-verification',
-    call: () => httpAuthService.verifyId(photo),
-    url: '/me/id-verification',
-    form: 'idPhoto',
+    endpoint: 'POST /me/id-verification/sanad',
+    call: () => httpAuthService.startIdVerification(),
+    reply: { redirectUrl: 'https://sanad.test/consent' },
+    url: '/me/id-verification/sanad',
   },
   {
     endpoint: 'POST /me/payment-card',

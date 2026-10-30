@@ -2,7 +2,7 @@
 
 import type { Session, User } from '@/lib/types';
 import { api, photoForm } from '../api/client';
-import type { AuthService } from './types';
+import type { AuthService, IdVerificationStart } from './types';
 
 export const httpAuthService: AuthService = {
   signUpWithEmail: input => api.post<Session>('/auth/signup', input),
@@ -12,8 +12,8 @@ export const httpAuthService: AuthService = {
   sendOtp: input => api.post<void>('/auth/send-otp', input),
   forgotPassword: input => api.post<void>('/auth/forgot-password', input),
   resetPassword: input => api.post<Session>('/auth/reset-password', input),
-  verifyId: idPhoto =>
-    api.post<User>('/me/id-verification', photoForm('idPhoto', idPhoto)),
+  startIdVerification: () =>
+    api.post<IdVerificationStart>('/me/id-verification/sanad'),
   getMe: () => api.get<User>('/me'),
   updateProfile: patch => api.patch<User>('/me', patch),
   changeAvatar: photo =>

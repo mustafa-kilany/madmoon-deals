@@ -13,6 +13,7 @@ export type ApiErrorCode =
   | 'FORBIDDEN'
   | 'ITEM_UNAVAILABLE'
   | 'OPEN_ORDERS'
+  | 'SANAD_UNAVAILABLE'
   | 'UNKNOWN';
 
 export class ApiError extends Error {
@@ -38,6 +39,7 @@ const KNOWN: ApiErrorCode[] = [
   'FORBIDDEN',
   'ITEM_UNAVAILABLE',
   'OPEN_ORDERS',
+  'SANAD_UNAVAILABLE',
 ];
 
 /** i18n key for an error's user-facing message (src/i18n: errors.*). */

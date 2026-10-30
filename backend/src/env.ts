@@ -36,6 +36,12 @@ const schema = z
     // Tests only: where to fetch the providers' public keys.
     GOOGLE_JWKS_URL: z.string().url().default('https://www.googleapis.com/oauth2/v3/certs'),
     APPLE_JWKS_URL: z.string().url().default('https://appleid.apple.com/auth/keys'),
+    // ID verification with Sanad (backend/docs/ID-VERIFICATION.md). off = 503 SANAD_UNAVAILABLE
+    // until MoDEE gives Sahla access; fake = a pretend Sanad for development and tests.
+    SANAD_MODE: z.enum(['off', 'fake']).default('off'),
+    // Key for hashing national ID numbers (one ID, one verified account). Set it before
+    // Sanad goes live and never change it; until then the JWT secret is used.
+    ID_HASH_SECRET: z.string().min(32).optional(),
     // Optional until those features are switched on (backend/docs/); blank = off.
     GOOGLE_VISION_API_KEY: optional, // certificate OCR
     ANTHROPIC_API_KEY: optional, // AI reviewer for the risk queue
@@ -43,6 +49,10 @@ const schema = z
   .refine(e => !(e.NODE_ENV === 'production' && e.DEV_EMAIL_CODE), {
     message: 'DEV_EMAIL_CODE must not be set in production',
     path: ['DEV_EMAIL_CODE'],
+  })
+  .refine(e => !(e.NODE_ENV === 'production' && e.SANAD_MODE === 'fake'), {
+    message: 'SANAD_MODE=fake must not be used in production',
+    path: ['SANAD_MODE'],
   })
   .refine(
     e =>

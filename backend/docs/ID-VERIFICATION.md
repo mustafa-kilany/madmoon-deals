@@ -24,30 +24,39 @@ No ID photos stored by Sahla.
    and have a lawyer check it.
 5. Expect it to take weeks to months. **Don't block launch on it.**
 
-## Until Sanad is live: manual review
+## Until Sanad is live
 
-The app already has `POST /me/id-verification` (an ID photo). The server saves it as an
-`IdVerification` (provider `manual`, status `pending`). An admin compares it with the profile and
-approves or rejects it. **Delete the photo right after the decision** (`photoUrl` set to null).
+Decided 2026-10-30: **Sanad only**. No ID photos and no manual review. Until MoDEE gives access, accounts
+stay unverified: the app's "Verify with Sanad" button answers "coming soon" (`503 SANAD_UNAVAILABLE`).
 
-## When Sanad access arrives
+For development and tests, `SANAD_MODE=fake` in `backend/.env` turns on a pretend Sanad that approves at
+once (the server refuses it in production).
 
-The code is ready for it: `src/modules/identity/provider.ts` defines `IdVerificationProvider`, and
-`sanadNotConfigured` is the placeholder to replace.
-
-Expected flow (to be confirmed with MoDEE's documents):
+## What is already built
 
 ```
-App: "Verify with Sanad" ─► POST /me/id-verification/sanad      → { redirectUrl }
-     opens Sanad (app or web), user approves
-Sanad ─► redirect back to the app (deep link) with a one-time code
-App ─► POST /me/id-verification/sanad/complete { code }
-Server ─► exchanges the code with Sanad (server to server, with Sahla's credentials)
-       ─► gets the verified identity ─► IdVerification(approved) ─► User.verified = true
+App: "Verify with Sanad" ─► POST /me/id-verification/sanad              → { redirectUrl }
+     opens Sanad in the browser, the user approves
+Sanad ─► GET /v1/id-verification/sanad/callback?code=…&state=…   (this server: the redirect URI)
+Server ─► exchanges the code with Sanad (server to server, Sahla's credentials)
+       ─► IdVerification approved, User.verified = true, badge on their listings
+       ─► shows "Your account is verified. Go back to the Sahla app."
+App (back in front) ─► GET /me → verified: true
 ```
 
-These two endpoints are **new** and need adding to `docs/API.md` (and an app update) once MoDEE
-confirms the flow.
+- `state` is random, used once, valid 15 minutes; only its hash is stored (`IdVerification.stateHash`).
+- The national number is never stored: `nationalIdHash` = HMAC-SHA256 with `ID_HASH_SECRET`. A second
+  account with the same ID is refused ("This ID already verifies another Sahla account").
+- Code: `backend/src/modules/identity/` (`provider.ts`, `sanad.ts`, `routes.ts`), tests in `identity.e2e.ts`.
+
+## When Sanad access arrives (BACKEND_PLAN B11.2)
+
+1. In `provider.ts`, write the `sanad` provider from MoDEE's documents: `authorizeUrl()` (their consent page
+   with our client id, `state` and callback URL) and `exchange()` (code → national number + their reference).
+   Put their client id / secret and URLs in `.env`, and add `live` to `SANAD_MODE`.
+2. Register `https://api.sahla.jo/v1/id-verification/sanad/callback` with MoDEE as the redirect URI.
+3. Set `ID_HASH_SECRET` (`npm run secret`) once, and never change it.
+4. The app and `docs/API.md` need no change, unless MoDEE's flow differs (e.g. QR codes).
 
 ## Rules for ID data
 

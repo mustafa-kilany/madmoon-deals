@@ -74,14 +74,8 @@ test('authenticated calls need a valid token', async () => {
   });
   tokenStorage.set(session.token);
   expect((await auth.getMe()).verified).toBe(false);
-  // The ID photo waits for an admin's review (Sanad later): pending, not verified yet.
-  expect(
-    await auth.verifyId({
-      uri: 'x',
-      mimeType: 'image/jpeg',
-      fileName: 'id.jpg',
-    }),
-  ).toMatchObject({ verified: false, idVerification: 'pending' });
+  // Verifying is Sanad only, and Sanad isn't switched on yet.
+  expect(await code(auth.startIdVerification())).toBe('SANAD_UNAVAILABLE');
   await auth.logOut();
   expect(await code(auth.getMe())).toBe('UNAUTHORIZED');
 });
@@ -95,13 +89,12 @@ test('profile changes persist on the account', async () => {
   });
   tokenStorage.set(token);
   await auth.updateProfile({ cityId: 'irbid' });
-  await auth.verifyId({ uri: 'x', mimeType: 'image/jpeg', fileName: 'id.jpg' });
   await auth.savePaymentCard(
     await paymentProvider.tokenizeCard('4111 1111 1111 1234'),
   );
   expect(await auth.getMe()).toMatchObject({
     cityId: 'irbid',
-    idVerification: 'pending',
+    verified: false,
     card: { brand: 'visa', last4: '1234' },
   });
   expect((await auth.removePaymentCard()).card).toBeUndefined();

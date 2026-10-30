@@ -69,8 +69,14 @@ function useUserMutation<T>(mutationFn: (input: T) => Promise<User>) {
   return useMutation({ mutationFn, onSuccess: setUser });
 }
 
-export const useVerifyId = () =>
-  useUserMutation((photo: LocalPhoto) => authService.verifyId(photo));
+export const useStartIdVerification = () =>
+  useMutation({ mutationFn: authService.startIdVerification });
+
+/** Reload the signed-in user (e.g. back from Sanad: verified yet?). */
+export function useReloadUser() {
+  const setUser = useSessionStore(s => s.setUser);
+  return useMutation({ mutationFn: authService.getMe, onSuccess: setUser });
+}
 
 export const useUpdateProfile = () =>
   useUserMutation((patch: ProfilePatch) => authService.updateProfile(patch));
