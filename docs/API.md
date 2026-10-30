@@ -789,7 +789,7 @@ be able to report content and block people, and the team must act on reports wit
 * **`POST /reports` *(Authenticated)*** → Body: `{ "targetType": "listing" | "user", "targetId": "...", "reason": "scam" | "prohibited" | "offensive" | "wrong_info" | "other", "details"?: "max 500 chars" }` → 204
   * The app offers it on every product page ("Report this listing") and in the chat menu (the other person).
   * `NOT_FOUND` (404) for an unknown target, `VALIDATION` (422) for an unknown reason.
-  * Store with the reporter's id and time and show them in the admin tool. Hide a listing quickly when several people report it.
+  * Store with the reporter's id and time and show them in the admin tool. Hide a listing quickly when several people report it (the server: 3 different reporters hide it from browsing until an admin looks).
 * **`POST /me/blocked` *(Authenticated)*** → Body: `{ "userId": "..." }` → 204 (blocking twice is fine; yourself is `VALIDATION`)
 * **`GET /me/blocked` *(Authenticated)*** → `{ "id": string, "name": string }[]` (Profile → Blocked users)
 * **`DELETE /me/blocked/:userId` *(Authenticated)*** → 204

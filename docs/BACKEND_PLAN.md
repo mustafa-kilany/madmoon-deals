@@ -107,9 +107,11 @@ Two kinds (decided 2026-10-30): **users' listing photos** and **admins changing 
 - ✅ **B4.6** Fake reader for development without a Google Vision key (a passing report for the chosen
   device, today's date, an IMEI from the photo); tests script any page of text. Production without a key: 503.
 
-## B5 — Safety ⬜
-- ⬜ **B5.1** `POST /reports`; several reporters on one listing hide it until an admin looks.
-- ⬜ **B5.2** `POST/GET/DELETE /me/blocked`; blocked users vanish from each other's lists and chats.
+## B5 — Safety 🟡 (B5.1–B5.2 built with B6: the app's negotiation service includes them)
+- ✅ **B5.1** `POST /reports`; 3 different reporters on one listing hide it from browsing
+  (`Listing.reportHidden`) until an admin looks (B8).
+- ✅ **B5.2** `POST/GET/DELETE /me/blocked`; blocked users vanish from each other's `GET /listings` (both
+  ways); chats, offers and bids in B6.
 - ⬜ **B5.3** Risk checker runs after sign-up, new listing, report and block, plus nightly (job runner,
   e.g. `pg-boss` on the same PostgreSQL, no extra service).
 - ⬜ **B5.4** (optional) AI summaries for flags (Claude, Message Batches at night).

@@ -1,4 +1,4 @@
-import type { RequestHandler } from 'express';
+import type { Request, RequestHandler } from 'express';
 import type { User } from '../../generated/prisma/client';
 import { ApiError } from '../../lib/errors';
 import { sessionForToken } from './tokens';
@@ -28,6 +28,12 @@ export const requireUser: RequestHandler = async (req, res, next) => {
   res.locals.sessionId = session.id;
   next();
 };
+
+/** Endpoints anyone can call: the caller's user id when a valid token is sent. */
+export async function optionalUserId(req: Request) {
+  const token = req.get('authorization')?.match(/^Bearer (\S+)$/)?.[1];
+  return token ? (await sessionForToken(token))?.userId : undefined;
+}
 
 /** The signed-in user, after requireUser. */
 export const currentUser = (locals: Express.Locals) => locals.user!;

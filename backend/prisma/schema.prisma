@@ -52,6 +52,11 @@ model User {
   riskFlags        RiskFlag[]        @relation("flagged")
   riskFlagsHandled RiskFlag[]        @relation("reviewer")
   uploads          Upload[]
+  chatsAsBuyer     Chat[]
+  messages         Message[]
+  offers           Offer[]
+  bids             Bid[]
+  auctionsWon      Listing[]         @relation("auctionWinner")
 }
 
 // One signed-in device. Only a hash of the bearer token is stored, so a leaked
@@ -145,6 +150,15 @@ model Listing {
   sellerUserId String?
   sellerUser   User?   @relation(fields: [sellerUserId], references: [id])
 
+  // Auctions (B6): at auctionEndsAt the closing job sets auctionClosedAt and the
+  // highest bidder (none = ended unsold). Only the winner can check out.
+  auctionWinnerId String?
+  auctionWinner   User?     @relation("auctionWinner", fields: [auctionWinnerId], references: [id], onDelete: SetNull)
+  auctionClosedAt DateTime?
+
+  // Hidden from browsing after several people reported it, until an admin looks (B5.1).
+  reportHidden Boolean @default(false)
+
   // Certified refurbished (POST /admin/refurbished/import)
   storeId        String?
   store          Store?  @relation(fields: [storeId], references: [id])
@@ -156,6 +170,9 @@ model Listing {
   testCertificate   TestCertificate? @relation(fields: [testCertificateId], references: [id])
 
   viewedBy ListingView[]
+  chats    Chat[]
+  offers   Offer[]
+  bids     Bid[]
 
   @@unique([storeId, sku])
   @@index([category, status])
@@ -326,6 +343,81 @@ model IdVerification {
 
   @@index([userId])
   @@index([nationalIdHash])
+}
+
+// ─── Negotiation: chats, offers, bids (B6) ─────────────────────────────────
+
+enum OfferStatus {
+  pending // the seller answers: accept, counter or reject
+  countered // the buyer answers the seller's counterAmountFils: accept or reject
+  accepted
+  rejected
+}
+
+// One conversation per buyer and listing. The seller is the listing's seller.
+model Chat {
+  id          String   @id @default(cuid())
+  listingId   String
+  listing     Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  buyerId     String
+  buyer       User     @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  lastMessage String   @default("") // for the chat list
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) // last message
+
+  messages Message[]
+  offers   Offer[]
+
+  @@unique([listingId, buyerId])
+  @@index([buyerId, updatedAt])
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  chatId    String
+  chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  text      String // max 1000
+  // Offer steps post a message with the offer; the app shows its current state.
+  offerId   String?
+  offer     Offer?   @relation(fields: [offerId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+
+  @@index([chatId, createdAt])
+}
+
+model Offer {
+  id                String      @id @default(cuid())
+  listingId         String
+  listing           Listing     @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  buyerId           String
+  buyer             User        @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  chatId            String
+  chat              Chat        @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  amountFils        Int // the buyer's offer; once accepted, the agreed price
+  counterAmountFils Int? // the seller's counter (status countered)
+  status            OfferStatus @default(pending)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  messages Message[]
+
+  @@index([listingId, status])
+  @@index([buyerId])
+}
+
+// Placed in one transaction that also raises Listing.priceFils and bidCount.
+model Bid {
+  id         String   @id @default(cuid())
+  listingId  String
+  listing    Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  bidderId   String
+  bidder     User     @relation(fields: [bidderId], references: [id], onDelete: Cascade)
+  amountFils Int
+  createdAt  DateTime @default(now())
+
+  @@index([listingId, amountFils(sort: Desc)])
 }
 
 // ─── Safety: reports, blocks, suspicious-account checker ───────────────────

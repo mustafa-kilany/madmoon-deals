@@ -1,6 +1,8 @@
 import type { Request } from 'express';
 import { prisma } from '../../db';
 import { categoryFilters, categoryInfo, cities } from '../../reference';
+import { optionalUserId } from '../auth/requireUser';
+import { visibleListings } from '../safety/blocks';
 import { itemInclude, toApiItem } from './apiItem';
 import {
   afterCursor,
@@ -42,7 +44,8 @@ export async function searchListings(q: ListingQuery, req: Request) {
   if (q.ids.length > 0) return listingsByIds(q.ids, req);
 
   const now = new Date();
-  const scope = scopeWhere(q, now);
+  // Reported-off listings and blocked people's listings are out of every count too.
+  const scope = [...scopeWhere(q, now), ...(await visibleListings(await optionalUserId(req)))];
   const filters = filterWhere(q, now);
   const inFormat = [...scope, ...formatWhere(q.format), ...refurbishedWhere(q.refurbished)];
 

@@ -1,8 +1,7 @@
 import { Router } from 'express';
 import { prisma } from '../../db';
 import { ApiError } from '../../lib/errors';
-import { currentUser, requireUser } from '../auth/requireUser';
-import { sessionForToken } from '../auth/tokens';
+import { currentUser, optionalUserId, requireUser } from '../auth/requireUser';
 import { itemInclude, toApiItem } from './apiItem';
 import { listingQuery } from './listingQuery';
 import { searchListings } from './listings.service';
@@ -38,10 +37,9 @@ listingRoutes.post('/listings/:id/views', async (req, res) => {
   });
   if (!listing || listing.status === 'withdrawn') throw notFound(req.params.id);
 
-  const token = req.get('authorization')?.match(/^Bearer (\S+)$/)?.[1];
-  const session = token ? await sessionForToken(token) : undefined;
-  const viewerKey = session
-    ? `user:${session.userId}`
+  const userId = await optionalUserId(req);
+  const viewerKey = userId
+    ? `user:${userId}`
     : req.get('x-device-id')
       ? `device:${req.get('x-device-id')!.slice(0, 128)}`
       : `ip:${req.ip}`;
