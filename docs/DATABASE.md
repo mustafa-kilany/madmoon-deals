@@ -34,6 +34,7 @@ erDiagram
   User ||--o{ IdVerification : "verifies ID"
   User ||--o{ Device : "push tokens (planned)"
   User ||--o{ Upload : "uploads (planned)"
+  Category ||--o{ Listing : "groups (planned)"
   Store ||--o{ Listing : "sells refurbished"
   Store ||--o{ StoreApiKey : "has keys"
   Store ||--o{ RefurbishedImport : "import runs"
@@ -161,6 +162,7 @@ erDiagram
   TestCertificate |o--o| Listing : "used by one"
   Listing ||--o{ ListingView : "counted"
   User ||--o{ Upload : "uploads (planned B3)"
+  Category ||--o{ Listing : "groups (planned B3)"
   Listing {
     text id PK "cuid"
     text category "category id"
@@ -186,6 +188,7 @@ erDiagram
     text sellerUserId FK "seller is a user..."
     text storeId FK "...or a store"
     text sku "store's own id"
+    int quantity "store stock units (planned B13)"
     int warrantyMonths "refurbished (fixed price only)"
     text testCertificateId FK,UK
     timestamp createdAt
@@ -240,6 +243,12 @@ erDiagram
     bool stampChecked
     timestamp createdAt
   }
+  Category {
+    text id PK "mobiles, electronics, ... (planned B3)"
+    text imageUrl "picture an admin uploaded"
+    text updatedById FK "admin"
+    timestamp updatedAt
+  }
   ListingView {
     text listingId PK,FK
     text viewerKey PK "user or device"
@@ -260,12 +269,13 @@ erDiagram
 
 | Table | Status | Purpose and rules | Indexes |
 |---|---|---|---|
-| **Listing** | ✅ B2 | Everything for sale. Exactly one of `sellerUserId` / `storeId` is set (stores = refurbished only, **always fixed price**: never `saleType = auction`). `searchText` and `sellerVerified` are copies kept for fast search and sorting. Status: `active` → `reserved` (paid) → `sold` (delivered); refund → `active`; `withdrawn` = deleted, never shown. | `(category, status)`, `sellerUserId`, `(storeId, sku)` unique, `testCertificateId` unique, GIN `pg_trgm` on `searchText`, `(status, saleType, auctionEndsAt)`, `(status, sellerVerified, createdAt)`, `(status, priceFils)`, `locationId` |
+| **Listing** | ✅ B2 | Everything for sale. Exactly one of `sellerUserId` / `storeId` is set (stores = refurbished only, **always fixed price**: never `saleType = auction`; users can't list `refurbished_*`). `quantity` (B13): identical units of a store listing; orders take one each. `searchText` and `sellerVerified` are copies kept for fast search and sorting. Status: `active` → `reserved` (paid) → `sold` (delivered); refund → `active`; `withdrawn` = deleted, never shown. | `(category, status)`, `sellerUserId`, `(storeId, sku)` unique, `testCertificateId` unique, GIN `pg_trgm` on `searchText`, `(status, saleType, auctionEndsAt)`, `(status, sellerVerified, createdAt)`, `(status, priceFils)`, `locationId` |
 | **Store** | ✅ B0 | A brand's official refurbished store; its id is the listings' `sellerId`. | — |
 | **StoreApiKey** | ✅ B0 | Keys a brand's system imports with. Shown once, stored hashed, can be revoked. | `keyHash` unique |
 | **RefurbishedImport** | ✅ B0 | One row per import run (dashboard history). | `(storeId, createdAt)` |
 | **TestCertificate** | ✅ table, endpoint B4 | A checked photo of a shop's test report. A listing of a phone / electronics type needs a `passed` one; each is used by one listing only. | `userId`, `imageHash` |
 | **ListingView** | ✅ B2.5 | Counts a viewer once a day; `Listing.views` is the total. | primary key `(listingId, viewerKey, day)` |
+| **Category** | planned B3 | The 8 categories' pictures, changeable by an admin. Names, icons and item types stay in the shared reference files; `Listing.category` keeps its id (becomes a foreign key here). | — |
 | **Upload** | planned B3 | Every uploaded file. `POST /listings` accepts only URLs from here; unused ones are deleted after a day. | `(userId)`, `(usedAt, createdAt)` |
 
 ---

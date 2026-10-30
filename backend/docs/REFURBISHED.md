@@ -1,5 +1,9 @@
 # Certified Refurbished: collecting stock
 
+**Refurbished on Sahla** = devices a customer returned to the vendor (usually for a defect), repaired,
+tested and resold **by the vendor** with a grade and a warranty, at a fixed price. Never listed by app users.
+Where stock can come from, including importing from Europe / the US: [`docs/REFURBISHED_SOURCING.md`](../../docs/REFURBISHED_SOURCING.md).
+
 Refurbished items never come from the app. Each brand (or official dealer) gets a **store account**
 (`store-apple` → "Apple Certified") and sends its stock in one of two ways. Both run the same checks
 (`frontend/src/lib/refurbishedImport.ts`, shared with the app) through `src/modules/refurbished/`.

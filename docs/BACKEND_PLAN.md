@@ -30,6 +30,7 @@ endpoint does), [`DATABASE.md`](DATABASE.md) the database design and [`backend/R
 | D5 | Admin dashboard | Own web app in this repo (`admin/`, React + Vite) calling the same API · AdminJS (generated, less flexible) | B8 | _Own web app on the same API recommended (see B8)_ |
 | D6 | Reverse geocoding (street from GPS) | Google Geocoding · HERE · Mapbox · self-hosted Nominatim (free) | B7 | |
 | D7 | Search engine | Postgres only (enough to launch) · Meilisearch later for typo tolerance | B2 | _Postgres first_ |
+| D8 | Where refurbished stock comes from (`REFURBISHED_SOURCING.md`) | 1 Jordanian vendors · 2 Sahla imports graded stock (EU / US / UAE) and sells it · 3 order on demand | B13 | _1 now, 2 next; 3 later_ |
 
 ---
 
@@ -70,6 +71,7 @@ endpoint does), [`DATABASE.md`](DATABASE.md) the database design and [`backend/R
 - _Blocks (B5) later filter these lists too._
 
 ## B3 — Photo uploads ⬜ (needs D1 for production; local disk in development)
+Two kinds (decided 2026-10-30): **users' listing photos** and **admins changing the category pictures**.
 - ⬜ **B3.1** Storage module: local folder in development, R2/S3 in production, one interface.
 - ⬜ **B3.2** Image pipeline (`sharp`): check the real file type from its bytes, strip EXIF (GPS!),
   resize to 1600 px + a 400 px thumbnail, WebP/JPEG.
@@ -79,6 +81,10 @@ endpoint does), [`DATABASE.md`](DATABASE.md) the database design and [`backend/R
   (Contract today answers `verified: true` immediately; decide: keep instant for now, or change the
   contract to "pending" and update the app.)
 - ⬜ **B3.6** Clean-up job: delete uploads no listing uses after 24 h.
+- ⬜ **B3.7** Category pictures from the database: a `Category` table (`id`, `imageUrl`, `updatedById`,
+  `updatedAt`); `GET /categories` uses it, falling back to the bundled tiles.
+- ⬜ **B3.8** `PUT /admin/categories/:id/image` (admin only, same image pipeline, logged); the dashboard button
+  comes in B8.
 
 ## B4 — Selling + test certificates ⬜ (needs a Google Vision key for real OCR)
 - ⬜ **B4.1** `POST /listings`: every rule in `API.md` (description ≥ 10 words, conditions, our photo URLs
@@ -182,10 +188,23 @@ Tasks:
 - ⬜ **B12.6** Privacy policy + data deletion rules (ID photos, coordinates, deleted accounts).
 - ⬜ **B12.7** App release builds use `https://api.sahla.jo/v1`; contract server kept for app tests only.
 
+## B13 — Imported refurbished stock (Sahla as the seller) ⬜ (D8; see `REFURBISHED_SOURCING.md`)
+- ⬜ **B13.1** Sahla's own store account (`store-sahla`) and its terms (grading, warranty, returns).
+- ⬜ **B13.2** `Listing.quantity` for store listings: several identical units under one listing; an order
+  reserves one unit; the listing sells out at 0. Import column `quantity` (default 1).
+- ⬜ **B13.3** Landed-cost calculator in the dashboard: buy price, shipping, customs, tax, approval,
+  warranty, margin → JOD price, saved with each import.
+- ⬜ **B13.4** (only if D8 = 3) order on demand: "ships from abroad" listings, delivery estimate, order steps
+  for ordering, transit and customs.
+- **Not code:** a customs broker, TRC type approval per phone model, a freight forwarder, the first sample
+  order from one supplier.
+
 ---
 
 ## Log
 Short notes on what changed, newest first.
+- 2026-10-30: refurbished = vendor-refurbished customer returns, sold only by vendors (or Sahla); sourcing
+  options in `REFURBISHED_SOURCING.md`, phase B13; B3 also covers admin category pictures.
 - 2026-10-30: certified refurbished listings are fixed price only (vendors set the price): no auction
   columns in the import or template, app store screen without format tabs (API.md change log).
 - 2026-10-30: database design with pictures (`docs/DATABASE.md`, `docs/database/*.png`).
