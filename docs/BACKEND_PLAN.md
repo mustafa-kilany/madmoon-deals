@@ -27,7 +27,7 @@ endpoint does) and [`backend/README.md`](../backend/README.md) says how to run t
 | D2 | Payment provider (JOD, cards, 3-D Secure, holding money until delivery) | MEPS (Jordanian banks) · a bank's payment gateway · HyperPay · PayTabs · Checkout.com | B7 | |
 | D3 | Email service for codes | Amazon SES (cheapest) · Resend (easiest) · Postmark | B9 (sooner for real users) | |
 | D4 | Hosting for the API + database | Railway / Render (easiest) · DigitalOcean App Platform + Managed Postgres · AWS | B12 | |
-| D5 | Admin dashboard | Small web app in this repo (`admin/`, React + Vite) · AdminJS (generated, less flexible) | B8 | _Own web app recommended_ |
+| D5 | Admin dashboard | Own web app in this repo (`admin/`, React + Vite) calling the same API · AdminJS (generated, less flexible) | B8 | _Own web app on the same API recommended (see B8)_ |
 | D6 | Reverse geocoding (street from GPS) | Google Geocoding · HERE · Mapbox · self-hosted Nominatim (free) | B7 | |
 | D7 | Search engine | Postgres only (enough to launch) · Meilisearch later for typo tolerance | B2 | _Postgres first_ |
 
@@ -121,10 +121,37 @@ endpoint does) and [`backend/README.md`](../backend/README.md) says how to run t
 - **Switch the app:** `mock.orders = false`.
 
 ## B8 — Admin dashboard ⬜ (D5)
-- ⬜ **B8.1** Admin accounts (`role: admin`), admin-only API under `/v1/admin/*`, every action logged.
-- ⬜ **B8.2** Queues: certificates to review, ID photos, risk flags, reports.
-- ⬜ **B8.3** Refurbished: upload the Excel sheet with preview (dry run), stores, keys, import history.
-- ⬜ **B8.4** Orders: search, refund, payouts; users: suspend / unsuspend.
+
+**Architecture (common practice):** one backend, many clients. The dashboard is a **separate
+website that calls this same API**. It has no database access and no business rules of its own:
+
+```
+Mobile app ──┐
+             ├──► backend/ (Express) ──► PostgreSQL
+Dashboard  ──┘    /v1/*        app endpoints
+(admin.sahla.jo)  /v1/admin/*  admin-only endpoints (role: admin)
+```
+
+- Every rule (refunds, suspending, approving a certificate) is written **once**, in the backend, and is
+  tested and secured once. A dashboard with its own database access or copied rules would mean two
+  places to keep correct and secure.
+- **Admin security:** a separate admin log-in, shorter sessions (e.g. 12 h), **two-factor
+  authentication**, an **audit log** of every admin action (who, what, when, before/after), and
+  optionally only from the office IP or a VPN.
+- **Monitoring is split in two:** *business* numbers (sign-ups, listings, orders, money held in escrow,
+  open reports) come from `/v1/admin/stats` and show in the dashboard. *Technical* health (errors, slow
+  requests, server down) goes to tools built for it: Sentry, an uptime check, the host's metrics
+  (B12). The dashboard can link to them.
+
+Tasks:
+- ⬜ **B8.1** Admin accounts (`role: admin`), admin log-in with 2FA, shorter sessions, admin-only API
+  under `/v1/admin/*`, `AdminAction` audit log.
+- ⬜ **B8.2** The dashboard web app (`admin/` in this repo, React + Vite + TypeScript, shares
+  `src/lib/types.ts`): log-in, layout, overview page from `GET /v1/admin/stats`.
+- ⬜ **B8.3** Queues: certificates to review, ID photos, risk flags, reports.
+- ⬜ **B8.4** Refurbished: upload the Excel sheet with preview (dry run), stores, keys, import history.
+- ⬜ **B8.5** Orders: search, refund, payouts; users: look up, suspend / unsuspend.
+- ⬜ **B8.6** Deploy the dashboard at `admin.sahla.jo` (static hosting); the API allows that origin (CORS).
 
 ## B9 — Emails and push notifications ⬜ (D3; a Firebase project)
 - ⬜ **B9.1** Real email sending (codes) behind `mailer.ts`; Arabic + English templates.
@@ -153,4 +180,6 @@ endpoint does) and [`backend/README.md`](../backend/README.md) says how to run t
 
 ## Log
 Short notes on what changed, newest first.
+- 2026-10-30: B2.1–B2.4 done (catalog reference data, seed, GET /listings + search); admin dashboard
+  architecture added to B8.
 - 2026-10-30: plan written; B0 committed (`950df81`); B1.1 done.
