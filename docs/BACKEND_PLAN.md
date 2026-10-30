@@ -30,6 +30,7 @@ endpoint does), [`DATABASE.md`](DATABASE.md) the database design and [`backend/R
 | D5 | Admin dashboard | Own web app in this repo (`admin/`, React + Vite) calling the same API · AdminJS (generated, less flexible) | B8 | _Own web app on the same API recommended (see B8)_ |
 | D6 | Reverse geocoding (street from GPS) | Google Geocoding · HERE · Mapbox · self-hosted Nominatim (free) | B7 | |
 | D7 | Search engine | Postgres only (enough to launch) · Meilisearch later for typo tolerance | B2 | _Postgres first_ |
+| D9 | Staff email domain (couriers, admins) | e.g. `@sahla.jo` (the domain Sahla owns) | B14 | |
 | D8 | Where refurbished stock comes from (`REFURBISHED_SOURCING.md`) | 1 Jordanian vendors · 2 Sahla imports graded stock (EU / US / UAE) and sells it · 3 order on demand | B13 | _1 now, 2 next; 3 later_ |
 
 ---
@@ -199,10 +200,34 @@ Tasks:
 - **Not code:** a customs broker, TRC type approval per phone model, a freight forwarder, the first sample
   order from one supplier.
 
+## B14 — Courier (driver) app ⬜ (orders from B7; the app side can start on mock data)
+
+Couriers are **staff**, not customers: nobody can sign up as one. An admin creates the account with a
+**company email** (`@sahla.jo`, D9); the courier sets a password with the emailed code (the normal reset
+screen) and then logs in like anyone else, but sees **only the driver screens**: no browsing, selling,
+buying, chats or offers.
+
+- ⬜ **B14.1** Staff accounts: `npm run staff -- courier "Name" name@sahla.jo` now, `POST /admin/couriers` with
+  the dashboard (B8); only the staff domain; an invite code is emailed. Public sign-up refuses the staff
+  domain, so nobody can make a look-alike account.
+- ⬜ **B14.2** Couriers can only call courier endpoints: everything for customers (listing, offers, chats,
+  orders, saving) answers `FORBIDDEN` for them.
+- ⬜ **B14.3** `GET /courier/deliveries`: the orders assigned to me: order number, item, **pickup** (seller's
+  name, phone, area, address) and **drop-off** (buyer's delivery details), status.
+- ⬜ **B14.4** `POST /courier/deliveries/:orderId/picked-up`, then the existing
+  `POST /courier/confirm-delivery` with the buyer's 4-digit **PIN** (locks after 5 wrong tries).
+- ⬜ **B14.5** Pickup address: the seller gives it when the order is paid (B7), shown only to the courier.
+- ⬜ **B14.6** Assigning: an admin assigns each paid order to a courier in the dashboard (later: by area).
+- ⬜ **B14.7** App: courier mode. Log in → **Deliveries** list → a delivery: order number, pickup and drop-off
+  with **Call** and **Open in Maps**, **Picked up** button, **PIN** boxes → **Delivered**. The menu has only
+  language and log out. Built on the mock service first, like the rest of the app.
+
 ---
 
 ## Log
 Short notes on what changed, newest first.
+- 2026-10-30: courier (driver) app planned as B14: staff accounts made by admins with the company email,
+  courier-only screens (deliveries, pickup / drop-off, PIN).
 - 2026-10-30: refurbished = vendor-refurbished customer returns, sold only by vendors (or Sahla); sourcing
   options in `REFURBISHED_SOURCING.md`, phase B13; B3 also covers admin category pictures.
 - 2026-10-30: certified refurbished listings are fixed price only (vendors set the price): no auction

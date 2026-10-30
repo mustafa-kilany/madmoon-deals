@@ -6,6 +6,11 @@ The app's HTTP service layer (`frontend/src/services/*/http.ts`) and API client 
 
 ## Changes on 2026-10-30 (backend: please read)
 
+**Planned: courier app** ([Couriers](#couriers-drivers-planned-backend_plan-b14)). Courier accounts are
+made by admins with the staff email domain, never by sign-up; couriers see only their deliveries (pickup,
+drop-off, PIN). New: `GET /courier/deliveries`, `POST /courier/deliveries/:orderId/picked-up`; sign-up
+refuses staff-domain emails; customer endpoints answer `FORBIDDEN` for couriers.
+
 **Breaking**
 * **Certified refurbished listings are always fixed price.** Vendors set the price, so the import
   (`POST /admin/refurbished/import`) has no `auctionEndsAt` / `auctionIncrementJod` any more: a row that
@@ -698,7 +703,41 @@ building and floor, and can change anything. The order is unchanged: it carries 
   * The listing becomes `sold`.
   * The PIN check and release happen **only on the server**. Rate-limit attempts per order (e.g. lock after 5 wrong PINs) so a PIN can't be guessed.
 * **Refunds:** if the item never arrives, support/admin moves the order to `refunded`, the escrow is returned to the buyer and the listing goes back to `active` (no app endpoint).
-* **`User.role`**: optional, `"courier"` for courier accounts. Couriers see "Confirm a Delivery" in the menu.
+* **`User.role`**: optional, `"courier"` for courier accounts. Couriers see only the courier screens
+  (below), never browsing, selling or buying.
+
+### Couriers (drivers) *(planned: BACKEND_PLAN B14)*
+
+Couriers are Sahla staff. **Nobody signs up as a courier:** an admin creates the account with a company
+email (the staff domain, e.g. `@sahla.jo`) and an invite code is emailed; the courier sets a password with
+`POST /auth/reset-password` (the app's normal "forgot password" screens) and then logs in with
+`POST /auth/login`. `POST /auth/send-otp` and `POST /auth/signup` refuse staff-domain emails (`VALIDATION`).
+With `role: "courier"` the app shows only these screens; every customer endpoint (listings, offers, chats,
+orders, saved items) answers `FORBIDDEN` (403) for a courier.
+
+```ts
+type Delivery = {
+  orderId: string;                  // "SA-123456"
+  status: 'to_pickup' | 'picked_up' | 'delivered';
+  itemTitle: Localized;
+  itemImageUrl: string;
+  pickup: DeliveryDetails;          // the seller: name, phone, area, address, notes
+  dropoff: DeliveryDetails;         // the buyer's delivery details from the order
+  assignedAt: string;               // ISO-8601
+  pickedUpAt?: string;
+  deliveredAt?: string;
+};
+```
+
+* **`GET /courier/deliveries`** *(courier)* → `Delivery[]`: the orders assigned to me that aren't delivered
+  yet, plus today's delivered ones, oldest assignment first. Pickup and drop-off are shown **only** to the
+  assigned courier.
+* **`POST /courier/deliveries/:orderId/picked-up`** *(courier)* → `Delivery` (`picked_up`). `NOT_FOUND` if
+  it isn't assigned to me; `VALIDATION` if it isn't `to_pickup`.
+* **`POST /courier/confirm-delivery`** *(above)*: the buyer tells the courier the 4-digit PIN at the door;
+  a correct PIN completes the order (`delivered`), a wrong one is `INVALID_PIN`, five wrong ones lock it.
+* Admins assign paid orders to couriers in the dashboard; the seller gives the pickup address when the order
+  is paid.
 
 ### Safety: report and block
 

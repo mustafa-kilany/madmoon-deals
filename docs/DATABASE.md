@@ -139,7 +139,7 @@ erDiagram
 
 | Table | Status | Purpose and rules | Indexes |
 |---|---|---|---|
-| **User** | ✅ B1 | Every person: buyers, sellers, couriers, admins. `role` is null for normal users. `suspended` is set only by an admin. Deleting a user cascades to sessions, certificates, ID checks, reports, blocks, signals, flags; their listings are withdrawn and keep no link. | `email` unique |
+| **User** | ✅ B1 | Every person: buyers, sellers, couriers, admins. `role` is null for normal users; couriers and admins are **staff accounts** made by an admin with the company email domain, never by sign-up (B14). `suspended` is set only by an admin. Deleting a user cascades to sessions, certificates, ID checks, reports, blocks, signals, flags; their listings are withdrawn and keep no link. | `email` unique |
 | **Session** | ✅ B1 | One signed-in device. The JWT names the session (`sid`); deleting the row signs that device out. Log-out deletes one, password reset all. | `tokenHash` unique, `userId`, `deviceId` |
 | **EmailCode** | ✅ B1 | 6-digit codes for sign-up and password reset. Deleted once used. | `(email, purpose)` |
 | **IdVerification** | ✅ table, flow B3 / B11 | Verified badge requests: a manual photo review now, Sanad later. Approving sets `User.verified` (and `Listing.sellerVerified` on their listings). | `userId`, `nationalIdHash` |
@@ -370,7 +370,14 @@ erDiagram
     text deliveryCityId
     text deliveryAddress
     text deliveryNotes
-    text courierId FK
+    text pickupName "seller side, given when paid"
+    text pickupPhone
+    text pickupCityId
+    text pickupAddress
+    text courierId FK "staff account, role courier"
+    CourierStatus courierStatus "to_pickup | picked_up | delivered"
+    timestamp assignedAt
+    timestamp pickedUpAt
     timestamp createdAt
     timestamp paidAt
     timestamp deliveredAt
@@ -402,7 +409,7 @@ erDiagram
 
 | Table | Purpose and rules | Indexes |
 |---|---|---|
-| **Order** | The server prices every order (the app never sends amounts). Paying sets `escrow_held`, makes the PIN and reserves the listing **in one transaction**: the first payment wins. The courier's correct PIN → `completed`, listing `sold`, a `Payout` row. Delivery details are copied in, since the address book can change. | `buyerId`, `listingId`, `status`, `courierId` |
+| **Order** | The server prices every order (the app never sends amounts). Paying sets `escrow_held`, makes the PIN and reserves the listing **in one transaction**: the first payment wins. The courier's correct PIN → `completed`, listing `sold`, a `Payout` row. Delivery details are copied in, since the address book can change. The courier part (B14): an admin sets `courierId` (`to_pickup`), the courier marks `picked_up`, the PIN makes it `delivered`; pickup and drop-off are shown only to that courier. | `buyerId`, `listingId`, `status`, `courierId` |
 | **Payment** | Each attempt to pay (a failed 3-D Secure try can be retried). `providerRef` unique, so a repeated bank callback is handled once. | `orderId`, `providerRef` unique |
 | **Payout** | Money released to the seller after delivery (one per order). | `orderId` unique, `status` |
 
