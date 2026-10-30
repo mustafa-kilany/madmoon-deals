@@ -4,6 +4,12 @@ The single reference for building the Sahla mobile app (Android + iOS) with Reac
 It covers the rules, design patterns, architecture, the development roadmap from start to
 release, and every dependency needed to begin.
 
+**Repository layout (since 2026-10-30):** the app lives in **`frontend/`**, the API in **`backend/`**
+(Express + PostgreSQL, see `backend/README.md` and `docs/BACKEND_PLAN.md`), and the shared contract in
+`docs/`. **App paths in this guide (`src/…`, `android/…`, `ios/…`, `__tests__/…`, `.maestro/…`,
+`tools/…`, `package.json`) are inside `frontend/`**, and app commands (`npm start`, `npm run android`,
+`npm test`, …) run there. In Android Studio, open `frontend/android`.
+
 **Source of truth for the design:** the Figma Make file
 [Mobile-UI-Design-System](https://www.figma.com/make/uE74X70B5p5gtlztYWTFZy/Mobile-UI-Design-System).
 It is a working web prototype (React + Tailwind + Vite). We port its screens, tokens and logic
@@ -287,7 +293,7 @@ plus short-lived branches for each piece of work.
 ### 4.1 Folder structure
 
 ```
-sahla/
+frontend/                       # the app (the repo root also has backend/ and docs/)
 ├── App.tsx                     # Providers + RootNavigator only
 ├── index.js
 ├── assets/

@@ -43,7 +43,7 @@ Express 5 + TypeScript, PostgreSQL through Prisma. What's next: [`docs/BACKEND_P
 | `npm run secret` | Print a new random `JWT_SECRET` |
 | `npm run store -- <command>` | Refurbished stores: `create`, `key`, `revoke`, `list`, `import` ([docs/REFURBISHED.md](docs/REFURBISHED.md)) |
 
-The server uses port 4000, the same as `npm run contract-server` in the app folder, so the app's
+The server uses port 4000, the same as `npm run contract-server` in `frontend/`, so the app's
 debug `apiBaseUrl` reaches it unchanged. Run one or the other, not both.
 
 ## Layout
@@ -52,7 +52,7 @@ debug `apiBaseUrl` reaches it unchanged. Run one or the other, not both.
 src/
   server.ts, app.ts       start-up, routes under /v1
   env.ts, db.ts           settings (.env), database client
-  reference.ts            categories / types / brands / areas, shared with the app (../src)
+  reference.ts            categories / types / brands / areas, shared with the app (../frontend/src)
   lib/errors.ts           { error: { code, message } } responses (docs/API.md error codes)
   modules/
     auth/                 sign-up, log-in, codes, password reset, /me (JWT + sessions)
@@ -64,7 +64,7 @@ scripts/                  store setup, demo accounts, test database
 prisma/schema.prisma      the database tables
 ```
 
-The backend reuses the app's rules and reference data (`../src/lib`, `../src/services/mock/filters.ts`,
+The backend reuses the app's rules and reference data (`../frontend/src/lib`, `../frontend/src/services/mock/filters.ts`,
 `places.ts`) instead of copying them, so the app and the server can't disagree.
 
 ## Guides

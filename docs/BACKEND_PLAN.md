@@ -12,7 +12,7 @@ endpoint does) and [`backend/README.md`](../backend/README.md) says how to run t
 - **Every endpoint ships with an end-to-end test** (`src/**/*.e2e.ts`, `npm run test:api`) and its
   contract section in `docs/API.md` stays true. A task is done when `npm run typecheck`, `npm test`
   and `npm run test:api` pass.
-- **The app switches to the real backend one service at a time** in `src/config.ts` → `mock`
+- **The app switches to the real backend one service at a time** in `frontend/src/config.ts` → `mock`
   (`auth`, `catalog`, `negotiation`, `orders`) when that phase is done.
 - **One branch per phase** (`feat/backend-b2-catalog`, …), a pull request into `main` when the phase is
   done, tag `backend-b2` after merging (DEVELOPMENT_GUIDE §3.6).
@@ -180,6 +180,7 @@ Tasks:
 
 ## Log
 Short notes on what changed, newest first.
+- 2026-10-30: the app moved into `frontend/` (backend shares `../frontend/src`).
 - 2026-10-30: B2.1–B2.4 done (catalog reference data, seed, GET /listings + search); admin dashboard
   architecture added to B8.
 - 2026-10-30: plan written; B0 committed (`950df81`); B1.1 done.

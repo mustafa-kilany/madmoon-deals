@@ -1,5 +1,5 @@
 // GET /listings query: parameters, filters, sorts and the page cursor
-// (docs/API.md → Catalog; the app's reference: queryListings() in src/lib/browsing.ts).
+// (docs/API.md → Catalog; the app's reference: queryListings() in frontend/src/lib/browsing.ts).
 
 import { z } from 'zod';
 import type { Prisma } from '../../generated/prisma/client';

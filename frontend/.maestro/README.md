@@ -13,7 +13,7 @@ types and checks what's on screen. Three journeys are covered:
 
 ## Run them (VS Code terminal, PowerShell)
 
-Open four terminals in the project folder:
+Open four terminals in the app folder (`frontend/`):
 
 1. Emulator: start **Medium_Phone_API_37.0** from Android Studio → Device Manager.
 2. `npm start` (Metro, leave it running)

@@ -2,7 +2,7 @@
 
 Refurbished items never come from the app. Each brand (or official dealer) gets a **store account**
 (`store-apple` → "Apple Certified") and sends its stock in one of two ways. Both run the same checks
-(`src/lib/refurbishedImport.ts`, shared with the app) through `src/modules/refurbished/`.
+(`frontend/src/lib/refurbishedImport.ts`, shared with the app) through `src/modules/refurbished/`.
 
 ## 1. Onboard a store
 

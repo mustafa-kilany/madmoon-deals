@@ -24,7 +24,7 @@ globalThis.fetch = fetchMock as unknown as typeof fetch;
 const { readFileSync } = jest.requireActual('fs') as {
   readFileSync: (file: string, encoding: 'utf8') => string;
 };
-const doc = readFileSync('docs/API.md', 'utf8');
+const doc = readFileSync('../docs/API.md', 'utf8');
 
 const photo = {
   uri: 'file:///p.jpg',

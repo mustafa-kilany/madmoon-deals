@@ -1,4 +1,4 @@
-// Development data: the app's mock catalog (src/services/mock) as real rows,
+// Development data: the app's mock catalog (frontend/src/services/mock) as real rows,
 // so every browsing screen shows the same listings as in mock mode, with the
 // same ids. Run by `npm run db:seed`; running it again resets them (auction end
 // times move to "now + the demo minutes").

@@ -1,5 +1,5 @@
 // POST /admin/refurbished/import, the part that needs no database: check every
-// row with the app's own rules (src/lib/refurbishedImport.ts) and decide what
+// row with the app's own rules (frontend/src/lib/refurbishedImport.ts) and decide what
 // happens to each sku. service.ts then saves the plan.
 
 import { jod } from '@/lib/money';

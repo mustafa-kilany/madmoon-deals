@@ -17,12 +17,12 @@ export const findType = (category: string, type: string) =>
     t => t.id === type,
   );
 
-/** The app's category tiles (assets/images/categories/<id>.jpg), served at /static/categories. */
+/** The app's category tiles (frontend/assets/images/categories/<id>.jpg), served at /static/categories. */
 export const categoryImageDir = fileURLToPath(
-  new URL('../../assets/images/categories', import.meta.url),
+  new URL('../../frontend/assets/images/categories', import.meta.url),
 );
 
 /** The demo listings' certificate photos (development seed only), at /static/certificates. */
 export const demoCertificateDir = fileURLToPath(
-  new URL('../../assets/images/certificates', import.meta.url),
+  new URL('../../frontend/assets/images/certificates', import.meta.url),
 );

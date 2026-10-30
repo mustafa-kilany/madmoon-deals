@@ -1,6 +1,6 @@
 // GET /listings against the app's own reference implementation: the demo
 // catalog is seeded into the test database, then each query is answered by the
-// server and by queryListings() (src/lib/browsing.ts), and the answers compared.
+// server and by queryListings() (frontend/src/lib/browsing.ts), and the answers compared.
 
 import assert from 'node:assert/strict';
 import type { AddressInfo } from 'node:net';

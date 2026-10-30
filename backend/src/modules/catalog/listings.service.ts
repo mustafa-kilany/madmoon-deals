@@ -14,7 +14,7 @@ import {
 } from './listingQuery';
 
 // GET /listings (docs/API.md → Catalog). Same rules as the app's mock,
-// queryListings() in src/lib/browsing.ts; the end-to-end test compares the two.
+// queryListings() in frontend/src/lib/browsing.ts; the end-to-end test compares the two.
 
 const CONDITION_ORDER = [
   'new',
