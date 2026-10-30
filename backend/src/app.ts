@@ -6,6 +6,7 @@ import { identityRoutes } from './modules/identity/routes';
 import { listingRoutes } from './modules/catalog/listings.routes';
 import { referenceRoutes } from './modules/catalog/reference.routes';
 import { refurbishedRoutes } from './modules/refurbished/routes';
+import { sellingRoutes } from './modules/selling/routes';
 import { uploadRoutes } from './modules/uploads/routes';
 import { uploadDir } from './lib/storage';
 import { env } from './env';
@@ -38,6 +39,7 @@ v1.get('/health', async (_req, res) => {
 v1.use(authRoutes);
 v1.use(referenceRoutes);
 v1.use(listingRoutes);
+v1.use(sellingRoutes);
 v1.use(refurbishedRoutes);
 v1.use(uploadRoutes);
 v1.use(identityRoutes);

@@ -89,10 +89,12 @@ Two kinds (decided 2026-10-30): **users' listing photos** and **admins changing 
 - ✅ **B3.8** `PUT /admin/categories/:id/image` (admin only, same image pipeline, logged); the dashboard button
   comes in B8.
 
-## B4 — Selling + test certificates ⬜ (needs a Google Vision key for real OCR)
-- ⬜ **B4.1** `POST /listings`: every rule in `API.md` (description ≥ 10 words, conditions, our photo URLs
-  only, auctions: start price, end time, increment, location, brand/model).
-- ⬜ **B4.2** `PATCH /listings/:id` (price, condition), `DELETE /listings/:id` (withdraw; not with an open order).
+## B4 — Selling + test certificates 🟡 (branch `feat/backend-b4-selling`) (needs a Google Vision key for real OCR)
+- ✅ **B4.1** `POST /listings`: every rule in `API.md` (description ≥ 10 words with the app's own rule,
+  seller grades only, the caller's own unused uploads only, auctions 1 h – 14 days, area, brand/model);
+  the photos are marked used so the clean-up keeps them.
+- ✅ **B4.2** `PATCH /listings/:id` (price, condition), `DELETE /listings/:id` (withdraw; not once paid for,
+  not an auction with bids).
 - ⬜ **B4.3** `POST /test-certificates`: photo → OCR → stamp (admin review for now) → text checks →
   `already_used` (photo hash, IMEI hash) → saved; answer in under 10 s.
 - ⬜ **B4.4** Blurred copy of the certificate photo for buyers (IMEI / serial boxes).

@@ -513,7 +513,11 @@ the listing with the returned URLs.
 * **`POST /listings` *(Authenticated)***
   * **Request (JSON):** `category`, `titleAr`, `titleEn`, `priceFils`, `imageUrls` (1–5 URLs from the upload above, cover first), `condition`, `description` (required, see below), `brand?`, `model?`, `type`, `locationId` (area id), `saleType` (`fixed` or `auction`), `auctionEndsAt?` (ISO-8601), `incrementFils?`, `testCertificateId?` (required for types with `requiresTestCertificate`, see below).
   * The seller is the caller: set `sellerId` and `seller` from the token, `status: "active"`.
-  * Only accept `imageUrls` that this server issued. For auctions, `priceFils` is the starting bid.
+  * Only accept `imageUrls` that this server issued **to the caller** and that no other listing uses. For
+    auctions, `priceFils` is the starting bid.
+  * `titleAr` / `titleEn` 2–100 characters; `brand` / `model` up to 60; `priceFils` a whole number above 0.
+  * Auctions: `auctionEndsAt` 1 hour to 14 days from now; `incrementFils` at least 100 (default 1000).
+    Fixed-price listings ignore both.
   * `condition` must be `new`, `excellent`, `good` or `loved`; `refurbished_*` → `VALIDATION` (422)
     (refurbished stock comes only from the import below).
   * **`description`:** at least **10 words** and at most 2000 characters, else `VALIDATION` (422). A word
@@ -591,10 +595,15 @@ type, brand or model, the app asks them to check it again.
 * Refurbished imports (`POST /admin/refurbished/import`) don't need a certificate: the brand
   certifies them.
 * **`PATCH /listings/:id` *(Authenticated)***
-  * **Request:** `{ "priceFils"?: 50000, "condition"?: "excellent" }`
+  * **Request:** `{ "priceFils"?: 50000, "condition"?: "excellent" }` (nothing else can change)
   * **Response (200):** `Item`
+  * **Errors:** `FORBIDDEN` (403) not the seller; `NOT_FOUND` (404) withdrawn; `OPEN_ORDERS` (409) paid for
+    (`reserved`); `ITEM_UNAVAILABLE` (409) sold; `VALIDATION` (422) a refurbished grade, or a new price on an
+    auction that has bids.
 * **`DELETE /listings/:id` *(Authenticated)***
+  * Withdraws the listing: it disappears from search, its page and My listings.
   * **Response:** 204 No Content
+  * **Errors:** as for `PATCH`, and `VALIDATION` (422) for an auction that has bids.
 
 ### Phase 5: Negotiation, Chat & Auction Bids
 
