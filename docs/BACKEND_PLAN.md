@@ -1,0 +1,156 @@
+# Sahla Backend Plan
+
+The road from today to a launched API, phase by phase. **Edit this file freely**: reorder tasks, cross
+things out, add notes under a task. It's the to-do list; [`API.md`](API.md) stays the contract (what each
+endpoint does) and [`backend/README.md`](../backend/README.md) says how to run things.
+
+**Status:** ✅ done · 🔨 in progress · ⬜ to do · ⏸ blocked (waiting for an account, a key or a decision)
+
+**How we work**
+- **One task = one commit**, message `feat(backend): <what>` (or `fix(…)`, `test(…)`, `docs(…)`), so each
+  task can be reviewed and undone on its own. The task's id goes in the message, e.g. `feat(backend): B2.3 GET /listings`.
+- **Every endpoint ships with an end-to-end test** (`src/**/*.e2e.ts`, `npm run test:api`) and its
+  contract section in `docs/API.md` stays true. A task is done when `npm run typecheck`, `npm test`
+  and `npm run test:api` pass.
+- **The app switches to the real backend one service at a time** in `src/config.ts` → `mock`
+  (`auth`, `catalog`, `negotiation`, `orders`) when that phase is done.
+- **One branch per phase** (`feat/backend-b2-catalog`, …), a pull request into `main` when the phase is
+  done, tag `backend-b2` after merging (DEVELOPMENT_GUIDE §3.6).
+
+---
+
+## Decisions to make (edit the answers)
+
+| # | Question | Options | Needed by | Answer |
+|---|---|---|---|---|
+| D1 | Where photos are stored in production | Cloudflare R2 (cheap, no download fees) · AWS S3 · DigitalOcean Spaces | B3 | _R2 recommended_ |
+| D2 | Payment provider (JOD, cards, 3-D Secure, holding money until delivery) | MEPS (Jordanian banks) · a bank's payment gateway · HyperPay · PayTabs · Checkout.com | B7 | |
+| D3 | Email service for codes | Amazon SES (cheapest) · Resend (easiest) · Postmark | B9 (sooner for real users) | |
+| D4 | Hosting for the API + database | Railway / Render (easiest) · DigitalOcean App Platform + Managed Postgres · AWS | B12 | |
+| D5 | Admin dashboard | Small web app in this repo (`admin/`, React + Vite) · AdminJS (generated, less flexible) | B8 | _Own web app recommended_ |
+| D6 | Reverse geocoding (street from GPS) | Google Geocoding · HERE · Mapbox · self-hosted Nominatim (free) | B7 | |
+| D7 | Search engine | Postgres only (enough to launch) · Meilisearch later for typo tolerance | B2 | _Postgres first_ |
+
+---
+
+## B0 — Foundation ✅ (commit `950df81`)
+- ✅ Express 5 + TypeScript (tsx), Prisma 7 + PostgreSQL 18, `/v1/health`, error format of `docs/API.md`.
+- ✅ Shares the app's rules and reference data (`../src/lib`, `filters.ts`, `places.ts`).
+- ✅ Database schema + first migration (users … risk queue).
+- ✅ Certified Refurbished import (API + `npm run store`), certificate OCR checks, risk rules (flag only),
+  Sanad slot. Guides in `backend/docs/`.
+
+## B1 — Accounts (email) 🔨
+- ✅ **B1.1** Email sign-up with code, log-in, log-out, password reset, `GET/PATCH/DELETE /me`.
+  JWT (HS256, 60 days) + a database session per token (revocable). scrypt passwords, HMAC codes,
+  rate limit per IP + email. `npm run db:seed` demo accounts. End-to-end tests on `sahla_test`.
+- ⬜ **B1.2** Backend CI: GitHub Actions job with a PostgreSQL service running typecheck, unit and
+  end-to-end tests on every pull request.
+- ⬜ **B1.3** App: send `X-Device-Id` (random id stored once in MMKV) on every request; document it in
+  `API.md` (feeds the "many accounts on one phone" risk signal).
+- ⬜ **B1.4** App: a message for `RATE_LIMITED` ("Too many tries, wait a few minutes").
+- **Switch the app:** `mock.auth = false` (already false). ✅
+
+## B2 — Catalog (browsing) ⬜
+- ⬜ **B2.1** `GET /categories`, `GET /categories/filters`, `GET /cities` from the shared reference data;
+  category images served by the backend (`/static/categories/*.jpg`).
+- ⬜ **B2.2** Development seed listings: the app's mock catalog (32 listings + auctions + 12 refurbished)
+  into the database (`npm run db:seed`), with demo sellers.
+- ⬜ **B2.3** `GET /listings`: filters (`category`, `format`, `refurbished`, `types`, `brands`, `conditions`,
+  `cities`, price range, `verifiedOnly`, `endingSoon`), sorts (6), keyset cursor, `limit` ≤ 50, `ids=`
+  mode, `total`, `counts`, `refurbishedCounts`, `facets`. Only `active`, never ended auctions.
+- ⬜ **B2.4** Search `q`: every word must match title (ar/en), brand, model or type name; Arabic folding
+  (أ/إ/آ→ا, ة→ه, ى→ي, no tashkeel) like `foldText()` in the app; `pg_trgm` index.
+- ⬜ **B2.5** `GET /listings/:id`, `POST /listings/:id/views` (count a device once a day), `GET /me/listings`.
+- ⬜ **B2.6** Indexes + a quick load check (10k listings, page under 100 ms).
+- **Switch the app:** `mock.catalog = false`; browse every screen on the emulator.
+- _Blocks (B5) later filter these lists too._
+
+## B3 — Photo uploads ⬜ (needs D1 for production; local disk in development)
+- ⬜ **B3.1** Storage module: local folder in development, R2/S3 in production, one interface.
+- ⬜ **B3.2** Image pipeline (`sharp`): check the real file type from its bytes, strip EXIF (GPS!),
+  resize to 1600 px + a 400 px thumbnail, WebP/JPEG.
+- ⬜ **B3.3** `POST /uploads/listing-photo` (issued URLs remembered, so `POST /listings` accepts only ours).
+- ⬜ **B3.4** `POST /me/avatar`.
+- ⬜ **B3.5** `POST /me/id-verification`: photo → `IdVerification(manual, pending)`; admin decides in B8.
+  (Contract today answers `verified: true` immediately; decide: keep instant for now, or change the
+  contract to "pending" and update the app.)
+- ⬜ **B3.6** Clean-up job: delete uploads no listing uses after 24 h.
+
+## B4 — Selling + test certificates ⬜ (needs a Google Vision key for real OCR)
+- ⬜ **B4.1** `POST /listings`: every rule in `API.md` (description ≥ 10 words, conditions, our photo URLs
+  only, auctions: start price, end time, increment, location, brand/model).
+- ⬜ **B4.2** `PATCH /listings/:id` (price, condition), `DELETE /listings/:id` (withdraw; not with an open order).
+- ⬜ **B4.3** `POST /test-certificates`: photo → OCR → stamp (admin review for now) → text checks →
+  `already_used` (photo hash, IMEI hash) → saved; answer in under 10 s.
+- ⬜ **B4.4** Blurred copy of the certificate photo for buyers (IMEI / serial boxes).
+- ⬜ **B4.5** `POST /listings` requires a passed, unused certificate for `requiresTestCertificate` types
+  (same type, brand, model); `Item.testCertificate` in listing responses.
+- ⬜ **B4.6** A fake OCR provider for tests and for development without a key.
+
+## B5 — Safety ⬜
+- ⬜ **B5.1** `POST /reports`; several reporters on one listing hide it until an admin looks.
+- ⬜ **B5.2** `POST/GET/DELETE /me/blocked`; blocked users vanish from each other's lists and chats.
+- ⬜ **B5.3** Risk checker runs after sign-up, new listing, report and block, plus nightly (job runner,
+  e.g. `pg-boss` on the same PostgreSQL, no extra service).
+- ⬜ **B5.4** (optional) AI summaries for flags (Claude, Message Batches at night).
+
+## B6 — Negotiation, chat, auctions ⬜
+- ⬜ **B6.1** Chats: `GET /chats`, `GET /chats/:id/messages` (paging with `before`), `POST /chats/:id/messages`.
+- ⬜ **B6.2** Offers: `POST /listings/:id/offers`, `POST /offers/:id/respond` (turn rules), `GET /offers/:id`;
+  each step posts a chat message carrying the offer.
+- ⬜ **B6.3** Bids: `POST /listings/:id/bids` (minimum = price + increment, not your own, not ended),
+  `GET /listings/:id/bids`; done in one transaction so two bids can't both win.
+- ⬜ **B6.4** Auction closing job: at `auctionEndsAt` set `winnerId` (highest bid); no bids → ended unsold.
+- ⬜ **B6.5** Make polled endpoints cheap (indexes, `ETag` / `304`).
+- **Switch the app:** `mock.negotiation = false`.
+
+## B7 — Orders, payments, escrow, delivery ⬜ (needs D2 and a merchant account; fake provider until then)
+- ⬜ **B7.1** `GET /geocode/reverse` (D6), no coordinates stored or logged, 20/hour per user.
+- ⬜ **B7.2** `POST /orders`: server prices it (3% buyer protection, min 1 JOD; 2 JOD delivery), checks the
+  listing / offer / auction winner / blocks; readable ids `SA-123456`.
+- ⬜ **B7.3** Payment provider module with a **fake provider** (development and tests).
+- ⬜ **B7.4** `POST /orders/:id/pay`: `escrow_held` + 4-digit PIN + listing `reserved`, in one transaction
+  (first payment wins); 3-D Secure `paymentUrl` + the bank's callback.
+- ⬜ **B7.5** `GET /me/orders`, `GET /me/sales`, `GET /orders/:id`.
+- ⬜ **B7.6** `POST /courier/confirm-delivery`: PIN check, lock after 5 wrong PINs, `completed`, listing
+  `sold`, seller payout recorded.
+- ⬜ **B7.7** Refunds (admin only), `DELETE /me` refuses with open orders (`OPEN_ORDERS`).
+- ⬜ **B7.8** `POST/DELETE /me/payment-card` with the provider's tokens.
+- ⬜ **B7.9** The real provider (D2).
+- **Switch the app:** `mock.orders = false`.
+
+## B8 — Admin dashboard ⬜ (D5)
+- ⬜ **B8.1** Admin accounts (`role: admin`), admin-only API under `/v1/admin/*`, every action logged.
+- ⬜ **B8.2** Queues: certificates to review, ID photos, risk flags, reports.
+- ⬜ **B8.3** Refurbished: upload the Excel sheet with preview (dry run), stores, keys, import history.
+- ⬜ **B8.4** Orders: search, refund, payouts; users: suspend / unsuspend.
+
+## B9 — Emails and push notifications ⬜ (D3; a Firebase project)
+- ⬜ **B9.1** Real email sending (codes) behind `mailer.ts`; Arabic + English templates.
+- ⬜ **B9.2** `POST /me/devices`, `DELETE /me/devices/:token`.
+- ⬜ **B9.3** Push for: new message, offer answered, outbid, auction won, order delivered.
+
+## B10 — Google and Apple sign-in ⏸ (Google Cloud OAuth client ids; Apple Developer account)
+- ⬜ **B10.1** `POST /auth/google`: verify the ID token with Google's keys (audience = our client ids).
+- ⬜ **B10.2** `POST /auth/apple`: same with Apple's keys; hidden relay emails are fine.
+
+## B11 — Sanad ID verification ⏸ (MoDEE agreement, see `backend/docs/ID-VERIFICATION.md`)
+- ⬜ **B11.1** Apply to MoDEE (company registration, privacy policy).
+- ⬜ **B11.2** Sanad provider + the two new endpoints (start / complete), contract + app update.
+
+## B12 — Production and launch ⬜ (D4)
+- ⬜ **B12.1** Production settings: `trust proxy`, security headers (`helmet`), request size limits,
+  structured logs (`pino`, no passwords/tokens/coordinates), error tracking (Sentry).
+- ⬜ **B12.2** Deploy: API + managed PostgreSQL, `prisma migrate deploy` on release, `api.sahla.jo` over HTTPS.
+- ⬜ **B12.3** Daily database backups + a tested restore.
+- ⬜ **B12.4** Monitoring: uptime check on `/v1/health`, alerts on errors and slow requests.
+- ⬜ **B12.5** Load test (search, auction polling) before launch.
+- ⬜ **B12.6** Privacy policy + data deletion rules (ID photos, coordinates, deleted accounts).
+- ⬜ **B12.7** App release builds use `https://api.sahla.jo/v1`; contract server kept for app tests only.
+
+---
+
+## Log
+Short notes on what changed, newest first.
+- 2026-10-30: plan written; B0 committed (`950df81`); B1.1 done.

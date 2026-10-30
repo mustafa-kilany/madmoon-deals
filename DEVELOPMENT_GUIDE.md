@@ -483,8 +483,9 @@ Each phase ends with a working build on an Android emulator (and iOS, see §6.3)
   once the provider is chosen (§8 #4); won-auction checkout waits for auction closing on the
   server (Phase 7); the contract server has no `/orders` routes yet.
 
-### Phase 7 — Backend integration (app side ✅ 2026-10-20; backend in progress by the backend developer)
-- Backend developer builds the API to `docs/API.md`; the app flips each service in
+### Phase 7 — Backend integration (app side ✅ 2026-10-20; backend in progress in `backend/`)
+- **Backend plan, phase by phase: [`docs/BACKEND_PLAN.md`](docs/BACKEND_PLAN.md).**
+- The backend (`backend/`, Express + PostgreSQL) implements `docs/API.md`; the app flips each service in
   `src/config.ts` → `mock` (catalog, auth, negotiation, orders) as its endpoints go live (§4.4).
   Release builds use the production `apiBaseUrl`, debug builds the local contract server.
 - ✅ Contract checked by `__tests__/httpContract.test.ts`: every request the app makes (method,
