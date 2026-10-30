@@ -15,7 +15,8 @@
     "test:api": "tsx scripts/test-api.ts",
     "db:seed": "tsx scripts/seed.ts",
     "secret": "node -e \"console.log(require('node:crypto').randomBytes(48).toString('base64url'))\"",
-    "postdb:migrate": "prisma generate"
+    "postdb:migrate": "prisma generate",
+    "load-check": "tsx scripts/load-check.ts"
   },
   "type": "module",
   "dependencies": {

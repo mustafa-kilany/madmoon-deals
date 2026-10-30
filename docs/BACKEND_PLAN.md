@@ -51,7 +51,7 @@ endpoint does), [`DATABASE.md`](DATABASE.md) the database design and [`backend/R
 - ⬜ **B1.4** App: a message for `RATE_LIMITED` ("Too many tries, wait a few minutes").
 - **Switch the app:** `mock.auth = false` (already false). ✅
 
-## B2 — Catalog (browsing) 🔨 (branch `feat/backend-b2-catalog`)
+## B2 — Catalog (browsing) ✅ backend done; the app switches after B4 (branch `feat/backend-b2-catalog`)
 - ✅ **B2.1** `GET /categories`, `GET /categories/filters`, `GET /cities` from the shared reference data;
   category images served by the backend (`/static/categories/*.jpg`).
 - ✅ **B2.2** Development seed listings: the app's mock catalog (40 listings incl. 8 auctions, 12 refurbished
@@ -63,7 +63,8 @@ endpoint does), [`DATABASE.md`](DATABASE.md) the database design and [`backend/R
   (أ/إ/آ→ا, ة→ه, ى→ي, no tashkeel) with the app's own `foldText()` (`Listing.searchText`). Its `pg_trgm` index is in B2.6.
 - ✅ **B2.5** `GET /listings/:id`, `POST /listings/:id/views` (each viewer once a day: user, else device id,
   else IP; `ListingView` table), `GET /me/listings`.
-- ⬜ **B2.6** Indexes + a quick load check (10k listings, page under 100 ms).
+- ✅ **B2.6** Indexes (`pg_trgm` on `searchText`, live/auction, recommended, price, area) + `npm run load-check`:
+  10 000 listings, every query 16–19 ms including counts and facets.
 - **Switch the app:** `mock.catalog = false` **after B4**: in the app that setting also covers selling (photo
   upload, `POST /listings`), which comes in B3–B4. Then browse and sell on the emulator.
 - _Blocks (B5) later filter these lists too._

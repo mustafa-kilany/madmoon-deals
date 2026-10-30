@@ -38,7 +38,7 @@ erDiagram
   Store ||--o{ StoreApiKey : "has keys"
   Store ||--o{ RefurbishedImport : "import runs"
   TestCertificate |o--o| Listing : "proves device"
-  Listing ||--o{ ListingView : "views (planned)"
+  Listing ||--o{ ListingView : "views"
   Listing ||--o{ Chat : "about (planned)"
   Listing ||--o{ Offer : "offers (planned)"
   Listing ||--o{ Bid : "bids (planned)"
@@ -159,7 +159,7 @@ erDiagram
   Store ||--o{ RefurbishedImport : "history"
   User ||--o{ TestCertificate : uploads
   TestCertificate |o--o| Listing : "used by one"
-  Listing ||--o{ ListingView : "counted (planned B2)"
+  Listing ||--o{ ListingView : "counted"
   User ||--o{ Upload : "uploads (planned B3)"
   Listing {
     text id PK "cuid"
@@ -241,7 +241,7 @@ erDiagram
     timestamp createdAt
   }
   ListingView {
-    text listingId PK,FK "planned B2.5"
+    text listingId PK,FK
     text viewerKey PK "user or device"
     date day PK "once a day"
   }
@@ -260,12 +260,12 @@ erDiagram
 
 | Table | Status | Purpose and rules | Indexes |
 |---|---|---|---|
-| **Listing** | ✅ B2 | Everything for sale. Exactly one of `sellerUserId` / `storeId` is set (stores = refurbished only, **always fixed price**: never `saleType = auction`). `searchText` and `sellerVerified` are copies kept for fast search and sorting. Status: `active` → `reserved` (paid) → `sold` (delivered); refund → `active`; `withdrawn` = deleted, never shown. | `(category, status)`, `sellerUserId`, `(storeId, sku)` unique, `testCertificateId` unique; B2.6 adds `pg_trgm` on `searchText`, `(status, saleType, auctionEndsAt)`, `priceFils`, `locationId` |
+| **Listing** | ✅ B2 | Everything for sale. Exactly one of `sellerUserId` / `storeId` is set (stores = refurbished only, **always fixed price**: never `saleType = auction`). `searchText` and `sellerVerified` are copies kept for fast search and sorting. Status: `active` → `reserved` (paid) → `sold` (delivered); refund → `active`; `withdrawn` = deleted, never shown. | `(category, status)`, `sellerUserId`, `(storeId, sku)` unique, `testCertificateId` unique, GIN `pg_trgm` on `searchText`, `(status, saleType, auctionEndsAt)`, `(status, sellerVerified, createdAt)`, `(status, priceFils)`, `locationId` |
 | **Store** | ✅ B0 | A brand's official refurbished store; its id is the listings' `sellerId`. | — |
 | **StoreApiKey** | ✅ B0 | Keys a brand's system imports with. Shown once, stored hashed, can be revoked. | `keyHash` unique |
 | **RefurbishedImport** | ✅ B0 | One row per import run (dashboard history). | `(storeId, createdAt)` |
 | **TestCertificate** | ✅ table, endpoint B4 | A checked photo of a shop's test report. A listing of a phone / electronics type needs a `passed` one; each is used by one listing only. | `userId`, `imageHash` |
-| **ListingView** | planned B2.5 | Counts a viewer once a day; `Listing.views` is the total. | primary key `(listingId, viewerKey, day)` |
+| **ListingView** | ✅ B2.5 | Counts a viewer once a day; `Listing.views` is the total. | primary key `(listingId, viewerKey, day)` |
 | **Upload** | planned B3 | Every uploaded file. `POST /listings` accepts only URLs from here; unused ones are deleted after a day. | `(userId)`, `(usedAt, createdAt)` |
 
 ---

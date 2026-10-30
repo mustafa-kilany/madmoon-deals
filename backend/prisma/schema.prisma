@@ -157,6 +157,15 @@ model Listing {
   @@unique([storeId, sku])
   @@index([category, status])
   @@index([sellerUserId])
+  // GET /listings (BACKEND_PLAN B2.6): every search word is a LIKE '%word%' on
+  // searchText, served by a trigram index (pg_trgm, created in the migration).
+  @@index([searchText(ops: raw("gin_trgm_ops"))], type: Gin)
+  // Live listings by format / auction end (ending_soon, endingSoon, hiding ended ones)
+  @@index([status, saleType, auctionEndsAt])
+  // sort=recommended (verified first, newest) and the price filters / sorts
+  @@index([status, sellerVerified, createdAt])
+  @@index([status, priceFils])
+  @@index([locationId])
 }
 
 // One viewer per listing per day (POST /listings/:id/views); Listing.views is the
