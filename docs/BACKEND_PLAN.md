@@ -67,8 +67,10 @@ endpoint does), [`DATABASE.md`](DATABASE.md) the database design and [`backend/R
   else IP; `ListingView` table), `GET /me/listings`.
 - ✅ **B2.6** Indexes (`pg_trgm` on `searchText`, live/auction, recommended, price, area) + `npm run load-check`:
   10 000 listings, every query 16–19 ms including counts and facets.
-- **Switch the app:** `mock.catalog = false` **after B4**: in the app that setting also covers selling (photo
-  upload, `POST /listings`), which comes in B3–B4. Then browse and sell on the emulator.
+- **Switch the app:** `mock.catalog = false` **together with `mock.negotiation` (B6)**, not right after B4: the
+  app's demo offers, bids and checkout look listings up in the demo catalog, so a listing published to the
+  real backend couldn't be offered on or bought. To try browsing and selling against the backend before that,
+  set `catalog: false` in `frontend/src/config.ts` locally (don't commit it).
 - _Blocks (B5) later filter these lists too._
 
 ## B3 — Photo uploads ✅ (branch `feat/backend-b3-uploads`) (needs D1 for production; local disk in development)
