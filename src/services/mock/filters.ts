@@ -1,9 +1,55 @@
-// Item types per category (GET /categories/filters): each type's brands and
-// models, and which types need a shop test certificate. Kept apart from
-// catalog.ts (which bundles images) so the backend can load it in Node too.
+// Categories (GET /categories) and the item types per category (GET
+// /categories/filters): brands, models, and which types need a shop test
+// certificate. Kept apart from catalog.ts (which bundles images) so the
+// backend can load it in Node too.
 
-import type { CategoryFilters, CategoryId, ItemType } from '@/lib/types';
+import type {
+  Category,
+  CategoryFilters,
+  CategoryId,
+  ItemType,
+} from '@/lib/types';
 import { brandsByType } from './brands';
+
+/** The 8 root categories (GET /categories), without their bundled images. */
+export const categoryInfo: Omit<Category, 'image'>[] = [
+  {
+    id: 'mobiles',
+    name: { ar: 'موبايلات وتابلت', en: 'Mobiles & Tablets' },
+    icon: 'Smartphone',
+  },
+  {
+    id: 'electronics',
+    name: { ar: 'إلكترونيات', en: 'Electronics' },
+    icon: 'Laptop',
+  },
+  {
+    id: 'vehicles',
+    name: { ar: 'سيارات ومركبات', en: 'Cars & Vehicles' },
+    icon: 'Car',
+  },
+  {
+    id: 'furniture',
+    name: { ar: 'أثاث ومنزل', en: 'Home & Furniture' },
+    icon: 'Sofa',
+  },
+  {
+    id: 'appliances',
+    name: { ar: 'أجهزة منزلية', en: 'Home Appliances' },
+    icon: 'Refrigerator',
+  },
+  { id: 'fashion', name: { ar: 'أزياء', en: 'Fashion' }, icon: 'Shirt' },
+  {
+    id: 'kids',
+    name: { ar: 'أطفال ومواليد', en: 'Kids & Baby' },
+    icon: 'Baby',
+  },
+  {
+    id: 'hobbies',
+    name: { ar: 'رياضة وهوايات', en: 'Sports & Hobbies' },
+    icon: 'Dumbbell',
+  },
+];
 
 const itemType = (id: string, ar: string, en: string): ItemType => ({
   id,

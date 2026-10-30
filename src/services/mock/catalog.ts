@@ -6,7 +6,7 @@
 // phones' and electronics' shop test certificates are bundled.
 
 import { jod } from '@/lib/money';
-import { categoryFilters } from './filters';
+import { categoryFilters, categoryInfo } from './filters';
 import { cities } from './places';
 
 export { categoryFilters };
@@ -21,56 +21,22 @@ import type {
 const unsplash = (photo: string) =>
   `https://images.unsplash.com/${photo}?w=400&h=400&fit=crop`;
 
-export const categories: Category[] = [
-  {
-    id: 'mobiles',
-    name: { ar: 'موبايلات وتابلت', en: 'Mobiles & Tablets' },
-    icon: 'Smartphone',
-    image: require('../../../assets/images/categories/mobiles.jpg'),
-  },
-  {
-    id: 'electronics',
-    name: { ar: 'إلكترونيات', en: 'Electronics' },
-    icon: 'Laptop',
-    image: require('../../../assets/images/categories/electronics.jpg'),
-  },
-  {
-    id: 'vehicles',
-    name: { ar: 'سيارات ومركبات', en: 'Cars & Vehicles' },
-    icon: 'Car',
-    image: require('../../../assets/images/categories/vehicles.jpg'),
-  },
-  {
-    id: 'furniture',
-    name: { ar: 'أثاث ومنزل', en: 'Home & Furniture' },
-    icon: 'Sofa',
-    image: require('../../../assets/images/categories/furniture.jpg'),
-  },
-  {
-    id: 'appliances',
-    name: { ar: 'أجهزة منزلية', en: 'Home Appliances' },
-    icon: 'Refrigerator',
-    image: require('../../../assets/images/categories/appliances.jpg'),
-  },
-  {
-    id: 'fashion',
-    name: { ar: 'أزياء', en: 'Fashion' },
-    icon: 'Shirt',
-    image: require('../../../assets/images/categories/fashion.jpg'),
-  },
-  {
-    id: 'kids',
-    name: { ar: 'أطفال ومواليد', en: 'Kids & Baby' },
-    icon: 'Baby',
-    image: require('../../../assets/images/categories/kids.jpg'),
-  },
-  {
-    id: 'hobbies',
-    name: { ar: 'رياضة وهوايات', en: 'Sports & Hobbies' },
-    icon: 'Dumbbell',
-    image: require('../../../assets/images/categories/hobbies.jpg'),
-  },
-];
+// Bundled category tiles (Metro needs each require written out).
+const categoryImages: Record<CategoryId, Category['image']> = {
+  mobiles: require('../../../assets/images/categories/mobiles.jpg'),
+  electronics: require('../../../assets/images/categories/electronics.jpg'),
+  vehicles: require('../../../assets/images/categories/vehicles.jpg'),
+  furniture: require('../../../assets/images/categories/furniture.jpg'),
+  appliances: require('../../../assets/images/categories/appliances.jpg'),
+  fashion: require('../../../assets/images/categories/fashion.jpg'),
+  kids: require('../../../assets/images/categories/kids.jpg'),
+  hobbies: require('../../../assets/images/categories/hobbies.jpg'),
+};
+
+export const categories: Category[] = categoryInfo.map(category => ({
+  ...category,
+  image: categoryImages[category.id],
+}));
 
 const sellers = {
   omar: { ar: 'عمر', en: 'Omar' },

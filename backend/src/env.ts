@@ -13,6 +13,8 @@ const schema = z
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
     DATABASE_URL: z.string().startsWith('postgresql://'),
     PORT: z.coerce.number().int().positive().default(4000),
+    // Production: the public address, e.g. https://api.sahla.jo (for file URLs).
+    PUBLIC_URL: optional,
     // Signs the log-in tokens (JWT). Long and random; changing it signs everyone out.
     JWT_SECRET: z.string().min(32, 'at least 32 characters (npm run secret makes one)'),
     // How long a log-in lasts. docs/API.md: 30–90 days, no refresh tokens.

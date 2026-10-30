@@ -51,8 +51,8 @@ endpoint does) and [`backend/README.md`](../backend/README.md) says how to run t
 - ⬜ **B1.4** App: a message for `RATE_LIMITED` ("Too many tries, wait a few minutes").
 - **Switch the app:** `mock.auth = false` (already false). ✅
 
-## B2 — Catalog (browsing) ⬜
-- ⬜ **B2.1** `GET /categories`, `GET /categories/filters`, `GET /cities` from the shared reference data;
+## B2 — Catalog (browsing) 🔨 (branch `feat/backend-b2-catalog`)
+- ✅ **B2.1** `GET /categories`, `GET /categories/filters`, `GET /cities` from the shared reference data;
   category images served by the backend (`/static/categories/*.jpg`).
 - ⬜ **B2.2** Development seed listings: the app's mock catalog (32 listings + auctions + 12 refurbished)
   into the database (`npm run db:seed`), with demo sellers.
