@@ -180,7 +180,9 @@ erDiagram
     timestamp auctionEndsAt
     int incrementFils
     int bidCount "kept by bids"
-    text auctionWinnerId FK "planned B6"
+    text auctionWinnerId FK "highest bidder at the end"
+    timestamp auctionClosedAt "set by the closing job"
+    bool reportHidden "3 reporters: hidden"
     int views
     text searchText "folded search words"
     bool sellerVerified "copy of the badge"
@@ -279,7 +281,7 @@ erDiagram
 
 ---
 
-## 4. Negotiation: chats, offers, bids (planned B6)
+## 4. Negotiation: chats, offers, bids (✅ B6)
 
 ![Negotiation](database/negotiation.png)
 
@@ -336,7 +338,7 @@ erDiagram
 | **Chat** | One per buyer and listing (`(listingId, buyerId)` unique). The seller is the listing's seller, so it isn't stored twice. Hidden when either side blocked the other. | `(listingId, buyerId)` unique, `(buyerId, updatedAt)` |
 | **Message** | Chat messages, oldest first. Offer steps post a message with `offerId`, and the app shows the offer's current state. | `(chatId, createdAt)` |
 | **Offer** | Turn rules: the seller answers `pending` (accept / reject / counter), the buyer answers `countered`. Only the buyer of an `accepted` offer can check out with it. | `(listingId, status)`, `buyerId` |
-| **Bid** | Placed in one transaction that also raises `Listing.priceFils` and `bidCount`, so two bids can't both win. At `auctionEndsAt` a job sets `Listing.auctionWinnerId`. | `(listingId, amountFils desc)` |
+| **Bid** | Placed in one transaction that also raises `Listing.priceFils` and `bidCount`, so two bids can't both win. At `auctionEndsAt` a job (every minute) sets `Listing.auctionWinnerId` and `auctionClosedAt`. | `(listingId, amountFils desc)` |
 
 ---
 

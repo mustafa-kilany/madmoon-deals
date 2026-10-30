@@ -672,7 +672,8 @@ Anyone else answering, or answering out of turn: `FORBIDDEN` (403). Answering a 
 * **`POST /listings/:id/bids` *(Authenticated)*** → Body: `{ "amountFils": 530000 }` → `Bid` (the item's `priceFils` and `bidCount` update; refetch the item)
   * `VALIDATION` (422) if `amountFils` < current bid + `incrementFils` or the auction has ended; `FORBIDDEN` (403) if the bidder is the seller. Check and update in one transaction so two bids at the same moment can't both win.
   * **Auction end:** when `endsAt` passes, the highest bidder wins: set `auction.winnerId`. The app shows the winner a Pay button; they check out with `POST /orders` like a fixed-price buyer, at the winning bid.
-* **`GET /listings/:id/bids`** → `Bid[]`
+* **`GET /listings/:id/bids`** → `Bid[]`, highest first (anyone can see them)
+* Lists the app polls answer `304 Not Modified` to a matching `If-None-Match` (every GET sends an `ETag`).
 
 ### Phase 6: Checkout, Orders & Escrow
 

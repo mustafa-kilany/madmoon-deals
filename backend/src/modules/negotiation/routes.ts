@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { currentUser, requireCustomer } from '../auth/requireUser';
+import { listBids, placeBid } from './bids';
 import { listChats, listMessages, MESSAGE_MAX, sendMessage } from './chats';
 import { getOffer, makeOffer, respondToOffer } from './offers';
-import { toApiMessage, toApiOffer, toApiThread } from './shapes';
+import { toApiBid, toApiMessage, toApiOffer, toApiThread } from './shapes';
 
 // docs/API.md → Phase 5: Negotiation, Chat & Auction Bids (BACKEND_PLAN B6).
 
@@ -45,4 +46,14 @@ negotiationRoutes.post('/offers/:id/respond', ...requireCustomer, async (req, re
     .object({ status: z.enum(['accepted', 'countered', 'rejected']), counterAmountFils: fils.optional() })
     .parse(req.body);
   res.json(toApiOffer(await respondToOffer(currentUser(res.locals).id, id(req.params.id), answer), req));
+});
+
+negotiationRoutes.post('/listings/:id/bids', ...requireCustomer, async (req, res) => {
+  const { amountFils } = z.object({ amountFils: fils }).parse(req.body);
+  res.status(201).json(toApiBid(await placeBid(currentUser(res.locals).id, id(req.params.id), amountFils)));
+});
+
+// Anyone can see an auction's bids.
+negotiationRoutes.get('/listings/:id/bids', async (req, res) => {
+  res.json((await listBids(id(req.params.id))).map(toApiBid));
 });

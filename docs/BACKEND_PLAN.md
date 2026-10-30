@@ -67,11 +67,11 @@ endpoint does), [`DATABASE.md`](DATABASE.md) the database design and [`backend/R
   else IP; `ListingView` table), `GET /me/listings`.
 - ✅ **B2.6** Indexes (`pg_trgm` on `searchText`, live/auction, recommended, price, area) + `npm run load-check`:
   10 000 listings, every query 16–19 ms including counts and facets.
-- **Switch the app:** `mock.catalog = false` **together with `mock.negotiation` (B6)**, not right after B4: the
-  app's demo offers, bids and checkout look listings up in the demo catalog, so a listing published to the
-  real backend couldn't be offered on or bought. To try browsing and selling against the backend before that,
+- **Switch the app:** `mock.catalog`, `mock.negotiation` and `mock.orders` **together, after B7**: the app's demo
+  offers, bids and checkout look listings and offers up in the demo data, so a real listing or offer couldn't
+  be bought through the demo checkout. To try browsing and selling against the backend before that,
   set `catalog: false` in `frontend/src/config.ts` locally (don't commit it).
-- _Blocks (B5) later filter these lists too._
+- ✅ Blocks and reported listings filter these lists (B5.1–B5.2).
 
 ## B3 — Photo uploads ✅ (branch `feat/backend-b3-uploads`) (needs D1 for production; local disk in development)
 Two kinds (decided 2026-10-30): **users' listing photos** and **admins changing the category pictures**.
@@ -116,17 +116,18 @@ Two kinds (decided 2026-10-30): **users' listing photos** and **admins changing 
   e.g. `pg-boss` on the same PostgreSQL, no extra service).
 - ⬜ **B5.4** (optional) AI summaries for flags (Claude, Message Batches at night).
 
-## B6 — Negotiation, chat, auctions 🟡 (branch `feat/backend-b6-negotiation`)
+## B6 — Negotiation, chat, auctions ✅ (branch `feat/backend-b6-negotiation`)
 - ✅ **B6.1** Chats: `GET /chats`, `GET /chats/:id/messages` (paging with `before`), `POST /chats/:id/messages`;
   hidden both ways after a block, no messages either way.
 - ✅ **B6.2** Offers: `POST /listings/:id/offers`, `POST /offers/:id/respond` (turn rules), `GET /offers/:id`;
   each step posts a chat message carrying the offer. One open offer per buyer and listing; no offers on
   brand-store listings (fixed price).
-- ⬜ **B6.3** Bids: `POST /listings/:id/bids` (minimum = price + increment, not your own, not ended),
-  `GET /listings/:id/bids`; done in one transaction so two bids can't both win.
-- ⬜ **B6.4** Auction closing job: at `auctionEndsAt` set `winnerId` (highest bid); no bids → ended unsold.
-- ⬜ **B6.5** Make polled endpoints cheap (indexes, `ETag` / `304`).
-- **Switch the app:** `mock.negotiation = false`.
+- ✅ **B6.3** Bids: `POST /listings/:id/bids` (minimum = price + increment, not your own, not ended),
+  `GET /listings/:id/bids` (highest first, public); the listing row is locked, so two bids can't both win.
+- ✅ **B6.4** Auction closing job (every minute): at `auctionEndsAt` set `winnerId` (highest bid) and
+  `auctionClosedAt`; no bids → ended unsold.
+- ✅ **B6.5** Polled endpoints are cheap: indexes, and Express's `ETag` / `304 Not Modified` on every GET.
+- **Switch the app:** after B7, with `mock.catalog` and `mock.orders` (see B2).
 
 ## B7 — Orders, payments, escrow, delivery ⬜ (needs D2 and a merchant account; fake provider until then)
 - ⬜ **B7.1** `GET /geocode/reverse` (D6), no coordinates stored or logged, 20/hour per user.
