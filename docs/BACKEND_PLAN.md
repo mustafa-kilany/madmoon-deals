@@ -100,8 +100,8 @@ Two kinds (decided 2026-10-30): **users' listing photos** and **admins changing 
   hash, on a listing that isn't withdrawn) → saved. The original is private (`uploads-private`).
 - ✅ **B4.4** Blurred copy for buyers: the OCR boxes of the IMEI / serial (also spaced out) are blurred;
   the shop's phone and the date stay readable.
-- ⬜ **B4.5** `POST /listings` requires a passed, unused certificate for `requiresTestCertificate` types
-  (same type, brand, model); `Item.testCertificate` in listing responses.
+- ✅ **B4.5** `POST /listings` requires a passed, unused certificate for `requiresTestCertificate` types
+  (the seller's, same type, brand, model); `Item.testCertificate` in listing responses, always the blurred copy.
 - ✅ **B4.6** Fake reader for development without a Google Vision key (a passing report for the chosen
   device, today's date, an IMEI from the photo); tests script any page of text. Production without a key: 503.
 

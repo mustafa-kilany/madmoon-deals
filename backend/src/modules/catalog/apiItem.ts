@@ -10,7 +10,7 @@ export const itemInclude = {
   sellerUser: { select: { name: true } },
   store: { select: { nameEn: true, nameAr: true } },
   testCertificate: {
-    select: { blurredUrl: true, photoUrl: true, shopName: true, testedAt: true, specs: true },
+    select: { blurredUrl: true, shopName: true, testedAt: true, specs: true },
   },
 } satisfies Prisma.ListingInclude;
 
@@ -59,11 +59,13 @@ export function toApiItem(listing: ListingRow, req: Request) {
       }),
     views: listing.views,
     ...(listing.storeId && { refurbished: { warrantyMonths: listing.warrantyMonths ?? 0 } }),
+    // Buyers only ever get the blurred copy; the original (IMEI visible) is private.
     ...(cert &&
       cert.testedAt &&
-      cert.shopName && {
+      cert.shopName &&
+      cert.blurredUrl && {
         testCertificate: {
-          imageUrl: absolute(req, cert.blurredUrl ?? cert.photoUrl),
+          imageUrl: absolute(req, cert.blurredUrl),
           shopName: cert.shopName,
           testedAt: cert.testedAt.toISOString(),
           specs: cert.specs,

@@ -7,6 +7,8 @@ import { after, before, test } from 'node:test';
 import sharp from 'sharp';
 import { app } from '../../app';
 import { prisma } from '../../db';
+import { fakeOcr } from '../certificates/fakeOcr';
+import { useOcrForTests } from '../certificates/service';
 
 let base = '';
 const server = app.listen(0);
@@ -61,6 +63,7 @@ before(async () => {
 });
 after(async () => {
   server.close();
+  useOcrForTests(null);
   const users = await prisma.user.findMany({ where: { email: { in: EMAILS } }, select: { id: true } });
   await prisma.listing.deleteMany({ where: { sellerUserId: { in: users.map(u => u.id) } } });
   await prisma.user.deleteMany({ where: { email: { in: EMAILS } } });
@@ -160,4 +163,60 @@ test('DELETE withdraws: gone from search, the page and My listings; not once pai
   await prisma.listing.update({ where: { id: paid.id }, data: { status: 'reserved' } });
   const refused = await call('DELETE', `/listings/${paid.id}`);
   assert.deepEqual([refused.status, refused.body.error.code], [409, 'OPEN_ORDERS']);
+});
+
+// B4.5: phones and electronics need a passed shop test certificate for the same device.
+const IPHONE = { category: 'mobiles', type: 'phones', brand: 'Apple', model: 'iPhone 14 Pro' };
+let paperSeed = 0;
+const certificate = async (device: Record<string, string> = IPHONE, token = tokens[0]) => {
+  useOcrForTests(fakeOcr);
+  const paper = await sharp({ create: { width: 1200, height: 900, channels: 3, background: '#fff', noise: { type: 'gaussian', mean: 100 + paperSeed++, sigma: 50 } } })
+    .jpeg()
+    .toBuffer();
+  const form = new FormData();
+  for (const [key, value] of Object.entries(device)) form.append(key, value);
+  form.append('photo', new Blob([new Uint8Array(paper)], { type: 'image/jpeg' }), 'report.jpg');
+  const r = await fetch(`${base}/test-certificates`, { method: 'POST', body: form, headers: { Authorization: `Bearer ${token}` } });
+  return (await r.json()) as { id: string; status: string };
+};
+const phone = async (extra: Record<string, unknown> = {}) => ({
+  ...(await sofa()),
+  ...IPHONE,
+  titleAr: 'ايفون 14 برو',
+  titleEn: 'iPhone 14 Pro',
+  priceFils: 520_000,
+  ...extra,
+});
+
+test('a phone needs a passed certificate for the same device; buyers see its blurred copy', async () => {
+  const none = await call('POST', '/listings', await phone());
+  assert.deepEqual([none.status, none.body.error.code], [422, 'VALIDATION']);
+
+  const cert = await certificate();
+  assert.equal(cert.status, 'passed');
+  const r = await call('POST', '/listings', await phone({ testCertificateId: cert.id }));
+  assert.equal(r.status, 201);
+  assert.match(r.body.testCertificate.imageUrl, /\/files\/certificates\/.+_blurred\.jpg$/);
+  assert.match(r.body.testCertificate.shopName, /Sahla|سهلة/);
+  assert.deepEqual(r.body.testCertificate.specs, ['128GB', 'Battery 91%']);
+  const page = await (await fetch(`${base}/listings/${r.body.id}`)).json();
+  assert.equal(page.testCertificate.imageUrl, r.body.testCertificate.imageUrl);
+
+  // Used up: not on a second listing.
+  const again = await call('POST', '/listings', await phone({ testCertificateId: cert.id }));
+  assert.deepEqual([again.status, again.body.error.code], [422, 'VALIDATION']);
+});
+
+test('the certificate must be the seller’s, passed, and for this type, brand and model', async () => {
+  const theirs = await certificate(IPHONE, tokens[1]);
+  const otherModel = await certificate({ ...IPHONE, model: 'iPhone 13' });
+  const tablet = await certificate({ ...IPHONE, type: 'tablets', model: 'iPad Air' });
+  const failed = await certificate();
+  await prisma.testCertificate.update({ where: { id: failed.id }, data: { status: 'failed', problems: ['no_specs'] } });
+  for (const [name, id] of [['someone else’s', theirs.id], ['another model', otherModel.id], ['another type', tablet.id], ['failed', failed.id], ['made up', 'nope']]) {
+    const r = await call('POST', '/listings', await phone({ testCertificateId: id }));
+    assert.deepEqual([r.status, r.body.error?.code], [422, 'VALIDATION'], name);
+  }
+  // Types without certificates ignore the field.
+  assert.equal((await call('POST', '/listings', await sofa({ testCertificateId: 'nope' }))).status, 201);
 });

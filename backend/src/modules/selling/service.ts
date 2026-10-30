@@ -1,6 +1,7 @@
 import { prisma } from '../../db';
-import type { User } from '../../generated/prisma/client';
+import { Prisma, type User } from '../../generated/prisma/client';
 import { ApiError } from '../../lib/errors';
+import { findType } from '../../reference';
 import { itemInclude } from '../catalog/apiItem';
 import { searchTextFor } from '../catalog/searchText';
 import type { NewListing } from './rules';
@@ -24,9 +25,33 @@ async function ownPhotos(userId: string, urls: string[]) {
   return { paths, uploadIds: uploads.map(u => u.id) };
 }
 
+/**
+ * Phones and electronics (requiresTestCertificate): a certificate from
+ * POST /test-certificates that is the seller's, passed, on no other listing, and
+ * checked for this type, brand and model (B4.5). Other types: none.
+ */
+async function certificateFor(sellerId: string, input: NewListing) {
+  if (!findType(input.category, input.type)?.requiresTestCertificate) return undefined;
+  const cert = input.testCertificateId
+    ? await prisma.testCertificate.findUnique({
+        where: { id: input.testCertificateId },
+        include: { listing: { select: { id: true } } },
+      })
+    : null;
+  const sameDevice =
+    cert?.category === input.category &&
+    cert.type === input.type &&
+    cert.brand === input.brand &&
+    (cert.model ?? undefined) === input.model;
+  if (!cert || cert.userId !== sellerId || cert.status !== 'passed' || cert.listing || !sameDevice)
+    throw invalid('testCertificateId: a passed test certificate for this device is required');
+  return cert.id;
+}
+
 /** POST /listings (BACKEND_PLAN B4.1). */
 export async function createListing(seller: User, input: NewListing) {
   const { paths, uploadIds } = await ownPhotos(seller.id, input.imageUrls);
+  const testCertificateId = await certificateFor(seller.id, input);
   const auction = input.saleType === 'auction';
   return prisma.$transaction(async tx => {
     const listing = await tx.listing.create({
@@ -48,6 +73,7 @@ export async function createListing(seller: User, input: NewListing) {
         searchText: searchTextFor(input),
         sellerVerified: seller.verified,
         sellerUserId: seller.id,
+        testCertificateId,
       },
       include: itemInclude,
     });
@@ -58,6 +84,11 @@ export async function createListing(seller: User, input: NewListing) {
     // Two publishes racing for the same photos: only the first gets them.
     if (used.count !== uploadIds.length) throw invalid('imageUrls: a photo is already on another listing');
     return listing;
+  }).catch(error => {
+    // Listing.testCertificateId is unique: two publishes racing for one certificate.
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002')
+      throw invalid('testCertificateId: this certificate is on another listing');
+    throw error;
   });
 }
 
