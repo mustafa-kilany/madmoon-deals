@@ -80,7 +80,7 @@ test('log-in: wrong password is INVALID_CREDENTIALS; email is trimmed and lower-
     [401, 'INVALID_CREDENTIALS'],
   );
   assert.deepEqual(
-    code(await call('POST', '/auth/login', { email: 'nobody@sahla.jo', password: 'whatever1' })),
+    code(await call('POST', '/auth/login', { email: 'nobody@example.com', password: 'whatever1' })),
     [401, 'INVALID_CREDENTIALS'],
   );
   const r = await call('POST', '/auth/login', { email: ' AHMAD@sahla.jo ', password: 'sahla1234' });
@@ -110,41 +110,41 @@ test('tokens: missing, forged, or logged out → 401', async () => {
 
 test('sign-up needs the emailed code; send-otp refuses a taken email', async () => {
   assert.deepEqual(
-    code(await call('POST', '/auth/signup', { name: 'Rami', email: 'rami@sahla.jo', password: 'longenough', code: '000000' })),
+    code(await call('POST', '/auth/signup', { name: 'Rami', email: 'rami@example.com', password: 'longenough', code: '000000' })),
     [422, 'INVALID_CODE'],
   );
-  assert.equal((await call('POST', '/auth/send-otp', { email: 'rami@sahla.jo' })).status, 204);
-  assert.deepEqual(code(await call('POST', '/auth/send-otp', { email: 'ahmad@sahla.jo' })), [409, 'EMAIL_TAKEN']);
+  assert.equal((await call('POST', '/auth/send-otp', { email: 'rami@example.com' })).status, 204);
+  assert.deepEqual(code(await call('POST', '/auth/send-otp', { email: 'lina@example.com' })), [409, 'EMAIL_TAKEN']);
 });
 
 test('password reset: the new password works, the old one and old sessions do not', async () => {
   const signup = await call('POST', '/auth/signup', {
     name: 'Huda',
-    email: 'huda@sahla.jo',
+    email: 'huda@example.com',
     password: 'oldpassword',
     code: '123456',
   });
-  assert.equal((await call('POST', '/auth/forgot-password', { email: 'huda@sahla.jo' })).status, 204);
-  assert.equal((await call('POST', '/auth/forgot-password', { email: 'nobody@sahla.jo' })).status, 204);
+  assert.equal((await call('POST', '/auth/forgot-password', { email: 'huda@example.com' })).status, 204);
+  assert.equal((await call('POST', '/auth/forgot-password', { email: 'nobody@example.com' })).status, 204);
   assert.deepEqual(
-    code(await call('POST', '/auth/reset-password', { email: 'huda@sahla.jo', code: '999999', password: 'newpassword' })),
+    code(await call('POST', '/auth/reset-password', { email: 'huda@example.com', code: '999999', password: 'newpassword' })),
     [422, 'INVALID_CODE'],
   );
   assert.deepEqual(
-    code(await call('POST', '/auth/reset-password', { email: 'nobody@sahla.jo', code: '123456', password: 'newpassword' })),
+    code(await call('POST', '/auth/reset-password', { email: 'nobody@example.com', code: '123456', password: 'newpassword' })),
     [422, 'INVALID_CODE'],
   );
   const reset = await call('POST', '/auth/reset-password', {
-    email: 'huda@sahla.jo',
+    email: 'huda@example.com',
     code: '123456',
     password: 'newpassword',
   });
   assert.equal(reset.status, 200);
   assert.deepEqual(
-    code(await call('POST', '/auth/login', { email: 'huda@sahla.jo', password: 'oldpassword' })),
+    code(await call('POST', '/auth/login', { email: 'huda@example.com', password: 'oldpassword' })),
     [401, 'INVALID_CREDENTIALS'],
   );
-  assert.equal((await call('POST', '/auth/login', { email: 'huda@sahla.jo', password: 'newpassword' })).status, 200);
+  assert.equal((await call('POST', '/auth/login', { email: 'huda@example.com', password: 'newpassword' })).status, 200);
   assert.deepEqual(code(await call('GET', '/me', undefined, signup.body.token)), [401, 'UNAUTHORIZED']);
   assert.equal((await call('GET', '/me', undefined, reset.body.token)).status, 200);
 });
@@ -152,22 +152,22 @@ test('password reset: the new password works, the old one and old sessions do no
 test('delete account: the token stops working and the email is free again', async () => {
   const { body } = await call('POST', '/auth/signup', {
     name: 'Tala',
-    email: 'tala@sahla.jo',
+    email: 'tala@example.com',
     password: 'longenough',
     code: '123456',
   });
   assert.equal((await call('DELETE', '/me', undefined, body.token)).status, 204);
   assert.deepEqual(code(await call('GET', '/me', undefined, body.token)), [401, 'UNAUTHORIZED']);
   assert.deepEqual(
-    code(await call('POST', '/auth/login', { email: 'tala@sahla.jo', password: 'longenough' })),
+    code(await call('POST', '/auth/login', { email: 'tala@example.com', password: 'longenough' })),
     [401, 'INVALID_CREDENTIALS'],
   );
-  assert.equal((await call('POST', '/auth/send-otp', { email: 'tala@sahla.jo' })).status, 204);
+  assert.equal((await call('POST', '/auth/send-otp', { email: 'tala@example.com' })).status, 204);
 });
 
 test('too many wrong passwords for one email → 429 RATE_LIMITED', async () => {
   let last = { status: 0, body: undefined as any };
   for (let i = 0; i < 11; i++)
-    last = await call('POST', '/auth/login', { email: 'victim@sahla.jo', password: `guess${i}xx` });
+    last = await call('POST', '/auth/login', { email: 'victim@example.com', password: `guess${i}xx` });
   assert.deepEqual(code(last), [429, 'RATE_LIMITED']);
 });

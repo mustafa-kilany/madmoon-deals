@@ -207,7 +207,8 @@ Couriers are **staff**, not customers: nobody can sign up as one. An admin creat
 screen) and then logs in like anyone else, but sees **only the driver screens**: no browsing, selling,
 buying, chats or offers.
 
-- ⬜ **B14.1** Staff accounts: `npm run staff -- courier "Name" name@sahla.jo` now, `POST /admin/couriers` with
+- 🔨 **B14.1** Staff accounts: ✅ `npm run staff -- courier "Name" name@sahla.jo` (and `disable`, `list`),
+  ✅ sign-up refuses the staff domain (`STAFF_EMAIL_DOMAIN`, default `sahla.jo`); ⬜ `POST /admin/couriers` with
   the dashboard (B8); only the staff domain; an invite code is emailed. Public sign-up refuses the staff
   domain, so nobody can make a look-alike account.
 - ⬜ **B14.2** Couriers can only call courier endpoints: everything for customers (listing, offers, chats,

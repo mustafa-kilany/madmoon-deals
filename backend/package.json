@@ -16,7 +16,8 @@
     "db:seed": "tsx scripts/seed.ts",
     "secret": "node -e \"console.log(require('node:crypto').randomBytes(48).toString('base64url'))\"",
     "postdb:migrate": "prisma generate",
-    "load-check": "tsx scripts/load-check.ts"
+    "load-check": "tsx scripts/load-check.ts",
+    "staff": "tsx scripts/staff.ts"
   },
   "type": "module",
   "dependencies": {

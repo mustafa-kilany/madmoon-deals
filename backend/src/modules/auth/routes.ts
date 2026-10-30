@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { prisma } from '../../db';
 import { ApiError } from '../../lib/errors';
 import { cityIds } from '../../reference';
+import { isStaffEmail } from '../staff/service';
 import { toApiUser } from './apiUser';
 import { sendCode, useCode } from './codes';
 import { burnPasswordCheck, hashPassword, passwordMatches } from './password';
@@ -58,8 +59,15 @@ const limited = (limit: number) =>
 
 export const authRoutes = Router();
 
+// Staff (couriers, admins) never sign up: an admin creates their account (BACKEND_PLAN B14).
+const refuseStaff = (email: string) => {
+  if (isStaffEmail(email))
+    throw new ApiError(422, 'VALIDATION', 'This email is for Sahla staff: ask an admin for an account');
+};
+
 authRoutes.post('/auth/send-otp', limited(5), async (req, res) => {
   const body = emailBody.parse(req.body);
+  refuseStaff(body.email);
   if (await prisma.user.findUnique({ where: { email: body.email } })) throw emailTaken();
   await sendCode(body.email, 'signup');
   res.status(204).end();
@@ -67,6 +75,7 @@ authRoutes.post('/auth/send-otp', limited(5), async (req, res) => {
 
 authRoutes.post('/auth/signup', limited(10), async (req, res) => {
   const body = signupBody.parse(req.body); // VALIDATION, then EMAIL_TAKEN, then the code
+  refuseStaff(body.email);
   if (await prisma.user.findUnique({ where: { email: body.email } })) throw emailTaken();
   await useCode(body.email, 'signup', body.code);
   const user = await prisma.user

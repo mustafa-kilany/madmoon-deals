@@ -22,6 +22,11 @@ const schema = z
     // Local testing only: this code is accepted for any email and nothing is
     // sent (the app's tests and demo use 123456). Never set in production.
     DEV_EMAIL_CODE: optional,
+    // Staff (couriers, admins) have emails at this domain; public sign-up refuses it.
+    STAFF_EMAIL_DOMAIN: z
+      .string()
+      .regex(/^[a-z0-9.-]+\.[a-z]{2,}$/, 'a domain like sahla.jo')
+      .default('sahla.jo'),
     // Optional until those features are switched on (backend/docs/); blank = off.
     GOOGLE_VISION_API_KEY: optional, // certificate OCR
     ANTHROPIC_API_KEY: optional, // AI reviewer for the risk queue
