@@ -667,7 +667,7 @@ Anyone else answering, or answering out of turn: `FORBIDDEN` (403). Answering a 
 * **`GET /chats` *(Authenticated)*** → `ChatThread[]`
 * **`GET /chats/:id/messages` *(Authenticated)*** → `ChatMessage[]`, the latest 50 (oldest first). Older ones: `?before=<messageId>&limit=50` (the app doesn't page back yet).
 * **`POST /chats/:id/messages` *(Authenticated)*** → Body: `{ "text": "Is this still available?" }` → `ChatMessage`
-* **`POST /listings/:id/offers` *(Authenticated)*** → Body: `{ "amountFils": 450000 }` → `{ "offer": Offer, "chatId": "..." }`. Fixed-price `active` listings only (`ITEM_UNAVAILABLE` otherwise); not your own (`FORBIDDEN`).
+* **`POST /listings/:id/offers` *(Authenticated)*** → Body: `{ "amountFils": 450000 }` → `{ "offer": Offer, "chatId": "..." }`. Fixed-price `active` listings only (`ITEM_UNAVAILABLE` otherwise, also for brand-store listings and between people who blocked each other); not your own (`FORBIDDEN`). One open offer at a time: while the last one is `pending` or `countered`, a new one is `VALIDATION`.
 * **`POST /offers/:id/respond` *(Authenticated: the seller for a `pending` offer, the buyer for a `countered` one)*** → Body: `{ "status": "accepted" | "countered" | "rejected", "counterAmountFils"?: 480000 }` → `Offer` (only the seller may send `countered`)
 * **`POST /listings/:id/bids` *(Authenticated)*** → Body: `{ "amountFils": 530000 }` → `Bid` (the item's `priceFils` and `bidCount` update; refetch the item)
   * `VALIDATION` (422) if `amountFils` < current bid + `incrementFils` or the auction has ended; `FORBIDDEN` (403) if the bidder is the seller. Check and update in one transaction so two bids at the same moment can't both win.

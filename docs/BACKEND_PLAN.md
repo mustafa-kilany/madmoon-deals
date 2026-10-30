@@ -116,10 +116,12 @@ Two kinds (decided 2026-10-30): **users' listing photos** and **admins changing 
   e.g. `pg-boss` on the same PostgreSQL, no extra service).
 - ⬜ **B5.4** (optional) AI summaries for flags (Claude, Message Batches at night).
 
-## B6 — Negotiation, chat, auctions ⬜
-- ⬜ **B6.1** Chats: `GET /chats`, `GET /chats/:id/messages` (paging with `before`), `POST /chats/:id/messages`.
-- ⬜ **B6.2** Offers: `POST /listings/:id/offers`, `POST /offers/:id/respond` (turn rules), `GET /offers/:id`;
-  each step posts a chat message carrying the offer.
+## B6 — Negotiation, chat, auctions 🟡 (branch `feat/backend-b6-negotiation`)
+- ✅ **B6.1** Chats: `GET /chats`, `GET /chats/:id/messages` (paging with `before`), `POST /chats/:id/messages`;
+  hidden both ways after a block, no messages either way.
+- ✅ **B6.2** Offers: `POST /listings/:id/offers`, `POST /offers/:id/respond` (turn rules), `GET /offers/:id`;
+  each step posts a chat message carrying the offer. One open offer per buyer and listing; no offers on
+  brand-store listings (fixed price).
 - ⬜ **B6.3** Bids: `POST /listings/:id/bids` (minimum = price + increment, not your own, not ended),
   `GET /listings/:id/bids`; done in one transaction so two bids can't both win.
 - ⬜ **B6.4** Auction closing job: at `auctionEndsAt` set `winnerId` (highest bid); no bids → ended unsold.
