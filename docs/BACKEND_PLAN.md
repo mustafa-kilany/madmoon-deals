@@ -95,12 +95,15 @@ Two kinds (decided 2026-10-30): **users' listing photos** and **admins changing 
   the photos are marked used so the clean-up keeps them.
 - ✅ **B4.2** `PATCH /listings/:id` (price, condition), `DELETE /listings/:id` (withdraw; not once paid for,
   not an auction with bids).
-- ⬜ **B4.3** `POST /test-certificates`: photo → OCR → stamp (admin review for now) → text checks →
-  `already_used` (photo hash, IMEI hash) → saved; answer in under 10 s.
-- ⬜ **B4.4** Blurred copy of the certificate photo for buyers (IMEI / serial boxes).
+- ✅ **B4.3** `POST /test-certificates`: photo (upright, no EXIF) → OCR → stamp (none yet: `stampChecked`
+  false, admin review in B8) → text checks → `already_used` (same photo fingerprint, or same IMEI / serial
+  hash, on a listing that isn't withdrawn) → saved. The original is private (`uploads-private`).
+- ✅ **B4.4** Blurred copy for buyers: the OCR boxes of the IMEI / serial (also spaced out) are blurred;
+  the shop's phone and the date stay readable.
 - ⬜ **B4.5** `POST /listings` requires a passed, unused certificate for `requiresTestCertificate` types
   (same type, brand, model); `Item.testCertificate` in listing responses.
-- ⬜ **B4.6** A fake OCR provider for tests and for development without a key.
+- ✅ **B4.6** Fake reader for development without a Google Vision key (a passing report for the chosen
+  device, today's date, an IMEI from the photo); tests script any page of text. Production without a key: 503.
 
 ## B5 — Safety ⬜
 - ⬜ **B5.1** `POST /reports`; several reporters on one listing hide it until an admin looks.

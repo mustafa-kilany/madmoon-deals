@@ -1,7 +1,7 @@
-import { createHash, createHmac, randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { prisma } from '../../db';
-import { env } from '../../env';
 import { ApiError } from '../../lib/errors';
+import { keyedHash } from '../../lib/hash';
 import { idProvider } from './provider';
 
 // A check is started by the app and finished when Sanad sends the user back to
@@ -10,8 +10,7 @@ import { idProvider } from './provider';
 const STATE_TTL_MS = 15 * 60 * 1000;
 
 const sha256 = (value: string) => createHash('sha256').update(value).digest('hex');
-const nationalIdHash = (nationalId: string) =>
-  createHmac('sha256', env.ID_HASH_SECRET ?? env.JWT_SECRET).update(`national-id:${nationalId}`).digest('hex');
+const nationalIdHash = (nationalId: string) => keyedHash('national-id', nationalId);
 
 /** POST /me/id-verification/sanad: where to send the user to approve in Sanad. */
 export async function startSanad(userId: string, callbackUrl: string) {

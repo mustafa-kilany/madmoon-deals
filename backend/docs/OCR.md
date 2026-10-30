@@ -50,21 +50,14 @@ added later for the stamp and for hard cases.
 4. Put it in `backend/.env`: `GOOGLE_VISION_API_KEY=...`
 5. Set a **budget alert** (Billing → Budgets), e.g. 10 USD/month, so a bug can't run up a bill.
 
-## Still to build (after sign-in and photo uploads exist)
+## Built (BACKEND_PLAN B4)
 
-- `POST /test-certificates` route: save the photo → `ocr.read()` → `stamp.detect()` →
-  `checkCertificateText()` → step 7 (same photo hash or same IMEI hash on another listing →
-  `already_used`) → save a `TestCertificate` row.
-- Blurred copy for buyers: blur the boxes of the words in `serials` (the `sharp` library).
-- `POST /listings` refuses a `requiresTestCertificate` type without a passed, unused certificate
-  for the same type / brand / model. This is what stops sellers from skipping it.
-- Admin review list: certificates with `stampChecked = false`, newest first.
-
-## Ideas
-
-- **Show the seller what was read** ("We read: Apple iPhone 14 Pro · 128GB · Battery 89% · 25/10/2026
-  · Al-Najm Mobiles") before publishing, so they can retake a bad photo straight away.
-- **Hash every IMEI** (`serialHashes`). The same phone listed twice by different people is a strong
-  scam signal for [ACCOUNT-RISK.md](ACCOUNT-RISK.md).
-- **Partner shops:** let trusted shops issue a QR code on their report that links to a Sahla page.
-  Scanning it verifies the report instantly, with no OCR needed.
+- `POST /test-certificates` (`src/modules/certificates/service.ts`): the photo is turned upright and
+  stripped of EXIF → `ocr.read()` → `stamp.detect()` → `checkCertificateText()` → step 7 (same photo
+  fingerprint or same IMEI / serial hash on a listing that isn't withdrawn → `already_used`) → a
+  `TestCertificate` row. The original goes to `uploads-private` (never served).
+- Blurred copy for buyers (`photo.ts`): the boxes of the words that make up an IMEI / serial are blurred.
+- No key in development: a fake reader (`fakeOcr.ts`) "reads" a passing report for the chosen device.
+  In production without a key the endpoint answers 503.
+- `POST /listings` refuses a `requiresTestCertificate` type without a passed, unused certificate for the
+  same type / brand / model (B4.5).

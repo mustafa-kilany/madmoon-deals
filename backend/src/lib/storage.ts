@@ -33,3 +33,23 @@ export const localStorage: Storage = {
 
 export const storage: Storage = localStorage;
 
+// Private files: test certificate originals (IMEI / serial numbers visible). A
+// separate folder that is never served; admins see them through the dashboard
+// (B8). Production: a private bucket. Refs look like "private:certificates/….jpg".
+export const privateDir = fileURLToPath(new URL('../../uploads-private', import.meta.url));
+const PRIVATE_PREFIX = 'private:';
+
+export const privateStorage: Storage = {
+  async put(key, data) {
+    const file = path.join(privateDir, key);
+    await mkdir(path.dirname(file), { recursive: true });
+    await writeFile(file, data);
+    return PRIVATE_PREFIX + key;
+  },
+  async remove(ref) {
+    if (!ref.startsWith(PRIVATE_PREFIX)) return;
+    const file = path.join(privateDir, ref.slice(PRIVATE_PREFIX.length));
+    if (!file.startsWith(privateDir)) return;
+    await rm(file, { force: true });
+  },
+};
