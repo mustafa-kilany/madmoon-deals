@@ -1,0 +1,19 @@
+{
+  // Run by tsx (dev and production), so tsc only type-checks. "Bundler"
+  // resolution lets the backend share the app's rules and reference data
+  // (../src/lib, ../src/services/mock/{filters,places}.ts) instead of copying them.
+  "compilerOptions": {
+    "target": "ES2023",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "noEmit": true,
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "jsx": "react-jsx",
+    "paths": {
+      "@/*": ["../src/*"]
+    }
+  },
+  "include": ["src"]
+}

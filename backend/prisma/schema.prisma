@@ -1,0 +1,331 @@
+// Sahla database schema. Models follow docs/API.md; after changing this file run
+// `npm run db:migrate -- --name <what-changed>` to update the database.
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum AuthMethod {
+  email
+  google
+  apple
+}
+
+enum Role {
+  courier
+  admin // the admin dashboard: refurbished import, review queues (never sent to the app)
+}
+
+// API `User`. `card` is stored as cardBrand + cardLast4 (never the card number).
+model User {
+  id           String     @id @default(cuid())
+  name         String
+  email        String?    @unique // lower-cased; Apple may give a relay address
+  passwordHash String? // null for Google / Apple accounts
+  method       AuthMethod @default(email)
+  verified     Boolean    @default(false)
+  cityId       String     @default("amman") // an area id from GET /cities
+  avatarUrl    String     @default("")
+  cardBrand    String?
+  cardLast4    String?
+  role         Role?
+  suspended    Boolean    @default(false) // set by an admin only (never by the risk checker)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  sessions         Session[]
+  listings         Listing[]
+  certificates     TestCertificate[]
+  idVerifications  IdVerification[]
+  reportsMade      Report[]          @relation("reporter")
+  blocks           Block[]           @relation("blocker")
+  blockedBy        Block[]           @relation("blocked")
+  accountSignals   AccountSignal[]
+  riskFlags        RiskFlag[]        @relation("flagged")
+  riskFlagsHandled RiskFlag[]        @relation("reviewer")
+}
+
+// One signed-in device. Only a hash of the bearer token is stored, so a leaked
+// database can't be used to sign in.
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  deviceId  String? // X-Device-Id header (planned): spots many accounts on one phone
+  ip        String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([deviceId])
+}
+
+enum EmailCodePurpose {
+  signup
+  reset
+}
+
+// 6-digit emailed codes (POST /auth/send-otp, /auth/forgot-password).
+model EmailCode {
+  id        String           @id @default(cuid())
+  email     String
+  purpose   EmailCodePurpose
+  codeHash  String
+  attempts  Int              @default(0) // ~5 wrong tries, then a new code is needed
+  expiresAt DateTime
+  createdAt DateTime         @default(now())
+
+  @@index([email, purpose])
+}
+
+// ─── Listings ───────────────────────────────────────────────────────────────
+
+enum Condition {
+  new
+  excellent
+  good
+  loved
+  refurbished_like_new
+  refurbished_excellent
+  refurbished_good
+}
+
+enum ListingStatus {
+  active
+  reserved // paid, waiting for delivery
+  sold
+  withdrawn // deleted by the seller, or a refurbished sku taken off sale (never shown)
+}
+
+enum SaleType {
+  fixed
+  auction
+}
+
+// API `Item`. The seller is either a user (sellerUserId) or a brand's official
+// store (storeId, refurbished stock only), never both.
+model Listing {
+  id            String        @id @default(cuid())
+  category      String
+  type          String
+  titleAr       String
+  titleEn       String
+  priceFils     Int // fixed price, or the current highest bid of an auction
+  imageUrls     String[] // cover first, 1–5
+  condition     Condition
+  description   String
+  status        ListingStatus @default(active)
+  brand         String?
+  model         String?
+  locationId    String // area id from GET /cities
+  saleType      SaleType      @default(fixed)
+  auctionEndsAt DateTime?
+  incrementFils Int?
+  views         Int           @default(0)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  sellerUserId String?
+  sellerUser   User?   @relation(fields: [sellerUserId], references: [id])
+
+  // Certified refurbished (POST /admin/refurbished/import)
+  storeId        String?
+  store          Store?  @relation(fields: [storeId], references: [id])
+  sku            String?
+  warrantyMonths Int?
+
+  // Phones & electronics: the shop test certificate it was published with
+  testCertificateId String?          @unique
+  testCertificate   TestCertificate? @relation(fields: [testCertificateId], references: [id])
+
+  @@unique([storeId, sku])
+  @@index([category, status])
+  @@index([sellerUserId])
+}
+
+// ─── Certified refurbished stores ───────────────────────────────────────────
+
+// A brand's official store account, e.g. id "store-apple", "Apple Certified".
+model Store {
+  id        String   @id // "store-apple": the listings' sellerId
+  nameEn    String
+  nameAr    String
+  createdAt DateTime @default(now())
+
+  listings Listing[]
+  apiKeys  StoreApiKey[]
+  imports  RefurbishedImport[]
+}
+
+// A key a brand's system uses to call the import itself. Only a hash is
+// stored; the key is shown once, when created (npm run store:key).
+model StoreApiKey {
+  id         String    @id @default(cuid())
+  storeId    String
+  store      Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  keyHash    String    @unique
+  label      String // e.g. "Apple stock system"
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+}
+
+// Every import run (dashboard or brand API), for the dashboard's history.
+model RefurbishedImport {
+  id        String   @id @default(cuid())
+  storeId   String
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  source    String // "key:<label>" or "admin:<userId>"
+  mode      String // upsert | replace
+  created   Int
+  updated   Int
+  withdrawn Int
+  errors    Json // the skipped rows, as returned to the caller
+  createdAt DateTime @default(now())
+
+  @@index([storeId, createdAt])
+}
+
+// ─── Shop test certificates (OCR) ───────────────────────────────────────────
+
+enum CertificateStatus {
+  passed
+  failed
+}
+
+// POST /test-certificates: one checked photo of a shop's stamped test report.
+model TestCertificate {
+  id           String            @id @default(cuid())
+  userId       String
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status       CertificateStatus
+  problems     String[] // unreadable, no_stamp, no_shop, device_mismatch, no_specs, too_old, already_used
+  // The device the seller chose
+  category     String
+  type         String
+  brand        String
+  model        String?
+  // What was read off the paper
+  shopName     String?
+  shopPhone    String?
+  testedAt     DateTime?
+  device       String?
+  specs        String[]
+  photoUrl     String // the original: admins only
+  blurredUrl   String? // IMEI / serial blurred: what buyers see
+  imageHash    String? // perceptual hash, to catch the same photo reused
+  serialHashes String[] // hashed IMEI / serial numbers read off the paper
+  ocrProvider  String // e.g. "google-vision"
+  ocrText      String // kept for disputes, never returned to the app
+  stampChecked Boolean           @default(false) // false until a stamp detector runs: admin review
+  createdAt    DateTime          @default(now())
+
+  listing Listing?
+
+  @@index([userId])
+  @@index([imageHash])
+}
+
+// ─── ID verification (Sanad, or a manual photo review until Sanad is live) ──
+
+enum IdProvider {
+  sanad
+  manual
+}
+
+enum IdVerificationStatus {
+  pending
+  approved
+  rejected
+}
+
+model IdVerification {
+  id             String               @id @default(cuid())
+  userId         String
+  user           User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider       IdProvider
+  status         IdVerificationStatus @default(pending)
+  providerRef    String? // the provider's request / transaction id
+  nationalIdHash String? // one national ID, one verified account; never the number itself
+  photoUrl       String? // manual review only; delete it after the decision
+  rejectReason   String?
+  reviewedById   String? // the admin who decided a manual review
+  createdAt      DateTime             @default(now())
+  decidedAt      DateTime?
+
+  @@index([userId])
+  @@index([nationalIdHash])
+}
+
+// ─── Safety: reports, blocks, suspicious-account checker ───────────────────
+
+model Report {
+  id         String   @id @default(cuid())
+  reporterId String
+  reporter   User     @relation("reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  targetType String // listing | user
+  targetId   String
+  reason     String // scam | prohibited | offensive | wrong_info | other
+  details    String?
+  createdAt  DateTime @default(now())
+
+  @@index([targetType, targetId])
+}
+
+model Block {
+  blockerId String
+  blocker   User     @relation("blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blockedId String
+  blocked   User     @relation("blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([blockerId, blockedId])
+  @@index([blockedId])
+}
+
+// One thing the checker noticed about an account (docs/ACCOUNT-RISK.md).
+model AccountSignal {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      String // disposable_email, shared_device, listing_burst, reports_received, …
+  points    Int // how much it adds to the risk score
+  details   Json
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+enum RiskFlagStatus {
+  open
+  dismissed // an admin looked: nothing wrong
+  actioned // an admin did something (warned, suspended, …)
+}
+
+// The admin queue. The checker only ever creates these: it never blocks,
+// hides or suspends anything itself.
+model RiskFlag {
+  id           String         @id @default(cuid())
+  userId       String
+  user         User           @relation("flagged", fields: [userId], references: [id], onDelete: Cascade)
+  score        Int
+  signals      Json // the signals behind it
+  aiSummary    String? // a short explanation for the admin, when the AI reviewer is on
+  aiModel      String?
+  status       RiskFlagStatus @default(open)
+  reviewedById String?
+  reviewedBy   User?          @relation("reviewer", fields: [reviewedById], references: [id])
+  reviewNote   String?
+  createdAt    DateTime       @default(now())
+  reviewedAt   DateTime?
+
+  @@index([status, createdAt])
+  @@index([userId])
+}

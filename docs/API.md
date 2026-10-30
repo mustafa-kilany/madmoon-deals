@@ -515,8 +515,8 @@ type, brand or model, the app asks them to check it again.
   * Answer within ~10 s (the app's upload timeout is 60 s, but the seller is waiting).
 * **How the server checks the photo (OCR + stamp detection)**
   1. **Read the text** with an OCR service that reads Arabic and English, e.g. Google Cloud Vision
-     (`DOCUMENT_TEXT_DETECTION`), Azure AI Vision (Read) or AWS Textract. Keep the text and the
-     per-word confidence. Too little text or low confidence → `unreadable` (stop here).
+     (`DOCUMENT_TEXT_DETECTION`) or Azure AI Vision (Read); not AWS Textract, which has no Arabic
+     (comparison: `backend/docs/OCR.md`). Keep the text and the per-word confidence. Too little text or low confidence → `unreadable` (stop here).
   2. **Shop:** a shop name (letterhead or stamp text) and a Jordanian phone number (mobile
      `07[789]XXXXXXX` or landline `0[2356]XXXXXXX`, with or without spaces, Arabic digits too) →
      `shopName`; missing → `no_shop`.
@@ -766,7 +766,7 @@ The app's reference copy of the row rules is `validateImportRow()` / `importRowT
     store, `verified: true`, `status: "active"`, `saleType: "auction"` when `auctionEndsAt` is set.
   * **Updating** a sku changes its listing in place (price, photos, warranty, …), so Saved items and
     links keep working. A sku with an open order (paid, not delivered) is not changed; the row gets
-    an error. Copy the photos to Sahla's CDN instead of linking the brand's URLs.
+    an error. A sold sku isn't reused either (error): restocked items need a new sku. Copy the photos to Sahla's CDN instead of linking the brand's URLs.
   * **Errors:** `UNAUTHORIZED` (401), `FORBIDDEN` (403) for another store's id, `NOT_FOUND` (404) for
     an unknown `storeId`, `VALIDATION` (422) for a malformed body or more than 1000 items. Row
     problems are not errors: they come back in `errors` with status 200.

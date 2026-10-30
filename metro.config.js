@@ -1,5 +1,6 @@
 const { getDefaultConfig, mergeConfig } = require('@react-native/metro-config');
 const { withNativeWind } = require('nativewind/metro');
+const path = require('path');
 
 /**
  * Metro configuration
@@ -7,7 +8,16 @@ const { withNativeWind } = require('nativewind/metro');
  *
  * @type {import('@react-native/metro-config').MetroConfig}
  */
-const config = {};
+const config = {
+  resolver: {
+    // backend/ is the API server, not app code: keep Metro out of it.
+    blockList: [
+      new RegExp(
+        '^' + path.join(__dirname, 'backend').replace(/[\\^$.*+?()[\]{}|]/g, '\\$&') + '[/\\\\].*',
+      ),
+    ],
+  },
+};
 
 module.exports = withNativeWind(
   mergeConfig(getDefaultConfig(__dirname), config),
