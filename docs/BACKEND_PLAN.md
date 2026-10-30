@@ -171,9 +171,13 @@ Tasks:
 - ⬜ **B9.2** `POST /me/devices`, `DELETE /me/devices/:token`.
 - ⬜ **B9.3** Push for: new message, offer answered, outbid, auction won, order delivered.
 
-## B10 — Google and Apple sign-in ⏸ (Google Cloud OAuth client ids; Apple Developer account)
-- ⬜ **B10.1** `POST /auth/google`: verify the ID token with Google's keys (audience = our client ids).
-- ⬜ **B10.2** `POST /auth/apple`: same with Apple's keys; hidden relay emails are fine.
+## B10 — Google and Apple sign-in: backend ✅, live when the client ids exist (Google Cloud; Apple Developer account)
+- ✅ **B10.1** `POST /auth/google`: verify the ID token with Google's keys (audience = our client ids); link by
+  verified email, else a new account; staff refused. `GOOGLE_CLIENT_IDS` in `.env` turns it on.
+- ✅ **B10.2** `POST /auth/apple`: same with Apple's keys; hidden relay emails and no email are fine; the app may
+  send the name (Apple gives it to the app once). `APPLE_CLIENT_IDS` turns it on.
+- ⬜ **B10.3** App: Google / Apple sign-in SDKs send the real ID token (today the app's buttons are wired to
+  the mock), once the client ids exist.
 
 ## B11 — Sanad ID verification ⏸ (MoDEE agreement, see `backend/docs/ID-VERIFICATION.md`)
 - ⬜ **B11.1** Apply to MoDEE (company registration, privacy policy).

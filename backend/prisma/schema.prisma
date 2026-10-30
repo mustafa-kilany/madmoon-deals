@@ -28,6 +28,8 @@ model User {
   name         String
   email        String?    @unique // lower-cased; Apple may give a relay address
   passwordHash String? // null for Google / Apple accounts
+  googleId     String?    @unique // Google account id ("sub"), set by POST /auth/google
+  appleId      String?    @unique // Apple account id ("sub"), set by POST /auth/apple
   method       AuthMethod @default(email)
   verified     Boolean    @default(false)
   cityId       String     @default("amman") // an area id from GET /cities

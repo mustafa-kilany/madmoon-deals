@@ -9,6 +9,7 @@ import { toApiUser } from './apiUser';
 import { sendCode, useCode } from './codes';
 import { burnPasswordCheck, hashPassword, passwordMatches } from './password';
 import { currentUser, requireUser } from './requireUser';
+import { accountFor, verifyIdToken } from './social';
 import { issueToken } from './tokens';
 
 // docs/API.md → Accounts & Authentication (email). Google / Apple sign-in,
@@ -104,6 +105,20 @@ authRoutes.post('/auth/login', limited(10), async (req, res) => {
   if (user.suspended) throw new ApiError(403, 'FORBIDDEN', 'This account is suspended');
   res.json(await session(user.id, req));
 });
+
+// Google / Apple: the app sends the ID token from the provider's SDK (social.ts).
+// Apple gives the person's name only to the app, on the first sign-in: it may send it.
+const socialBody = z.object({
+  idToken: z.string().min(20).max(10_000),
+  name: z.string().max(60).optional(),
+});
+for (const provider of ['google', 'apple'] as const)
+  authRoutes.post(`/auth/${provider}`, limited(20), async (req, res) => {
+    const body = socialBody.parse(req.body);
+    const user = await accountFor(await verifyIdToken(provider, body.idToken), body.name);
+    if (user.suspended) throw new ApiError(403, 'FORBIDDEN', 'This account is suspended');
+    res.json(await session(user.id, req));
+  });
 
 // 204 whether or not the account exists, so it can't be used to find accounts.
 authRoutes.post('/auth/forgot-password', limited(5), async (req, res) => {

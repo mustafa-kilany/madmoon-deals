@@ -209,14 +209,24 @@ Authenticates an existing user.
 * **Errors:** `INVALID_CREDENTIALS` (401), `VALIDATION` (400/422)
 
 #### 3. `POST /auth/google`
-Authenticates or registers a user via Google OAuth ID token.
-* **Request Body:** `{ "idToken": "google_oauth_token" }`. The server **must verify** the token with Google (signature, audience = Sahla's client ID, expiry) and take the email from it, never from the request.
+Signs in or signs up with the ID token from Google's sign-in SDK.
+* **Request Body:** `{ "idToken": "<Google ID token>" }`. The server **verifies** it with Google's public keys
+  (signature, issuer, audience = one of Sahla's OAuth client ids, expiry) and takes the account id and email
+  from it, never from the request.
+* **Which account:** the one already linked to that Google account; else the account with the same
+  **verified** email (linked now, so password log-in keeps working too); else a new one
+  (`method: "google"`, name and picture from Google). An unverified email never takes over an account.
 * **Response (200):** `Session`
+* **Errors:** `INVALID_CREDENTIALS` (401) forged / expired / other app's token; `FORBIDDEN` (403) a staff
+  account or a suspended one; `VALIDATION` (422) a new account with a staff-domain email; `INTERNAL` (503)
+  Google sign-in not set up on the server yet.
 
 #### 4. `POST /auth/apple`
-Authenticates or registers a user via Apple Sign-In identity token.
-* **Request Body:** `{ "idToken": "apple_identity_token" }`. Verify it with Apple's public keys the same way. Apple may hide the user's email (relay address); that's still a valid account.
-* **Response (200):** `Session`
+The same with Apple's identity token (Apple's public keys, audience = the app's bundle id).
+* **Request Body:** `{ "idToken": "<Apple identity token>", "name"?: "Layla Ahmad" }`. Apple gives the person's
+  name **only to the app, only on the first sign-in**, so the app sends it then; it's used for a new account.
+* Apple may hide the email (a `@privaterelay.appleid.com` address) or share none; both are valid accounts.
+* **Response (200):** `Session`; errors as for Google.
 
 #### 5. `POST /auth/send-otp`
 Emails a 6-digit code to a **new** address, before sign-up.
