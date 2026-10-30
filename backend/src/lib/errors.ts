@@ -41,6 +41,9 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     error = new ApiError(400, 'VALIDATION', 'Body is not valid JSON');
   } else if (err?.type === 'entity.too.large') {
     error = new ApiError(413, 'VALIDATION', 'Body is too large');
+  } else if (err?.name === 'MulterError') {
+    // Uploads: too big, a second file, or an unexpected field name.
+    error = new ApiError(err.code === 'LIMIT_FILE_SIZE' ? 413 : 422, 'VALIDATION', `Upload: ${err.message}`);
   } else {
     console.error(err);
     error = new ApiError(500, 'INTERNAL', 'Something went wrong');

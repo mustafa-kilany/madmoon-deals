@@ -5,6 +5,8 @@ import { authRoutes } from './modules/auth/routes';
 import { listingRoutes } from './modules/catalog/listings.routes';
 import { referenceRoutes } from './modules/catalog/reference.routes';
 import { refurbishedRoutes } from './modules/refurbished/routes';
+import { uploadRoutes } from './modules/uploads/routes';
+import { uploadDir } from './lib/storage';
 import { env } from './env';
 import { categoryImageDir, demoCertificateDir } from './reference';
 
@@ -15,6 +17,8 @@ app.disable('x-powered-by');
 
 // Files this server hosts (moves to a CDN with photo storage, BACKEND_PLAN B3).
 app.use('/static/categories', express.static(categoryImageDir, { maxAge: '7d' }));
+// Uploaded photos (development; production: cloud storage, D1). Names are random.
+app.use('/files', express.static(uploadDir, { maxAge: '30d', immutable: true }));
 if (env.NODE_ENV !== 'production')
   app.use('/static/certificates', express.static(demoCertificateDir, { maxAge: '7d' }));
 
@@ -34,6 +38,7 @@ v1.use(authRoutes);
 v1.use(referenceRoutes);
 v1.use(listingRoutes);
 v1.use(refurbishedRoutes);
+v1.use(uploadRoutes);
 
 app.use('/v1', v1);
 app.use(notFound);

@@ -71,20 +71,20 @@ endpoint does), [`DATABASE.md`](DATABASE.md) the database design and [`backend/R
   upload, `POST /listings`), which comes in B3–B4. Then browse and sell on the emulator.
 - _Blocks (B5) later filter these lists too._
 
-## B3 — Photo uploads ⬜ (needs D1 for production; local disk in development)
+## B3 — Photo uploads 🔨 (branch `feat/backend-b3-uploads`) (needs D1 for production; local disk in development)
 Two kinds (decided 2026-10-30): **users' listing photos** and **admins changing the category pictures**.
-- ⬜ **B3.1** Storage module: local folder in development, R2/S3 in production, one interface.
-- ⬜ **B3.2** Image pipeline (`sharp`): check the real file type from its bytes, strip EXIF (GPS!),
+- ✅ **B3.1** Storage module: local folder in development, R2/S3 in production, one interface.
+- ✅ **B3.2** Image pipeline (`sharp`): check the real file type from its bytes, strip EXIF (GPS!),
   resize to 1600 px + a 400 px thumbnail, WebP/JPEG.
-- ⬜ **B3.3** `POST /uploads/listing-photo` (issued URLs remembered, so `POST /listings` accepts only ours).
-- ⬜ **B3.4** `POST /me/avatar`.
+- ✅ **B3.3** `POST /uploads/listing-photo` (issued URLs remembered, so `POST /listings` accepts only ours).
+- ✅ **B3.4** `POST /me/avatar`.
 - ⬜ **B3.5** `POST /me/id-verification`: photo → `IdVerification(manual, pending)`; admin decides in B8.
   (Contract today answers `verified: true` immediately; decide: keep instant for now, or change the
   contract to "pending" and update the app.)
-- ⬜ **B3.6** Clean-up job: delete uploads no listing uses after 24 h.
-- ⬜ **B3.7** Category pictures from the database: a `Category` table (`id`, `imageUrl`, `updatedById`,
+- ✅ **B3.6** Clean-up job: delete uploads no listing uses after 24 h.
+- ✅ **B3.7** Category pictures from the database: a `Category` table (`id`, `imageUrl`, `updatedById`,
   `updatedAt`); `GET /categories` uses it, falling back to the bundled tiles.
-- ⬜ **B3.8** `PUT /admin/categories/:id/image` (admin only, same image pipeline, logged); the dashboard button
+- ✅ **B3.8** `PUT /admin/categories/:id/image` (admin only, same image pipeline, logged); the dashboard button
   comes in B8.
 
 ## B4 — Selling + test certificates ⬜ (needs a Google Vision key for real OCR)
@@ -211,7 +211,7 @@ buying, chats or offers.
   ✅ sign-up refuses the staff domain (`STAFF_EMAIL_DOMAIN`, default `sahla.jo`); ⬜ `POST /admin/couriers` with
   the dashboard (B8); only the staff domain; an invite code is emailed. Public sign-up refuses the staff
   domain, so nobody can make a look-alike account.
-- ⬜ **B14.2** Couriers can only call courier endpoints: everything for customers (listing, offers, chats,
+- 🔨 **B14.2** (✅ uploads; the rest with each endpoint) Couriers can only call courier endpoints: everything for customers (listing, offers, chats,
   orders, saving) answers `FORBIDDEN` for them.
 - ⬜ **B14.3** `GET /courier/deliveries`: the orders assigned to me: order number, item, **pickup** (seller's
   name, phone, area, address) and **drop-off** (buyer's delivery details), status.

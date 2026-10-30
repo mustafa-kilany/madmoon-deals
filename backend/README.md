@@ -41,7 +41,7 @@ Express 5 + TypeScript, PostgreSQL through Prisma. What's next: [`docs/BACKEND_P
 | `npm run test:api` | End-to-end tests over HTTP (`src/**/*.e2e.ts`) on a separate `sahla_test` database |
 | `npm run db:seed` | Add the demo accounts (development only) |
 | `npm run secret` | Print a new random `JWT_SECRET` |
-| `npm run staff -- courier "Name" name@sahla.jo` | Create a courier account (staff email domain) and email the invite code; also `disable <email>`, `list` |
+| `npm run staff -- courier "Name" name@sahla.jo` | Create a courier account (staff email domain) and email the invite code; also `admin "Name" email`, `disable <email>`, `list` |
 | `npm run load-check` | Time `GET /listings` with 10 000 fake listings in `sahla_test` |
 | `npm run store -- <command>` | Refurbished stores: `create`, `key`, `revoke`, `list`, `import` ([docs/REFURBISHED.md](docs/REFURBISHED.md)) |
 
@@ -58,6 +58,8 @@ src/
   lib/errors.ts           { error: { code, message } } responses (docs/API.md error codes)
   modules/
     auth/                 sign-up, log-in, codes, password reset, /me (JWT + sessions)
+    uploads/              listing photos, avatars, admin category pictures, clean-up
+    staff/                courier and admin accounts (made by admins, never by sign-up)
     refurbished/          POST /admin/refurbished/import, store API keys, CSV import
     certificates/         shop test certificate OCR + checks
     identity/             ID verification (Sanad, manual review until then)

@@ -49,6 +49,7 @@ model User {
   accountSignals   AccountSignal[]
   riskFlags        RiskFlag[]        @relation("flagged")
   riskFlagsHandled RiskFlag[]        @relation("reviewer")
+  uploads          Upload[]
 }
 
 // One signed-in device. Only a hash of the bearer token is stored, so a leaked
@@ -177,6 +178,38 @@ model ListingView {
   day       DateTime @db.Date
 
   @@id([listingId, viewerKey, day])
+}
+
+// The 8 categories' pictures, when an admin changed them (BACKEND_PLAN B3.7).
+// Names, icons and item types stay in the shared reference files.
+model Category {
+  id          String   @id // mobiles, electronics, …
+  imageUrl    String
+  updatedById String?
+  updatedAt   DateTime @updatedAt
+}
+
+enum UploadKind {
+  listing
+  avatar
+  category
+}
+
+// Every uploaded photo. POST /listings accepts only listing photos from here; ones no
+// listing uses are deleted after a day (BACKEND_PLAN B3.6).
+model Upload {
+  id        String     @id @default(cuid())
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      UploadKind
+  url       String     @unique // full size (≤ 1600 px)
+  thumbUrl  String? // 400 × 400 (listing photos)
+  bytes     Int
+  usedAt    DateTime? // null = not used by anything yet
+  createdAt DateTime   @default(now())
+
+  @@index([kind, usedAt, createdAt])
+  @@index([userId])
 }
 
 // ─── Certified refurbished stores ───────────────────────────────────────────

@@ -31,3 +31,23 @@ export const requireUser: RequestHandler = async (req, res, next) => {
 
 /** The signed-in user, after requireUser. */
 export const currentUser = (locals: Express.Locals) => locals.user!;
+
+/** Buying, selling, chats, uploads: signed-in customers only (couriers get FORBIDDEN, B14.2). */
+export const requireCustomer: RequestHandler[] = [
+  requireUser,
+  (_req, res, next) => {
+    if (currentUser(res.locals).role === 'courier')
+      throw new ApiError(403, 'FORBIDDEN', 'Courier accounts can only deliver');
+    next();
+  },
+];
+
+/** Admin-only endpoints (/v1/admin/*). */
+export const requireAdmin: RequestHandler[] = [
+  requireUser,
+  (_req, res, next) => {
+    if (currentUser(res.locals).role !== 'admin')
+      throw new ApiError(403, 'FORBIDDEN', 'Admins only');
+    next();
+  },
+];

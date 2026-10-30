@@ -36,6 +36,17 @@ export async function createCourier(input: { name: string; email: string }) {
   return courier;
 }
 
+/** An admin for the dashboard (2FA comes with it, B8.1). Same invite as couriers. */
+export async function createAdmin(input: { name: string; email: string }) {
+  const { name, email } = courierInput.parse(input);
+  const existing = await prisma.user.findUnique({ where: { email } });
+  const admin = existing
+    ? await prisma.user.update({ where: { id: existing.id }, data: { role: 'admin' } })
+    : await prisma.user.create({ data: { name, email, method: 'email', verified: true, role: 'admin' } });
+  await sendCode(email, 'reset');
+  return admin;
+}
+
 /** Stops a courier from signing in (their sessions end at once). */
 export async function disableCourier(email: string) {
   const courier = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });

@@ -36,7 +36,7 @@ const profileBody = z.object({
 
 async function session(userId: string, req: Request) {
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
-  return { token: await issueToken(user.id, req), user: toApiUser(user) };
+  return { token: await issueToken(user.id, req), user: toApiUser(user, req) };
 }
 
 const emailTaken = () => new ApiError(409, 'EMAIL_TAKEN', 'Email already registered');
@@ -134,8 +134,8 @@ authRoutes.post('/auth/logout', requireUser, async (_req, res) => {
   res.status(204).end();
 });
 
-authRoutes.get('/me', requireUser, (_req, res) => {
-  res.json(toApiUser(currentUser(res.locals)));
+authRoutes.get('/me', requireUser, (req, res) => {
+  res.json(toApiUser(currentUser(res.locals), req));
 });
 
 authRoutes.patch('/me', requireUser, async (req, res) => {
@@ -144,7 +144,7 @@ authRoutes.patch('/me', requireUser, async (req, res) => {
     where: { id: currentUser(res.locals).id },
     data: body,
   });
-  res.json(toApiUser(user));
+  res.json(toApiUser(user, req));
 });
 
 authRoutes.delete('/me', requireUser, async (_req, res) => {

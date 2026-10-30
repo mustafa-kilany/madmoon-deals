@@ -371,6 +371,14 @@ Jordan first; models newest first).
   change without an app update. Today (`src/services/mock/catalog.ts`, `testedTypes`): mobiles →
   phones, tablets, smartwatches; electronics → laptops, gaming, tvs, cameras, audio.
 
+#### 2b. `PUT /admin/categories/:id/image` *(admin)*
+An admin replaces a category's picture (the dashboard, BACKEND_PLAN B3.8). `multipart/form-data` with field
+`image` (JPEG/PNG/WebP, up to 10 MB). The server re-encodes it (≤ 1200 px, no metadata) and `GET /categories`
+returns it as `imageUrl` from then on (phones may cache `GET /categories` for 10 minutes).
+* **Response (200):** `{ "id": "mobiles", "imageUrl": "https://…" }`
+* **Errors:** `FORBIDDEN` (403) for non-admins, `NOT_FOUND` (404) for an unknown category, `VALIDATION` (422) for
+  a file that isn't a photo.
+
 #### 3. `GET /cities`
 Every area a listing or account can be in: Jordan's 12 governorates and their main cities /
 cities and towns, and the neighbourhoods of Amman, Irbid, Zarqa and Aqaba. The app's seed copy
