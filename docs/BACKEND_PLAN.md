@@ -61,9 +61,11 @@ endpoint does), [`DATABASE.md`](DATABASE.md) the database design and [`backend/R
   mode, `total`, `counts`, `refurbishedCounts`, `facets`. Only `active`, never ended auctions.
 - ✅ **B2.4** Search `q`: every word must match title (ar/en), brand, model or type name; Arabic folding
   (أ/إ/آ→ا, ة→ه, ى→ي, no tashkeel) with the app's own `foldText()` (`Listing.searchText`). Its `pg_trgm` index is in B2.6.
-- ⬜ **B2.5** `GET /listings/:id`, `POST /listings/:id/views` (count a device once a day), `GET /me/listings`.
+- ✅ **B2.5** `GET /listings/:id`, `POST /listings/:id/views` (each viewer once a day: user, else device id,
+  else IP; `ListingView` table), `GET /me/listings`.
 - ⬜ **B2.6** Indexes + a quick load check (10k listings, page under 100 ms).
-- **Switch the app:** `mock.catalog = false`; browse every screen on the emulator.
+- **Switch the app:** `mock.catalog = false` **after B4**: in the app that setting also covers selling (photo
+  upload, `POST /listings`), which comes in B3–B4. Then browse and sell on the emulator.
 - _Blocks (B5) later filter these lists too._
 
 ## B3 — Photo uploads ⬜ (needs D1 for production; local disk in development)
@@ -151,6 +153,9 @@ Tasks:
 - ⬜ **B8.3** Queues: certificates to review, ID photos, risk flags, reports.
 - ⬜ **B8.4** Refurbished: upload the Excel sheet with preview (dry run), stores, keys, import history.
 - ⬜ **B8.5** Orders: search, refund, payouts; users: look up, suspend / unsuspend.
+- ⬜ **B8.7** Vendor connectors for refurbished stock: read a vendor's own online shop with a read-only key they
+  give us (WooCommerce, Shopify) or their product feed file (Google Merchant XML/CSV), map it to the import
+  rows and run the same import on a schedule. Vendors without a shop keep using the Excel sheet.
 - ⬜ **B8.6** Deploy the dashboard at `admin.sahla.jo` (static hosting); the API allows that origin (CORS).
 
 ## B9 — Emails and push notifications ⬜ (D3; a Firebase project)

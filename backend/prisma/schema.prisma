@@ -152,9 +152,22 @@ model Listing {
   testCertificateId String?          @unique
   testCertificate   TestCertificate? @relation(fields: [testCertificateId], references: [id])
 
+  viewedBy ListingView[]
+
   @@unique([storeId, sku])
   @@index([category, status])
   @@index([sellerUserId])
+}
+
+// One viewer per listing per day (POST /listings/:id/views); Listing.views is the
+// total. viewerKey: the user id when signed in, else the X-Device-Id header, else the IP.
+model ListingView {
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  viewerKey String
+  day       DateTime @db.Date
+
+  @@id([listingId, viewerKey, day])
 }
 
 // ─── Certified refurbished stores ───────────────────────────────────────────

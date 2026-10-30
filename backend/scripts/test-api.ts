@@ -19,4 +19,5 @@ const run = (command: string) => execSync(command, { stdio: 'inherit', env });
 
 run('npx prisma migrate deploy'); // creates sahla_test on first run, then applies migrations
 run('npx tsx scripts/empty-db.ts');
-run('node --import tsx --test "src/**/*.e2e.ts"');
+// One file at a time: they share the test database.
+run('node --import tsx --test --test-concurrency=1 "src/**/*.e2e.ts"');
