@@ -2,7 +2,7 @@
 
 The road from today to a launched API, phase by phase. **Edit this file freely**: reorder tasks, cross
 things out, add notes under a task. It's the to-do list; [`API.md`](API.md) stays the contract (what each
-endpoint does) and [`backend/README.md`](../backend/README.md) says how to run things.
+endpoint does), [`DATABASE.md`](DATABASE.md) the database design and [`backend/README.md`](../backend/README.md) says how to run things.
 
 **Status:** ✅ done · 🔨 in progress · ⬜ to do · ⏸ blocked (waiting for an account, a key or a decision)
 
@@ -180,6 +180,7 @@ Tasks:
 
 ## Log
 Short notes on what changed, newest first.
+- 2026-10-30: database design with pictures (`docs/DATABASE.md`, `docs/database/*.png`).
 - 2026-10-30: the app moved into `frontend/` (backend shares `../frontend/src`).
 - 2026-10-30: B2.1–B2.4 done (catalog reference data, seed, GET /listings + search); admin dashboard
   architecture added to B8.

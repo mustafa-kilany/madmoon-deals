@@ -22,6 +22,7 @@ own API (Express + PostgreSQL).
 | [`DEVELOPMENT_GUIDE.md`](DEVELOPMENT_GUIDE.md) | Rules, architecture, design system, roadmap and phase status |
 | [`docs/API.md`](docs/API.md) | The API contract both sides are built against |
 | [`docs/BACKEND_PLAN.md`](docs/BACKEND_PLAN.md) | The backend, phase by phase |
+| [`docs/DATABASE.md`](docs/DATABASE.md) | The database design: every table, column and connection, with pictures in `docs/database/` |
 | [`frontend/.maestro/README.md`](frontend/.maestro/README.md) | End-to-end tests and demo accounts |
 
 ## Quick start
