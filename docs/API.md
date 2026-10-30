@@ -2,7 +2,17 @@
 
 This document defines the REST API contract expected by the **Sahla** mobile application, as well as instructions for connecting the app to a live backend service.
 
-The app's HTTP service layer (`src/services/*/http.ts`) and API client (`src/services/api/client.ts`) are fully implemented and integrated. Connecting to a real API server requires only a configuration update in `src/config.ts`.
+The app's HTTP service layer (`frontend/src/services/*/http.ts`) and API client (`frontend/src/services/api/client.ts`) are fully implemented and integrated. Connecting to a real API server requires only a configuration update in `frontend/src/config.ts`. The API itself is in `backend/`.
+
+## Changes on 2026-10-30 (backend: please read)
+
+**Breaking**
+* **Certified refurbished listings are always fixed price.** Vendors set the price, so the import
+  (`POST /admin/refurbished/import`) has no `auctionEndsAt` / `auctionIncrementJod` any more: a row that
+  still has them (the old Excel template) is refused with a row error. Imported listings are
+  `saleType: "fixed"` without `auction`. `GET /listings?format=auction&refurbished=true` is always empty.
+* The app shows no format tabs in the Certified Refurbished store and no Refurbished choice on the
+  Auctions tab.
 
 ## Changes on 2026-10-26, part 2 (backend: please read)
 
@@ -742,9 +752,8 @@ The app's reference copy of the row rules is `validateImportRow()` / `importRowT
         imageUrls: string[];        // 1–5 public https URLs, cover first; Excel: one cell, "|" between URLs
         locationId: string;         // area id (GET /cities), where the store ships from
         description: string;        // at least 10 words, ≤ 2000 characters (same rule as POST /listings)
-        auctionEndsAt?: string;     // ISO-8601 in the future: sell by auction (priceJod = opening bid)
-        auctionIncrementJod?: number; // required with auctionEndsAt
-      }[];
+      }[];                          // always fixed price: rows with auctionEndsAt / auctionIncrementJod
+                                    // (the old template) are refused with a row error
     }
     ```
   * **Response (200):**
@@ -764,7 +773,7 @@ The app's reference copy of the row rules is `validateImportRow()` / `importRowT
     ```
   * **Each imported row becomes an `Item`:** `id` = server-generated (stable per `storeId` + `sku`),
     `condition: "refurbished_<grade>"`, `refurbished: { warrantyMonths }`, `seller` / `sellerId` = the
-    store, `verified: true`, `status: "active"`, `saleType: "auction"` when `auctionEndsAt` is set.
+    store, `verified: true`, `status: "active"`, `saleType: "fixed"` (never an auction).
   * **Updating** a sku changes its listing in place (price, photos, warranty, …), so Saved items and
     links keep working. A sku with an open order (paid, not delivered) is not changed; the row gets
     an error. A sold sku isn't reused either (error): restocked items need a new sku. Copy the photos to Sahla's CDN instead of linking the brand's URLs.

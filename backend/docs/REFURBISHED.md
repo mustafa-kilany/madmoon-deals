@@ -61,7 +61,8 @@ Authorization: Bearer sahla_sk_…
 ## Rules worth telling brands
 
 - Grades: `like_new`, `excellent`, `good`. Warranty 0–36 months (0 = inspected, no warranty).
-- Price in JOD with up to 3 decimals (`365.5`). Auctions: `auctionEndsAt` + `auctionIncrementJod`.
+- **Fixed price only**, in JOD with up to 3 decimals (`365.5`). No auctions: the vendor sets the price.
+  A sheet that still has the old `auctionEndsAt` / `auctionIncrementJod` columns filled in is refused.
 - 1–5 public `https://` photos, cover first; in Excel, one cell with `|` between URLs.
 - Description: at least 10 words.
 - An item with an **open order** (paid, not delivered) isn't changed. A **sold** sku can't be reused:
@@ -81,4 +82,5 @@ Authorization: Bearer sahla_sk_…
   existing price list.
 - A **"Certified Refurbished" landing page** with each store's logo and warranty terms builds trust
   quickly.
-- Weekly **auction slots** (one discounted flagship per store) bring traffic to the store page.
+- A weekly **deal of the week** (one discounted flagship per store, at a fixed price) brings traffic to
+  the store page.

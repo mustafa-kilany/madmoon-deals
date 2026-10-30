@@ -54,11 +54,11 @@ const listingFields = (item: Item) => ({
 });
 
 /** The listings as the app's mock builds them at `now` (also the tests' reference). */
-export const demoItems = (now: number) => [...buildItems(now), ...buildRefurbishedItems(now)];
+export const demoItems = (now: number) => [...buildItems(now), ...buildRefurbishedItems()];
 
 export async function seedListings(now = Date.now()) {
   const items = buildItems(now);
-  const refurbished = buildRefurbishedItems(now);
+  const refurbished = buildRefurbishedItems();
 
   // Demo sellers: one account per mock seller; verified when most of their listings say so.
   const passwordHash = await hashPassword('sahla1234');

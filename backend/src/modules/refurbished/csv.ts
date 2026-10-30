@@ -34,8 +34,12 @@ export function parseImportCsv(content: string): RefurbishedImportRow[] {
         imageUrls: (cells.imageUrls ?? '').split('|').map(url => url.trim()).filter(Boolean),
         locationId: cells.locationId ?? '',
         description: cells.description ?? '',
-        auctionEndsAt: text(cells.auctionEndsAt),
-        auctionIncrementJod: number(cells.auctionIncrementJod),
+        // An old sheet's filled-in auction columns are passed on, so the row is
+        // refused (refurbished items are fixed price) instead of sold at its opening bid.
+        ...(text(cells.auctionEndsAt) && { auctionEndsAt: text(cells.auctionEndsAt) }),
+        ...(text(cells.auctionIncrementJod) && {
+          auctionIncrementJod: number(cells.auctionIncrementJod),
+        }),
       }) as RefurbishedImportRow,
   );
 }

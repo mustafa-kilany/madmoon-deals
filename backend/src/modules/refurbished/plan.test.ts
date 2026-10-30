@@ -5,8 +5,6 @@ import type { RefurbishedImportRow } from '@/lib/refurbishedImport';
 import { parseImportCsv } from './csv';
 import { planImport, toListingFields, type ExistingListing } from './plan';
 
-const now = Date.parse('2026-10-30T10:00:00Z');
-
 const row = (sku: string, change: Partial<RefurbishedImportRow> = {}): RefurbishedImportRow => ({
   sku,
   titleEn: 'iPhone 13 128GB',
@@ -40,7 +38,6 @@ test('new skus are created, changed ones updated, unchanged ones left alone', ()
     [row('new'), row('changed', { priceJod: 300 }), row('same')],
     [existing('changed'), existing('same')],
     'upsert',
-    now,
   );
   assert.deepEqual(plan.create.map(c => c.sku), ['new']);
   assert.deepEqual(plan.update.map(u => u.sku), ['changed']);
@@ -52,7 +49,6 @@ test('bad rows, repeated skus and open orders are reported, not saved', () => {
     [row('a', { priceJod: 0 }), row('b'), row('b'), row('paid')],
     [existing('paid', 'reserved', { priceJod: 1 })],
     'upsert',
-    now,
   );
   assert.deepEqual(
     plan.errors.map(e => [e.row, e.field]),
@@ -66,7 +62,6 @@ test('replace mode withdraws the store listings missing from the sheet', () => {
     [row('kept'), row('broken', { grade: 'mint' as never })],
     [existing('kept'), existing('broken'), existing('gone'), existing('already-sold', 'sold')],
     'replace',
-    now,
   );
   // "broken" has an error but is still in the sheet, so it stays on sale.
   assert.deepEqual(plan.withdraw.map(w => w.sku), ['gone']);
@@ -78,8 +73,19 @@ test('the Excel template imports cleanly', () => {
   );
   assert.ok(rows.length >= 2);
   assert.deepEqual(rows[0].imageUrls.length, 2); // "a|b" in one cell
-  const plan = planImport(rows, [], 'upsert', now);
+  const plan = planImport(rows, [], 'upsert');
   assert.deepEqual(plan.errors, []);
   assert.equal(plan.create.length, rows.length);
-  assert.ok(plan.create.some(c => c.fields.saleType === 'auction'));
+  assert.ok(plan.create.every(c => c.fields.saleType === 'fixed'));
+});
+
+test('refurbished items are fixed price: an old sheet with auction columns is refused', () => {
+  const csv = [
+    'sku,titleEn,titleAr,category,type,brand,model,grade,warrantyMonths,priceJod,imageUrls,locationId,description,auctionEndsAt,auctionIncrementJod',
+    'ps5,PS5,بلايستيشن 5,electronics,gaming,Sony,,excellent,6,260,https://cdn.example.com/ps5.jpg,amman-abdali,"Tested on games, disc drive, Wi-Fi and every port, with a controller and cables.",2026-12-01T18:00:00Z,10',
+    'tv,TV,تلفزيون,electronics,tvs,Sony,,good,6,300,https://cdn.example.com/tv.jpg,amman-abdali,"Tested on every input, the remote and the speakers, with the original stand and cables.",,',
+  ].join('\n');
+  const plan = planImport(parseImportCsv(csv), [], 'upsert');
+  assert.deepEqual(plan.errors.map(e => [e.row, e.field]), [[1, 'auctionEndsAt'], [1, 'auctionIncrementJod']]);
+  assert.deepEqual(plan.create.map(c => c.sku), ['tv']); // empty auction cells are fine
 });

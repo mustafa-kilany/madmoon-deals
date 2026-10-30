@@ -4,6 +4,8 @@
 // (docs/refurbished-import-template.csv) and sends the same rows. These are
 // the rules the server applies to each row; the mock seed
 // (services/mock/refurbished.ts) is imported through them too.
+// Refurbished stock comes from vendors at a set price: always fixed price,
+// never an auction.
 
 import {
   DESCRIPTION_MAX,
@@ -35,7 +37,7 @@ export type RefurbishedImportRow = {
   grade: RefurbishedGrade;
   /** 0 to 36; 0 = brand-inspected, no warranty. */
   warrantyMonths: number;
-  /** JOD with up to 3 decimals (easy to type in Excel); stored as fils. Auctions: the opening bid. */
+  /** JOD with up to 3 decimals (easy to type in Excel); stored as fils. */
   priceJod: number;
   /** 1 to 5 public https photo URLs, cover first. Excel: one cell, separated by "|". */
   imageUrls: string[];
@@ -43,16 +45,16 @@ export type RefurbishedImportRow = {
   locationId: string;
   /** At least 10 words, up to 2000 characters. */
   description: string;
-  /** Sell by auction instead: end time (ISO-8601) and the minimum raise in JOD. */
-  auctionEndsAt?: string;
-  auctionIncrementJod?: number;
 };
+
+/** Auction columns of the old template: refused, so a sheet isn't silently sold at its opening bid. */
+const AUCTION_FIELDS = ['auctionEndsAt', 'auctionIncrementJod'] as const;
 
 /** `row` is the row's 1-based position in `items` (Excel row = row + 1, after the header). */
 export type ImportRowError = {
   row: number;
   sku?: string;
-  field: keyof RefurbishedImportRow;
+  field: keyof RefurbishedImportRow | (typeof AUCTION_FIELDS)[number];
   message: string;
 };
 
@@ -63,7 +65,6 @@ export const MAX_PHOTOS = 5;
 type Lookups = {
   categoryFilters: Record<CategoryId, CategoryFilters>;
   cityIds: Set<string>;
-  now: number;
 };
 
 const text = (value: unknown, max: number) =>
@@ -75,10 +76,10 @@ const hasFils = (value: number) =>
 export function validateImportRow(
   row: RefurbishedImportRow,
   index: number,
-  { categoryFilters, cityIds, now }: Lookups,
+  { categoryFilters, cityIds }: Lookups,
 ): ImportRowError[] {
   const errors: ImportRowError[] = [];
-  const fail = (field: keyof RefurbishedImportRow, message: string) =>
+  const fail = (field: ImportRowError['field'], message: string) =>
     errors.push({ row: index + 1, sku: row.sku || undefined, field, message });
 
   if (!text(row.sku, 64)) fail('sku', 'Required, up to 64 characters');
@@ -119,17 +120,9 @@ export function validateImportRow(
       'description',
       `Required: at least ${DESCRIPTION_MIN_WORDS} words, up to ${DESCRIPTION_MAX} characters`,
     );
-  if (row.auctionEndsAt !== undefined) {
-    const endsAt = Date.parse(row.auctionEndsAt);
-    if (!(endsAt > now))
-      fail('auctionEndsAt', 'An ISO-8601 time in the future');
-    if (
-      typeof row.auctionIncrementJod !== 'number' ||
-      !(row.auctionIncrementJod > 0) ||
-      !hasFils(row.auctionIncrementJod)
-    )
-      fail('auctionIncrementJod', 'Required for auctions: above 0 JOD');
-  }
+  for (const field of AUCTION_FIELDS)
+    if ((row as Record<string, unknown>)[field] !== undefined)
+      fail(field, 'Refurbished items are fixed price: leave this column out');
   return errors;
 }
 
@@ -142,7 +135,6 @@ export function importRowToItem(
   store: { id: string; name: Localized },
   location: Place,
 ): Item {
-  const endsAt = row.auctionEndsAt ? Date.parse(row.auctionEndsAt) : undefined;
   return {
     id: `refurb-${store.id}-${row.sku}`,
     category: row.category,
@@ -160,15 +152,7 @@ export function importRowToItem(
     type: row.type,
     verified: true,
     location,
-    saleType: endsAt === undefined ? 'fixed' : 'auction',
-    auction:
-      endsAt === undefined
-        ? undefined
-        : {
-            endsAt,
-            bidCount: 0,
-            incrementFils: jod(row.auctionIncrementJod ?? 1),
-          },
+    saleType: 'fixed',
     views: 0,
     refurbished: { warrantyMonths: row.warrantyMonths },
   };

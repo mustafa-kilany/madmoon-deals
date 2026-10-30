@@ -13,7 +13,7 @@ import { buildItems, categoryFilters, cities } from '@/services/mock/catalog';
 import { buildRefurbishedItems } from '@/services/mock/refurbished';
 
 const now = 1_700_000_000_000;
-const refurbished = buildRefurbishedItems(now);
+const refurbished = buildRefurbishedItems();
 const pool = [...buildItems(now), ...refurbished];
 const base: ListingQuery = {
   format: 'all',
@@ -23,7 +23,6 @@ const base: ListingQuery = {
 const lookups = {
   categoryFilters,
   cityIds: new Set(cities.map(c => c.id)),
-  now,
 };
 const row: RefurbishedImportRow = {
   sku: 'iphone-13-128',
@@ -43,9 +42,11 @@ const row: RefurbishedImportRow = {
 };
 
 describe('store seed', () => {
-  test('12 brand-store listings, two of them auctions', () => {
+  test('12 brand-store listings, all at a fixed price', () => {
     expect(refurbished).toHaveLength(12);
-    expect(refurbished.filter(i => i.saleType === 'auction')).toHaveLength(2);
+    expect(refurbished.every(i => i.saleType === 'fixed' && !i.auction)).toBe(
+      true,
+    );
     for (const item of refurbished) {
       expect(item.refurbished).toBeDefined();
       expect(item.condition).toMatch(/^refurbished_/);
@@ -104,18 +105,16 @@ describe('import rows', () => {
     });
   });
 
-  test('an auction needs a future end and a raise', () => {
-    const past = { ...row, auctionEndsAt: new Date(now - 1).toISOString() };
-    expect(validateImportRow(past, 0, lookups).map(e => e.field)).toEqual([
-      'auctionEndsAt',
-      'auctionIncrementJod',
-    ]);
+  test('refurbished items are fixed price: auction columns are refused', () => {
     const auction = {
       ...row,
       auctionEndsAt: new Date(now + 3_600_000).toISOString(),
       auctionIncrementJod: 5,
-    };
-    expect(validateImportRow(auction, 0, lookups)).toEqual([]);
+    } as RefurbishedImportRow;
+    expect(validateImportRow(auction, 0, lookups).map(e => e.field)).toEqual([
+      'auctionEndsAt',
+      'auctionIncrementJod',
+    ]);
   });
 });
 
@@ -133,7 +132,7 @@ describe('Refurbished switch (GET /listings?refurbished=true)', () => {
       all: pool.length,
       refurbished: 12,
     });
-    expect(page.counts).toEqual({ all: 12, fixed: 10, auction: 2 });
+    expect(page.counts).toEqual({ all: 12, fixed: 12, auction: 0 });
   });
 
   test('combines with the format and category', () => {
@@ -143,7 +142,8 @@ describe('Refurbished switch (GET /listings?refurbished=true)', () => {
       categoryFilters,
       now,
     );
-    expect(page.refurbishedCounts).toEqual({ all: 2, refurbished: 1 });
+    // Mobiles auctions: the demo auction only, never a refurbished one.
+    expect(page.refurbishedCounts).toEqual({ all: 1, refurbished: 0 });
   });
 
   test('facets give the store its type and brand chips and longest warranty', () => {

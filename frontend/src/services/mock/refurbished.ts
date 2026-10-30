@@ -1,9 +1,9 @@
 // Seed for the Certified Refurbished store (prototype getRefurbishedItems):
 // brand-certified listings sold by each brand's official store, with a
-// warranty. They sit in their normal category, so category, search and
-// auction browsing show them too. Two are auctions. The rows are in the
-// import format (lib/refurbishedImport) and go through the same checks and
-// mapping as POST /admin/refurbished/import.
+// warranty, always at a fixed price (vendors set it). They sit in their normal
+// category, so category and search browsing show them too. The rows are in
+// the import format (lib/refurbishedImport) and go through the same checks
+// and mapping as POST /admin/refurbished/import.
 
 import {
   importRowToItem,
@@ -24,9 +24,7 @@ const storeOf = (brand: string): { id: string; name: Localized } => ({
 });
 
 type Seed = RefurbishedImportRow & {
-  /** Demo only: minutes until the auction ends, bids so far, view count. */
-  minutes?: number;
-  bids?: number;
+  /** Demo only: view count. */
   views: number;
 };
 
@@ -214,9 +212,6 @@ const seeds: Seed[] = [
     locationId: 'amman-abdali',
     description:
       'Sony refurbished PlayStation 5 Disc Edition, tested on games, disc drive, Wi-Fi and every port. Includes one DualSense controller and all the cables, in a plain box.',
-    auctionIncrementJod: 10,
-    minutes: 300,
-    bids: 8,
     views: 520,
   },
   {
@@ -234,28 +229,18 @@ const seeds: Seed[] = [
     locationId: 'amman-abdali',
     description:
       'Samsung refurbished Galaxy Tab S8 with 128GB storage and the S Pen. Battery and screen tested like new, with genuine parts. Ships with a USB-C charging cable.',
-    auctionIncrementJod: 5,
-    minutes: 95,
-    bids: 11,
     views: 377,
   },
 ];
 
 const cityIds = new Set(cities.map(c => c.id));
 
-/** The store's listings. Auction end times count from `startedAt` (app launch). */
-export function buildRefurbishedItems(startedAt: number): Item[] {
-  return seeds.map(({ minutes, bids, views, ...seed }, index) => {
-    const row: RefurbishedImportRow = {
-      ...seed,
-      ...(minutes !== undefined && {
-        auctionEndsAt: new Date(startedAt + minutes * 60_000).toISOString(),
-      }),
-    };
+/** The store's listings. */
+export function buildRefurbishedItems(): Item[] {
+  return seeds.map(({ views, ...row }, index) => {
     const errors = validateImportRow(row, index, {
       categoryFilters,
       cityIds,
-      now: startedAt,
     });
     if (errors.length)
       throw new Error(`Bad refurbished seed: ${JSON.stringify(errors)}`);
@@ -267,10 +252,6 @@ export function buildRefurbishedItems(startedAt: number): Item[] {
       name,
       governorate,
     });
-    return {
-      ...item,
-      views,
-      auction: item.auction && { ...item.auction, bidCount: bids ?? 0 },
-    };
+    return { ...item, views };
   });
 }

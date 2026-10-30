@@ -45,8 +45,8 @@ export type ImportPlan = {
   errors: ImportRowError[];
 };
 
+/** Refurbished stock is always fixed price (vendors set it): no auction columns. */
 export function toListingFields(row: RefurbishedImportRow): ListingFields {
-  const auction = row.auctionEndsAt !== undefined;
   return {
     category: row.category,
     type: row.type,
@@ -59,9 +59,9 @@ export function toListingFields(row: RefurbishedImportRow): ListingFields {
     brand: row.brand.trim(),
     model: row.model?.trim() || null,
     locationId: row.locationId,
-    saleType: auction ? 'auction' : 'fixed',
-    auctionEndsAt: auction ? new Date(row.auctionEndsAt!) : null,
-    incrementFils: auction ? jod(row.auctionIncrementJod!) : null,
+    saleType: 'fixed',
+    auctionEndsAt: null,
+    incrementFils: null,
     warrantyMonths: row.warrantyMonths,
     status: 'active',
   };
@@ -82,12 +82,11 @@ export function planImport(
   rows: RefurbishedImportRow[],
   existing: ExistingListing[],
   mode: 'upsert' | 'replace',
-  now: number,
 ): ImportPlan {
   const plan: ImportPlan = { create: [], update: [], withdraw: [], errors: [] };
   const bySku = new Map(existing.map(listing => [listing.sku, listing]));
   const seen = new Set<string>();
-  const lookups = { categoryFilters, cityIds, now };
+  const lookups = { categoryFilters, cityIds };
 
   rows.forEach((row, index) => {
     const errors = validateImportRow(row, index, lookups);

@@ -186,7 +186,7 @@ erDiagram
     text sellerUserId FK "seller is a user..."
     text storeId FK "...or a store"
     text sku "store's own id"
-    int warrantyMonths "refurbished"
+    int warrantyMonths "refurbished (fixed price only)"
     text testCertificateId FK,UK
     timestamp createdAt
     timestamp updatedAt
@@ -260,7 +260,7 @@ erDiagram
 
 | Table | Status | Purpose and rules | Indexes |
 |---|---|---|---|
-| **Listing** | ✅ B2 | Everything for sale. Exactly one of `sellerUserId` / `storeId` is set (stores = refurbished only). `searchText` and `sellerVerified` are copies kept for fast search and sorting. Status: `active` → `reserved` (paid) → `sold` (delivered); refund → `active`; `withdrawn` = deleted, never shown. | `(category, status)`, `sellerUserId`, `(storeId, sku)` unique, `testCertificateId` unique; B2.6 adds `pg_trgm` on `searchText`, `(status, saleType, auctionEndsAt)`, `priceFils`, `locationId` |
+| **Listing** | ✅ B2 | Everything for sale. Exactly one of `sellerUserId` / `storeId` is set (stores = refurbished only, **always fixed price**: never `saleType = auction`). `searchText` and `sellerVerified` are copies kept for fast search and sorting. Status: `active` → `reserved` (paid) → `sold` (delivered); refund → `active`; `withdrawn` = deleted, never shown. | `(category, status)`, `sellerUserId`, `(storeId, sku)` unique, `testCertificateId` unique; B2.6 adds `pg_trgm` on `searchText`, `(status, saleType, auctionEndsAt)`, `priceFils`, `locationId` |
 | **Store** | ✅ B0 | A brand's official refurbished store; its id is the listings' `sellerId`. | — |
 | **StoreApiKey** | ✅ B0 | Keys a brand's system imports with. Shown once, stored hashed, can be revoked. | `keyHash` unique |
 | **RefurbishedImport** | ✅ B0 | One row per import run (dashboard history). | `(storeId, createdAt)` |

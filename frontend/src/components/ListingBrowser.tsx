@@ -86,7 +86,9 @@ export function ListingBrowser({
   const [sheetOpen, setSheetOpen] = useState(false);
 
   const format: ListingFormat = auctionOnly ? 'auction' : state.format;
-  const refurbished = refurbishedOnly || state.refurbished;
+  // Auctions never include refurbished stock (always fixed price), so a
+  // remembered Refurbished switch doesn't apply there.
+  const refurbished = refurbishedOnly || (!auctionOnly && state.refurbished);
   const q = useDebouncedValue(searchable ? state.query : screenQuery);
   const listingQuery: ListingQuery = {
     q,
@@ -219,9 +221,11 @@ export function ListingBrowser({
     ['fixed', t('browse.buyNow')],
     ['auction', t('browse.auctions')],
   ];
-  // Auctions tab: All / Refurbished tabs with counts. Elsewhere: a Refurbished
-  // switch that combines with the format (e.g. Auctions + Refurbished).
-  const showSwitch = !refurbishedOnly;
+  // Refurbished stock is always fixed price, so the store has no format tabs
+  // and the Auctions tab no Refurbished choice. Elsewhere: a Refurbished switch
+  // next to the format tabs.
+  const showFormats = !auctionOnly && !refurbishedOnly;
+  const showSwitch = !refurbishedOnly && !auctionOnly;
   const refurbishedMatches = refurbishedCounts?.refurbished ?? 0;
   const tabClass = (active: boolean) =>
     `min-h-11 grow flex-row items-center justify-center gap-1.5 rounded-xl px-2 py-2.5 ${
@@ -274,7 +278,7 @@ export function ListingBrowser({
         />
       )}
 
-      {(!auctionOnly || showSwitch) && (
+      {(showFormats || showSwitch) && (
         // Scrolls sideways if the tabs don't fit a narrow phone.
         <View className="overflow-hidden rounded-2xl border border-brand-border bg-brand-lightgray">
           <ScrollView
@@ -282,7 +286,7 @@ export function ListingBrowser({
             showsHorizontalScrollIndicator={false}
             contentContainerClassName="grow gap-1 p-1"
           >
-            {!auctionOnly && (
+            {showFormats && (
               <View
                 accessibilityLabel={t('browse.listingFormat')}
                 className="grow flex-row gap-1"
@@ -298,58 +302,37 @@ export function ListingBrowser({
                 )}
               </View>
             )}
-            {!auctionOnly && showSwitch && (
+            {showFormats && showSwitch && (
               <View className="my-2 w-px bg-brand-border" />
             )}
-            {showSwitch &&
-              (auctionOnly ? (
-                <View
-                  accessibilityLabel={t('browse.itemCondition')}
-                  className="grow flex-row gap-1"
+            {showSwitch && (
+              // A switch: press again to go back to everything.
+              <Pressable
+                onPress={() => patch({ refurbished: !refurbished })}
+                disabled={!refurbished && !refurbishedMatches}
+                accessibilityRole="switch"
+                accessibilityLabel={`${t(
+                  'browse.refurbished',
+                )} (${refurbishedMatches})`}
+                accessibilityState={{
+                  checked: refurbished,
+                  disabled: !refurbished && !refurbishedMatches,
+                }}
+                className={`min-h-11 flex-row items-center justify-center rounded-xl px-3 py-2.5 ${
+                  refurbished ? 'bg-brand-espresso shadow-sm' : 'shadow-none'
+                } ${!refurbished && !refurbishedMatches ? 'opacity-40' : ''}`}
+              >
+                <Text
+                  className={`font-sans-bold text-xs ${
+                    refurbished
+                      ? 'text-brand-on-primary'
+                      : 'text-brand-warmgray'
+                  }`}
                 >
-                  {tab(
-                    'all',
-                    t('browse.all'),
-                    !refurbished,
-                    () => patch({ refurbished: false }),
-                    refurbishedCounts?.all,
-                  )}
-                  {tab(
-                    'refurbished',
-                    t('browse.refurbished'),
-                    refurbished,
-                    () => patch({ refurbished: true }),
-                    refurbishedCounts?.refurbished,
-                  )}
-                </View>
-              ) : (
-                // A switch: press again to go back to everything.
-                <Pressable
-                  onPress={() => patch({ refurbished: !refurbished })}
-                  disabled={!refurbished && !refurbishedMatches}
-                  accessibilityRole="switch"
-                  accessibilityLabel={`${t(
-                    'browse.refurbished',
-                  )} (${refurbishedMatches})`}
-                  accessibilityState={{
-                    checked: refurbished,
-                    disabled: !refurbished && !refurbishedMatches,
-                  }}
-                  className={`min-h-11 flex-row items-center justify-center rounded-xl px-3 py-2.5 ${
-                    refurbished ? 'bg-brand-espresso shadow-sm' : 'shadow-none'
-                  } ${!refurbished && !refurbishedMatches ? 'opacity-40' : ''}`}
-                >
-                  <Text
-                    className={`font-sans-bold text-xs ${
-                      refurbished
-                        ? 'text-brand-on-primary'
-                        : 'text-brand-warmgray'
-                    }`}
-                  >
-                    {t('browse.refurbished')}
-                  </Text>
-                </Pressable>
-              ))}
+                  {t('browse.refurbished')}
+                </Text>
+              </Pressable>
+            )}
           </ScrollView>
         </View>
       )}

@@ -21,7 +21,7 @@ export async function importRefurbished(req: ImportRequest, caller: ImportCaller
   const existing = (await prisma.listing.findMany({
     where: { storeId: store.id, sku: { not: null } },
   })) as unknown as ExistingListing[];
-  const plan = planImport(req.items, existing, req.mode, Date.now());
+  const plan = planImport(req.items, existing, req.mode);
   const result = {
     dryRun: req.dryRun,
     created: plan.create.length,

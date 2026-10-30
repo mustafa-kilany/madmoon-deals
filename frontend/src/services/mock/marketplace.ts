@@ -12,7 +12,7 @@ import { buildRefurbishedItems } from './refurbished';
 const startedAt = Date.now();
 const seedItems = [
   ...buildItems(startedAt),
-  ...buildRefurbishedItems(startedAt),
+  ...buildRefurbishedItems(),
 ];
 
 /** Listings published in this session, newest first. */

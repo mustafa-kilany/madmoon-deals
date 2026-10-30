@@ -180,6 +180,8 @@ Tasks:
 
 ## Log
 Short notes on what changed, newest first.
+- 2026-10-30: certified refurbished listings are fixed price only (vendors set the price): no auction
+  columns in the import or template, app store screen without format tabs (API.md change log).
 - 2026-10-30: database design with pictures (`docs/DATABASE.md`, `docs/database/*.png`).
 - 2026-10-30: the app moved into `frontend/` (backend shares `../frontend/src`).
 - 2026-10-30: B2.1–B2.4 done (catalog reference data, seed, GET /listings + search); admin dashboard

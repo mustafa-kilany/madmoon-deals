@@ -19,7 +19,7 @@ import {
 import { buildRefurbishedItems } from '../src/services/mock/refurbished';
 
 const now = 1_700_000_000_000;
-const seed = [...buildItems(now), ...buildRefurbishedItems(now)];
+const seed = [...buildItems(now), ...buildRefurbishedItems()];
 const typeOf = (category: keyof typeof categoryFilters, type: string) =>
   categoryFilters[category].types.find(t => t.id === type);
 
