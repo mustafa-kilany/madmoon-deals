@@ -44,8 +44,8 @@ endpoint does) and [`backend/README.md`](../backend/README.md) says how to run t
 - ✅ **B1.1** Email sign-up with code, log-in, log-out, password reset, `GET/PATCH/DELETE /me`.
   JWT (HS256, 60 days) + a database session per token (revocable). scrypt passwords, HMAC codes,
   rate limit per IP + email. `npm run db:seed` demo accounts. End-to-end tests on `sahla_test`.
-- ⬜ **B1.2** Backend CI: GitHub Actions job with a PostgreSQL service running typecheck, unit and
-  end-to-end tests on every pull request.
+- ✅ **B1.2** Backend CI: GitHub Actions job with a PostgreSQL service running typecheck, unit and
+  end-to-end tests on every pull request. _(First real run when the branch is pushed.)_
 - ⬜ **B1.3** App: send `X-Device-Id` (random id stored once in MMKV) on every request; document it in
   `API.md` (feeds the "many accounts on one phone" risk signal).
 - ⬜ **B1.4** App: a message for `RATE_LIMITED` ("Too many tries, wait a few minutes").
