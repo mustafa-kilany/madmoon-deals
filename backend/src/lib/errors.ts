@@ -13,6 +13,7 @@ export type ErrorCode =
   | 'OPEN_ORDERS'
   | 'INVALID_PIN'
   | 'INVALID_CODE'
+  | 'RATE_LIMITED' // 429: shown as a generic error by the app
   | 'INTERNAL';
 
 // Throw one from any route: it becomes { error: { code, message } }.

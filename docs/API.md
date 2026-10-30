@@ -147,6 +147,7 @@ export const config = {
 | `OPEN_ORDERS` | 409 | Account deletion while orders are in escrow (as buyer or seller) |
 | `INVALID_PIN` | 422 | Courier typed the wrong delivery PIN (nothing is released) |
 | `INVALID_CODE` | 422 | Wrong or expired emailed code (sign-up, password reset) |
+| `RATE_LIMITED` | 429 | Too many log-in / code attempts for one email from one IP; try again in ~15 minutes (no app message yet: shown as a generic error) |
 
 Any other code is shown to the user as a generic error, so new codes need an app update to get their own message.
 

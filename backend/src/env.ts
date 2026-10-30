@@ -8,13 +8,26 @@ const optional = z
   .optional()
   .transform(value => value?.trim() || undefined);
 
-const schema = z.object({
-  DATABASE_URL: z.string().startsWith('postgresql://'),
-  PORT: z.coerce.number().int().positive().default(4000),
-  // Optional until those features are switched on (backend/docs/); blank = off.
-  GOOGLE_VISION_API_KEY: optional, // certificate OCR
-  ANTHROPIC_API_KEY: optional, // AI reviewer for the risk queue
-});
+const schema = z
+  .object({
+    NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+    DATABASE_URL: z.string().startsWith('postgresql://'),
+    PORT: z.coerce.number().int().positive().default(4000),
+    // Signs the log-in tokens (JWT). Long and random; changing it signs everyone out.
+    JWT_SECRET: z.string().min(32, 'at least 32 characters (npm run secret makes one)'),
+    // How long a log-in lasts. docs/API.md: 30–90 days, no refresh tokens.
+    SESSION_DAYS: z.coerce.number().int().min(1).max(90).default(60),
+    // Local testing only: this code is accepted for any email and nothing is
+    // sent (the app's tests and demo use 123456). Never set in production.
+    DEV_EMAIL_CODE: optional,
+    // Optional until those features are switched on (backend/docs/); blank = off.
+    GOOGLE_VISION_API_KEY: optional, // certificate OCR
+    ANTHROPIC_API_KEY: optional, // AI reviewer for the risk queue
+  })
+  .refine(e => !(e.NODE_ENV === 'production' && e.DEV_EMAIL_CODE), {
+    message: 'DEV_EMAIL_CODE must not be set in production',
+    path: ['DEV_EMAIL_CODE'],
+  });
 
 const parsed = schema.safeParse(process.env);
 if (!parsed.success) {
