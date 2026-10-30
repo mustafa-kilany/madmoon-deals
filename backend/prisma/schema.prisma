@@ -112,26 +112,32 @@ enum SaleType {
 // API `Item`. The seller is either a user (sellerUserId) or a brand's official
 // store (storeId, refurbished stock only), never both.
 model Listing {
-  id            String        @id @default(cuid())
-  category      String
-  type          String
-  titleAr       String
-  titleEn       String
-  priceFils     Int // fixed price, or the current highest bid of an auction
-  imageUrls     String[] // cover first, 1–5
-  condition     Condition
-  description   String
-  status        ListingStatus @default(active)
-  brand         String?
-  model         String?
-  locationId    String // area id from GET /cities
-  saleType      SaleType      @default(fixed)
-  auctionEndsAt DateTime?
-  incrementFils Int?
-  bidCount      Int           @default(0) // kept up to date by bids (B6); sort=most_bids
-  views         Int           @default(0)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id             String        @id @default(cuid())
+  category       String
+  type           String
+  titleAr        String
+  titleEn        String
+  priceFils      Int // fixed price, or the current highest bid of an auction
+  imageUrls      String[] // cover first, 1–5
+  condition      Condition
+  description    String
+  status         ListingStatus @default(active)
+  brand          String?
+  model          String?
+  locationId     String // area id from GET /cities
+  saleType       SaleType      @default(fixed)
+  auctionEndsAt  DateTime?
+  incrementFils  Int?
+  bidCount       Int           @default(0) // kept up to date by bids (B6); sort=most_bids
+  views          Int           @default(0)
+  // Search: title (ar + en), brand, model and type name (ar + en), folded like the
+  // app's foldText(). Set with searchTextFor() whenever those change.
+  searchText     String        @default("")
+  // Copy of the seller's Verified badge (stores: always), for sort=recommended and
+  // verifiedOnly without a join. Update the user's listings when the badge changes.
+  sellerVerified Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
   sellerUserId String?
   sellerUser   User?   @relation(fields: [sellerUserId], references: [id])

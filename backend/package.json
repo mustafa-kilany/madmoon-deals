@@ -7,14 +7,15 @@
     "start": "tsx src/server.ts",
     "typecheck": "tsc --noEmit",
     "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev && prisma generate",
+    "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "postinstall": "prisma generate",
     "test": "node --import tsx --test \"src/**/*.test.ts\"",
     "store": "tsx scripts/store.ts",
     "test:api": "tsx scripts/test-api.ts",
     "db:seed": "tsx scripts/seed.ts",
-    "secret": "node -e \"console.log(require('node:crypto').randomBytes(48).toString('base64url'))\""
+    "secret": "node -e \"console.log(require('node:crypto').randomBytes(48).toString('base64url'))\"",
+    "postdb:migrate": "prisma generate"
   },
   "type": "module",
   "dependencies": {

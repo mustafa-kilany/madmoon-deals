@@ -8,6 +8,7 @@ import path from 'node:path';
 import type { Item } from '@/lib/types';
 import { prisma } from '../src/db';
 import { hashPassword } from '../src/modules/auth/password';
+import { searchTextFor } from '../src/modules/catalog/searchText';
 
 // The mock bundles its certificate photos with require('….jpg'), which only the
 // app's bundler understands. Here each photo is just its file name.
@@ -40,10 +41,22 @@ const listingFields = (item: Item) => ({
   incrementFils: item.auction?.incrementFils ?? null,
   bidCount: item.auction?.bidCount ?? 0,
   views: item.views,
+  searchText: searchTextFor({
+    category: item.category,
+    type: item.type,
+    titleAr: item.title.ar,
+    titleEn: item.title.en,
+    brand: item.brand,
+    model: item.model,
+  }),
+  // The mock marks each listing; keep that, so browsing matches mock mode exactly.
+  sellerVerified: item.verified,
 });
 
-export async function seedListings() {
-  const now = Date.now();
+/** The listings as the app's mock builds them at `now` (also the tests' reference). */
+export const demoItems = (now: number) => [...buildItems(now), ...buildRefurbishedItems(now)];
+
+export async function seedListings(now = Date.now()) {
   const items = buildItems(now);
   const refurbished = buildRefurbishedItems(now);
 

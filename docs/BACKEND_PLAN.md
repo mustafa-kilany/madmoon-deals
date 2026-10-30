@@ -56,11 +56,11 @@ endpoint does) and [`backend/README.md`](../backend/README.md) says how to run t
   category images served by the backend (`/static/categories/*.jpg`).
 - ✅ **B2.2** Development seed listings: the app's mock catalog (40 listings incl. 8 auctions, 12 refurbished
   from 7 stores, 10 certificates) into the database (`npm run db:seed`), same ids as mock mode, 6 demo sellers.
-- ⬜ **B2.3** `GET /listings`: filters (`category`, `format`, `refurbished`, `types`, `brands`, `conditions`,
+- ✅ **B2.3** `GET /listings`: filters (`category`, `format`, `refurbished`, `types`, `brands`, `conditions`,
   `cities`, price range, `verifiedOnly`, `endingSoon`), sorts (6), keyset cursor, `limit` ≤ 50, `ids=`
   mode, `total`, `counts`, `refurbishedCounts`, `facets`. Only `active`, never ended auctions.
-- ⬜ **B2.4** Search `q`: every word must match title (ar/en), brand, model or type name; Arabic folding
-  (أ/إ/آ→ا, ة→ه, ى→ي, no tashkeel) like `foldText()` in the app; `pg_trgm` index.
+- ✅ **B2.4** Search `q`: every word must match title (ar/en), brand, model or type name; Arabic folding
+  (أ/إ/آ→ا, ة→ه, ى→ي, no tashkeel) with the app's own `foldText()` (`Listing.searchText`). Its `pg_trgm` index is in B2.6.
 - ⬜ **B2.5** `GET /listings/:id`, `POST /listings/:id/views` (count a device once a day), `GET /me/listings`.
 - ⬜ **B2.6** Indexes + a quick load check (10k listings, page under 100 ms).
 - **Switch the app:** `mock.catalog = false`; browse every screen on the emulator.

@@ -2,6 +2,7 @@ import express from 'express';
 import { prisma } from './db';
 import { errorHandler, notFound } from './lib/errors';
 import { authRoutes } from './modules/auth/routes';
+import { listingRoutes } from './modules/catalog/listings.routes';
 import { referenceRoutes } from './modules/catalog/reference.routes';
 import { refurbishedRoutes } from './modules/refurbished/routes';
 import { env } from './env';
@@ -31,6 +32,7 @@ v1.get('/health', async (_req, res) => {
 
 v1.use(authRoutes);
 v1.use(referenceRoutes);
+v1.use(listingRoutes);
 v1.use(refurbishedRoutes);
 
 app.use('/v1', v1);

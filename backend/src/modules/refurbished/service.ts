@@ -1,6 +1,7 @@
 import type { RefurbishedImportRow } from '@/lib/refurbishedImport';
 import { prisma } from '../../db';
 import { ApiError } from '../../lib/errors';
+import { searchTextFor } from '../catalog/searchText';
 import { planImport, type ExistingListing } from './plan';
 import type { ImportCaller } from './storeKeys';
 
@@ -33,10 +34,22 @@ export async function importRefurbished(req: ImportRequest, caller: ImportCaller
   // TODO(uploads): copy imageUrls to Sahla's CDN instead of linking the brand's URLs.
   await prisma.$transaction(
     async tx => {
+      // Store listings are always verified (the brand's official store).
       for (const { sku, fields } of plan.create)
-        await tx.listing.create({ data: { ...fields, storeId: store.id, sku } });
+        await tx.listing.create({
+          data: {
+            ...fields,
+            storeId: store.id,
+            sku,
+            searchText: searchTextFor(fields),
+            sellerVerified: true,
+          },
+        });
       for (const { id, fields } of plan.update)
-        await tx.listing.update({ where: { id }, data: fields });
+        await tx.listing.update({
+          where: { id },
+          data: { ...fields, searchText: searchTextFor(fields) },
+        });
       if (plan.withdraw.length > 0)
         await tx.listing.updateMany({
           where: { id: { in: plan.withdraw.map(w => w.id) } },
