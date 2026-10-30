@@ -4,12 +4,15 @@
 //   npm run staff -- admin "Mustafa" mustafa@sahla.jo          an admin (dashboard, category pictures)
 //   npm run staff -- disable omar@sahla.jo                    stops them signing in
 //   npm run staff -- list
+//   npm run staff -- ids                                       ID checks waiting for review
+//   npm run staff -- id approve ahmad@sahla.jo                 or: id reject <email> "reason"
 //
 // The courier then opens the app → Log in → "Forgot password", enters their email
 // and the emailed code, and chooses a password.
 
 import { prisma } from '../src/db';
 import { env } from '../src/env';
+import { decideIdVerification } from '../src/modules/identity/manualReview';
 import { createAdmin, createCourier, disableCourier } from '../src/modules/staff/service';
 
 const [command, ...args] = process.argv.slice(2);
@@ -42,6 +45,23 @@ async function main() {
       console.log(`Disabled ${email}; their sessions are ended.`);
       break;
     }
+    case 'ids': {
+      const pending = await prisma.idVerification.findMany({
+        where: { status: 'pending' },
+        include: { user: { select: { name: true, email: true } } },
+        orderBy: { createdAt: 'asc' },
+      });
+      console.table(pending.map(p => ({ name: p.user.name, email: p.user.email, sent: p.createdAt, photo: p.photoUrl })));
+      break;
+    }
+    case 'id': {
+      const [decision, email, reason] = args;
+      if ((decision !== 'approve' && decision !== 'reject') || !email)
+        throw new Error('Usage: id approve <email> | id reject <email> "reason"');
+      await decideIdVerification(email, decision, null, reason);
+      console.log(decision === 'approve' ? `${email} is now verified.` : `${email}'s ID was rejected; they can try again.`);
+      break;
+    }
     case 'list': {
       const staff = await prisma.user.findMany({
         where: { role: { not: null } },
@@ -52,7 +72,7 @@ async function main() {
       break;
     }
     default:
-      throw new Error('Commands: courier, admin, disable, list');
+      throw new Error('Commands: courier, admin, disable, list, ids, id');
   }
 }
 

@@ -145,7 +145,10 @@ test('profile, ID verification upload and card, with the session token', async (
 
   // Upload checks the real bytes: a renamed PDF is rejected.
   expect((await failure(api.verifyId(notAPhoto))).code).toBe('VALIDATION');
-  expect((await api.verifyId(jpeg)).verified).toBe(true);
+  expect(await api.verifyId(jpeg)).toMatchObject({
+    verified: false,
+    idVerification: 'pending',
+  });
 
   const avatar = (await api.changeAvatar(jpeg)).avatarUrl;
   expect(avatar).toMatch(/\/uploads\/.+\.jpg$/);
@@ -162,13 +165,15 @@ test('profile, ID verification upload and card, with the session token', async (
   ).toBe(true);
 });
 
-test('ID verification upgrades an email account to verified', async () => {
+test('ID verification puts an email account in review (pending), not verified yet', async () => {
   const { token } = await api.logInWithEmail({
     email: 'ahmad@sahla.jo',
     password: 'sahla1234',
   });
   tokenStorage.set(token);
-  expect((await api.verifyId(jpeg)).verified).toBe(true);
+  const user = await api.verifyId(jpeg);
+  expect(user).toMatchObject({ verified: false, idVerification: 'pending' });
+  expect(user).not.toHaveProperty('idPhoto'); // the photo stays private
 });
 
 test('log-out revokes the token; using it again signs the app out', async () => {

@@ -266,7 +266,7 @@ function addAccount(store, { password, ...fields }) {
 
 /** User as the contract defines it: no password data, no undefined fields. */
 function publicUser(account) {
-  const { salt, passwordHash, ...user } = account;
+  const { salt, passwordHash, idPhoto, ...user } = account; // the ID photo stays private
   return JSON.parse(JSON.stringify(user));
 }
 
@@ -534,7 +534,8 @@ function routes(store) {
     'POST /me/id-verification': async req => {
       const { account } = authenticate(store, req);
       const photo = await readPhoto(req, 'idPhoto');
-      account.verified = true;
+      // Waits for an admin's review, like the real backend (backend/: B3.5).
+      if (!account.verified) account.idVerification = 'pending';
       account.idPhoto = photo.name;
       return [200, publicUser(account), photo];
     },

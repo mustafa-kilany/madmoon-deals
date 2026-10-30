@@ -46,8 +46,15 @@ export function IdVerificationScreen({
     }
     if (!photo) return; // cancelled
     verify.mutate(photo, {
-      onSuccess: () => {
-        toast.success(t('idVerification.verified'));
+      onSuccess: user => {
+        // Until Sanad, an admin reviews the photo: usually "submitted", not "verified".
+        toast.success(
+          t(
+            user.verified
+              ? 'idVerification.verified'
+              : 'idVerification.submitted',
+          ),
+        );
         navigation.goBack();
       },
     });

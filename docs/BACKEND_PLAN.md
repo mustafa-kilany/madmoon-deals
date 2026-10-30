@@ -71,16 +71,17 @@ endpoint does), [`DATABASE.md`](DATABASE.md) the database design and [`backend/R
   upload, `POST /listings`), which comes in B3–B4. Then browse and sell on the emulator.
 - _Blocks (B5) later filter these lists too._
 
-## B3 — Photo uploads 🔨 (branch `feat/backend-b3-uploads`) (needs D1 for production; local disk in development)
+## B3 — Photo uploads ✅ (branch `feat/backend-b3-uploads`) (needs D1 for production; local disk in development)
 Two kinds (decided 2026-10-30): **users' listing photos** and **admins changing the category pictures**.
 - ✅ **B3.1** Storage module: local folder in development, R2/S3 in production, one interface.
 - ✅ **B3.2** Image pipeline (`sharp`): check the real file type from its bytes, strip EXIF (GPS!),
   resize to 1600 px + a 400 px thumbnail, WebP/JPEG.
 - ✅ **B3.3** `POST /uploads/listing-photo` (issued URLs remembered, so `POST /listings` accepts only ours).
 - ✅ **B3.4** `POST /me/avatar`.
-- ⬜ **B3.5** `POST /me/id-verification`: photo → `IdVerification(manual, pending)`; admin decides in B8.
-  (Contract today answers `verified: true` immediately; decide: keep instant for now, or change the
-  contract to "pending" and update the app.)
+- ✅ **B3.5** `POST /me/id-verification` (decided 2026-10-30: pending until an admin approves; Sanad later): private
+  photo → `User.idVerification: pending` → approve (Verified badge, also on listings) or reject (try again);
+  photo deleted once decided. `npm run staff -- ids` / `id approve|reject <email>` until the dashboard (B8.3).
+  App: "ID under review" / "Try again" on the profile.
 - ✅ **B3.6** Clean-up job: delete uploads no listing uses after 24 h.
 - ✅ **B3.7** Category pictures from the database: a `Category` table (`id`, `imageUrl`, `updatedById`,
   `updatedAt`); `GET /categories` uses it, falling back to the bundled tiles.

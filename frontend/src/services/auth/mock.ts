@@ -174,9 +174,10 @@ export const mockAuthService: AuthService = {
     return openSession(updated);
   },
 
+  // Like the server: the photo waits for an admin's review (Sanad later).
   verifyId: async () => {
     await mockLatency();
-    return update({ verified: true });
+    return update({ idVerification: 'pending' });
   },
 
   getMe: async () => {

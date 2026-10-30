@@ -122,6 +122,7 @@
     "secure": "Your data is encrypted & secure",
     "capture": "CAPTURE & VERIFY",
     "verified": "Your account is now verified",
+    "submitted": "ID sent. We'll review it within 24 hours.",
     "cameraError": "Couldn't open the camera. Check camera access and try again."
   },
   "profile": {
@@ -134,6 +135,11 @@
     "becomeVerified": "Become Verified",
     "becomeVerifiedBody": "Add your National ID to verify your account.",
     "addIdVerify": "Add ID & Verify",
+    "idPendingTitle": "ID under review",
+    "idPendingBody": "We're checking your ID. You'll get the Verified badge once it's approved.",
+    "idRejectedTitle": "ID not verified",
+    "idRejectedBody": "We couldn't verify your ID from that photo. Please try again with a clear photo.",
+    "idTryAgain": "Try Again",
     "city": "City",
     "paymentCard": "Payment Card",
     "cardNumber": "Card Number",
