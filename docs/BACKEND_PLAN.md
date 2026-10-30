@@ -54,8 +54,8 @@ endpoint does) and [`backend/README.md`](../backend/README.md) says how to run t
 ## B2 — Catalog (browsing) 🔨 (branch `feat/backend-b2-catalog`)
 - ✅ **B2.1** `GET /categories`, `GET /categories/filters`, `GET /cities` from the shared reference data;
   category images served by the backend (`/static/categories/*.jpg`).
-- ⬜ **B2.2** Development seed listings: the app's mock catalog (32 listings + auctions + 12 refurbished)
-  into the database (`npm run db:seed`), with demo sellers.
+- ✅ **B2.2** Development seed listings: the app's mock catalog (40 listings incl. 8 auctions, 12 refurbished
+  from 7 stores, 10 certificates) into the database (`npm run db:seed`), same ids as mock mode, 6 demo sellers.
 - ⬜ **B2.3** `GET /listings`: filters (`category`, `format`, `refurbished`, `types`, `brands`, `conditions`,
   `cities`, price range, `verifiedOnly`, `endingSoon`), sorts (6), keyset cursor, `limit` ≤ 50, `ids=`
   mode, `total`, `counts`, `refurbishedCounts`, `facets`. Only `active`, never ended auctions.

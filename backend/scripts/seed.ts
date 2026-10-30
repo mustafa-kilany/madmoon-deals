@@ -1,5 +1,6 @@
-// Demo accounts for local development, the same as the contract server's
-// (the app's tests and Maestro flows sign in with them). Safe to run twice.
+// Development data: the demo accounts of the contract server (the app's tests
+// and Maestro flows sign in with them) and the app's mock catalog
+// (scripts/seed-listings.ts). Safe to run again.
 //
 //   npm run db:seed
 
@@ -27,6 +28,9 @@ async function main() {
     });
     console.log(`${account.email} / sahla1234`);
   }
+  // Loaded only now, after the production check (it builds the mock catalog on import).
+  const { seedListings } = await import('./seed-listings');
+  await seedListings();
 }
 
 main()

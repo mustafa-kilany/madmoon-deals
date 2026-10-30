@@ -21,3 +21,8 @@ export const findType = (category: string, type: string) =>
 export const categoryImageDir = fileURLToPath(
   new URL('../../assets/images/categories', import.meta.url),
 );
+
+/** The demo listings' certificate photos (development seed only), at /static/certificates. */
+export const demoCertificateDir = fileURLToPath(
+  new URL('../../assets/images/certificates', import.meta.url),
+);
