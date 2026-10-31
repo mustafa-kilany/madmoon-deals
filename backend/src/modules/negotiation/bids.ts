@@ -1,5 +1,6 @@
 import { prisma } from '../../db';
 import { ApiError } from '../../lib/errors';
+import { pushAuctionWon, pushOutbid } from '../notifications/notify';
 import { isBlockedBetween } from '../safety/blocks';
 import { bidInclude } from './shapes';
 
@@ -19,7 +20,7 @@ type LockedListing = {
 
 /** POST /listings/:id/bids. The listing row is locked, so two bids at once are checked one after the other. */
 export async function placeBid(bidderId: string, listingId: string, amountFils: number) {
-  return prisma.$transaction(async tx => {
+  const { bid, outbid } = await prisma.$transaction(async tx => {
     const [listing] = await tx.$queryRaw<LockedListing[]>`
       SELECT "status", "saleType", "priceFils", "incrementFils", "auctionEndsAt", "sellerUserId", "reportHidden"
       FROM "Listing" WHERE "id" = ${listingId} FOR UPDATE`;
@@ -33,9 +34,13 @@ export async function placeBid(bidderId: string, listingId: string, amountFils: 
     const minimum = listing.priceFils + (listing.incrementFils ?? 0);
     if (amountFils < minimum) throw new ApiError(422, 'VALIDATION', `Bid at least ${minimum} fils`);
 
+    const leader = await tx.bid.findFirst({ where: { listingId }, orderBy: [{ amountFils: 'desc' }, { createdAt: 'asc' }] });
     await tx.listing.update({ where: { id: listingId }, data: { priceFils: amountFils, bidCount: { increment: 1 } } });
-    return tx.bid.create({ data: { listingId, bidderId, amountFils }, include: bidInclude });
+    const bid = await tx.bid.create({ data: { listingId, bidderId, amountFils }, include: bidInclude });
+    return { bid, outbid: leader && leader.bidderId !== bidderId ? leader.bidderId : undefined };
   });
+  if (outbid) pushOutbid(listingId, outbid);
+  return bid;
 }
 
 /** GET /listings/:id/bids: newest (highest) first. */
@@ -62,10 +67,11 @@ export async function closeEndedAuctions(now = new Date()) {
   });
   for (const { id } of ended) {
     const top = await prisma.bid.findFirst({ where: { listingId: id }, orderBy: [{ amountFils: 'desc' }, { createdAt: 'asc' }] });
-    await prisma.listing.updateMany({
+    const { count } = await prisma.listing.updateMany({
       where: { id, auctionClosedAt: null },
       data: { auctionClosedAt: now, auctionWinnerId: top?.bidderId ?? null },
     });
+    if (count && top) pushAuctionWon(id);
   }
   return ended.length;
 }

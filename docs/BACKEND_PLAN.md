@@ -188,10 +188,14 @@ Tasks:
   rows and run the same import on a schedule. Vendors without a shop keep using the Excel sheet.
 - ⬜ **B8.6** Deploy the dashboard at `admin.sahla.jo` (static hosting); the API allows that origin (CORS).
 
-## B9 — Emails and push notifications ⬜ (D3; a Firebase project)
+## B9 — Emails and push notifications 🔨 (D3 for emails; Firebase project `sahla-project-75cb2`)
 - ⬜ **B9.1** Real email sending (codes) behind `mailer.ts`; Arabic + English templates.
-- ✅ **B9.2** `POST /me/devices`, `DELETE /me/devices/:token` (`Device` table). ⬜ App: send the token (with B9.3).
-- ⬜ **B9.3** Push for: new message, offer answered, outbid, auction won, order delivered.
+- ✅ **B9.2** `POST /me/devices`, `DELETE /me/devices/:token` (`Device` table, with the phone's language and
+  the sign-in it belongs to). ⬜ App: send the token.
+- ✅ **B9.3** Push (FCM HTTP v1, `PUSH_MODE=fcm`) for: new message, new offer / offer answered, outbid,
+  auction won, order delivered (buyer and seller); in the phone's language; uninstalled apps are
+  forgotten. `backend/docs/PUSH.md`. ⬜ App: receive them and open the right screen on tap.
+  ⬜ iPhone: APNs key (Apple Developer account).
 
 ## B10 — Google and Apple sign-in: backend ✅, live when the client ids exist (Google Cloud; Apple Developer account)
 - ✅ **B10.1** `POST /auth/google`: verify the ID token with Google's keys (audience = our client ids); link by
@@ -257,6 +261,7 @@ buying, chats or offers.
 
 ## Log
 Short notes on what changed, newest first.
+- 2026-10-31: B9.3 push sending done (Firebase project created); app side next.
 - 2026-10-31: B8.1 done: two-step admin log-in, dashboard-only tokens, audit log.
 - 2026-10-30: courier (driver) app planned as B14: staff accounts made by admins with the company email,
   courier-only screens (deliveries, pickup / drop-off, PIN).

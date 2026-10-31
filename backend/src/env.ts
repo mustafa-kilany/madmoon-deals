@@ -54,6 +54,12 @@ const schema = z
     // area; fake = the nearest area's main street; nominatim = OpenStreetMap (NOMINATIM_URL).
     GEOCODER: z.enum(['off', 'fake', 'nominatim']).default('off'),
     NOMINATIM_URL: z.string().url().default('https://nominatim.openstreetmap.org'),
+    // Push notifications (BACKEND_PLAN B9.3, backend/docs/PUSH.md). off = none sent; fake = recorded
+    // for tests; fcm = Firebase Cloud Messaging with FIREBASE_SERVICE_ACCOUNT.
+    PUSH_MODE: z.enum(['off', 'fake', 'fcm']).default('off'),
+    // The Firebase service account key: a file path (e.g. ./firebase-service-account.json) or
+    // the JSON itself (hosting with no files). A secret: never commit it.
+    FIREBASE_SERVICE_ACCOUNT: optional,
     // Optional until those features are switched on (backend/docs/); blank = off.
     GOOGLE_VISION_API_KEY: optional, // certificate OCR
     ANTHROPIC_API_KEY: optional, // AI reviewer for the risk queue
@@ -69,6 +75,10 @@ const schema = z
   .refine(e => !(e.NODE_ENV === 'production' && e.PAYMENT_MODE === 'fake'), {
     message: 'PAYMENT_MODE=fake must not be used in production',
     path: ['PAYMENT_MODE'],
+  })
+  .refine(e => e.PUSH_MODE !== 'fcm' || e.FIREBASE_SERVICE_ACCOUNT, {
+    message: 'PUSH_MODE=fcm needs FIREBASE_SERVICE_ACCOUNT',
+    path: ['FIREBASE_SERVICE_ACCOUNT'],
   })
   .refine(
     e =>

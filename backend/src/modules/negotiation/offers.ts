@@ -1,5 +1,6 @@
 import { prisma } from '../../db';
 import { ApiError } from '../../lib/errors';
+import { pushOffer } from '../notifications/notify';
 import { isBlockedBetween } from '../safety/blocks';
 import { post } from './chats';
 import { offerInclude } from './shapes';
@@ -24,7 +25,7 @@ export async function makeOffer(buyerId: string, listingId: string, amountFils: 
   const open = await prisma.offer.count({ where: { listingId, buyerId, status: { in: ['pending', 'countered'] } } });
   if (open) throw new ApiError(422, 'VALIDATION', 'Your last offer on this listing is still waiting for an answer');
 
-  return prisma.$transaction(async tx => {
+  const made = await prisma.$transaction(async tx => {
     const chat = await tx.chat.upsert({
       where: { listingId_buyerId: { listingId, buyerId } },
       create: { listingId, buyerId },
@@ -34,6 +35,8 @@ export async function makeOffer(buyerId: string, listingId: string, amountFils: 
     await post(tx, chat.id, buyerId, `Made an offer of ${jod(amountFils)}`, offer.id);
     return { offer: await tx.offer.findUniqueOrThrow({ where: { id: offer.id }, include: offerInclude }), chatId: chat.id };
   });
+  pushOffer(made.offer.id, buyerId);
+  return made;
 }
 
 /** GET /offers/:id: the buyer's or the seller's. */
@@ -78,11 +81,13 @@ export async function respondToOffer(userId: string, offerId: string, answer: An
     text = 'Offer declined';
   }
 
-  return prisma.$transaction(async tx => {
+  const answered = await prisma.$transaction(async tx => {
     // Only from the state we checked: two answers at once can't both apply.
     const { count } = await tx.offer.updateMany({ where: { id: offerId, status: offer.status }, data });
     if (!count) throw new ApiError(422, 'VALIDATION', 'This offer was just answered');
     await post(tx, offer.chatId, userId, text, offerId);
     return tx.offer.findUniqueOrThrow({ where: { id: offerId }, include: offerInclude });
   });
+  pushOffer(offerId, userId);
+  return answered;
 }

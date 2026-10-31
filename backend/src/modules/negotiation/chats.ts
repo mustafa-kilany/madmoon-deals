@@ -1,6 +1,7 @@
 import { prisma } from '../../db';
 import type { Prisma } from '../../generated/prisma/client';
 import { ApiError } from '../../lib/errors';
+import { pushChatMessage } from '../notifications/notify';
 import { blockedWith, isBlockedBetween } from '../safety/blocks';
 import { chatInclude, messageInclude } from './shapes';
 
@@ -69,5 +70,7 @@ export async function sendMessage(userId: string, chatId: string, text: string) 
   const other = chat.buyerId === userId ? chat.listing.sellerUserId : chat.buyerId;
   if (other && (await isBlockedBetween(userId, other)))
     throw new ApiError(403, 'FORBIDDEN', 'You can’t message this person');
-  return prisma.$transaction(tx => post(tx, chatId, userId, text));
+  const message = await prisma.$transaction(tx => post(tx, chatId, userId, text));
+  pushChatMessage(chatId, userId);
+  return message;
 }

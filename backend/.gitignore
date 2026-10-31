@@ -4,3 +4,4 @@ dist/
 /src/generated/
 /uploads/
 /uploads-private/
+/firebase-service-account.json

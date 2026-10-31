@@ -71,6 +71,7 @@ erDiagram
   User ||--o{ Session : "signs in on"
   User ||--o{ IdVerification : "verifies"
   User ||--o{ Device : "gets push on"
+  Session |o--o{ Device : "registered in"
   User {
     text id PK "cuid"
     text name "2-60 chars"
@@ -125,7 +126,9 @@ erDiagram
   Device {
     text token PK "FCM token"
     text userId FK
+    text sessionId FK "the sign-in that registered it"
     Platform platform "android | ios"
+    text language "ar | en: the pushes' language"
     timestamp createdAt
     timestamp updatedAt
   }
@@ -137,7 +140,7 @@ erDiagram
 | **Session** | ✅ B1, scope B8.1 | One signed-in device. The JWT names the session (`sid`); deleting the row signs that device out. Log-out deletes one, password reset all. `scope` `admin` = the dashboard (after the two-step log-in, 12 hours); an app session never opens `/v1/admin/*` and an admin one opens nothing else. | `tokenHash` unique, `userId`, `deviceId` |
 | **EmailCode** | ✅ B1 | 6-digit codes for sign-up and password reset. Deleted once used. | `(email, purpose)` |
 | **IdVerification** | ✅ B3.5 (Sanad: B11) | One check with **Sanad** (no ID photos, no manual review). `stateHash` finds the check when Sanad answers; the national number is kept only as a keyed hash (one ID, one verified account). Approving sets `User.verified` (and `Listing.sellerVerified` on their listings). | `userId`, `nationalIdHash` |
-| **Device** | ✅ B9.2 | Push notification tokens. A token belongs to the account last signed in on that phone; removed on log-out and with the account. | `userId` |
+| **Device** | ✅ B9.2–B9.3 | Push notification tokens. A token belongs to the account last signed in on that phone and to that sign-in: removed with the `Session` (log-out, password reset), with the account, and when Firebase says the app was uninstalled. `language` = the app's language on that phone. | `userId` |
 
 The saved card (B7.8) is three `User` columns, not a table: one card per account, `cardToken` being the
 payment provider's reusable token (never the card number).

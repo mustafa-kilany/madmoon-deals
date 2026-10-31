@@ -1,5 +1,6 @@
 import { prisma } from '../../db';
 import { ApiError } from '../../lib/errors';
+import { pushDelivered } from '../notifications/notify';
 import { orderInclude } from '../orders/shapes';
 
 // POST /courier/confirm-delivery (BACKEND_PLAN B7.6): the buyer tells the
@@ -29,7 +30,7 @@ export async function confirmDelivery(courierId: string, orderId: string, pin: s
     throw new ApiError(422, 'INVALID_PIN', `Wrong PIN (${Math.max(left, 0)} tries left)`);
   }
 
-  return prisma.$transaction(async tx => {
+  const delivered = await prisma.$transaction(async tx => {
     const done = await tx.order.updateMany({
       where: { id: orderId, status: 'escrow_held' },
       data: { status: 'completed', deliveredAt: new Date(), courierStatus: 'delivered', courierId },
@@ -42,4 +43,6 @@ export async function confirmDelivery(courierId: string, orderId: string, pin: s
     });
     return tx.order.findUniqueOrThrow({ where: { id: orderId }, include: orderInclude });
   });
+  pushDelivered(orderId);
+  return delivered;
 }

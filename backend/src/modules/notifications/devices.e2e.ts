@@ -47,6 +47,8 @@ test('register, move to the next account on the phone, remove', async () => {
   assert.equal(await owner(), EMAILS[0]);
   assert.equal(await call('POST', '/me/devices', tokens[0], { token: 'short', platform: 'android' }), 422);
   assert.equal(await call('POST', '/me/devices', tokens[0], { token: PHONE, platform: 'windows' }), 422);
+  assert.equal(await call('POST', '/me/devices', tokens[0], { token: PHONE, platform: 'android', language: 'fr' }), 422);
+  assert.equal((await prisma.device.findUniqueOrThrow({ where: { token: PHONE } })).language, 'en'); // the default
 
   assert.equal(await call('POST', '/me/devices', tokens[1], { token: PHONE, platform: 'ios' }), 204);
   assert.equal(await owner(), EMAILS[1]);

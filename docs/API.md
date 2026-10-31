@@ -967,16 +967,31 @@ while they're on screen and the app is in the foreground (`config.pollMs`):
 
 These endpoints must therefore be cheap. Optional: support `ETag` / `If-None-Match` → `304`.
 
-**Planned — push notifications** (needs a Firebase project for Android and an Apple Push key for
-iOS; not in the app yet). Proposed endpoints, so the backend can plan for them:
+**Push notifications** (Firebase Cloud Messaging; backend B9.2–B9.3, `backend/docs/PUSH.md`). Android
+now; iPhones once an Apple push key is added to Firebase.
 
-* **`POST /me/devices` *(Authenticated)*** → Body: `{ "token": "<FCM token>", "platform": "android" | "ios" }` → 204. Sent after sign-in and whenever the token changes.
+* **`POST /me/devices` *(Authenticated)*** → Body: `{ "token": "<FCM token>", "platform": "android" | "ios", "language": "ar" | "en" }` → 204.
+  Sent after sign-in, at every launch and whenever the token changes. `language` (default `en`) is the
+  app's language on that phone: the pushes are written in it.
 * **`DELETE /me/devices/:token` *(Authenticated)*** → 204. Sent on log-out.
-* **Server (B9.2, built):** a token belongs to the account last signed in on that phone (registering it again
-  moves it); deleting someone else's token or an unknown one is still 204; tokens go with the account.
-  `VALIDATION` for a token under 20 characters or another `platform`. Couriers can register too.
-* Server sends a push for: new chat message, offer accepted / countered, outbid, auction won,
-  order delivered. Payload `data`: `{ "type": "chat" | "offer" | "outbid" | "auction_won" | "order", "id": "<chat, listing or order id>" }` so tapping it opens the right screen.
+* **Server:** a token belongs to the account last signed in on that phone (registering it again
+  moves it) and to that sign-in: log-out, password reset, account deletion or an expired session stop
+  its pushes. Deleting someone else's token or an unknown one is still 204. Uninstalled apps are
+  forgotten when Firebase reports them. `VALIDATION` for a token under 20 characters, another
+  `platform` or `language`. Couriers can register too.
+* **Pushes:** title = the listing's title, text in the phone's language (never a chat message's text).
+  `data` says what a tap opens:
+
+  | Event | To | `data` |
+  |---|---|---|
+  | New chat message (a burst → one push) | the other person | `{ "type": "chat", "id": chatId }` |
+  | New offer, counter-offer, accepted, declined | the other side | `{ "type": "offer", "id": chatId }` |
+  | Outbid | the bidder who was on top | `{ "type": "outbid", "id": listingId }` |
+  | Auction won | the winner | `{ "type": "auction_won", "id": listingId }` |
+  | Delivered | the buyer | `{ "type": "order", "id": orderId }` |
+  | Delivered | the seller | `{ "type": "sale", "id": orderId }` |
+
+  The app treats an unknown `type` as "open the app".
 
 Later, a WebSocket (or Server-Sent Events) channel can replace the timers for chat and live
 bidding; the screens won't change.

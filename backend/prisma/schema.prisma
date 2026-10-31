@@ -89,6 +89,7 @@ model Session {
   deviceId  String? // X-Device-Id header (planned): spots many accounts on one phone
   ip        String?
   createdAt DateTime     @default(now())
+  devices   Device[]
 
   @@index([userId])
   @@index([deviceId])
@@ -644,7 +645,11 @@ model Device {
   token     String   @id
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // The sign-in that registered it: log-out, password reset or expiry ends the pushes too.
+  sessionId String?
+  session   Session? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   platform  Platform
+  language  String   @default("en") // the app's language on that phone: "ar" | "en" (B9.3)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
