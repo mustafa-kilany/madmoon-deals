@@ -746,9 +746,12 @@ building and floor, and can change anything. The order is unchanged: it carries 
   * Errors: `PAYMENT_DECLINED` (402) card declined; `VALIDATION` (422) unknown `cardToken` or the order isn't
     `awaiting_payment`; `NOT_FOUND` (404) not the buyer's order; `ITEM_UNAVAILABLE` (409); `INTERNAL` (503)
     card payments not switched on on the server (`PAYMENT_MODE`, `backend/docs/PAYMENTS.md`).
-* **`GET /me/orders` *(Authenticated)*** → `Order[]` (Buyer order history)
-* **`GET /me/sales` *(Authenticated)*** → `Order[]` (Seller sales history)
-* **`GET /orders/:id` *(Authenticated)*** → `Order` (Includes buyer's delivery `pin`)
+* **`GET /me/orders` *(Authenticated)*** → `Order[]` (Buyer order history, newest first, up to 100)
+* **`GET /me/sales` *(Authenticated)*** → `Order[]` (Seller sales history: paid orders only, newest first). For the
+  seller an order has **no `pin`**, and `delivery` is only `{ name, cityId }`: the buyer's phone and address
+  are for the courier.
+* **`GET /orders/:id` *(Authenticated)*** → `Order` (the buyer's, with the delivery `pin`; or the seller's paid
+  order, shaped as in `/me/sales`). Anyone else: `NOT_FOUND`.
 * **`GET /offers/:id` *(Authenticated, buyer or seller)*** → `Offer` (Checkout loads the accepted offer to show its price)
 * **`POST /courier/confirm-delivery` *(Authenticated, `user.role === "courier"`)*** → Body: `{ "orderId": "SA-123456", "pin": "8492" }` → `Order` (`status: "completed"`, `deliveredAt` set; escrow funds released to the seller).
   * Errors: `INVALID_PIN` (422) wrong PIN, nothing released; `VALIDATION` (422) order not in `escrow_held`; `NOT_FOUND` (404); `FORBIDDEN` (403) not a courier.

@@ -88,3 +88,27 @@ export async function createOrder(buyerId: string, input: NewOrder) {
     }
   }
 }
+
+// B7.5: order history. 100 is plenty for a person; paging comes if anyone gets near it.
+
+/** GET /me/orders: the buyer's orders, newest first. */
+export const listMyOrders = (buyerId: string) =>
+  prisma.order.findMany({ where: { buyerId }, include: orderInclude, orderBy: { createdAt: 'desc' }, take: 100 });
+
+/** GET /me/sales: paid orders of the seller's listings, newest first (unpaid checkouts aren't sales yet). */
+export const listMySales = (sellerId: string) =>
+  prisma.order.findMany({
+    where: { sellerUserId: sellerId, status: { not: 'awaiting_payment' } },
+    include: orderInclude,
+    orderBy: { createdAt: 'desc' },
+    take: 100,
+  });
+
+/** GET /orders/:id: the buyer's or the seller's (paid) order; anyone else gets 404. */
+export async function getOrder(userId: string, orderId: string) {
+  const order = await prisma.order.findUnique({ where: { id: orderId }, include: orderInclude });
+  const role =
+    order?.buyerId === userId ? 'buyer' : order?.sellerUserId === userId && order.status !== 'awaiting_payment' ? 'seller' : undefined;
+  if (!order || !role) throw new ApiError(404, 'NOT_FOUND', `No order ${orderId}`);
+  return { order, role } as const;
+}

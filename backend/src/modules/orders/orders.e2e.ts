@@ -146,3 +146,24 @@ test('delivery details are checked like the app’s checkout form', async () => 
   assert.equal((await call('POST', '/orders', buyer(), { listingId: LISTINGS[0] })).status, 422);
   assert.equal(await bad({ phone: '00962781234567' }), 201);
 });
+
+test('order history: the buyer’s orders, the seller’s paid sales, one order', async () => {
+  const mine = (await call('GET', '/me/orders', buyer())).body;
+  assert.ok(mine.length >= 3);
+  assert.ok(mine.every((o: { createdAt: string }, i: number) => i === 0 || mine[i - 1].createdAt >= o.createdAt));
+  assert.deepEqual((await call('GET', '/me/sales', seller())).body, []); // nothing paid yet
+
+  const desk = mine.find((o: { itemId: string }) => o.itemId === LISTINGS[1]);
+  const paid = (await call('POST', `/orders/${desk.id}/pay`, buyer(), { cardToken: 'mock_visa_4242' })).body;
+  assert.deepEqual((await call('GET', `/orders/${desk.id}`, buyer())).body.pin, paid.pin);
+
+  const [sale] = (await call('GET', '/me/sales', seller())).body;
+  assert.deepEqual([sale.id, sale.status, sale.totalFils, sale.pin], [desk.id, 'escrow_held', desk.totalFils, undefined]);
+  // The phone and address are for the courier only.
+  assert.deepEqual(sale.delivery, { name: 'Layla Ahmad', cityId: 'amman-khalda' });
+  assert.deepEqual((await call('GET', `/orders/${desk.id}`, seller())).body.delivery, sale.delivery);
+
+  assert.equal((await call('GET', `/orders/${desk.id}`, other())).status, 404);
+  const unpaid = mine.find((o: { status: string }) => o.status === 'awaiting_payment');
+  assert.equal((await call('GET', `/orders/${unpaid.id}`, seller())).status, 404);
+});

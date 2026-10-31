@@ -3,9 +3,9 @@ import { z } from 'zod';
 import { publicUrl } from '../../lib/publicUrl';
 import { currentUser, requireCustomer } from '../auth/requireUser';
 import { deliveryDetails } from './delivery';
-import { createOrder } from './orders';
+import { createOrder, getOrder, listMyOrders, listMySales } from './orders';
 import { payOrder } from './pay';
-import { toApiOrder } from './shapes';
+import { toApiOrder, toApiSale } from './shapes';
 
 // docs/API.md → Phase 6: Checkout, Orders & Escrow (BACKEND_PLAN B7).
 
@@ -28,4 +28,18 @@ orderRoutes.post('/orders/:id/pay', ...requireCustomer, async (req, res) => {
   const returnUrl = publicUrl(req, '/v1/payments/callback');
   const order = await payOrder(currentUser(res.locals).id, req.params.id as string, cardToken, returnUrl);
   res.json(toApiOrder(order, req));
+});
+
+orderRoutes.get('/me/orders', ...requireCustomer, async (req, res) => {
+  res.json((await listMyOrders(currentUser(res.locals).id)).map(order => toApiOrder(order, req)));
+});
+
+orderRoutes.get('/me/sales', ...requireCustomer, async (req, res) => {
+  res.json((await listMySales(currentUser(res.locals).id)).map(order => toApiSale(order, req)));
+});
+
+// The buyer sees the PIN; the seller sees the sale (no PIN, no phone or address).
+orderRoutes.get('/orders/:id', ...requireCustomer, async (req, res) => {
+  const { order, role } = await getOrder(currentUser(res.locals).id, req.params.id as string);
+  res.json(role === 'buyer' ? toApiOrder(order, req) : toApiSale(order, req));
 });
