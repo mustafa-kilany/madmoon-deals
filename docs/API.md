@@ -926,6 +926,9 @@ iOS; not in the app yet). Proposed endpoints, so the backend can plan for them:
 
 * **`POST /me/devices` *(Authenticated)*** → Body: `{ "token": "<FCM token>", "platform": "android" | "ios" }` → 204. Sent after sign-in and whenever the token changes.
 * **`DELETE /me/devices/:token` *(Authenticated)*** → 204. Sent on log-out.
+* **Server (B9.2, built):** a token belongs to the account last signed in on that phone (registering it again
+  moves it); deleting someone else's token or an unknown one is still 204; tokens go with the account.
+  `VALIDATION` for a token under 20 characters or another `platform`. Couriers can register too.
 * Server sends a push for: new chat message, offer accepted / countered, outbid, auction won,
   order delivered. Payload `data`: `{ "type": "chat" | "offer" | "outbid" | "auction_won" | "order", "id": "<chat, listing or order id>" }` so tapping it opens the right screen.
 

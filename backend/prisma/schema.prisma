@@ -63,6 +63,7 @@ model User {
   sales            Order[]           @relation("orderSeller")
   deliveries       Order[]           @relation("orderCourier")
   payouts          Payout[]
+  devices          Device[]
 }
 
 // One signed-in device. Only a hash of the bearer token is stored, so a leaked
@@ -615,5 +616,25 @@ model RiskFlag {
   reviewedAt   DateTime?
 
   @@index([status, createdAt])
+  @@index([userId])
+}
+
+// ─── Push notifications (B9) ───────────────────────────────────────────────
+
+enum Platform {
+  android
+  ios
+}
+
+// A phone that gets push notifications (POST /me/devices). The token is the
+// Firebase (FCM) token; a token belongs to the account last signed in on it.
+model Device {
+  token     String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform  Platform
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([userId])
 }

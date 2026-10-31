@@ -186,7 +186,7 @@ Tasks:
 
 ## B9 — Emails and push notifications ⬜ (D3; a Firebase project)
 - ⬜ **B9.1** Real email sending (codes) behind `mailer.ts`; Arabic + English templates.
-- ⬜ **B9.2** `POST /me/devices`, `DELETE /me/devices/:token`.
+- ✅ **B9.2** `POST /me/devices`, `DELETE /me/devices/:token` (`Device` table). ⬜ App: send the token (with B9.3).
 - ⬜ **B9.3** Push for: new message, offer answered, outbid, auction won, order delivered.
 
 ## B10 — Google and Apple sign-in: backend ✅, live when the client ids exist (Google Cloud; Apple Developer account)
