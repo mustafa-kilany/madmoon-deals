@@ -5,6 +5,7 @@ import type { AddressInfo } from 'node:net';
 import { after, before, test } from 'node:test';
 import { app } from '../../app';
 import { prisma } from '../../db';
+import { hashPassword } from '../auth/password';
 import { createCourier, disableCourier } from './service';
 
 let base = '';
@@ -63,4 +64,30 @@ test('an admin creates a courier; the invite code sets the password; they log in
   assert.equal(me.status, 401); // sessions ended
   const again = await post('/auth/login', { email: 'e2e.driver@sahla.jo', password: 'driverpass1' });
   assert.deepEqual([again.status, again.body.error.code], [403, 'FORBIDDEN']);
+});
+
+test('admins manage couriers from the dashboard: add, list, disable', async () => {
+  await prisma.user.create({
+    data: { name: 'E2E Admin', email: 'e2e.admin@sahla.jo', role: 'admin', passwordHash: await hashPassword('adminpass1') },
+  });
+  const { token } = (await post('/auth/login', { email: 'e2e.admin@sahla.jo', password: 'adminpass1' })).body;
+  const get = async (path: string, t = token) =>
+    (await fetch(base + path, { headers: { Authorization: `Bearer ${t}` } })).json();
+
+  const outsider = await post('/admin/couriers', { name: 'E2E Outsider', email: 'van@gmail.com' }, token);
+  assert.deepEqual([outsider.status, outsider.body.error.code], [422, 'VALIDATION']);
+  const added = await post('/admin/couriers', { name: 'E2E Van', email: 'e2e.van.driver@sahla.jo' }, token);
+  assert.equal(added.status, 201);
+  assert.deepEqual([added.body.email, added.body.active], ['e2e.van.driver@sahla.jo', true]);
+  assert.ok((await get('/admin/couriers')).some((c: { id: string }) => c.id === added.body.id));
+
+  assert.equal((await post(`/admin/couriers/${added.body.id}/disable`, {}, token)).status, 204);
+  const listed = (await get('/admin/couriers')).find((c: { id: string }) => c.id === added.body.id);
+  assert.equal(listed.active, false);
+  assert.equal((await post('/admin/couriers/nope/disable', {}, token)).status, 404);
+
+  // Customers can't.
+  const customer = await post('/auth/signup', { name: 'Customer', email: 'e2e.customer@example.com', password: 'longenough', code: '123456' });
+  assert.equal((await post('/admin/couriers', { name: 'E2E X', email: 'e2e.x@sahla.jo' }, customer.body.token)).status, 403);
+  await prisma.user.deleteMany({ where: { email: 'e2e.customer@example.com' } });
 });

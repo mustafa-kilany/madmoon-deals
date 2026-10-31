@@ -817,6 +817,10 @@ type Delivery = {
 * **`POST /admin/orders/:id/assign`** *(admin)* → Body: `{ "courierId": "..." }` → `Order`. Paid orders not
   picked up yet (it can be reassigned until then); the courier must be an active courier account.
 * `orderId` in the courier paths is case-insensitive. "Today" for delivered ones is Jordan time.
+* **Courier accounts (admin):** `GET /admin/couriers` → `{ id, name, email, active, createdAt }[]`;
+  `POST /admin/couriers` with `{ name, email }` (staff domain only, else `VALIDATION`; already a courier:
+  `EMAIL_TAKEN`) → 201 and the invite code is emailed; `POST /admin/couriers/:id/disable` → 204 (signed out at
+  once, can't log in).
 
 ### Safety: report and block
 
