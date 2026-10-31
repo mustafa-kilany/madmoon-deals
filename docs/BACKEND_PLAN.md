@@ -112,8 +112,9 @@ Two kinds (decided 2026-10-30): **users' listing photos** and **admins changing 
   (`Listing.reportHidden`) until an admin looks (B8).
 - ✅ **B5.2** `POST/GET/DELETE /me/blocked`; blocked users vanish from each other's `GET /listings` (both
   ways); chats, offers and bids in B6.
-- ⬜ **B5.3** Risk checker runs after sign-up, new listing, report and block, plus nightly (job runner,
-  e.g. `pg-boss` on the same PostgreSQL, no extra service).
+- ✅ **B5.3** Risk checker runs after sign-up and log-in, new listing, report and block, plus nightly at 03:00
+  (Jordan). Jobs run inside the server (`src/lib/jobs.ts`): nothing must survive a restart, the nightly run
+  catches a lost check. With several servers (B12), move them to `pg-boss` on the same PostgreSQL.
 - ⬜ **B5.4** (optional) AI summaries for flags (Claude, Message Batches at night).
 
 ## B6 — Negotiation, chat, auctions ✅ (branch `feat/backend-b6-negotiation`)

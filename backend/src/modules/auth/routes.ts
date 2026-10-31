@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { prisma } from '../../db';
 import { ApiError } from '../../lib/errors';
 import { cityIds } from '../../reference';
+import { queueRiskCheck } from '../risk/triggers';
 import { isStaffEmail } from '../staff/service';
 import { toApiUser } from './apiUser';
 import { sendCode, useCode } from './codes';
@@ -37,6 +38,7 @@ const profileBody = z.object({
 
 async function session(userId: string, req: Request) {
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
+  queueRiskCheck(user.id); // a new account, or a phone other accounts used
   return { token: await issueToken(user.id, req), user: toApiUser(user, req) };
 }
 

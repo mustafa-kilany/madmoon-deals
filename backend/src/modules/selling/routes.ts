@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { toApiItem } from '../catalog/apiItem';
 import { currentUser, requireCustomer } from '../auth/requireUser';
+import { queueRiskCheck } from '../risk/triggers';
 import { listingPatch, newListing } from './rules';
 import { createListing, updateListing, withdrawListing } from './service';
 
@@ -10,6 +11,7 @@ export const sellingRoutes = Router();
 
 sellingRoutes.post('/listings', ...requireCustomer, async (req, res) => {
   const listing = await createListing(currentUser(res.locals), newListing.parse(req.body));
+  queueRiskCheck(listing.sellerUserId);
   res.status(201).json(toApiItem(listing, req));
 });
 

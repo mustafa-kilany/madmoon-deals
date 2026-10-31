@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '../../db';
 import { ApiError } from '../../lib/errors';
 import { currentUser, requireCustomer } from '../auth/requireUser';
+import { queueRiskCheck } from '../risk/triggers';
 
 // docs/API.md → Safety: report and block (BACKEND_PLAN B5.1, B5.2). Required by
 // the App Store for apps with listings and chat.
@@ -36,6 +37,10 @@ safetyRoutes.post('/reports', ...requireCustomer, async (req, res) => {
     });
     if (reporters.length >= HIDE_AFTER_REPORTS)
       await prisma.listing.update({ where: { id: input.targetId }, data: { reportHidden: true } });
+    const listing = await prisma.listing.findUnique({ where: { id: input.targetId }, select: { sellerUserId: true } });
+    queueRiskCheck(listing?.sellerUserId);
+  } else {
+    queueRiskCheck(input.targetId);
   }
   res.status(204).end();
 });
@@ -46,6 +51,7 @@ safetyRoutes.post('/me/blocked', ...requireCustomer, async (req, res) => {
   if (userId === blockerId) throw new ApiError(422, 'VALIDATION', 'You cannot block yourself');
   if (!(await prisma.user.count({ where: { id: userId } }))) throw new ApiError(404, 'NOT_FOUND', `No user ${userId}`);
   await prisma.block.createMany({ data: [{ blockerId, blockedId: userId }], skipDuplicates: true });
+  queueRiskCheck(userId);
   res.status(204).end();
 });
 

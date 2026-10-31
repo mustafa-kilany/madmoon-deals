@@ -70,7 +70,7 @@ export async function closeEndedAuctions(now = new Date()) {
   return ended.length;
 }
 
-/** Every minute while the server is up (the job runner in B5.3 replaces this). */
+/** Every minute while the server is up. Safe on several servers: each auction is closed once. */
 export function scheduleAuctionClosing() {
   setInterval(() => {
     closeEndedAuctions().catch(error => console.error('Closing auctions failed', error));
