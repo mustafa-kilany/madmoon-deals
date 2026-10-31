@@ -1,4 +1,5 @@
 import { Router, type Request } from 'express';
+import { browserPage, type PageMessage } from '../../lib/page';
 import { publicUrl } from '../../lib/publicUrl';
 import { currentUser, requireCustomer } from '../auth/requireUser';
 import { finishSanad, startSanad, type SanadOutcome } from './sanad';
@@ -24,10 +25,10 @@ identityRoutes.get('/id-verification/sanad/callback', async (req, res) => {
     .status(outcome === 'verified' ? 200 : 400)
     .set('Cache-Control', 'no-store')
     .type('html')
-    .send(page(MESSAGES[outcome]));
+    .send(browserPage(MESSAGES[outcome]));
 });
 
-const MESSAGES: Record<SanadOutcome, { ar: string; en: string }> = {
+const MESSAGES: Record<SanadOutcome, PageMessage> = {
   verified: { ar: 'تم توثيق حسابك. ارجع إلى تطبيق سهلة.', en: 'Your account is verified. Go back to the Sahla app.' },
   cancelled: { ar: 'تم إلغاء التوثيق. يمكنك المحاولة مرة أخرى من التطبيق.', en: 'Verification was cancelled. You can try again from the app.' },
   expired: { ar: 'انتهت صلاحية هذا الرابط. ابدأ من جديد في التطبيق.', en: 'This link has expired. Start again in the app.' },
@@ -35,7 +36,3 @@ const MESSAGES: Record<SanadOutcome, { ar: string; en: string }> = {
   failed: { ar: 'تعذر التحقق مع سند. حاول لاحقاً.', en: "We couldn't check with Sanad. Please try later." },
 };
 
-const page = (message: { ar: string; en: string }) => `<!doctype html>
-<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sahla</title><style>body{font-family:system-ui,sans-serif;max-width:28rem;margin:4rem auto;padding:0 1rem;text-align:center;line-height:1.6}</style>
-</head><body><h1>سهلة · Sahla</h1><p>${message.ar}</p><p dir="ltr">${message.en}</p></body></html>`;

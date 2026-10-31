@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto';
+import { ApiError } from '../../lib/errors';
 import type { ChargeResult, PaymentProvider } from './provider';
 
 // A pretend payment provider (PAYMENT_MODE=fake) for development and tests.
@@ -17,7 +18,11 @@ export const CARD_CHECK_LAST4 = '3155';
 type FakePayment = { status: ChargeResult['status'] | 'refunded'; amountFils: number; returnUrl: string; last4: string };
 const payments = new Map<string, FakePayment>();
 
-const card = (token: string) => /^(?:mock|fakecard)_([a-z]+)_(\d{4})$/.exec(token);
+const card = (token: string) => {
+  const match = /^(?:mock|fakecard)_([a-z]+)_(\d{4})$/.exec(token);
+  if (!match) throw new ApiError(422, 'VALIDATION', 'cardToken: unrecognised');
+  return match;
+};
 
 const result = (ref: string, p: FakePayment, paymentUrl?: string): ChargeResult => ({
   ref,
@@ -36,7 +41,6 @@ export const fakePayments: PaymentProvider & {
 
   async charge({ cardToken, amountFils, returnUrl }) {
     const match = card(cardToken);
-    if (!match) throw new Error('Unknown card token');
     const ref = `fake_pay_${randomBytes(9).toString('base64url')}`;
     const last4 = match[2];
     const status = last4 === DECLINED_LAST4 ? 'failed' : last4 === CARD_CHECK_LAST4 ? 'requires_action' : 'succeeded';
@@ -61,7 +65,6 @@ export const fakePayments: PaymentProvider & {
 
   async saveCard(cardToken) {
     const match = card(cardToken);
-    if (!match) throw new Error('Unknown card token');
     return { token: `fakecard_${match[1]}_${match[2]}`, brand: match[1], last4: match[2] };
   },
 

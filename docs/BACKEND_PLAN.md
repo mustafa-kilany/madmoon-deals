@@ -135,7 +135,7 @@ Two kinds (decided 2026-10-30): **users' listing photos** and **admins changing 
   listing / offer / auction winner / blocks; readable ids `SA-123456`.
 - ✅ **B7.3** Payment provider module with a **fake provider** (development and tests): `PAYMENT_MODE=fake`,
   test cards in `backend/docs/PAYMENTS.md`.
-- ⬜ **B7.4** `POST /orders/:id/pay`: `escrow_held` + 4-digit PIN + listing `reserved`, in one transaction
+- ✅ **B7.4** `POST /orders/:id/pay`: `escrow_held` + 4-digit PIN + listing `reserved`, in one transaction
   (first payment wins); 3-D Secure `paymentUrl` + the bank's callback.
 - ⬜ **B7.5** `GET /me/orders`, `GET /me/sales`, `GET /orders/:id`.
 - ⬜ **B7.6** `POST /courier/confirm-delivery`: PIN check, lock after 5 wrong PINs, `completed`, listing

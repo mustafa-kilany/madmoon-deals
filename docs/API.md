@@ -166,6 +166,7 @@ export const config = {
 | `ITEM_UNAVAILABLE` | 409 | The listing is reserved, sold, from a blocked user, or an auction you didn't win |
 | `OPEN_ORDERS` | 409 | Account deletion while orders are in escrow (as buyer or seller) |
 | `INVALID_PIN` | 422 | Courier typed the wrong delivery PIN (nothing is released) |
+| `PAYMENT_DECLINED` | 402 | The card was declined (`POST /orders/:id/pay`); the order stays `awaiting_payment`, the buyer can try another card |
 | `INVALID_CODE` | 422 | Wrong or expired emailed code (sign-up, password reset) |
 | `SANAD_UNAVAILABLE` | 503 | ID verification with Sanad isn't switched on yet ("coming soon") |
 | `RATE_LIMITED` | 429 | Too many log-in / code attempts for one email from one IP; try again in ~15 minutes (no app message yet: shown as a generic error) |
@@ -739,6 +740,12 @@ building and floor, and can change anything. The order is unchanged: it carries 
   * Paid: `status: "escrow_held"`, with the delivery `pin`. The listing becomes `reserved`.
   * **Bank card check (3-D Secure):** Jordanian cards usually need it, so with MEPS expect this path. Return the order still `awaiting_payment` with `paymentUrl` (the bank's page). The app opens it in the browser and then polls `GET /me/orders` / `GET /orders/:id`. When the bank calls back, the server sets `escrow_held` (or leaves `awaiting_payment` if it failed, so the buyer can pay again). The bank's return page can simply say "Payment done, go back to Sahla".
   * Two buyers racing: the first payment wins; the other gets `ITEM_UNAVAILABLE` (409) and isn't charged. Do the check and the status change in one transaction.
+  * **Server (B7.4):** a payment that succeeds after the listing was bought (a slow card check) is refunded at
+    once and the bank's page says so. The bank sends the browser to `GET /v1/payments/callback?ref=…`; the
+    server asks the provider for the result (never trusting the URL), so a repeated callback changes nothing.
+  * Errors: `PAYMENT_DECLINED` (402) card declined; `VALIDATION` (422) unknown `cardToken` or the order isn't
+    `awaiting_payment`; `NOT_FOUND` (404) not the buyer's order; `ITEM_UNAVAILABLE` (409); `INTERNAL` (503)
+    card payments not switched on on the server (`PAYMENT_MODE`, `backend/docs/PAYMENTS.md`).
 * **`GET /me/orders` *(Authenticated)*** → `Order[]` (Buyer order history)
 * **`GET /me/sales` *(Authenticated)*** → `Order[]` (Seller sales history)
 * **`GET /orders/:id` *(Authenticated)*** → `Order` (Includes buyer's delivery `pin`)
