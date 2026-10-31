@@ -300,7 +300,9 @@ Removes the saved payment card reference.
 Deletes the account (Profile → Delete account). **Required by the App Store** (guideline 5.1.1(v)) for any app where people create accounts.
 * **Response:** 204 No Content. The app then signs out locally.
 * **Server:** revoke all sessions; remove or anonymise the profile, avatar, ID photo, saved card reference, active listings, push tokens and blocks; keep only what the law requires (e.g. completed payment records). The email can sign up again afterwards.
-* **Errors:** `OPEN_ORDERS` (409) while any order is `escrow_held` with this user as buyer or seller.
+* **Errors:** `OPEN_ORDERS` (409) while any order is `escrow_held` with this user as buyer or seller (or a bank card
+  check they started in the last hour could still pay). Unpaid checkouts are deleted with the account; finished
+  orders stay as payment records without the buyer's id.
 
 ---
 
@@ -762,6 +764,9 @@ building and floor, and can change anything. The order is unchanged: it carries 
     case-insensitive. An order assigned to another courier is `NOT_FOUND`. The seller's payout is the item
     price (Sahla takes no seller fee; the buyer pays protection and delivery).
 * **Refunds:** if the item never arrives, support/admin moves the order to `refunded`, the escrow is returned to the buyer and the listing goes back to `active` (no app endpoint).
+  * **`POST /admin/orders/:id/refund`** *(admin)* → `Order` (`refunded`). Only `escrow_held` orders (after delivery
+    the money has gone to the seller): otherwise `VALIDATION`.
+  * **`POST /admin/orders/:id/unlock-pin`** *(admin)* → `Order`: the courier gets 5 new PIN tries.
 * **`User.role`**: optional, `"courier"` for courier accounts. Couriers see only the courier screens
   (below), never browsing, selling or buying.
 

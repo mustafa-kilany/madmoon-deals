@@ -164,14 +164,30 @@ authRoutes.patch('/me', requireUser, async (req, res) => {
 
 authRoutes.delete('/me', requireUser, async (_req, res) => {
   const userId = currentUser(res.locals).id;
-  // TODO(orders): 409 OPEN_ORDERS while an order is escrow_held with this user.
+  // Not while money is held for this user as buyer or seller, or a card check
+  // they started in the last hour could still pay.
+  const open = await prisma.order.count({
+    where: {
+      OR: [
+        { status: 'escrow_held', OR: [{ buyerId: userId }, { sellerUserId: userId }] },
+        {
+          status: 'awaiting_payment',
+          buyerId: userId,
+          payments: { some: { status: 'pending', createdAt: { gt: new Date(Date.now() - 3_600_000) } } },
+        },
+      ],
+    },
+  });
+  if (open) throw new ApiError(409, 'OPEN_ORDERS', 'Orders in progress: finish them first');
   // Listings are taken off sale and keep no link to the user (Listing.sellerUserId → null);
-  // sessions, codes, certificates, reports and blocks go with the account.
+  // unpaid checkouts go; finished orders stay (payment records) without the buyer's id.
+  // Sessions, codes, certificates, reports and blocks go with the account.
   await prisma.$transaction([
     prisma.listing.updateMany({
       where: { sellerUserId: userId, status: 'active' },
       data: { status: 'withdrawn' },
     }),
+    prisma.order.deleteMany({ where: { buyerId: userId, status: 'awaiting_payment' } }),
     prisma.user.delete({ where: { id: userId } }),
   ]);
   res.status(204).end();
