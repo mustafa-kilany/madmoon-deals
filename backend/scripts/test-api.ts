@@ -17,6 +17,7 @@ const env = {
   DEV_EMAIL_CODE: '123456',
   SANAD_MODE: 'fake',
   PAYMENT_MODE: 'fake',
+  GEOCODER: 'fake',
 };
 const run = (command: string) => execSync(command, { stdio: 'inherit', env });
 

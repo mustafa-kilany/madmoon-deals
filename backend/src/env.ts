@@ -45,6 +45,10 @@ const schema = z
     // Card payments (BACKEND_PLAN B7, decision D2). off = 503 until the real provider is
     // added; fake = a pretend provider for development and tests (backend/docs/PAYMENTS.md).
     PAYMENT_MODE: z.enum(['off', 'fake']).default('off'),
+    // Street from GPS at checkout (BACKEND_PLAN B7.1, decision D6). off = the app fills only the
+    // area; fake = the nearest area's main street; nominatim = OpenStreetMap (NOMINATIM_URL).
+    GEOCODER: z.enum(['off', 'fake', 'nominatim']).default('off'),
+    NOMINATIM_URL: z.string().url().default('https://nominatim.openstreetmap.org'),
     // Optional until those features are switched on (backend/docs/); blank = off.
     GOOGLE_VISION_API_KEY: optional, // certificate OCR
     ANTHROPIC_API_KEY: optional, // AI reviewer for the risk queue
