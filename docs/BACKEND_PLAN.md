@@ -133,7 +133,8 @@ Two kinds (decided 2026-10-30): **users' listing photos** and **admins changing 
 - ⬜ **B7.1** `GET /geocode/reverse` (D6), no coordinates stored or logged, 20/hour per user.
 - ✅ **B7.2** `POST /orders`: server prices it (3% buyer protection, min 1 JOD; 2 JOD delivery), checks the
   listing / offer / auction winner / blocks; readable ids `SA-123456`.
-- ⬜ **B7.3** Payment provider module with a **fake provider** (development and tests).
+- ✅ **B7.3** Payment provider module with a **fake provider** (development and tests): `PAYMENT_MODE=fake`,
+  test cards in `backend/docs/PAYMENTS.md`.
 - ⬜ **B7.4** `POST /orders/:id/pay`: `escrow_held` + 4-digit PIN + listing `reserved`, in one transaction
   (first payment wins); 3-D Secure `paymentUrl` + the bank's callback.
 - ⬜ **B7.5** `GET /me/orders`, `GET /me/sales`, `GET /orders/:id`.

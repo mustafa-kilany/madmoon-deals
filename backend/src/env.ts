@@ -42,6 +42,9 @@ const schema = z
     // Key for hashing national ID numbers (one ID, one verified account). Set it before
     // Sanad goes live and never change it; until then the JWT secret is used.
     ID_HASH_SECRET: z.string().min(32).optional(),
+    // Card payments (BACKEND_PLAN B7, decision D2). off = 503 until the real provider is
+    // added; fake = a pretend provider for development and tests (backend/docs/PAYMENTS.md).
+    PAYMENT_MODE: z.enum(['off', 'fake']).default('off'),
     // Optional until those features are switched on (backend/docs/); blank = off.
     GOOGLE_VISION_API_KEY: optional, // certificate OCR
     ANTHROPIC_API_KEY: optional, // AI reviewer for the risk queue
@@ -53,6 +56,10 @@ const schema = z
   .refine(e => !(e.NODE_ENV === 'production' && e.SANAD_MODE === 'fake'), {
     message: 'SANAD_MODE=fake must not be used in production',
     path: ['SANAD_MODE'],
+  })
+  .refine(e => !(e.NODE_ENV === 'production' && e.PAYMENT_MODE === 'fake'), {
+    message: 'PAYMENT_MODE=fake must not be used in production',
+    path: ['PAYMENT_MODE'],
   })
   .refine(
     e =>
