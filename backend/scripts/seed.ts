@@ -14,7 +14,7 @@ if (env.NODE_ENV === 'production') {
 }
 
 const demo = [
-  { name: 'Ahmad', email: 'ahmad@sahla.jo', cardBrand: 'visa', cardLast4: '4242' },
+  { name: 'Ahmad', email: 'ahmad@sahla.jo', cardBrand: 'visa', cardLast4: '4242', cardToken: 'fakecard_visa_4242' },
   { name: 'Sahla Courier', email: 'courier@sahla.jo', verified: true, role: 'courier' as const },
 ];
 

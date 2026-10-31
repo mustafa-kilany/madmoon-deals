@@ -15,7 +15,7 @@ const server = app.listen(0);
 const EMAILS = ['pay.seller@example.com', 'pay.buyer@example.com', 'pay.other@example.com'];
 const people: { id: string; token: string }[] = [];
 const [seller, buyer, other] = [0, 1, 2].map(i => () => people[i]);
-const LISTINGS = ['pay-bike', 'pay-tv', 'pay-lamp', 'pay-rug', 'pay-desk'];
+const LISTINGS = ['pay-bike', 'pay-tv', 'pay-lamp', 'pay-rug', 'pay-desk', 'pay-chair'];
 
 const call = async (method: string, path: string, who: { token: string }, body?: unknown) => {
   const r = await fetch(base + path, {
@@ -146,4 +146,25 @@ test('two buyers at once: the first payment wins; a late card check is refunded'
   assert.equal(refunded.status, 'refunded');
   assert.ok(fakePayments.isRefunded(refunded.providerRef));
   assert.equal((await prisma.order.findUniqueOrThrow({ where: { id: late.id } })).status, 'awaiting_payment');
+});
+
+test('a saved card: kept as the provider’s token, charged with "saved", removable', async () => {
+  const saved = await call('POST', '/me/payment-card', other(), { cardToken: 'mock_mastercard_5100' });
+  assert.equal(saved.status, 200);
+  assert.deepEqual(saved.body.card, { brand: 'mastercard', last4: '5100' });
+  assert.equal(JSON.stringify(saved.body).includes('fakecard'), false); // the token stays on the server
+  assert.equal((await call('GET', '/me', other())).body.card.last4, '5100');
+  assert.equal((await call('POST', '/me/payment-card', other(), { cardToken: '5100' })).status, 422);
+
+  const order = await checkout(LISTINGS[5], other());
+  assert.equal((await pay(order.id, 'saved', other())).body.status, 'escrow_held');
+
+  const removed = await call('DELETE', '/me/payment-card', other());
+  assert.equal(removed.body.card, undefined);
+  const next = await checkout(LISTINGS[5], buyer()); // reserved now: refused before any charge
+  assert.equal(next.error.code, 'ITEM_UNAVAILABLE');
+  const again = await pay(order.id, 'saved', other());
+  assert.equal(again.status, 422); // already paid
+  const noCard = await pay('SA-000001', 'saved', buyer());
+  assert.deepEqual([noCard.status, noCard.body.error.message], [422, 'cardToken: no saved card on this account']);
 });

@@ -142,7 +142,7 @@ Two kinds (decided 2026-10-30): **users' listing photos** and **admins changing 
   `sold`, seller payout recorded.
 - ✅ **B7.7** Refunds (admin only), `DELETE /me` refuses with open orders (`OPEN_ORDERS`). Also
   `POST /admin/orders/:id/unlock-pin` after 5 wrong PINs.
-- ⬜ **B7.8** `POST/DELETE /me/payment-card` with the provider's tokens.
+- ✅ **B7.8** `POST/DELETE /me/payment-card` with the provider's tokens (`User.cardToken`); `cardToken: "saved"` pays with it.
 - ⬜ **B7.9** The real provider (D2).
 - **Switch the app:** `mock.orders = false`.
 

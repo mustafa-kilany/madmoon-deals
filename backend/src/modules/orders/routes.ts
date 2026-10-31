@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
+import { ApiError } from '../../lib/errors';
 import { publicUrl } from '../../lib/publicUrl';
 import { currentUser, requireCustomer } from '../auth/requireUser';
 import { deliveryDetails } from './delivery';
@@ -22,11 +23,15 @@ orderRoutes.post('/orders', ...requireCustomer, async (req, res) => {
   res.status(201).json(toApiOrder(order, req));
 });
 
-// cardToken: the payment provider's token from the app's card field.
+// cardToken: the payment provider's token from the app's card field, or "saved"
+// for the account's saved card (POST /me/payment-card).
 orderRoutes.post('/orders/:id/pay', ...requireCustomer, async (req, res) => {
   const { cardToken } = z.object({ cardToken: z.string().min(1).max(500) }).parse(req.body);
+  const me = currentUser(res.locals);
+  const token = cardToken === 'saved' ? me.cardToken : cardToken;
+  if (!token) throw new ApiError(422, 'VALIDATION', 'cardToken: no saved card on this account');
   const returnUrl = publicUrl(req, '/v1/payments/callback');
-  const order = await payOrder(currentUser(res.locals).id, req.params.id as string, cardToken, returnUrl);
+  const order = await payOrder(me.id, req.params.id as string, token, returnUrl);
   res.json(toApiOrder(order, req));
 });
 

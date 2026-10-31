@@ -22,7 +22,8 @@ enum Role {
   admin // the admin dashboard: refurbished import, review queues (never sent to the app)
 }
 
-// API `User`. `card` is stored as cardBrand + cardLast4 (never the card number).
+// API `User`. `card` is stored as cardBrand + cardLast4 (never the card number), and
+// cardToken is the payment provider's token for charging it again (B7.8).
 model User {
   id           String     @id @default(cuid())
   name         String
@@ -36,6 +37,7 @@ model User {
   avatarUrl    String     @default("")
   cardBrand    String?
   cardLast4    String?
+  cardToken    String?
   role         Role?
   suspended    Boolean    @default(false) // set by an admin only (never by the risk checker)
   createdAt    DateTime   @default(now())
