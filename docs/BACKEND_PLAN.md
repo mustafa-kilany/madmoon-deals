@@ -138,7 +138,7 @@ Two kinds (decided 2026-10-30): **users' listing photos** and **admins changing 
 - ✅ **B7.4** `POST /orders/:id/pay`: `escrow_held` + 4-digit PIN + listing `reserved`, in one transaction
   (first payment wins); 3-D Secure `paymentUrl` + the bank's callback.
 - ✅ **B7.5** `GET /me/orders`, `GET /me/sales`, `GET /orders/:id`.
-- ⬜ **B7.6** `POST /courier/confirm-delivery`: PIN check, lock after 5 wrong PINs, `completed`, listing
+- ✅ **B7.6** `POST /courier/confirm-delivery`: PIN check, lock after 5 wrong PINs, `completed`, listing
   `sold`, seller payout recorded.
 - ⬜ **B7.7** Refunds (admin only), `DELETE /me` refuses with open orders (`OPEN_ORDERS`).
 - ⬜ **B7.8** `POST/DELETE /me/payment-card` with the provider's tokens.

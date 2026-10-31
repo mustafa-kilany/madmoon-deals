@@ -48,6 +48,16 @@ export const requireCustomer: RequestHandler[] = [
   },
 ];
 
+/** The courier app's endpoints (/v1/courier/*): courier accounts only. */
+export const requireCourier: RequestHandler[] = [
+  requireUser,
+  (_req, res, next) => {
+    if (currentUser(res.locals).role !== 'courier')
+      throw new ApiError(403, 'FORBIDDEN', 'Couriers only');
+    next();
+  },
+];
+
 /** Admin-only endpoints (/v1/admin/*). */
 export const requireAdmin: RequestHandler[] = [
   requireUser,

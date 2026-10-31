@@ -757,6 +757,10 @@ building and floor, and can change anything. The order is unchanged: it carries 
   * Errors: `INVALID_PIN` (422) wrong PIN, nothing released; `VALIDATION` (422) order not in `escrow_held`; `NOT_FOUND` (404); `FORBIDDEN` (403) not a courier.
   * The listing becomes `sold`.
   * The PIN check and release happen **only on the server**. Rate-limit attempts per order (e.g. lock after 5 wrong PINs) so a PIN can't be guessed.
+  * **Server (B7.6):** 5 tries per order (counted before the PIN is compared, so guesses sent at once don't get
+    more); then `RATE_LIMITED` (429) until Sahla support unlocks it, even for the right PIN. `orderId` is
+    case-insensitive. An order assigned to another courier is `NOT_FOUND`. The seller's payout is the item
+    price (Sahla takes no seller fee; the buyer pays protection and delivery).
 * **Refunds:** if the item never arrives, support/admin moves the order to `refunded`, the escrow is returned to the buyer and the listing goes back to `active` (no app endpoint).
 * **`User.role`**: optional, `"courier"` for courier accounts. Couriers see only the courier screens
   (below), never browsing, selling or buying.
