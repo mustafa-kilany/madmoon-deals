@@ -17,7 +17,8 @@
     "secret": "node -e \"console.log(require('node:crypto').randomBytes(48).toString('base64url'))\"",
     "postdb:migrate": "prisma generate",
     "load-check": "tsx scripts/load-check.ts",
-    "staff": "tsx scripts/staff.ts"
+    "staff": "tsx scripts/staff.ts",
+    "push:test": "tsx scripts/push-test.ts"
   },
   "type": "module",
   "dependencies": {

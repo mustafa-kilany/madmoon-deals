@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import type { LocalPhoto, Session, User } from '@/lib/types';
 import { authService, type ProfilePatch } from '@/services/auth';
 import { paymentProvider } from '@/services/payments';
+import { stopPush } from '@/services/push';
 import { queryKeys } from '@/services/queryClient';
 import { toast } from '@/store/toastStore';
 import { go, leaveAuth } from '../authFlow';
@@ -101,7 +102,11 @@ export const useRemovePaymentCard = () =>
 export function useLogOut() {
   const signOut = useSessionStore(s => s.signOut);
   return useMutation({
-    mutationFn: () => authService.logOut().catch(() => {}),
+    // The push token goes first: removing it needs the session.
+    mutationFn: () =>
+      stopPush()
+        .then(() => authService.logOut())
+        .catch(() => {}),
     onSettled: () => {
       signOut();
       go({ name: 'Tabs', params: { screen: 'Home' } });

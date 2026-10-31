@@ -11,7 +11,8 @@ export type TabParamList = {
   Auctions: undefined;
   /** Never shown: the raised Sell button opens AddListing on the root stack. */
   Sell: undefined;
-  Chats: undefined;
+  /** chatId: open that conversation (a tapped push). */
+  Chats: { chatId?: string } | undefined;
   Profile: undefined;
 };
 

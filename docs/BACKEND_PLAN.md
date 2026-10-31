@@ -191,10 +191,12 @@ Tasks:
 ## B9 — Emails and push notifications 🔨 (D3 for emails; Firebase project `sahla-project-75cb2`)
 - ⬜ **B9.1** Real email sending (codes) behind `mailer.ts`; Arabic + English templates.
 - ✅ **B9.2** `POST /me/devices`, `DELETE /me/devices/:token` (`Device` table, with the phone's language and
-  the sign-in it belongs to). ⬜ App: send the token.
+  the sign-in it belongs to). ✅ App: sends the token and language after sign-in and at launch, removes it on
+  log-out (`frontend/src/services/push`).
 - ✅ **B9.3** Push (FCM HTTP v1, `PUSH_MODE=fcm`) for: new message, new offer / offer answered, outbid,
   auction won, order delivered (buyer and seller); in the phone's language; uninstalled apps are
-  forgotten. `backend/docs/PUSH.md`. ⬜ App: receive them and open the right screen on tap.
+  forgotten. `backend/docs/PUSH.md`; `npm run push:test -- <email>`. ✅ App: asks permission (Android 13+),
+  a tap opens the chat / auction / order; while open, a toast. Android only until the iPhone key.
   ⬜ iPhone: APNs key (Apple Developer account).
 
 ## B10 — Google and Apple sign-in: backend ✅, live when the client ids exist (Google Cloud; Apple Developer account)

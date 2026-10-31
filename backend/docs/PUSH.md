@@ -43,6 +43,13 @@ leaks, delete that key in Google Cloud console → IAM → Service accounts → 
 The app side needs `frontend/android/app/google-services.json` (from the same Firebase project; not a
 secret).
 
+## Trying it
+
+1. `backend/.env`: `PUSH_MODE=fcm`; start the backend (`npm run dev`).
+2. Run the app on the emulator (one with Google Play) or a phone, sign in, and allow notifications.
+3. `npm run push:test -- <the account's email>`: a test notification arrives (shown by Android when
+   the app is in the background, as a toast while it's open).
+
 ## iPhone (later)
 
 Needs a Mac, an Apple Developer account, a real bundle id (the iOS project still has the template id),

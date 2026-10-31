@@ -2,6 +2,10 @@
  * @format
  */
 
+import {
+  getMessaging,
+  setBackgroundMessageHandler,
+} from '@react-native-firebase/messaging';
 import { AppRegistry, LogBox } from 'react-native';
 import App from './App';
 import { name as appName } from './app.json';
@@ -19,5 +23,9 @@ crashReporter.installGlobalHandler();
 // Match the layout direction to the saved language before the first render
 // (restarts once if they differ, e.g. on an Arabic-language device).
 applyDirection(useSettingsStore.getState().lang);
+
+// Pushes arriving while the app is closed are shown by Android itself; a tap
+// opens the app (src/services/push). Nothing to do in the background.
+setBackgroundMessageHandler(getMessaging(), async () => {});
 
 AppRegistry.registerComponent(appName, () => App);

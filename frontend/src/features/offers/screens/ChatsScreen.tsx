@@ -5,7 +5,7 @@
 // message about an offer carries its buttons. The header menu reports or
 // blocks the other person.
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Image,
@@ -14,7 +14,12 @@ import {
   ScrollView,
   View,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import {
+  useNavigation,
+  useRoute,
+  type RouteProp,
+} from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { BackButton } from '@/components/BackButton';
 import { Icon } from '@/components/icons';
@@ -34,6 +39,7 @@ import { formatJOD, jod } from '@/lib/money';
 import type { ChatMessage, ChatThread, Offer, OfferStatus } from '@/lib/types';
 import { errorMessageKey } from '@/services/api/errors';
 import { toast } from '@/store/toastStore';
+import type { TabParamList } from '@/navigation/types';
 import { colors } from '@/theme/colors';
 import {
   useBlockUser,
@@ -48,6 +54,17 @@ export function ChatsScreen() {
   const localized = useLocalized();
   const { data: threads = [], isLoading, isError, refetch } = useChatThreads();
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
+
+  // A tapped push about a chat or an offer opens that conversation.
+  const navigation =
+    useNavigation<BottomTabNavigationProp<TabParamList, 'Chats'>>();
+  const pushedChatId =
+    useRoute<RouteProp<TabParamList, 'Chats'>>().params?.chatId;
+  useEffect(() => {
+    if (!pushedChatId) return;
+    setActiveChatId(pushedChatId);
+    navigation.setParams({ chatId: undefined });
+  }, [pushedChatId, navigation]);
 
   const activeThread = threads.find(t => t.id === activeChatId);
 

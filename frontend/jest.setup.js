@@ -55,3 +55,16 @@ jest.mock('@react-native-community/geolocation', () => ({
     getCurrentPosition: jest.fn(),
   },
 }));
+
+// Firebase push is native; the token and tap handling are tested without it.
+jest.mock('@react-native-firebase/messaging', () => ({
+  AuthorizationStatus: { AUTHORIZED: 1, PROVISIONAL: 2, DENIED: 0 },
+  getMessaging: jest.fn(() => ({})),
+  getToken: jest.fn(async () => 'test-fcm-token-0123456789abcdef'),
+  onTokenRefresh: jest.fn(() => () => {}),
+  onMessage: jest.fn(() => () => {}),
+  onNotificationOpenedApp: jest.fn(() => () => {}),
+  getInitialNotification: jest.fn(async () => null),
+  requestPermission: jest.fn(async () => 1),
+  setBackgroundMessageHandler: jest.fn(),
+}));

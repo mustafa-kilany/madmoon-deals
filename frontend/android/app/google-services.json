@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "480175471997",
+    "project_id": "sahla-project-75cb2",
+    "storage_bucket": "sahla-project-75cb2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:480175471997:android:39546b9dd2ee0181c26014",
+        "android_client_info": {
+          "package_name": "com.sahla"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCQCHwM2Jg-59RlgLR-Ftb1a4c3ofg788A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

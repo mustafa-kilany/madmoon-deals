@@ -17,10 +17,13 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { SidebarMenu } from '@/components/SidebarMenu';
 import { Toast } from '@/components/Toast';
 import { useSessionRefresh } from '@/features/auth/hooks/useAccount';
-import { restoreSession } from '@/features/auth/sessionStore';
+import { restoreSession, useUser } from '@/features/auth/sessionStore';
 import { navigationRef } from '@/navigation/navigationRef';
 import { RootNavigator } from '@/navigation/RootNavigator';
+import { handlePushTaps, startPush } from '@/services/push';
 import { queryClient } from '@/services/queryClient';
+import { useSettingsStore } from '@/store/settingsStore';
+import { toast } from '@/store/toastStore';
 import { colors } from '@/theme/colors';
 
 const navigationTheme: Theme = {
@@ -49,8 +52,13 @@ function App() {
         <QueryClientProvider client={queryClient}>
           <StatusBar barStyle="dark-content" />
           <ErrorBoundary>
-            <NavigationContainer ref={navigationRef} theme={navigationTheme}>
+            <NavigationContainer
+              ref={navigationRef}
+              theme={navigationTheme}
+              onReady={listenForPushTaps}
+            >
               <SessionRefresh />
+              <PushRegistration />
               <RootNavigator />
               <SidebarMenu />
               <Toast />
@@ -66,6 +74,28 @@ function App() {
 function SessionRefresh() {
   useSessionRefresh();
   return null;
+}
+
+/** Signed in: this phone gets the account's pushes, in the app's language. */
+function PushRegistration() {
+  const userId = useUser()?.id;
+  const lang = useSettingsStore(s => s.lang);
+  useEffect(() => {
+    if (!userId) return;
+    const stop = startPush(lang);
+    return () => {
+      stop.then(off => off());
+    };
+  }, [userId, lang]);
+  return null;
+}
+
+/** Once: a tapped push opens its screen; one arriving while the app is open shows as a toast. */
+let listeningForTaps = false;
+function listenForPushTaps() {
+  if (listeningForTaps) return;
+  listeningForTaps = true;
+  handlePushTaps(toast.info);
 }
 
 const styles = StyleSheet.create({ root: { flex: 1 } });
