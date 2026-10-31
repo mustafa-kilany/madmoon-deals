@@ -1,5 +1,6 @@
 import { app } from './app';
 import { env } from './env';
+import { logger } from './lib/logger';
 import { scheduleAuctionClosing } from './modules/negotiation/bids';
 import { scheduleNightlyRiskCheck } from './modules/risk/triggers';
 import { scheduleUploadCleanup } from './modules/uploads/cleanup';
@@ -12,5 +13,5 @@ scheduleAuctionClosing();
 scheduleNightlyRiskCheck();
 
 app.listen(env.PORT, () => {
-  console.log(`Sahla backend on http://localhost:${env.PORT}/v1`);
+  logger.info(`Sahla backend on http://localhost:${env.PORT}/v1`);
 });

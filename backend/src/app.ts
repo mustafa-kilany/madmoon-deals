@@ -1,6 +1,8 @@
 import express from 'express';
+import helmet from 'helmet';
 import { prisma } from './db';
 import { errorHandler, notFound } from './lib/errors';
+import { requestLogger } from './lib/logger';
 import { authRoutes } from './modules/auth/routes';
 import { certificateRoutes } from './modules/certificates/routes';
 import { courierRoutes } from './modules/courier/routes';
@@ -25,8 +27,12 @@ import { categoryImageDir, demoCertificateDir } from './reference';
 
 export const app = express();
 app.disable('x-powered-by');
-// Behind a proxy / load balancer in production, set this so req.ip (rate
-// limits, sessions) is the user's address, e.g. app.set('trust proxy', 1).
+// Behind a proxy / load balancer: req.ip (rate limits, sessions) is then the user's address.
+if (env.TRUST_PROXY) app.set('trust proxy', env.TRUST_PROXY);
+// Security headers. The API serves JSON plus a few small pages (bank / Sanad
+// callbacks) and photos the app loads from another origin.
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+app.use(requestLogger);
 
 // Files this server hosts (moves to a CDN with photo storage, BACKEND_PLAN B3).
 app.use('/static/categories', express.static(categoryImageDir, { maxAge: '7d' }));

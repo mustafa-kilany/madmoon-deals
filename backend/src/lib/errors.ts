@@ -1,5 +1,6 @@
 import type { ErrorRequestHandler, RequestHandler } from 'express';
 import { ZodError } from 'zod';
+import { logger } from './logger';
 
 // Error codes the app understands (docs/API.md → Error Codes Standard).
 export type ErrorCode =
@@ -47,7 +48,7 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     // Uploads: too big, a second file, or an unexpected field name.
     error = new ApiError(err.code === 'LIMIT_FILE_SIZE' ? 413 : 422, 'VALIDATION', `Upload: ${err.message}`);
   } else {
-    console.error(err);
+    logger.error({ err }, 'Unhandled error');
     error = new ApiError(500, 'INTERNAL', 'Something went wrong');
   }
   res.status(error.status).json({ error: { code: error.code, message: error.message } });

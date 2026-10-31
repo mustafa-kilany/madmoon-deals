@@ -13,6 +13,11 @@ const schema = z
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
     DATABASE_URL: z.string().startsWith('postgresql://'),
     PORT: z.coerce.number().int().positive().default(4000),
+    // Behind a load balancer / proxy in production: how many (usually 1), so the user's IP
+    // (rate limits, sessions) comes from X-Forwarded-For. 0 = straight to this server.
+    TRUST_PROXY: z.coerce.number().int().min(0).max(5).default(0),
+    // fatal, error, warn, info, debug. Default: info (silent in tests).
+    LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'silent']).optional(),
     // Production: the public address, e.g. https://api.sahla.jo (for file URLs).
     PUBLIC_URL: optional,
     // Signs the log-in tokens (JWT). Long and random; changing it signs everyone out.
