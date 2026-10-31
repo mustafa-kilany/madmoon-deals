@@ -36,3 +36,12 @@ export const deliveryColumns = (d: DeliveryInput) => ({
   deliveryAddress: d.address,
   deliveryNotes: d.notes ?? null,
 });
+
+/** The seller's pickup details → the order's pickup* columns (BACKEND_PLAN B14.5). */
+export const pickupColumns = (d: DeliveryInput) => ({
+  pickupName: d.name,
+  pickupPhone: d.phone,
+  pickupCityId: d.cityId,
+  pickupAddress: d.address,
+  pickupNotes: d.notes ?? null,
+});

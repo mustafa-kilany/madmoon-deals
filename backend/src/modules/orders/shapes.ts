@@ -43,11 +43,27 @@ export const toApiOrder = (order: OrderRow, req: Request) => {
   };
 };
 
+/** The seller's pickup address (B14.5), once given. */
+export const pickupOf = (order: OrderRow) =>
+  order.pickupName && order.pickupPhone && order.pickupCityId && order.pickupAddress
+    ? {
+        name: order.pickupName,
+        phone: order.pickupPhone,
+        cityId: order.pickupCityId,
+        address: order.pickupAddress,
+        ...(order.pickupNotes && { notes: order.pickupNotes }),
+      }
+    : undefined;
+
 /**
  * The seller's view (GET /me/sales): no PIN, and of the delivery details only the
  * buyer's name and area. The phone and address are for the courier only.
  */
-export const toApiSale = (order: OrderRow, req: Request) => ({
-  ...common(order, req),
-  delivery: { name: order.deliveryName, cityId: order.deliveryCityId },
-});
+export const toApiSale = (order: OrderRow, req: Request) => {
+  const pickup = pickupOf(order);
+  return {
+    ...common(order, req),
+    delivery: { name: order.deliveryName, cityId: order.deliveryCityId },
+    ...(pickup && { pickup }),
+  };
+};

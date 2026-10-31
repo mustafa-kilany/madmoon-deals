@@ -236,12 +236,14 @@ buying, chats or offers.
   domain, so nobody can make a look-alike account.
 - 🔨 **B14.2** (✅ uploads; the rest with each endpoint) Couriers can only call courier endpoints: everything for customers (listing, offers, chats,
   orders, saving) answers `FORBIDDEN` for them.
-- ⬜ **B14.3** `GET /courier/deliveries`: the orders assigned to me: order number, item, **pickup** (seller's
+- ✅ **B14.3** `GET /courier/deliveries`: the orders assigned to me: order number, item, **pickup** (seller's
   name, phone, area, address) and **drop-off** (buyer's delivery details), status.
-- ⬜ **B14.4** `POST /courier/deliveries/:orderId/picked-up`, then the existing
+- ✅ **B14.4** `POST /courier/deliveries/:orderId/picked-up`, then the existing
   `POST /courier/confirm-delivery` with the buyer's 4-digit **PIN** (locks after 5 wrong tries).
-- ⬜ **B14.5** Pickup address: the seller gives it when the order is paid (B7), shown only to the courier.
-- ⬜ **B14.6** Assigning: an admin assigns each paid order to a courier in the dashboard (later: by area).
+- ✅ **B14.5** Pickup address: the seller gives it when the order is paid (B7), shown only to the courier
+  (`POST /orders/:id/pickup`). ⬜ App: a pickup form on the seller's sale.
+- 🔨 **B14.6** Assigning: an admin assigns each paid order to a courier in the dashboard (later: by area).
+  ✅ `POST /admin/orders/:id/assign`; ⬜ the dashboard screen (B8).
 - ⬜ **B14.7** App: courier mode. Log in → **Deliveries** list → a delivery: order number, pickup and drop-off
   with **Call** and **Open in Maps**, **Picked up** button, **PIN** boxes → **Delivered**. The menu has only
   language and log out. Built on the mock service first, like the rest of the app.

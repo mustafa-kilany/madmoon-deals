@@ -777,7 +777,7 @@ building and floor, and can change anything. The order is unchanged: it carries 
 * **`User.role`**: optional, `"courier"` for courier accounts. Couriers see only the courier screens
   (below), never browsing, selling or buying.
 
-### Couriers (drivers) *(planned: BACKEND_PLAN B14)*
+### Couriers (drivers) *(backend done: BACKEND_PLAN B14.3–B14.6; the app's courier mode is B14.7)*
 
 Couriers are Sahla staff. **Nobody signs up as a courier:** an admin creates the account with a company
 email (the staff domain, e.g. `@sahla.jo`) and an invite code is emailed; the courier sets a password with
@@ -809,6 +809,13 @@ type Delivery = {
   a correct PIN completes the order (`delivered`), a wrong one is `INVALID_PIN`, five wrong ones lock it.
 * Admins assign paid orders to couriers in the dashboard; the seller gives the pickup address when the order
   is paid.
+* **`POST /orders/:id/pickup`** *(the seller, once the order is paid)* → Body: `DeliveryDetails` (where the courier
+  collects the item) → the sale (`GET /me/sales` shape, with `pickup`). Can be changed until the courier picks
+  it up (`VALIDATION` after that); `NOT_FOUND` for anyone else or an unpaid order. Until it's given, a
+  `Delivery`'s `pickup` has the seller's name and the listing's area with an empty `phone` and `address`.
+* **`POST /admin/orders/:id/assign`** *(admin)* → Body: `{ "courierId": "..." }` → `Order`. Paid orders not
+  picked up yet (it can be reassigned until then); the courier must be an active courier account.
+* `orderId` in the courier paths is case-insensitive. "Today" for delivered ones is Jordan time.
 
 ### Safety: report and block
 

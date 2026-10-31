@@ -5,7 +5,7 @@ import { Prisma } from '../../generated/prisma/client';
 import { ApiError } from '../../lib/errors';
 import { closeEndedAuctions } from '../negotiation/bids';
 import { isBlockedBetween } from '../safety/blocks';
-import { deliveryColumns, type DeliveryInput } from './delivery';
+import { deliveryColumns, pickupColumns, type DeliveryInput } from './delivery';
 import { orderInclude } from './shapes';
 
 // POST /orders (BACKEND_PLAN B7.2), docs/API.md → Phase 6. The server prices
@@ -111,4 +111,17 @@ export async function getOrder(userId: string, orderId: string) {
     order?.buyerId === userId ? 'buyer' : order?.sellerUserId === userId && order.status !== 'awaiting_payment' ? 'seller' : undefined;
   if (!order || !role) throw new ApiError(404, 'NOT_FOUND', `No order ${orderId}`);
   return { order, role } as const;
+}
+
+/**
+ * POST /orders/:id/pickup (B14.5): where the courier collects the item. The seller
+ * gives it once the order is paid and can change it until the courier picks it up.
+ */
+export async function setPickup(sellerId: string, orderId: string, pickup: DeliveryInput) {
+  const order = await prisma.order.findUnique({ where: { id: orderId } });
+  if (!order || order.sellerUserId !== sellerId || order.status === 'awaiting_payment')
+    throw new ApiError(404, 'NOT_FOUND', `No order ${orderId}`);
+  if (order.status !== 'escrow_held' || (order.courierStatus && order.courierStatus !== 'to_pickup'))
+    throw invalid('The courier already has the item');
+  return prisma.order.update({ where: { id: orderId }, data: pickupColumns(pickup), include: orderInclude });
 }

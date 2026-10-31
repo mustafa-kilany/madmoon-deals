@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import { prisma } from '../../db';
 import { ApiError } from '../../lib/errors';
 import { requireAdmin } from '../auth/requireUser';
@@ -45,4 +46,24 @@ adminOrderRoutes.post('/admin/orders/:id/unlock-pin', ...requireAdmin, async (re
   if (order.status !== 'escrow_held') throw new ApiError(422, 'VALIDATION', `This order is ${order.status}`);
   await prisma.order.update({ where: { id: order.id }, data: { pinAttempts: 0 } });
   res.json(toApiOrder(await prisma.order.findUniqueOrThrow({ where: { id: order.id }, include: orderInclude }), req));
+});
+
+/**
+ * B14.6: give a paid order to a courier (later: by area, automatically). Can be
+ * changed until it's picked up.
+ */
+adminOrderRoutes.post('/admin/orders/:id/assign', ...requireAdmin, async (req, res) => {
+  const { courierId } = z.object({ courierId: z.string().min(1) }).parse(req.body);
+  const order = await findOrder(req.params.id as string);
+  if (order.status !== 'escrow_held' || (order.courierStatus && order.courierStatus !== 'to_pickup'))
+    throw new ApiError(422, 'VALIDATION', 'Only paid orders that aren’t picked up yet');
+  const courier = await prisma.user.findUnique({ where: { id: courierId } });
+  if (!courier || courier.role !== 'courier' || courier.suspended)
+    throw new ApiError(422, 'VALIDATION', 'courierId: an active courier account');
+  const updated = await prisma.order.update({
+    where: { id: order.id },
+    data: { courierId, courierStatus: 'to_pickup', assignedAt: new Date() },
+    include: orderInclude,
+  });
+  res.json(toApiOrder(updated, req));
 });

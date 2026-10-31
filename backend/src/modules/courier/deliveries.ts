@@ -1,0 +1,77 @@
+import type { Request } from 'express';
+import { prisma } from '../../db';
+import type { Prisma } from '../../generated/prisma/client';
+import { ApiError } from '../../lib/errors';
+import { coverUrl } from '../catalog/apiItem';
+
+// The courier app's list (BACKEND_PLAN B14.3, B14.4), docs/API.md → Couriers.
+// Pickup and drop-off are shown only to the courier the order is assigned to.
+
+const deliveryInclude = {
+  listing: { select: { titleAr: true, titleEn: true, imageUrls: true, locationId: true } },
+  sellerUser: { select: { name: true } },
+  store: { select: { nameEn: true } },
+} satisfies Prisma.OrderInclude;
+type DeliveryRow = Prisma.OrderGetPayload<{ include: typeof deliveryInclude }>;
+
+/** Jordan is UTC+3 all year (since 2022), so "today" starts at 21:00 UTC. */
+const startOfJordanDay = (now = new Date()) => {
+  const jordan = new Date(now.getTime() + 3 * 3_600_000);
+  return new Date(Date.UTC(jordan.getUTCFullYear(), jordan.getUTCMonth(), jordan.getUTCDate()) - 3 * 3_600_000);
+};
+
+/** GET /courier/deliveries: mine that aren't delivered, and today's delivered ones; oldest assignment first. */
+export const listDeliveries = (courierId: string) =>
+  prisma.order.findMany({
+    where: {
+      courierId,
+      OR: [
+        { courierStatus: { in: ['to_pickup', 'picked_up'] }, status: 'escrow_held' },
+        { courierStatus: 'delivered', deliveredAt: { gte: startOfJordanDay() } },
+      ],
+    },
+    include: deliveryInclude,
+    orderBy: { assignedAt: 'asc' },
+  });
+
+/** POST /courier/deliveries/:orderId/picked-up. */
+export async function markPickedUp(courierId: string, orderId: string) {
+  const order = await prisma.order.findUnique({ where: { id: orderId } });
+  if (!order || order.courierId !== courierId) throw new ApiError(404, 'NOT_FOUND', `No delivery ${orderId}`);
+  const { count } = await prisma.order.updateMany({
+    where: { id: orderId, courierId, courierStatus: 'to_pickup', status: 'escrow_held' },
+    data: { courierStatus: 'picked_up', pickedUpAt: new Date() },
+  });
+  if (!count) throw new ApiError(422, 'VALIDATION', `This delivery is ${order.courierStatus}, not waiting for pickup`);
+  return prisma.order.findUniqueOrThrow({ where: { id: orderId }, include: deliveryInclude });
+}
+
+/**
+ * docs/API.md `Delivery`. Until the seller gives the pickup address, `pickup`
+ * has the seller's name and the listing's area, with an empty phone and address.
+ */
+export const toApiDelivery = (order: DeliveryRow, req: Request) => ({
+  orderId: order.id,
+  status: order.courierStatus ?? 'to_pickup',
+  itemTitle: { ar: order.listing.titleAr, en: order.listing.titleEn },
+  itemImageUrl: coverUrl(order.listing.imageUrls, req),
+  pickup: order.pickupName
+    ? {
+        name: order.pickupName,
+        phone: order.pickupPhone ?? '',
+        cityId: order.pickupCityId ?? order.listing.locationId,
+        address: order.pickupAddress ?? '',
+        ...(order.pickupNotes && { notes: order.pickupNotes }),
+      }
+    : { name: order.sellerUser?.name ?? order.store?.nameEn ?? '', phone: '', cityId: order.listing.locationId, address: '' },
+  dropoff: {
+    name: order.deliveryName,
+    phone: order.deliveryPhone,
+    cityId: order.deliveryCityId,
+    address: order.deliveryAddress,
+    ...(order.deliveryNotes && { notes: order.deliveryNotes }),
+  },
+  assignedAt: (order.assignedAt ?? order.paidAt ?? order.createdAt).toISOString(),
+  ...(order.pickedUpAt && { pickedUpAt: order.pickedUpAt.toISOString() }),
+  ...(order.deliveredAt && { deliveredAt: order.deliveredAt.toISOString() }),
+});
