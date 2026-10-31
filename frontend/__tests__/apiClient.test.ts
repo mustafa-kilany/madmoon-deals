@@ -46,6 +46,24 @@ test('sends JSON with the bearer token to the base URL', async () => {
   expect(init.headers.Authorization).toBe('Bearer tok123');
   expect(init.headers['Content-Type']).toBe('application/json');
   expect(JSON.parse(init.body)).toEqual({ email: 'a@b.co' });
+  // The same random id for this phone on every request.
+  expect(init.headers['X-Device-Id']).toMatch(/^[0-9a-f]{32}$/);
+  respond(200, {});
+  await api.get('/me');
+  expect(fetchMock.mock.calls[1][1].headers['X-Device-Id']).toBe(
+    init.headers['X-Device-Id'],
+  );
+});
+
+test('too many tries (429) has its own message code', async () => {
+  respond(429, { error: { code: 'RATE_LIMITED', message: 'wait' } });
+  expect((await failure(api.post('/auth/login', {}))).code).toBe(
+    'RATE_LIMITED',
+  );
+  respond(429);
+  expect((await failure(api.get('/geocode/reverse'))).code).toBe(
+    'RATE_LIMITED',
+  );
 });
 
 test('maps the contract error body to ApiError codes', async () => {

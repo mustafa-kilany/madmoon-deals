@@ -147,6 +147,7 @@ export const config = {
 |---|---|
 | **Format** | JSON, UTF-8 encoded. File uploads are `multipart/form-data`. |
 | **Authentication** | `Authorization: Bearer <token>` header on authenticated endpoints. |
+| **Device id** | `X-Device-Id: <32 hex characters>` on every request: a random id the app makes once per install (MMKV). Counts listing views per phone and lets the risk checker spot many accounts on one phone. Not a hardware id. |
 | **Money / Currency** | Integers in **fils** (1 JOD = 1000 fils). Never use floating point or decimals. Field names end with `Fils` (e.g. `priceFils`, `incrementFils`). |
 | **Localized Strings** | Dual-language catalog fields use `{ "ar": "...", "en": "..." }` (`Localized`). |
 | **Category IDs** | Fixed set: `mobiles`, `electronics`, `vehicles`, `furniture`, `appliances`, `fashion`, `kids`, `hobbies`. Item types per category come from `GET /categories/filters` (e.g. gaming is a type under `electronics`, watches under `fashion`). |
@@ -169,7 +170,7 @@ export const config = {
 | `PAYMENT_DECLINED` | 402 | The card was declined (`POST /orders/:id/pay`); the order stays `awaiting_payment`, the buyer can try another card |
 | `INVALID_CODE` | 422 | Wrong or expired emailed code (sign-up, password reset) |
 | `SANAD_UNAVAILABLE` | 503 | ID verification with Sanad isn't switched on yet ("coming soon") |
-| `RATE_LIMITED` | 429 | Too many log-in / code attempts for one email from one IP; try again in ~15 minutes (no app message yet: shown as a generic error) |
+| `RATE_LIMITED` | 429 | Too many tries: log-in / code attempts for one email from one IP (~15 minutes), delivery PINs (5 per order), location lookups (20 an hour) |
 
 Any other code is shown to the user as a generic error, so new codes need an app update to get their own message.
 

@@ -164,7 +164,8 @@
     "ITEM_UNAVAILABLE": "Sorry, this item is no longer available.",
     "OPEN_ORDERS": "You have orders in progress. Finish them before deleting your account.",
     "SANAD_UNAVAILABLE": "Verification with Sanad is coming soon.",
-    "PAYMENT_DECLINED": "Your card was declined. Try another card or contact your bank."
+    "PAYMENT_DECLINED": "Your card was declined. Try another card or contact your bank.",
+    "RATE_LIMITED": "Too many tries. Wait a few minutes and try again."
   },
   "condition": {
     "new": "New",

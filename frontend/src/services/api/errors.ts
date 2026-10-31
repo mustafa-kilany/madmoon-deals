@@ -11,6 +11,7 @@ export type ApiErrorCode =
   | 'INVALID_PIN'
   | 'INVALID_CODE'
   | 'PAYMENT_DECLINED'
+  | 'RATE_LIMITED'
   | 'FORBIDDEN'
   | 'ITEM_UNAVAILABLE'
   | 'OPEN_ORDERS'
@@ -38,6 +39,7 @@ const KNOWN: ApiErrorCode[] = [
   'INVALID_PIN',
   'INVALID_CODE',
   'PAYMENT_DECLINED',
+  'RATE_LIMITED',
   'FORBIDDEN',
   'ITEM_UNAVAILABLE',
   'OPEN_ORDERS',

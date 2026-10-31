@@ -3,6 +3,7 @@
 
 import { config } from '@/config';
 import type { LocalPhoto } from '@/lib/types';
+import { deviceId } from './deviceId';
 import { ApiError, type ApiErrorCode } from './errors';
 import { tokenStorage } from './tokenStorage';
 
@@ -21,7 +22,10 @@ async function request<T>(
 ): Promise<T> {
   const token = tokenStorage.get();
   const isForm = body instanceof FormData;
-  const headers: Record<string, string> = { Accept: 'application/json' };
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+    'X-Device-Id': deviceId(),
+  };
   if (body !== undefined && !isForm)
     headers['Content-Type'] = 'application/json';
   if (token) headers.Authorization = `Bearer ${token}`;
@@ -77,6 +81,7 @@ function statusCode(status: number): ApiErrorCode {
   if (status === 403) return 'FORBIDDEN';
   if (status === 404) return 'NOT_FOUND';
   if (status === 400 || status === 422) return 'VALIDATION';
+  if (status === 429) return 'RATE_LIMITED';
   return 'UNKNOWN';
 }
 
