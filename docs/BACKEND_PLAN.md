@@ -204,8 +204,9 @@ Tasks:
   app screen and database are ready since B3.5); register the callback URL with MoDEE; set `ID_HASH_SECRET`.
 
 ## B12 — Production and launch ⬜ (D4)
-- ⬜ **B12.1** Production settings: `trust proxy`, security headers (`helmet`), request size limits,
-  structured logs (`pino`, no passwords/tokens/coordinates), error tracking (Sentry).
+- 🔨 **B12.1** Production settings: ✅ `TRUST_PROXY`, security headers (`helmet`), request size limits,
+  structured logs (`pino`: method, path, status, time; never query strings, headers or bodies, so no
+  tokens, passwords or coordinates); ⬜ error tracking (Sentry, needs an account).
 - ⬜ **B12.2** Deploy: API + managed PostgreSQL, `prisma migrate deploy` on release, `api.sahla.jo` over HTTPS.
 - ⬜ **B12.3** Daily database backups + a tested restore.
 - ⬜ **B12.4** Monitoring: uptime check on `/v1/health`, alerts on errors and slow requests.

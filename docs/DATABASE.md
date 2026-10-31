@@ -32,28 +32,27 @@ erDiagram
   User ||--o{ Listing : sells
   User ||--o{ TestCertificate : uploads
   User ||--o{ IdVerification : "verifies ID"
-  User ||--o{ Device : "push tokens (planned)"
-  User ||--o{ Upload : "uploads (planned)"
-  Category ||--o{ Listing : "groups (planned)"
+  User ||--o{ Device : "push tokens"
+  User ||--o{ Upload : uploads
   Store ||--o{ Listing : "sells refurbished"
   Store ||--o{ StoreApiKey : "has keys"
   Store ||--o{ RefurbishedImport : "import runs"
   TestCertificate |o--o| Listing : "proves device"
   Listing ||--o{ ListingView : "views"
-  Listing ||--o{ Chat : "about (planned)"
-  Listing ||--o{ Offer : "offers (planned)"
-  Listing ||--o{ Bid : "bids (planned)"
-  Listing ||--o{ Order : "sold by (planned)"
-  User ||--o{ Chat : "buyer (planned)"
-  Chat ||--o{ Message : "contains (planned)"
-  Chat ||--o{ Offer : "negotiates (planned)"
-  Offer |o--o{ Message : "shown in (planned)"
-  User ||--o{ Bid : "bids (planned)"
-  User ||--o{ Order : "buys (planned)"
-  Offer |o--o| Order : "agreed price (planned)"
-  Order ||--o{ Payment : "paid by (planned)"
-  Order ||--o| Payout : "releases (planned)"
-  User ||--o| PaymentMethod : "saved card (planned)"
+  Listing ||--o{ Chat : "about"
+  Listing ||--o{ Offer : "offers"
+  Listing ||--o{ Bid : "bids"
+  Listing ||--o{ Order : "sold by"
+  User ||--o{ Order : "sells / delivers"
+  User ||--o{ Chat : "buyer"
+  Chat ||--o{ Message : "contains"
+  Chat ||--o{ Offer : "negotiates"
+  Offer |o--o{ Message : "shown in"
+  User ||--o{ Bid : "bids"
+  User ||--o{ Order : "buys"
+  Offer |o--o| Order : "agreed price"
+  Order ||--o{ Payment : "paid by"
+  Order ||--o| Payout : "releases"
   User ||--o{ Report : reports
   User ||--o{ Block : blocks
   User ||--o{ AccountSignal : "risk signals"
@@ -71,8 +70,7 @@ erDiagram
 erDiagram
   User ||--o{ Session : "signs in on"
   User ||--o{ IdVerification : "verifies"
-  User ||--o{ Device : "gets push on (planned B9)"
-  User ||--o| PaymentMethod : "saved card (planned B7)"
+  User ||--o{ Device : "gets push on"
   User {
     text id PK "cuid"
     text name "2-60 chars"
@@ -82,8 +80,9 @@ erDiagram
     bool verified "Verified badge"
     text cityId "area id"
     text avatarUrl
-    text cardBrand "until PaymentMethod (B7)"
+    text cardBrand "saved card: brand"
     text cardLast4
+    text cardToken "the provider's token, never the number"
     Role role "null | courier | admin"
     bool suspended "admin only"
     timestamp createdAt
@@ -120,19 +119,11 @@ erDiagram
     timestamp decidedAt
   }
   Device {
-    text token PK "FCM / APNs token (planned B9)"
+    text token PK "FCM token"
     text userId FK
-    text platform "android | ios"
+    Platform platform "android | ios"
     timestamp createdAt
-    timestamp lastSeenAt
-  }
-  PaymentMethod {
-    text userId PK,FK "one card per user (planned B7)"
-    text provider
-    text providerToken "provider's card reference"
-    text brand
-    text last4
-    timestamp createdAt
+    timestamp updatedAt
   }
 ```
 
@@ -142,8 +133,10 @@ erDiagram
 | **Session** | ✅ B1 | One signed-in device. The JWT names the session (`sid`); deleting the row signs that device out. Log-out deletes one, password reset all. | `tokenHash` unique, `userId`, `deviceId` |
 | **EmailCode** | ✅ B1 | 6-digit codes for sign-up and password reset. Deleted once used. | `(email, purpose)` |
 | **IdVerification** | ✅ B3.5 (Sanad: B11) | One check with **Sanad** (no ID photos, no manual review). `stateHash` finds the check when Sanad answers; the national number is kept only as a keyed hash (one ID, one verified account). Approving sets `User.verified` (and `Listing.sellerVerified` on their listings). | `userId`, `nationalIdHash` |
-| **Device** | planned B9 | Push notification tokens; removed on log-out. | `userId` |
-| **PaymentMethod** | planned B7 | The saved card as the payment provider's token (never the number). Replaces `User.cardBrand/cardLast4`. | — |
+| **Device** | ✅ B9.2 | Push notification tokens. A token belongs to the account last signed in on that phone; removed on log-out and with the account. | `userId` |
+
+The saved card (B7.8) is three `User` columns, not a table: one card per account, `cardToken` being the
+payment provider's reusable token (never the card number).
 
 ---
 
@@ -160,8 +153,7 @@ erDiagram
   User ||--o{ TestCertificate : uploads
   TestCertificate |o--o| Listing : "used by one"
   Listing ||--o{ ListingView : "counted"
-  User ||--o{ Upload : "uploads (planned B3)"
-  Category ||--o{ Listing : "groups (planned B3)"
+  User ||--o{ Upload : uploads
   Listing {
     text id PK "cuid"
     text category "category id"
@@ -245,7 +237,7 @@ erDiagram
     timestamp createdAt
   }
   Category {
-    text id PK "mobiles, electronics, ... (planned B3)"
+    text id PK "mobiles, electronics, ..."
     text imageUrl "picture an admin uploaded"
     text updatedById FK "admin"
     timestamp updatedAt
@@ -256,13 +248,12 @@ erDiagram
     date day PK "once a day"
   }
   Upload {
-    text id PK "planned B3"
+    text id PK
     text userId FK
-    text kind "listing | avatar | id | certificate"
+    UploadKind kind "listing | avatar | category"
     text url
     text thumbUrl "400 px"
     int bytes
-    text mime
     timestamp usedAt "null = unused, cleaned after 24 h"
     timestamp createdAt
   }
@@ -276,8 +267,8 @@ erDiagram
 | **RefurbishedImport** | ✅ B0 | One row per import run (dashboard history). | `(storeId, createdAt)` |
 | **TestCertificate** | ✅ table, endpoint B4 | A checked photo of a shop's test report. A listing of a phone / electronics type needs a `passed` one; each is used by one listing only. | `userId`, `imageHash` |
 | **ListingView** | ✅ B2.5 | Counts a viewer once a day; `Listing.views` is the total. | primary key `(listingId, viewerKey, day)` |
-| **Category** | planned B3 | The 8 categories' pictures, changeable by an admin. Names, icons and item types stay in the shared reference files; `Listing.category` keeps its id (becomes a foreign key here). | — |
-| **Upload** | planned B3 | Every uploaded file. `POST /listings` accepts only URLs from here; unused ones are deleted after a day. | `(userId)`, `(usedAt, createdAt)` |
+| **Category** | ✅ B3.7 | Only the categories whose picture an admin changed. Names, icons and item types stay in the shared reference files; `Listing.category` is the id, not a foreign key. | — |
+| **Upload** | ✅ B3 | Every uploaded photo. `POST /listings` accepts only listing photos from here; unused ones are deleted after a day. | `userId`, `(kind, usedAt, createdAt)`, `url` unique |
 
 ---
 
@@ -342,7 +333,7 @@ erDiagram
 
 ---
 
-## 5. Orders, payments and escrow (planned B7)
+## 5. Orders, payments and escrow (✅ B7, courier part B14)
 
 ![Orders and money](database/orders.png)
 
@@ -350,22 +341,26 @@ erDiagram
 erDiagram
   Listing ||--o{ Order : "bought as"
   User ||--o{ Order : "buyer"
-  Offer |o--o| Order : "agreed price"
+  User ||--o{ Order : "seller (copied in)"
+  Store ||--o{ Order : "refurbished seller"
+  Offer |o--o{ Order : "agreed price"
   User |o--o{ Order : "courier delivers"
   Order ||--o{ Payment : "paid by"
   Order ||--o| Payout : "releases to seller"
   Order {
     text id PK "SA-123456"
     text listingId FK
-    text buyerId FK
+    text buyerId FK "null once the buyer deleted the account"
+    text sellerUserId FK "or storeId"
+    text storeId FK
     text offerId FK "if bought by offer"
     int itemPriceFils "listing, offer or winning bid"
     int buyerProtectionFils "3%, min 1000"
     int deliveryFils "2000"
     int totalFils
     OrderStatus status "awaiting_payment | escrow_held | completed | refunded"
-    text pinHash "4-digit delivery PIN"
-    int pinAttempts "locks at 5"
+    text pin "4 digits, set when paid"
+    int pinAttempts "5 tries, then locked"
     text deliveryName
     text deliveryPhone "07XXXXXXXX"
     text deliveryCityId
@@ -375,11 +370,13 @@ erDiagram
     text pickupPhone
     text pickupCityId
     text pickupAddress
+    text pickupNotes
     text courierId FK "staff account, role courier"
     CourierStatus courierStatus "to_pickup | picked_up | delivered"
     timestamp assignedAt
     timestamp pickedUpAt
     timestamp createdAt
+    timestamp updatedAt
     timestamp paidAt
     timestamp deliveredAt
     timestamp refundedAt
@@ -387,12 +384,12 @@ erDiagram
   Payment {
     text id PK
     text orderId FK
-    text provider
+    text provider "fake until D2"
     text providerRef UK "the provider's payment id"
     int amountFils
     PaymentStatus status "pending | succeeded | failed | refunded"
     text paymentUrl "3-D Secure page"
-    jsonb providerData "callback details"
+    jsonb providerData "no card numbers"
     timestamp createdAt
     timestamp updatedAt
   }
@@ -401,7 +398,7 @@ erDiagram
     text orderId FK,UK
     text sellerUserId FK "or a store"
     text storeId FK
-    int amountFils "item price - fees"
+    int amountFils "the item price (no seller fee)"
     PayoutStatus status "pending | paid | failed"
     timestamp createdAt
     timestamp paidAt
@@ -410,9 +407,9 @@ erDiagram
 
 | Table | Purpose and rules | Indexes |
 |---|---|---|
-| **Order** | The server prices every order (the app never sends amounts). Paying sets `escrow_held`, makes the PIN and reserves the listing **in one transaction**: the first payment wins. The courier's correct PIN → `completed`, listing `sold`, a `Payout` row. Delivery details are copied in, since the address book can change. The courier part (B14): an admin sets `courierId` (`to_pickup`), the courier marks `picked_up`, the PIN makes it `delivered`; pickup and drop-off are shown only to that courier. | `buyerId`, `listingId`, `status`, `courierId` |
-| **Payment** | Each attempt to pay (a failed 3-D Secure try can be retried). `providerRef` unique, so a repeated bank callback is handled once. | `orderId`, `providerRef` unique |
-| **Payout** | Money released to the seller after delivery (one per order). | `orderId` unique, `status` |
+| **Order** | The server prices every order (the app never sends amounts). One unpaid order per buyer and listing: checking out again updates it. Paying sets `escrow_held`, makes the PIN and reserves the listing **in one transaction** with the payment, order and listing rows locked: the first payment wins, a later one is refunded at once. The PIN is kept readable (the buyer opens the order to see it again; hashing 4 digits protects nothing): what protects it is `pinAttempts`, 5 tries counted *before* comparing, then locked until an admin unlocks. The right PIN → `completed`, listing `sold`, a `Payout`. Delivery details are copied in, since the address book can change. Courier part (B14): the seller gives `pickup*` once paid, an admin sets `courierId` (`to_pickup`), the courier marks `picked_up`, the PIN makes it `delivered`; pickup and drop-off are shown only to that courier, the seller sees only the buyer's name and area. | `(buyerId, createdAt)`, `(sellerUserId, createdAt)`, `(listingId, status)`, `status`, `(courierId, courierStatus)` |
+| **Payment** | Each attempt to pay (a declined card or failed 3-D Secure can be retried). `providerRef` unique, and the row is locked while settling, so a repeated bank callback is handled once. | `orderId`, `providerRef` unique |
+| **Payout** | Money released to the seller after delivery (one per order): the item price, since Sahla takes no seller fee. | `orderId` unique, `status` |
 
 ---
 
@@ -507,8 +504,8 @@ Blocks (B5) hide listings of blocked users.
 
 **Buying.** `Order` (`awaiting_payment`) → `Payment` (maybe 3-D Secure) → bank callback → `Order`
 `escrow_held` + PIN + `Listing` `reserved` (one transaction). Courier enters the PIN → `Order`
-`completed`, `Listing` `sold`, `Payout`. Refund (admin) → `Order` `refunded`, `Listing` `active`, logged in
-`AdminAction`.
+`completed`, `Listing` `sold`, `Payout`. Refund (admin) → `Order` `refunded`, `Payment` `refunded`,
+`Listing` `active` (logged in `AdminAction` once B8 adds it).
 
 **Keeping it safe.** `Report` / `Block` from users; `AccountSignal` → `RiskFlag` for admins; every admin
 decision → `AdminAction`.
