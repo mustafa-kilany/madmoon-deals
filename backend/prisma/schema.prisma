@@ -25,23 +25,28 @@ enum Role {
 // API `User`. `card` is stored as cardBrand + cardLast4 (never the card number), and
 // cardToken is the payment provider's token for charging it again (B7.8).
 model User {
-  id           String     @id @default(cuid())
-  name         String
-  email        String?    @unique // lower-cased; Apple may give a relay address
-  passwordHash String? // null for Google / Apple accounts
-  googleId     String?    @unique // Google account id ("sub"), set by POST /auth/google
-  appleId      String?    @unique // Apple account id ("sub"), set by POST /auth/apple
-  method       AuthMethod @default(email)
-  verified     Boolean    @default(false)
-  cityId       String     @default("amman") // an area id from GET /cities
-  avatarUrl    String     @default("")
-  cardBrand    String?
-  cardLast4    String?
-  cardToken    String?
-  role         Role?
-  suspended    Boolean    @default(false) // set by an admin only (never by the risk checker)
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  id            String     @id @default(cuid())
+  name          String
+  email         String?    @unique // lower-cased; Apple may give a relay address
+  passwordHash  String? // null for Google / Apple accounts
+  googleId      String?    @unique // Google account id ("sub"), set by POST /auth/google
+  appleId       String?    @unique // Apple account id ("sub"), set by POST /auth/apple
+  method        AuthMethod @default(email)
+  verified      Boolean    @default(false)
+  cityId        String     @default("amman") // an area id from GET /cities
+  avatarUrl     String     @default("")
+  cardBrand     String?
+  cardLast4     String?
+  cardToken     String?
+  role          Role?
+  suspended     Boolean    @default(false) // set by an admin only (never by the risk checker)
+  // Admins' two-step log-in (B8.1): an authenticator-app secret, encrypted (lib/sealed.ts).
+  // Set on the first dashboard log-in, enabled once a code from it was accepted.
+  totpSecret    String?
+  totpEnabledAt DateTime?
+  totpLastStep  Int? // the last accepted 30-second step: a code works once
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
 
   sessions         Session[]
   listings         Listing[]
@@ -64,19 +69,26 @@ model User {
   deliveries       Order[]           @relation("orderCourier")
   payouts          Payout[]
   devices          Device[]
+  adminActions     AdminAction[]
+}
+
+enum SessionScope {
+  app // the mobile app, SESSION_DAYS
+  admin // the admin dashboard, 12 hours, after the two-step log-in
 }
 
 // One signed-in device. Only a hash of the bearer token is stored, so a leaked
 // database can't be used to sign in.
 model Session {
-  id        String   @id @default(cuid())
-  tokenHash String   @unique
+  id        String       @id @default(cuid())
+  tokenHash String       @unique
+  scope     SessionScope @default(app)
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime
   deviceId  String? // X-Device-Id header (planned): spots many accounts on one phone
   ip        String?
-  createdAt DateTime @default(now())
+  createdAt DateTime     @default(now())
 
   @@index([userId])
   @@index([deviceId])
@@ -637,4 +649,21 @@ model Device {
   updatedAt DateTime @updatedAt
 
   @@index([userId])
+}
+
+// Every change an admin makes from the dashboard (BACKEND_PLAN B8.1): who, what,
+// when, and the details (before / after where it matters). Never edited or deleted.
+model AdminAction {
+  id         String   @id @default(cuid())
+  adminId    String?
+  admin      User?    @relation(fields: [adminId], references: [id], onDelete: SetNull)
+  action     String // e.g. "order.refund", "courier.create", "admin.login"
+  targetType String? // "order", "user", "category"…
+  targetId   String?
+  details    Json?
+  ip         String?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([targetType, targetId])
 }

@@ -7,6 +7,7 @@ import type { AddressInfo } from 'node:net';
 import { after, before, test } from 'node:test';
 import { app } from '../../app';
 import { prisma } from '../../db';
+import { adminToken } from '../admin/testing';
 import { hashPassword } from '../auth/password';
 import { fakePayments } from '../payments/fake';
 
@@ -43,7 +44,7 @@ before(async () => {
       body: JSON.stringify({ email, password: 'longenough' }),
     });
     const { token, user } = await r.json();
-    people.push({ id: user.id, token });
+    people.push({ id: user.id, token: email.startsWith('refund.admin') ? await adminToken(user.id) : token });
   }
   await prisma.listing.createMany({
     data: LISTINGS.map(id => ({

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../../db';
 import { ApiError } from '../../lib/errors';
+import { adminDid } from '../admin/audit';
 import { requireAdmin } from '../auth/requireUser';
 import { provider } from './pay';
 import { orderInclude, toApiOrder } from './shapes';
@@ -37,7 +38,9 @@ export async function refundOrder(orderId: string) {
 }
 
 adminOrderRoutes.post('/admin/orders/:id/refund', ...requireAdmin, async (req, res) => {
-  res.json(toApiOrder(await refundOrder(req.params.id as string), req));
+  const order = await refundOrder(req.params.id as string);
+  await adminDid(req, res, 'order.refund', { type: 'order', id: order.id }, { totalFils: order.totalFils });
+  res.json(toApiOrder(order, req));
 });
 
 /** After 5 wrong delivery PINs (the buyer confirmed it's really the courier at the door). */
@@ -45,6 +48,7 @@ adminOrderRoutes.post('/admin/orders/:id/unlock-pin', ...requireAdmin, async (re
   const order = await findOrder(req.params.id as string);
   if (order.status !== 'escrow_held') throw new ApiError(422, 'VALIDATION', `This order is ${order.status}`);
   await prisma.order.update({ where: { id: order.id }, data: { pinAttempts: 0 } });
+  await adminDid(req, res, 'order.unlock_pin', { type: 'order', id: order.id }, { pinAttempts: order.pinAttempts });
   res.json(toApiOrder(await prisma.order.findUniqueOrThrow({ where: { id: order.id }, include: orderInclude }), req));
 });
 
@@ -65,5 +69,6 @@ adminOrderRoutes.post('/admin/orders/:id/assign', ...requireAdmin, async (req, r
     data: { courierId, courierStatus: 'to_pickup', assignedAt: new Date() },
     include: orderInclude,
   });
+  await adminDid(req, res, 'order.assign', { type: 'order', id: order.id }, { before: order.courierId, after: courierId });
   res.json(toApiOrder(updated, req));
 });

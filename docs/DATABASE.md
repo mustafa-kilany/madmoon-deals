@@ -57,7 +57,7 @@ erDiagram
   User ||--o{ Block : blocks
   User ||--o{ AccountSignal : "risk signals"
   User ||--o{ RiskFlag : "flagged"
-  User ||--o{ AdminAction : "admin did (planned)"
+  User ||--o{ AdminAction : "admin did"
 ```
 
 ---
@@ -85,6 +85,9 @@ erDiagram
     text cardToken "the provider's token, never the number"
     Role role "null | courier | admin"
     bool suspended "admin only"
+    text totpSecret "admins' 2FA secret, encrypted"
+    timestamp totpEnabledAt
+    int totpLastStep "each code works once"
     timestamp createdAt
     timestamp updatedAt
   }
@@ -92,7 +95,8 @@ erDiagram
     text id PK "= JWT sid"
     text userId FK
     text tokenHash UK "SHA-256 of the JWT"
-    timestamp expiresAt "60 days"
+    SessionScope scope "app | admin"
+    timestamp expiresAt "app 60 days, admin 12 h"
     text deviceId "X-Device-Id"
     text ip
     timestamp createdAt
@@ -130,7 +134,7 @@ erDiagram
 | Table | Status | Purpose and rules | Indexes |
 |---|---|---|---|
 | **User** | ✅ B1 | Every person: buyers, sellers, couriers, admins. `role` is null for normal users; couriers and admins are **staff accounts** made by an admin with the company email domain, never by sign-up (B14). `suspended` is set only by an admin. Deleting a user cascades to sessions, certificates, ID checks, reports, blocks, signals, flags; their listings are withdrawn and keep no link. | `email` unique |
-| **Session** | ✅ B1 | One signed-in device. The JWT names the session (`sid`); deleting the row signs that device out. Log-out deletes one, password reset all. | `tokenHash` unique, `userId`, `deviceId` |
+| **Session** | ✅ B1, scope B8.1 | One signed-in device. The JWT names the session (`sid`); deleting the row signs that device out. Log-out deletes one, password reset all. `scope` `admin` = the dashboard (after the two-step log-in, 12 hours); an app session never opens `/v1/admin/*` and an admin one opens nothing else. | `tokenHash` unique, `userId`, `deviceId` |
 | **EmailCode** | ✅ B1 | 6-digit codes for sign-up and password reset. Deleted once used. | `(email, purpose)` |
 | **IdVerification** | ✅ B3.5 (Sanad: B11) | One check with **Sanad** (no ID photos, no manual review). `stateHash` finds the check when Sanad answers; the national number is kept only as a keyed hash (one ID, one verified account). Approving sets `User.verified` (and `Listing.sellerVerified` on their listings). | `userId`, `nationalIdHash` |
 | **Device** | ✅ B9.2 | Push notification tokens. A token belongs to the account last signed in on that phone; removed on log-out and with the account. | `userId` |
@@ -425,7 +429,7 @@ erDiagram
   User ||--o{ AccountSignal : "has"
   User ||--o{ RiskFlag : "flagged (userId)"
   User |o--o{ RiskFlag : "reviews (reviewedById)"
-  User ||--o{ AdminAction : "admin does (planned B8)"
+  User |o--o{ AdminAction : "admin does (adminId)"
   Report {
     text id PK
     text reporterId FK
@@ -462,14 +466,13 @@ erDiagram
     timestamp reviewedAt
   }
   AdminAction {
-    text id PK "planned B8"
-    text adminId FK
-    text action "refund, suspend, approve_id, ..."
-    text targetType
+    text id PK
+    text adminId FK "null once the admin is deleted"
+    text action "admin.login, order.refund, courier.create, ..."
+    text targetType "order | user | category"
     text targetId
-    jsonb before
-    jsonb after
-    text note
+    jsonb details "e.g. before / after"
+    text ip
     timestamp createdAt
   }
 ```
@@ -480,7 +483,7 @@ erDiagram
 | **Block** | ✅ table, endpoints B5 | Who blocked whom; works both ways in listings, chats, offers and orders. | primary key `(blockerId, blockedId)`, `blockedId` |
 | **AccountSignal** | ✅ | What the suspicious-account checker noticed. | `(userId, createdAt)` |
 | **RiskFlag** | ✅ | The admin queue. The checker only creates these; it never acts. | `(status, createdAt)`, `userId` |
-| **AdminAction** | planned B8 | Audit log: every admin action with before/after, who and when. Never edited or deleted. | `(targetType, targetId)`, `(adminId, createdAt)` |
+| **AdminAction** | ✅ B8.1 | Audit log: every admin action (log-ins too) with who, when, from which IP and the details (before / after where it matters). Never edited or deleted; deleting the admin keeps the rows. | `createdAt`, `(targetType, targetId)` |
 
 ---
 
@@ -488,7 +491,9 @@ erDiagram
 
 **Signing up and in.** `EmailCode` (send-otp) → `User` + `Session` (sign-up). Log-in checks
 `User.passwordHash` and adds a `Session`; every request checks the JWT and that its `Session` row still
-exists. Log-out deletes the row; password reset deletes all of the user's rows.
+exists. Log-out deletes the row; password reset deletes all of the user's rows. Admins log in to the
+dashboard with the password and then a code checked against `User.totpSecret` → a `Session` with scope
+`admin` and an `AdminAction` row.
 
 **Selling.** Photos → `Upload`. Phones and electronics → `TestCertificate` (OCR). `POST /listings`
 creates the `Listing` with `searchText`, `sellerVerified` and the certificate. Brands' stock arrives
@@ -505,7 +510,7 @@ Blocks (B5) hide listings of blocked users.
 **Buying.** `Order` (`awaiting_payment`) → `Payment` (maybe 3-D Secure) → bank callback → `Order`
 `escrow_held` + PIN + `Listing` `reserved` (one transaction). Courier enters the PIN → `Order`
 `completed`, `Listing` `sold`, `Payout`. Refund (admin) → `Order` `refunded`, `Payment` `refunded`,
-`Listing` `active` (logged in `AdminAction` once B8 adds it).
+`Listing` `active` (logged in `AdminAction`).
 
 **Keeping it safe.** `Report` / `Block` from users; `AccountSignal` → `RiskFlag` for admins; every admin
 decision → `AdminAction`.
@@ -517,5 +522,5 @@ decision → `AdminAction`.
 - **Backups:** daily, kept 30 days, a restore tested before launch (B12.3).
 - **Growth:** listings, messages and views grow fastest. Indexes above cover the app's queries; `ListingView`
   can be cleaned after a year, `EmailCode` and expired `Session` rows by a nightly job.
-- **Jobs** (auction closing, clean-ups, risk checks) use `pg-boss`, which keeps its own tables in a separate
-  `pgboss` schema of the same database.
+- **Jobs** (auction closing, clean-ups, risk checks) run inside the server process for now (`src/lib/jobs.ts`); with several
+  servers they move to `pg-boss`, which keeps its own tables in a separate `pgboss` schema of the same database.

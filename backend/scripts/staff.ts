@@ -2,6 +2,7 @@
 //
 //   npm run staff -- courier "Omar Courier" omar@sahla.jo   creates it and emails the invite code
 //   npm run staff -- admin "Mustafa" mustafa@sahla.jo          an admin (dashboard, category pictures)
+//   npm run staff -- reset-2fa mustafa@sahla.jo               lost authenticator app: set up again at next log-in
 //   npm run staff -- disable omar@sahla.jo                    stops them signing in
 //   npm run staff -- list
 //
@@ -10,7 +11,7 @@
 
 import { prisma } from '../src/db';
 import { env } from '../src/env';
-import { createAdmin, createCourier, disableCourier } from '../src/modules/staff/service';
+import { createAdmin, createCourier, disableCourier, resetAdmin2fa } from '../src/modules/staff/service';
 
 const [command, ...args] = process.argv.slice(2);
 
@@ -33,6 +34,14 @@ async function main() {
       if (!name || !email) throw new Error(`Usage: admin "<name>" <name>@${env.STAFF_EMAIL_DOMAIN}`);
       const admin = await createAdmin({ name, email });
       console.log(`Admin ${admin.name} <${admin.email}> ready; set the password with the emailed code.`);
+      console.log('Then log in to the dashboard: the first log-in shows a QR code for an authenticator app.');
+      break;
+    }
+    case 'reset-2fa': {
+      const [email] = args;
+      if (!email) throw new Error('Usage: reset-2fa <email>');
+      await resetAdmin2fa(email);
+      console.log(`2FA reset for ${email}: the next dashboard log-in shows a new QR code.`);
       break;
     }
     case 'disable': {
@@ -52,7 +61,7 @@ async function main() {
       break;
     }
     default:
-      throw new Error('Commands: courier, admin, disable, list');
+      throw new Error('Commands: courier, admin, reset-2fa, disable, list');
   }
 }
 

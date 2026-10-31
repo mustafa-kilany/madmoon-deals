@@ -149,7 +149,7 @@ Two kinds (decided 2026-10-30): **users' listing photos** and **admins changing 
 - ⬜ **B7.9** The real provider (D2).
 - **Switch the app:** `mock.orders = false`.
 
-## B8 — Admin dashboard ⬜ (D5)
+## B8 — Admin dashboard 🔨 (D5 = own web app; branch `feat/backend-b8-admin`)
 
 **Architecture (common practice):** one backend, many clients. The dashboard is a **separate
 website that calls this same API**. It has no database access and no business rules of its own:
@@ -173,8 +173,11 @@ Dashboard  ──┘    /v1/*        app endpoints
   (B12). The dashboard can link to them.
 
 Tasks:
-- ⬜ **B8.1** Admin accounts (`role: admin`), admin log-in with 2FA, shorter sessions, admin-only API
-  under `/v1/admin/*`, `AdminAction` audit log.
+- ✅ **B8.1** Admin log-in: password → a 5-minute ticket → a code from an authenticator app (TOTP, set up
+  on the first log-in with a QR code; the secret is stored encrypted; each code works once) → a
+  dashboard token (session scope `admin`, 12 hours). App tokens never open `/v1/admin/*` and dashboard
+  tokens open nothing else. `AdminAction` audit log for every admin change, `GET /admin/actions`.
+  Lost phone: `npm run staff -- reset-2fa <email>`. _(Office IP / VPN only: decide at B12.)_
 - ⬜ **B8.2** The dashboard web app (`admin/` in this repo, React + Vite + TypeScript, shares
   `src/lib/types.ts`): log-in, layout, overview page from `GET /v1/admin/stats`.
 - ⬜ **B8.3** Queues: certificates to review, ID photos, risk flags, reports.
@@ -254,6 +257,7 @@ buying, chats or offers.
 
 ## Log
 Short notes on what changed, newest first.
+- 2026-10-31: B8.1 done: two-step admin log-in, dashboard-only tokens, audit log.
 - 2026-10-30: courier (driver) app planned as B14: staff accounts made by admins with the company email,
   courier-only screens (deliveries, pickup / drop-off, PIN).
 - 2026-10-30: refurbished = vendor-refurbished customer returns, sold only by vendors (or Sahla); sourcing

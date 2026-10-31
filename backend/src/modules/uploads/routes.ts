@@ -6,6 +6,7 @@ import { ApiError } from '../../lib/errors';
 import { publicUrl } from '../../lib/publicUrl';
 import { storage } from '../../lib/storage';
 import { categoryInfo } from '../../reference';
+import { adminDid } from '../admin/audit';
 import { toApiUser } from '../auth/apiUser';
 import { currentUser, requireAdmin, requireCustomer } from '../auth/requireUser';
 import { checkImage, fullSize, square } from './images';
@@ -56,7 +57,7 @@ uploadRoutes.post('/me/avatar', ...requireCustomer, one('avatar'), async (req, r
   res.json(toApiUser(updated, req));
 });
 
-/** An admin replaces a category's picture (the dashboard button comes in B8). */
+/** An admin replaces a category's picture (the dashboard). */
 uploadRoutes.put('/admin/categories/:id/image', ...requireAdmin, one('image'), async (req, res) => {
   const id = req.params.id as string;
   if (!categoryInfo.some(c => c.id === id)) throw new ApiError(404, 'NOT_FOUND', `No category ${id}`);
@@ -77,5 +78,6 @@ uploadRoutes.put('/admin/categories/:id/image', ...requireAdmin, one('image'), a
     }),
   ]);
   if (previous) await storage.remove(previous.imageUrl);
+  await adminDid(req, res, 'category.image', { type: 'category', id }, { before: previous?.imageUrl ?? null, after: url });
   res.json({ id, imageUrl: publicUrl(req, url) });
 });

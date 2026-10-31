@@ -7,6 +7,7 @@ import type { AddressInfo } from 'node:net';
 import { after, before, test } from 'node:test';
 import { app } from '../../app';
 import { prisma } from '../../db';
+import { adminToken } from '../admin/testing';
 import { hashPassword } from '../auth/password';
 
 let base = '';
@@ -40,7 +41,7 @@ before(async () => {
       body: JSON.stringify({ email, password: 'longenough' }),
     });
     const { token, user } = await r.json();
-    people.push({ id: user.id, token });
+    people.push({ id: user.id, token: role === 'admin' ? await adminToken(user.id) : token });
   }
   await prisma.listing.create({
     data: {

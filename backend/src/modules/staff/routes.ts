@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { prisma } from '../../db';
 import { ApiError } from '../../lib/errors';
+import { adminDid } from '../admin/audit';
 import { requireAdmin } from '../auth/requireUser';
 import { createCourier, disableCourier } from './service';
 
@@ -24,12 +25,15 @@ staffRoutes.get('/admin/couriers', ...requireAdmin, async (_req, res) => {
 });
 
 staffRoutes.post('/admin/couriers', ...requireAdmin, async (req, res) => {
-  res.status(201).json(toApiCourier(await createCourier(req.body ?? {})));
+  const courier = await createCourier(req.body ?? {});
+  await adminDid(req, res, 'courier.create', { type: 'user', id: courier.id }, { email: courier.email });
+  res.status(201).json(toApiCourier(courier));
 });
 
 staffRoutes.post('/admin/couriers/:id/disable', ...requireAdmin, async (req, res) => {
   const courier = await prisma.user.findUnique({ where: { id: req.params.id as string } });
   if (!courier?.email || courier.role !== 'courier') throw new ApiError(404, 'NOT_FOUND', 'No such courier');
   await disableCourier(courier.email);
+  await adminDid(req, res, 'courier.disable', { type: 'user', id: courier.id });
   res.status(204).end();
 });

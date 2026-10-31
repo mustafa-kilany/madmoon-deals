@@ -8,6 +8,7 @@ import sharp from 'sharp';
 import { app } from '../../app';
 import { prisma } from '../../db';
 import { storage } from '../../lib/storage';
+import { adminToken } from '../admin/testing';
 import { createAdmin, createCourier } from '../staff/service';
 import { deleteUnusedUploads } from './cleanup';
 
@@ -49,9 +50,11 @@ before(async () => {
     await json('/auth/signup', { name: 'Photo Tester', email: 'photos@example.com', password: 'longenough', code: '123456' })
   ).token;
   await createCourier({ name: 'E2E Photo Courier', email: 'e2e.photo.courier@sahla.jo' });
-  await createAdmin({ name: 'E2E Photo Admin', email: 'e2e.photo.admin@sahla.jo' });
-  for (const [who, email] of [['courier', 'e2e.photo.courier@sahla.jo'], ['admin', 'e2e.photo.admin@sahla.jo']] as const)
-    tokens[who] = (await json('/auth/reset-password', { email, code: '123456', password: 'staffpass1' })).token;
+  const admin = await createAdmin({ name: 'E2E Photo Admin', email: 'e2e.photo.admin@sahla.jo' });
+  tokens.courier = (
+    await json('/auth/reset-password', { email: 'e2e.photo.courier@sahla.jo', code: '123456', password: 'staffpass1' })
+  ).token;
+  tokens.admin = await adminToken(admin.id);
 });
 
 after(async () => {

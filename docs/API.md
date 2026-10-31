@@ -906,6 +906,52 @@ The app's reference copy of the row rules is `validateImportRow()` / `importRowT
   out elsewhere). Withdrawn listings leave browsing, `GET /listings/:id` answers `NOT_FOUND`, and
   `ids=` skips them, unless an order is open, in which case they stay until it completes.
 
+### Admin dashboard *(backend: BACKEND_PLAN B8.1; the dashboard web app is `admin/`)*
+
+The dashboard is a separate website on this same API. Every endpoint marked *(admin)* needs a
+**dashboard token**: the app's log-in token never opens `/v1/admin/*` (it gets `FORBIDDEN` 403, so the
+app doesn't sign out over it), and a dashboard token opens nothing else (`UNAUTHORIZED` 401 on app
+endpoints). Admin accounts are made with `npm run staff -- admin "<name>" <email>` (staff email domain);
+the invite code sets the password through the app's reset screens.
+
+**Log-in: two steps**
+* **`POST /admin/auth/login`** → Body: `{ "email": "...", "password": "..." }` →
+  `{ challenge: string, setup?: { secret: string, otpauthUrl: string } }`.
+  * `challenge` is a ticket for the second step, valid 5 minutes.
+  * `setup` is there until the admin's authenticator app is set up (the first log-in, or after
+    `npm run staff -- reset-2fa <email>`): show `otpauthUrl` as a QR code (and `secret` to type in). It
+    stays the same until a code from it is accepted.
+  * **Errors:** `INVALID_CREDENTIALS` (401), `FORBIDDEN` (403) for a right password on a non-admin or
+    suspended account, `RATE_LIMITED` (429) after 10 tries in 15 minutes per IP + email.
+* **`POST /admin/auth/verify`** → Body: `{ "challenge": "...", "code": "123456" }` (the 6 digits from
+  the authenticator app, any of Google Authenticator, Microsoft Authenticator, 1Password…) →
+  `{ token: string, expiresInHours: 12, admin: Admin }`. Send `Authorization: Bearer <token>`.
+  * Each code works once. A code from 30 seconds before or after is accepted (phone clocks drift).
+  * **Errors:** `INVALID_CODE` (422) for a wrong or already used code, `UNAUTHORIZED` (401) for an
+    expired ticket (log in again), `RATE_LIMITED` (429) after 10 tries in 15 minutes per admin.
+* **`GET /admin/me`** *(admin)* → `Admin` = `{ id, name, email }`.
+* **`POST /admin/auth/logout`** *(admin)* → 204.
+
+The token lasts 12 hours, with no refresh: the dashboard logs in again. Demoting or suspending an admin
+takes effect on their next request.
+
+**Audit log.** Every change an admin makes is recorded (who, what, when, from which IP, and the
+details): log-ins, refunds, PIN unlocks, courier assignments, courier accounts, category pictures.
+* **`GET /admin/actions`** *(admin)* → `AdminAction[]`, newest first. Query: `targetType` and `targetId`
+  (e.g. `order` + `SA-123456`: the history of one order), `before` (an ISO time: the last row's
+  `createdAt`, for the next page), `limit` (1–100, default 50).
+  ```ts
+  type AdminAction = {
+    id: string;
+    admin: { id: string; name: string; email: string } | null; // null once that account is deleted
+    action: string;          // "admin.login", "admin.2fa_setup", "order.refund", "order.unlock_pin",
+                             // "order.assign", "courier.create", "courier.disable", "category.image"
+    target?: { type: string; id: string }; // "order", "user", "category"
+    details?: unknown;       // e.g. { before, after } for an assignment or a picture
+    createdAt: string;
+  };
+  ```
+
 ---
 
 ## Live Updates & Notifications

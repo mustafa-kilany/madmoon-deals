@@ -17,8 +17,10 @@ declare global {
  * For authenticated endpoints: a missing, invalid, expired or revoked token
  * is 401 UNAUTHORIZED (the app then signs out). Routes read res.locals.user.
  */
+const bearer = (req: Request) => req.get('authorization')?.match(/^Bearer (\S+)$/)?.[1];
+
 export const requireUser: RequestHandler = async (req, res, next) => {
-  const token = req.get('authorization')?.match(/^Bearer (\S+)$/)?.[1];
+  const token = bearer(req);
   const session = token ? await sessionForToken(token) : undefined;
   if (!session) throw new ApiError(401, 'UNAUTHORIZED', 'Not signed in');
   // 403, not 401: a suspended user shouldn't be bounced in a sign-out loop.
@@ -31,7 +33,7 @@ export const requireUser: RequestHandler = async (req, res, next) => {
 
 /** Endpoints anyone can call: the caller's user id when a valid token is sent. */
 export async function optionalUserId(req: Request) {
-  const token = req.get('authorization')?.match(/^Bearer (\S+)$/)?.[1];
+  const token = bearer(req);
   return token ? (await sessionForToken(token))?.userId : undefined;
 }
 
@@ -58,12 +60,23 @@ export const requireCourier: RequestHandler[] = [
   },
 ];
 
-/** Admin-only endpoints (/v1/admin/*). */
+/**
+ * Admin-only endpoints (/v1/admin/*): a dashboard token (two-step log-in,
+ * POST /admin/auth/login), never an app token. An app token is FORBIDDEN, not
+ * UNAUTHORIZED, so the app never signs out over it.
+ */
 export const requireAdmin: RequestHandler[] = [
-  requireUser,
-  (_req, res, next) => {
-    if (currentUser(res.locals).role !== 'admin')
+  async (req, res, next) => {
+    const token = bearer(req);
+    const session = token ? await sessionForToken(token, 'admin') : undefined;
+    if (!session) {
+      if (token && (await sessionForToken(token))) throw new ApiError(403, 'FORBIDDEN', 'Admins only, from the dashboard');
+      throw new ApiError(401, 'UNAUTHORIZED', 'Not signed in to the dashboard');
+    }
+    if (session.user.role !== 'admin' || session.user.suspended)
       throw new ApiError(403, 'FORBIDDEN', 'Admins only');
+    res.locals.user = session.user;
+    res.locals.sessionId = session.id;
     next();
   },
 ];

@@ -36,7 +36,7 @@ export async function createCourier(input: { name: string; email: string }) {
   return courier;
 }
 
-/** An admin for the dashboard (2FA comes with it, B8.1). Same invite as couriers. */
+/** An admin for the dashboard. Same invite as couriers; the first dashboard log-in sets up 2FA (B8.1). */
 export async function createAdmin(input: { name: string; email: string }) {
   const { name, email } = courierInput.parse(input);
   const existing = await prisma.user.findUnique({ where: { email } });
@@ -45,6 +45,19 @@ export async function createAdmin(input: { name: string; email: string }) {
     : await prisma.user.create({ data: { name, email, method: 'email', verified: true, role: 'admin' } });
   await sendCode(email, 'reset');
   return admin;
+}
+
+/**
+ * An admin lost their authenticator app: their next dashboard log-in sets up a
+ * new one. Their dashboard sessions end now.
+ */
+export async function resetAdmin2fa(email: string) {
+  const admin = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+  if (!admin || admin.role !== 'admin') throw new ApiError(404, 'NOT_FOUND', `No admin ${email}`);
+  await prisma.$transaction([
+    prisma.user.update({ where: { id: admin.id }, data: { totpSecret: null, totpEnabledAt: null, totpLastStep: null } }),
+    prisma.session.deleteMany({ where: { userId: admin.id, scope: 'admin' } }),
+  ]);
 }
 
 /** Stops a courier from signing in (their sessions end at once). */

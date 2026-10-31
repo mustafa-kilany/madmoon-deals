@@ -5,6 +5,7 @@ import type { AddressInfo } from 'node:net';
 import { after, before, test } from 'node:test';
 import { app } from '../../app';
 import { prisma } from '../../db';
+import { adminToken } from '../admin/testing';
 import { hashPassword } from '../auth/password';
 import { createCourier, disableCourier } from './service';
 
@@ -67,10 +68,10 @@ test('an admin creates a courier; the invite code sets the password; they log in
 });
 
 test('admins manage couriers from the dashboard: add, list, disable', async () => {
-  await prisma.user.create({
+  const admin = await prisma.user.create({
     data: { name: 'E2E Admin', email: 'e2e.admin@sahla.jo', role: 'admin', passwordHash: await hashPassword('adminpass1') },
   });
-  const { token } = (await post('/auth/login', { email: 'e2e.admin@sahla.jo', password: 'adminpass1' })).body;
+  const token = await adminToken(admin.id);
   const get = async (path: string, t = token) =>
     (await fetch(base + path, { headers: { Authorization: `Bearer ${t}` } })).json();
 
