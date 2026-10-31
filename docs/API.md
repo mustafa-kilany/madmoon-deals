@@ -733,6 +733,8 @@ building and floor, and can change anything. The order is unchanged: it carries 
   * With `offerId`, the offer must be **accepted**, on this listing, and made by this buyer; its `amountFils` becomes `itemPriceFils`. Otherwise `VALIDATION` (422).
   * An auction: only after it ended, only for `auction.winnerId`, at the winning bid. Otherwise `ITEM_UNAVAILABLE` (409).
   * The listing must be `active` and not from a blocked user (`ITEM_UNAVAILABLE`); not the buyer's own (`FORBIDDEN`); `delivery` complete and valid (`VALIDATION`).
+  * Response **201**. Checking out again (a changed address, an offer accepted since) updates the buyer's
+    unpaid order for that listing and returns it with the same `id`, so unpaid orders don't pile up.
 * **`POST /orders/:id/pay` *(Authenticated, the order's buyer)*** → Body: `{ "cardToken": "..." }` (provider token, or `"saved"` to charge the account's saved card) → `Order`
   * Paid: `status: "escrow_held"`, with the delivery `pin`. The listing becomes `reserved`.
   * **Bank card check (3-D Secure):** Jordanian cards usually need it, so with MEPS expect this path. Return the order still `awaiting_payment` with `paymentUrl` (the bank's page). The app opens it in the browser and then polls `GET /me/orders` / `GET /orders/:id`. When the bank calls back, the server sets `escrow_held` (or leaves `awaiting_payment` if it failed, so the buyer can pay again). The bank's return page can simply say "Payment done, go back to Sahla".

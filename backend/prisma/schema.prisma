@@ -57,6 +57,10 @@ model User {
   offers           Offer[]
   bids             Bid[]
   auctionsWon      Listing[]         @relation("auctionWinner")
+  orders           Order[]           @relation("orderBuyer")
+  sales            Order[]           @relation("orderSeller")
+  deliveries       Order[]           @relation("orderCourier")
+  payouts          Payout[]
 }
 
 // One signed-in device. Only a hash of the bearer token is stored, so a leaked
@@ -173,6 +177,7 @@ model Listing {
   chats    Chat[]
   offers   Offer[]
   bids     Bid[]
+  orders   Order[]
 
   @@unique([storeId, sku])
   @@index([category, status])
@@ -243,6 +248,8 @@ model Store {
   listings Listing[]
   apiKeys  StoreApiKey[]
   imports  RefurbishedImport[]
+  orders   Order[]
+  payouts  Payout[]
 }
 
 // A key a brand's system uses to call the import itself. Only a hash is
@@ -402,6 +409,7 @@ model Offer {
   updatedAt         DateTime    @updatedAt
 
   messages Message[]
+  orders   Order[]
 
   @@index([listingId, status])
   @@index([buyerId])
@@ -418,6 +426,128 @@ model Bid {
   createdAt  DateTime @default(now())
 
   @@index([listingId, amountFils(sort: Desc)])
+}
+
+// ─── Orders, payments, escrow (B7) ─────────────────────────────────────────
+
+enum OrderStatus {
+  awaiting_payment
+  escrow_held // paid; the money waits until the courier confirms delivery
+  completed // delivered: released to the seller (a Payout row)
+  refunded // by an admin: money back to the buyer, listing on sale again
+}
+
+enum CourierStatus {
+  to_pickup
+  picked_up
+  delivered
+}
+
+// API `Order`. The server prices it (the app never sends amounts); delivery
+// details are copied in, since the buyer's address book can change.
+model Order {
+  id                  String      @id // "SA-123456": the courier types it
+  listingId           String
+  listing             Listing     @relation(fields: [listingId], references: [id])
+  buyerId             String? // null once the buyer deleted the account (only finished orders)
+  buyer               User?       @relation("orderBuyer", fields: [buyerId], references: [id], onDelete: SetNull)
+  // The seller when it was ordered (a user, or a brand store), for sales and the payout.
+  sellerUserId        String?
+  sellerUser          User?       @relation("orderSeller", fields: [sellerUserId], references: [id], onDelete: SetNull)
+  storeId             String?
+  store               Store?      @relation(fields: [storeId], references: [id])
+  offerId             String? // bought at an accepted offer's price
+  offer               Offer?      @relation(fields: [offerId], references: [id], onDelete: SetNull)
+  itemPriceFils       Int // the listing, the accepted offer or the winning bid
+  buyerProtectionFils Int // 3%, at least 1000
+  deliveryFils        Int // 2000
+  totalFils           Int
+  status              OrderStatus @default(awaiting_payment)
+  // The 4-digit delivery PIN, set when paid. Kept readable: the buyer can open the
+  // order again to see it, and hashing a 4-digit number protects nothing. What keeps
+  // it safe is pinAttempts: 5 wrong tries lock the order (an admin unlocks).
+  pin                 String?
+  pinAttempts         Int         @default(0)
+
+  deliveryName    String
+  deliveryPhone   String // 07XXXXXXXX
+  deliveryCityId  String
+  deliveryAddress String
+  deliveryNotes   String?
+
+  // Courier (B14): the seller's pickup address (given when paid), the assigned courier.
+  pickupName    String?
+  pickupPhone   String?
+  pickupCityId  String?
+  pickupAddress String?
+  pickupNotes   String?
+  courierId     String?
+  courier       User?          @relation("orderCourier", fields: [courierId], references: [id], onDelete: SetNull)
+  courierStatus CourierStatus?
+  assignedAt    DateTime?
+  pickedUpAt    DateTime?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  paidAt      DateTime?
+  deliveredAt DateTime?
+  refundedAt  DateTime?
+
+  payments Payment[]
+  payout   Payout?
+
+  @@index([buyerId, createdAt])
+  @@index([sellerUserId, createdAt])
+  @@index([listingId, status])
+  @@index([status])
+  @@index([courierId, courierStatus])
+}
+
+enum PaymentStatus {
+  pending // waiting for the bank's card check (3-D Secure)
+  succeeded
+  failed
+  refunded
+}
+
+// Every attempt to pay an order: a failed card check can be tried again.
+model Payment {
+  id           String        @id @default(cuid())
+  orderId      String
+  order        Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  provider     String // "fake" until the real provider (D2)
+  providerRef  String        @unique // the provider's payment id: a repeated callback is handled once
+  amountFils   Int
+  status       PaymentStatus @default(pending)
+  paymentUrl   String? // the bank's card check page
+  providerData Json? // what the provider said (no card numbers)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([orderId])
+}
+
+enum PayoutStatus {
+  pending // to be paid to the seller (bank transfer / the provider's payouts)
+  paid
+  failed
+}
+
+// Money released to the seller when the courier confirms delivery (one per order).
+model Payout {
+  id           String       @id @default(cuid())
+  orderId      String       @unique
+  order        Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  sellerUserId String?
+  sellerUser   User?        @relation(fields: [sellerUserId], references: [id], onDelete: SetNull)
+  storeId      String?
+  store        Store?       @relation(fields: [storeId], references: [id])
+  amountFils   Int // the item price: Sahla takes no seller fee (DEVELOPMENT_GUIDE §3.2)
+  status       PayoutStatus @default(pending)
+  createdAt    DateTime     @default(now())
+  paidAt       DateTime?
+
+  @@index([status])
 }
 
 // ─── Safety: reports, blocks, suspicious-account checker ───────────────────

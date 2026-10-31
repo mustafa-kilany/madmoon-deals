@@ -129,9 +129,9 @@ Two kinds (decided 2026-10-30): **users' listing photos** and **admins changing 
 - ✅ **B6.5** Polled endpoints are cheap: indexes, and Express's `ETag` / `304 Not Modified` on every GET.
 - **Switch the app:** after B7, with `mock.catalog` and `mock.orders` (see B2).
 
-## B7 — Orders, payments, escrow, delivery ⬜ (needs D2 and a merchant account; fake provider until then)
+## B7 — Orders, payments, escrow, delivery 🔨 (branch `feat/backend-b7-orders`; needs D2 and a merchant account, fake provider until then)
 - ⬜ **B7.1** `GET /geocode/reverse` (D6), no coordinates stored or logged, 20/hour per user.
-- ⬜ **B7.2** `POST /orders`: server prices it (3% buyer protection, min 1 JOD; 2 JOD delivery), checks the
+- ✅ **B7.2** `POST /orders`: server prices it (3% buyer protection, min 1 JOD; 2 JOD delivery), checks the
   listing / offer / auction winner / blocks; readable ids `SA-123456`.
 - ⬜ **B7.3** Payment provider module with a **fake provider** (development and tests).
 - ⬜ **B7.4** `POST /orders/:id/pay`: `escrow_held` + 4-digit PIN + listing `reserved`, in one transaction
