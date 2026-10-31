@@ -178,8 +178,10 @@ Tasks:
   dashboard token (session scope `admin`, 12 hours). App tokens never open `/v1/admin/*` and dashboard
   tokens open nothing else. `AdminAction` audit log for every admin change, `GET /admin/actions`.
   Lost phone: `npm run staff -- reset-2fa <email>`. _(Office IP / VPN only: decide at B12.)_
-- ⬜ **B8.2** The dashboard web app (`admin/` in this repo, React + Vite + TypeScript, shares
-  `src/lib/types.ts`): log-in, layout, overview page from `GET /v1/admin/stats`.
+- ✅ **B8.2** The dashboard web app (`admin/`, React + Vite + TypeScript, shares the app's `src/lib`):
+  two-step log-in with the QR code set-up, layout, overview page from `GET /v1/admin/stats` (needs
+  attention, money, marketplace; refreshed every minute). `npm run dev` → http://localhost:5174 (5173 is the
+  Figma prototype); `/v1` is proxied to the backend. Demo admin in the seed: `admin@sahla.jo`. CI builds it.
 - ⬜ **B8.3** Queues: certificates to review, ID photos, risk flags, reports.
 - ⬜ **B8.4** Refurbished: upload the Excel sheet with preview (dry run), stores, keys, import history.
 - ⬜ **B8.5** Orders: search, refund, payouts; users: look up, suspend / unsuspend.
@@ -263,7 +265,8 @@ buying, chats or offers.
 
 ## Log
 Short notes on what changed, newest first.
-- 2026-10-31: B9.3 push sending done (Firebase project created); app side next.
+- 2026-10-31: B8.2 done: the dashboard website (log-in with 2FA, overview).
+- 2026-10-31: B9.2–B9.3 push notifications done on Android (backend + app).
 - 2026-10-31: B8.1 done: two-step admin log-in, dashboard-only tokens, audit log.
 - 2026-10-30: courier (driver) app planned as B14: staff accounts made by admins with the company email,
   courier-only screens (deliveries, pickup / drop-off, PIN).

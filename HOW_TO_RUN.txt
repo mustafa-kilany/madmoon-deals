@@ -5,6 +5,7 @@ Type all commands in the VS Code terminal (PowerShell).
 The project has two parts, each in its own folder:
     C:\Users\mustafa\Desktop\Sahla\Sahla\frontend   the app (run app commands here)
     C:\Users\mustafa\Desktop\Sahla\Sahla\backend    the API (see backend\README.md)
+    C:\Users\mustafa\Desktop\Sahla\Sahla\admin      the admin dashboard website
 A new terminal starts in the Sahla folder, so for app commands first type:   cd frontend
 
 
@@ -78,6 +79,16 @@ PART 2 - EVERY DAY: START THE APP
    Run only one of the two: both use port 4000.)
 
 That's it. When you save a code file, the app reloads by itself.
+
+6. Only if you want the ADMIN DASHBOARD (a website for Sahla staff) - another terminal:
+       cd admin
+       npm install          (first time only)
+       npm run dev
+   Open http://localhost:5174 in your browser. The backend (step 5) must be running.
+   Demo admin: admin@sahla.jo / sahla1234 (after  npm run db:seed  in backend).
+   The first log-in shows a QR code: scan it with an authenticator app on your phone
+   (Google Authenticator or Microsoft Authenticator), then type the 6-digit code it shows.
+   Lost the phone? In backend:  npm run staff -- reset-2fa admin@sahla.jo
 After you change babel.config.js, metro.config.js or tailwind.config.js,
 stop Metro (Ctrl+C) and start it with:   npm start -- --reset-cache
 

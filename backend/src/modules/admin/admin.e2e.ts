@@ -103,6 +103,30 @@ test('dashboard tokens open /admin/* only; app tokens never open it', async () =
   await prisma.user.update({ where: { email: ADMIN }, data: { suspended: false } });
 });
 
+test('the overview numbers: admins only, and they follow what happens', async () => {
+  const stats = async () => (await call('GET', '/admin/stats', undefined, dashboard)).body;
+  const before = await stats();
+  assert.deepEqual(Object.keys(before), ['users', 'listings', 'orders', 'payouts', 'queues', 'couriers']);
+  const customer = await prisma.user.findUniqueOrThrow({ where: { email: CUSTOMER } });
+  await prisma.listing.create({
+    data: {
+      id: 'dash-chair', category: 'furniture', type: 'chairs', titleAr: 'كرسي', titleEn: 'Chair', priceFils: 20_000,
+      imageUrls: ['https://images.example.com/chair.jpg'], condition: 'good', locationId: 'amman',
+      description: 'A wooden chair with a woven seat, sturdy and clean, from a smoke-free home.',
+      sellerUserId: customer.id, reportHidden: true,
+    },
+  });
+  const after = await stats();
+  assert.equal(after.listings.newThisWeek, before.listings.newThisWeek + 1);
+  assert.equal(after.listings.active, before.listings.active); // hidden by reports: not on sale
+  assert.equal(after.queues.hiddenByReports, before.queues.hiddenByReports + 1);
+  assert.equal(after.users.total, before.users.total); // admins and couriers aren't counted
+  await prisma.listing.delete({ where: { id: 'dash-chair' } });
+
+  const app = (await call('POST', '/auth/login', { email: CUSTOMER, password: PASSWORD })).body.token;
+  assert.equal((await call('GET', '/admin/stats', undefined, app)).status, 403);
+});
+
 test('the audit log lists log-ins and changes, newest first; log-out ends the token', async () => {
   const actions = await call('GET', '/admin/actions', undefined, dashboard);
   assert.equal(actions.status, 200);

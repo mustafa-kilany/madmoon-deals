@@ -5,6 +5,7 @@ import { errorHandler, notFound } from './lib/errors';
 import { requestLogger } from './lib/logger';
 import { adminAuthRoutes } from './modules/admin/auth';
 import { auditRoutes } from './modules/admin/audit';
+import { statsRoutes } from './modules/admin/stats';
 import { authRoutes } from './modules/auth/routes';
 import { certificateRoutes } from './modules/certificates/routes';
 import { courierRoutes } from './modules/courier/routes';
@@ -58,6 +59,7 @@ v1.get('/health', async (_req, res) => {
 v1.use(authRoutes);
 v1.use(adminAuthRoutes);
 v1.use(auditRoutes);
+v1.use(statsRoutes);
 v1.use(referenceRoutes);
 v1.use(listingRoutes);
 v1.use(sellingRoutes);

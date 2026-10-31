@@ -935,6 +935,28 @@ the invite code sets the password through the app's reset screens.
 The token lasts 12 hours, with no refresh: the dashboard logs in again. Demoting or suspending an admin
 takes effect on their next request.
 
+**Overview.** **`GET /admin/stats`** *(admin)* → business numbers for the dashboard's first page (technical
+health is in the error tracker and the host's metrics, not here):
+```ts
+type Stats = {
+  users: { total: number; newThisWeek: number };          // customers (not staff)
+  listings: { active: number; newThisWeek: number };      // on sale and not hidden by reports
+  orders: {
+    awaitingPayment: number;
+    escrowHeld: { count: number; totalFils: number };     // paid, money held until delivery
+    toAssign: number;                                     // paid, no courier yet
+    completedLast30Days: { count: number; totalFils: number };
+  };
+  payouts: { pending: { count: number; amountFils: number } }; // to send to sellers
+  queues: {
+    hiddenByReports: number;  // listings 3 people reported
+    riskFlags: number;        // open suspicious-account flags
+    certificates: number;     // passed on the text, stamp not checked, listing on sale
+  };
+  couriers: { active: number };
+};
+```
+
 **Audit log.** Every change an admin makes is recorded (who, what, when, from which IP, and the
 details): log-ins, refunds, PIN unlocks, courier assignments, courier accounts, category pictures.
 * **`GET /admin/actions`** *(admin)* → `AdminAction[]`, newest first. Query: `targetType` and `targetId`
