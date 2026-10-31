@@ -184,7 +184,10 @@ Tasks:
   Figma prototype); `/v1` is proxied to the backend. Demo admin in the seed: `admin@sahla.jo`. CI builds it.
 - ⬜ **B8.3** Queues: certificates to review, ID photos, risk flags, reports.
 - ⬜ **B8.4** Refurbished: upload the Excel sheet with preview (dry run), stores, keys, import history.
-- ⬜ **B8.5** Orders: search, refund, payouts; users: look up, suspend / unsuspend.
+- ✅ **B8.5** Orders: search (number, email, name, status, "need a courier"), the whole order (never the PIN),
+  refund, unlock PIN, assign a courier; payouts: list, mark sent with the bank reference; users: look up, details
+  (activity, reports, risk flags), suspend / unsuspend with a reason. Suspending signs them out and takes their
+  listings off sale (no orders, offers or bids). Every action in the audit log, shown on the order / user page.
 - ⬜ **B8.7** Vendor connectors for refurbished stock: read a vendor's own online shop with a read-only key they
   give us (WooCommerce, Shopify) or their product feed file (Google Merchant XML/CSV), map it to the import
   rows and run the same import on a schedule. Vendors without a shop keep using the Excel sheet.
@@ -265,6 +268,8 @@ buying, chats or offers.
 
 ## Log
 Short notes on what changed, newest first.
+- 2026-10-31: B8.5 done: orders, payouts and users pages in the dashboard; suspending takes listings off sale.
+  The audit log keeps the admin's IP (kept: it shows where a stolen admin account was used).
 - 2026-10-31: B8.2 done: the dashboard website (log-in with 2FA, overview).
 - 2026-10-31: B9.2–B9.3 push notifications done on Android (backend + app).
 - 2026-10-31: B8.1 done: two-step admin log-in, dashboard-only tokens, audit log.

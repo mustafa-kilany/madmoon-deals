@@ -4,9 +4,13 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router';
 import { Layout } from './Layout';
 import { LoginPage } from './LoginPage';
+import { OrderPage } from './OrderPage';
+import { OrdersPage } from './OrdersPage';
 import { OverviewPage } from './OverviewPage';
+import { PayoutsPage } from './PayoutsPage';
 import { SessionProvider, useSession } from './session';
 import './styles.css';
+import { UserPage, UsersPage } from './UsersPage';
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: true } },
@@ -21,6 +25,11 @@ function Pages() {
     <Routes>
       <Route element={<Layout />}>
         <Route index element={<OverviewPage />} />
+        <Route path="orders" element={<OrdersPage />} />
+        <Route path="orders/:id" element={<OrderPage />} />
+        <Route path="payouts" element={<PayoutsPage />} />
+        <Route path="users" element={<UsersPage />} />
+        <Route path="users/:id" element={<UserPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

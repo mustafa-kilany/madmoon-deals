@@ -1,7 +1,7 @@
 import { prisma } from '../../db';
 import { ApiError } from '../../lib/errors';
 import { pushAuctionWon, pushOutbid } from '../notifications/notify';
-import { isBlockedBetween } from '../safety/blocks';
+import { isBlockedBetween, sellerSuspended } from '../safety/blocks';
 import { bidInclude } from './shapes';
 
 // Auctions (BACKEND_PLAN B6.3, B6.4). The listing's priceFils is the current bid
@@ -29,7 +29,12 @@ export async function placeBid(bidderId: string, listingId: string, amountFils: 
     if (listing.sellerUserId === bidderId) throw new ApiError(403, 'FORBIDDEN', 'Your own auction');
     if (!listing.auctionEndsAt || listing.auctionEndsAt <= new Date())
       throw new ApiError(422, 'VALIDATION', 'The auction has ended');
-    if (listing.status !== 'active' || listing.reportHidden || (listing.sellerUserId && (await isBlockedBetween(bidderId, listing.sellerUserId))))
+    if (
+      listing.status !== 'active' ||
+      listing.reportHidden ||
+      (await sellerSuspended(listing.sellerUserId)) ||
+      (listing.sellerUserId && (await isBlockedBetween(bidderId, listing.sellerUserId)))
+    )
       throw new ApiError(409, 'ITEM_UNAVAILABLE', 'This auction isn’t taking bids');
     const minimum = listing.priceFils + (listing.incrementFils ?? 0);
     if (amountFils < minimum) throw new ApiError(422, 'VALIDATION', `Bid at least ${minimum} fils`);

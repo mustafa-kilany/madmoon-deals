@@ -957,8 +957,44 @@ type Stats = {
 };
 ```
 
+**Orders (support).** Lists are newest first, at most `limit` (1–100, default 50); `before` = the last row's
+`createdAt` for the next page.
+* **`GET /admin/orders`** *(admin)* → `AdminOrderSummary[]`. Query: `q` (an order number `SA-123456`, or part
+  of the buyer's / seller's email or name), `status` (`awaiting_payment` | `escrow_held` | `completed` |
+  `refunded`), `unassigned=true` (paid, no courier yet).
+  `AdminOrderSummary = { id, status, courierStatus, item: { id, title, imageUrl }, totalFils, buyer: Person | null,
+  seller: Person | null, courier: { id, name } | null, createdAt }`, `Person = { id, name, email }` (a brand
+  store as seller has `email: ""`; `null` = a deleted account).
+* **`GET /admin/orders/:id`** *(admin)* → the summary plus the price breakdown, `offerId`, `pinAttempts`,
+  `pinLocked`, the full `delivery` and `pickup` addresses (phone included: support may call), every step's
+  time (`paidAt`, `assignedAt`, `pickedUpAt`, `deliveredAt`, `refundedAt`), `payments[]` (`{ id, provider,
+  status, amountFils, createdAt }`) and `payout`. **Never the delivery PIN.** `NOT_FOUND` (404).
+* Refund, unlock PIN and assign: see Phase 6 (Checkout, Orders & Escrow) and Couriers above.
+
+**Payouts.** The seller's money after delivery. Until the payment provider pays sellers itself (D2), an
+admin sends a bank transfer and records it.
+* **`GET /admin/payouts`** *(admin)* → `{ id, orderId, itemTitle, seller: Person | null, amountFils, status,
+  createdAt, paidAt }[]`. `status` = `pending` (default, oldest first: pay in that order) | `paid` | `failed`.
+* **`POST /admin/payouts/:id/paid`** *(admin)* → Body: `{ "reference": "<the bank transfer's number>" }` → the
+  payout, `paid`. The reference goes to the audit log (on the order). `VALIDATION` (422) when it's already paid
+  or the reference is missing; `NOT_FOUND` (404).
+
+**Users.**
+* **`GET /admin/users`** *(admin)* → `{ id, name, email, method, role, verified, suspended, cityId, createdAt }[]`.
+  Query: `q` (part of the email or name, or a user id), `suspended=true|false`.
+* **`GET /admin/users/:id`** *(admin)* → the same plus `listings` (count per status), `counts: { orders, sales,
+  reportsAboutUser, reportsAboutListings, blockedBy }` (orders and sales that were paid), `riskFlags` (latest 5),
+  `recentOrders`, `recentSales` (latest 5: `{ id, status, totalFils, createdAt }`).
+* **`POST /admin/users/:id/suspend`** and **`/unsuspend`** *(admin)* → Body: `{ "reason": "..." }` (3–500
+  characters, kept in the audit log) → the user. Suspending signs them out on every phone (their pushes stop),
+  log-in answers `FORBIDDEN`, and **their listings come off sale**: gone from `GET /listings`, and orders, offers
+  and bids on them answer `ITEM_UNAVAILABLE` (409). Paid orders carry on (refund them if needed). Unsuspending
+  puts everything back. `VALIDATION` (422) for yourself, a staff account (couriers: the courier endpoints;
+  admins: `npm run staff`), or no change.
+
 **Audit log.** Every change an admin makes is recorded (who, what, when, from which IP, and the
-details): log-ins, refunds, PIN unlocks, courier assignments, courier accounts, category pictures.
+details): log-ins, refunds, PIN unlocks, courier assignments, payouts sent, suspensions, courier accounts,
+category pictures.
 * **`GET /admin/actions`** *(admin)* → `AdminAction[]`, newest first. Query: `targetType` and `targetId`
   (e.g. `order` + `SA-123456`: the history of one order), `before` (an ISO time: the last row's
   `createdAt`, for the next page), `limit` (1–100, default 50).
@@ -967,7 +1003,8 @@ details): log-ins, refunds, PIN unlocks, courier assignments, courier accounts, 
     id: string;
     admin: { id: string; name: string; email: string } | null; // null once that account is deleted
     action: string;          // "admin.login", "admin.2fa_setup", "order.refund", "order.unlock_pin",
-                             // "order.assign", "courier.create", "courier.disable", "category.image"
+                             // "order.assign", "payout.paid", "user.suspend", "user.unsuspend",
+                             // "courier.create", "courier.disable", "category.image"
     target?: { type: string; id: string }; // "order", "user", "category"
     details?: unknown;       // e.g. { before, after } for an assignment or a picture
     createdAt: string;

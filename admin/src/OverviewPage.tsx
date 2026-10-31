@@ -2,11 +2,10 @@
 // minute. Things waiting for an admin come first.
 
 import { useQuery } from '@tanstack/react-query';
-import { formatJOD } from '@/lib/money';
+import { Link } from 'react-router';
 import { api } from './api';
 import type { Stats } from './types';
-
-const jod = (fils: number) => formatJOD(fils, 'en');
+import { jod } from './ui';
 
 export function OverviewPage() {
   const { data, isPending, isError, error, refetch, dataUpdatedAt } = useQuery({
@@ -36,7 +35,7 @@ export function OverviewPage() {
 
       <h2>Needs attention</h2>
       <div className="tiles">
-        <Tile label="Paid orders without a courier" value={orders.toAssign} alert />
+        <Tile label="Paid orders without a courier" value={orders.toAssign} alert to="/orders?filter=unassigned" />
         <Tile label="Listings hidden by reports" value={queues.hiddenByReports} alert />
         <Tile label="Suspicious accounts to review" value={queues.riskFlags} alert />
         <Tile label="Certificates to check (stamp)" value={queues.certificates} alert />
@@ -44,23 +43,30 @@ export function OverviewPage() {
 
       <h2>Money</h2>
       <div className="tiles">
-        <Tile label="Held until delivery" value={jod(orders.escrowHeld.totalFils)} sub={`${orders.escrowHeld.count} orders`} />
+        <Tile
+          label="Held until delivery"
+          value={jod(orders.escrowHeld.totalFils)}
+          sub={`${orders.escrowHeld.count} orders`}
+          to="/orders?filter=escrow_held"
+        />
         <Tile
           label="Payouts to send to sellers"
           value={jod(payouts.pending.amountFils)}
           sub={`${payouts.pending.count} payouts`}
+          to="/payouts"
         />
         <Tile
           label="Delivered, last 30 days"
           value={jod(orders.completedLast30Days.totalFils)}
           sub={`${orders.completedLast30Days.count} orders`}
+          to="/orders?filter=completed"
         />
-        <Tile label="Orders waiting for payment" value={orders.awaitingPayment} />
+        <Tile label="Orders waiting for payment" value={orders.awaitingPayment} to="/orders?filter=awaiting_payment" />
       </div>
 
       <h2>Marketplace</h2>
       <div className="tiles">
-        <Tile label="Customers" value={users.total} sub={`+${users.newThisWeek} this week`} />
+        <Tile label="Customers" value={users.total} sub={`+${users.newThisWeek} this week`} to="/users" />
         <Tile label="Listings on sale" value={listings.active} sub={`+${listings.newThisWeek} new this week`} />
         <Tile label="Active couriers" value={couriers.active} />
       </div>
@@ -68,13 +74,21 @@ export function OverviewPage() {
   );
 }
 
-function Tile({ label, value, sub, alert }: { label: string; value: number | string; sub?: string; alert?: boolean }) {
-  const attention = alert && value !== 0;
-  return (
-    <div className={`card tile${attention ? ' attention' : ''}`}>
+/** A number; with `to`, a link to the page that lists them. */
+function Tile({ label, value, sub, alert, to }: { label: string; value: number | string; sub?: string; alert?: boolean; to?: string }) {
+  const className = `card tile${alert && value !== 0 ? ' attention' : ''}${to ? ' link' : ''}`;
+  const content = (
+    <>
       <span className="tile-label">{label}</span>
       <span className="tile-value">{value}</span>
       {sub && <span className="muted small">{sub}</span>}
-    </div>
+    </>
+  );
+  return to ? (
+    <Link to={to} className={className}>
+      {content}
+    </Link>
+  ) : (
+    <div className={className}>{content}</div>
   );
 }

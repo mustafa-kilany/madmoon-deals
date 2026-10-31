@@ -4,7 +4,12 @@
 import { NavLink, Outlet } from 'react-router';
 import { useSession } from './session';
 
-const pages = [{ to: '/', label: 'Overview' }];
+const pages = [
+  { to: '/', label: 'Overview' },
+  { to: '/orders', label: 'Orders' },
+  { to: '/payouts', label: 'Payouts' },
+  { to: '/users', label: 'Users' },
+];
 
 export function Layout() {
   const { admin, signOut } = useSession();
@@ -15,7 +20,7 @@ export function Layout() {
           <span className="brand-mark">S</span> Sahla Admin
         </div>
         {pages.map(page => (
-          <NavLink key={page.to} to={page.to} end className="nav-link">
+          <NavLink key={page.to} to={page.to} end={page.to === '/'} className="nav-link">
             {page.label}
           </NavLink>
         ))}

@@ -1,7 +1,7 @@
 import { prisma } from '../../db';
 import { ApiError } from '../../lib/errors';
 import { pushOffer } from '../notifications/notify';
-import { isBlockedBetween } from '../safety/blocks';
+import { isBlockedBetween, sellerSuspended } from '../safety/blocks';
 import { post } from './chats';
 import { offerInclude } from './shapes';
 
@@ -21,6 +21,7 @@ export async function makeOffer(buyerId: string, listingId: string, amountFils: 
   // Brand stores sell at their price; auctions take bids; reserved / sold aren't for sale.
   if (!listing.sellerUserId || listing.saleType !== 'fixed' || listing.status !== 'active' || listing.reportHidden)
     throw unavailable();
+  if (await sellerSuspended(listing.sellerUserId)) throw unavailable();
   if (await isBlockedBetween(buyerId, listing.sellerUserId)) throw unavailable();
   const open = await prisma.offer.count({ where: { listingId, buyerId, status: { in: ['pending', 'countered'] } } });
   if (open) throw new ApiError(422, 'VALIDATION', 'Your last offer on this listing is still waiting for an answer');

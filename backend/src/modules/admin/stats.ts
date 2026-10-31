@@ -31,7 +31,9 @@ statsRoutes.get('/admin/stats', ...requireAdmin, async (_req, res) => {
   ] = await Promise.all([
     prisma.user.count({ where: { role: null } }),
     prisma.user.count({ where: { role: null, createdAt: { gte: weekAgo } } }),
-    prisma.listing.count({ where: { status: 'active', reportHidden: false } }),
+    prisma.listing.count({
+      where: { status: 'active', reportHidden: false, OR: [{ sellerUserId: null }, { sellerUser: { suspended: false } }] },
+    }),
     prisma.listing.count({ where: { createdAt: { gte: weekAgo } } }),
     prisma.order.count({ where: { status: 'awaiting_payment' } }),
     prisma.order.aggregate({ where: { status: 'escrow_held' }, _count: true, _sum: { totalFils: true } }),

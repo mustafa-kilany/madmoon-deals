@@ -21,14 +21,23 @@ export async function isBlockedBetween(a: string, b: string) {
   return !!block;
 }
 
+/** A suspended seller's listings are off sale (BACKEND_PLAN B8.5): no orders, offers or bids. */
+export async function sellerSuspended(sellerUserId: string | null) {
+  if (!sellerUserId) return false; // a brand store
+  const seller = await prisma.user.findUnique({ where: { id: sellerUserId }, select: { suspended: true } });
+  return seller?.suspended ?? false;
+}
+
 /**
- * GET /listings for this viewer: nothing reported off the shelves, and nothing
- * from people they blocked or who blocked them. Brand stores are never blocked.
+ * GET /listings for this viewer: nothing reported off the shelves or from a
+ * suspended seller, and nothing from people they blocked or who blocked them.
+ * Brand stores are never blocked.
  */
 export async function visibleListings(viewerId: string | undefined): Promise<Prisma.ListingWhereInput[]> {
   const hidden = viewerId ? await blockedWith(viewerId) : [];
   return [
     { reportHidden: false },
+    { OR: [{ sellerUserId: null }, { sellerUser: { suspended: false } }] },
     ...(hidden.length ? [{ OR: [{ sellerUserId: null }, { sellerUserId: { notIn: hidden } }] }] : []),
   ];
 }

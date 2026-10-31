@@ -4,7 +4,7 @@ import { prisma } from '../../db';
 import { Prisma } from '../../generated/prisma/client';
 import { ApiError } from '../../lib/errors';
 import { closeEndedAuctions } from '../negotiation/bids';
-import { isBlockedBetween } from '../safety/blocks';
+import { isBlockedBetween, sellerSuspended } from '../safety/blocks';
 import { deliveryColumns, pickupColumns, type DeliveryInput } from './delivery';
 import { orderInclude } from './shapes';
 
@@ -25,7 +25,7 @@ async function itemPrice(buyerId: string, input: NewOrder) {
   let listing = await prisma.listing.findUnique({ where: { id: input.listingId } });
   if (!listing || listing.status === 'withdrawn') throw new ApiError(404, 'NOT_FOUND', `No listing ${input.listingId}`);
   if (listing.sellerUserId === buyerId) throw new ApiError(403, 'FORBIDDEN', 'Your own listing');
-  if (listing.status !== 'active' || listing.reportHidden) throw unavailable();
+  if (listing.status !== 'active' || listing.reportHidden || (await sellerSuspended(listing.sellerUserId))) throw unavailable();
   if (listing.sellerUserId && (await isBlockedBetween(buyerId, listing.sellerUserId))) throw unavailable();
 
   if (listing.saleType === 'auction') {
