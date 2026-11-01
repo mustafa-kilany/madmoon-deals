@@ -30,7 +30,9 @@ export function OverviewPage() {
     <div className="page">
       <div className="page-head">
         <h1>Overview</h1>
-        <span className="muted small">Updated {new Date(dataUpdatedAt).toLocaleTimeString()}</span>
+        <span className="muted small">
+          Updated {new Date(dataUpdatedAt).toLocaleTimeString()} · <Link to="/analytics">Charts and trends →</Link>
+        </span>
       </div>
 
       <h2>Needs attention</h2>

@@ -964,6 +964,25 @@ type Stats = {
 };
 ```
 
+**Analytics.** **`GET /admin/analytics`** *(admin)* → Query `days` = `7` | `30` (default) | `90`, else `VALIDATION`.
+Days are Jordan days (`Asia/Amman`), the last one is today.
+```ts
+type Totals = { signups: number; listings: number; paidOrders: number; salesFils: number; reports: number };
+type Analytics = {
+  days: 7 | 30 | 90; from: string; to: string; timeZone: 'Asia/Amman'; // "2026-11-01"
+  totals: Totals;                     // the period
+  previous: Totals;                   // the same number of days right before it
+  daily: ({ day: string } & Totals)[];// one row per day, oldest first, days with nothing included
+  ordersByStatus: Record<'awaiting_payment' | 'escrow_held' | 'completed' | 'refunded', number>; // orders started in the period
+  customersBySignIn: Record<'email' | 'google' | 'apple', number>; // all customers, now
+  listingsByCategory: { category: string; count: number }[];       // on sale now, largest first
+  listingsByArea: { areaId: string; count: number }[];             // on sale now, largest first
+};
+```
+`signups` = customers (not staff); `listings` = people's listings (a store's sheet would swamp the trend);
+`paidOrders` / `salesFils` = orders by the day they were paid, at their total, later refunds included;
+`reports` = reports about listings and accounts.
+
 **Orders (support).** Lists are newest first, at most `limit` (1–100, default 50); `before` = the last row's
 `createdAt` for the next page.
 * **`GET /admin/orders`** *(admin)* → `AdminOrderSummary[]`. Query: `q` (an order number `SA-123456`, or part

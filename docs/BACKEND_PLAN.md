@@ -196,6 +196,10 @@ Tasks:
   refund, unlock PIN, assign a courier; payouts: list, mark sent with the bank reference; users: look up, details
   (activity, reports, risk flags), suspend / unsuspend with a reason. Suspending signs them out and takes their
   listings off sale (no orders, offers or bids). Every action in the audit log, shown on the order / user page.
+- ✅ **B8.8** Analytics page: `GET /admin/analytics?days=7|30|90` (Jordan days). The period's numbers against the
+  period before (customers, listings, paid orders, sales value, reports), charts per day, orders by status,
+  customers by sign-in, listings on sale by category and by area. Charts in plain SVG (`admin/src/charts.tsx`),
+  colors checked with the data-viz palette validator, a table view on every chart.
 - ⬜ **B8.7** Vendor connectors for refurbished stock: read a vendor's own online shop with a read-only key they
   give us (WooCommerce, Shopify) or their product feed file (Google Merchant XML/CSV), map it to the import
   rows and run the same import on a schedule. Vendors without a shop keep using the Excel sheet.
@@ -285,6 +289,7 @@ buying, chats or offers.
 
 ## Log
 Short notes on what changed, newest first.
+- 2026-11-01: B8.8 done: the dashboard's Analytics page (trends and breakdowns, 7 / 30 / 90 days).
 - 2026-11-01: `ADMIN_2FA=off` lets the dashboard log in with email + password only, for local development until
   the dashboard is hosted (B8.6). Production refuses it; the tests always run with it on.
 - 2026-11-01: B8.3–B8.4 done: review queues (reports, suspicious accounts, certificate stamps), Certified

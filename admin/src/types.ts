@@ -203,3 +203,23 @@ export type ImportRun = {
   errors: ImportRowError[];
   createdAt: string;
 };
+
+// ── Analytics (B8.8) ─────────────────────────────────────────────────────────
+
+type PeriodTotals = { signups: number; listings: number; paidOrders: number; salesFils: number; reports: number };
+
+export type Analytics = {
+  days: 7 | 30 | 90;
+  /** Jordan days, "2026-11-01". */
+  from: string;
+  to: string;
+  timeZone: string;
+  totals: PeriodTotals;
+  /** The same length of time right before `from`. */
+  previous: PeriodTotals;
+  daily: ({ day: string } & PeriodTotals)[];
+  ordersByStatus: Record<OrderStatus, number>;
+  customersBySignIn: Record<'email' | 'google' | 'apple', number>;
+  listingsByCategory: { category: string; count: number }[];
+  listingsByArea: { areaId: string; count: number }[];
+};

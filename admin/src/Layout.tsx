@@ -6,6 +6,7 @@ import { useSession } from './session';
 
 const pages = [
   { to: '/', label: 'Overview' },
+  { to: '/analytics', label: 'Analytics' },
   { to: '/orders', label: 'Orders' },
   { to: '/payouts', label: 'Payouts' },
   { to: '/users', label: 'Users' },
