@@ -98,7 +98,7 @@ describe('Phase 6 — orders and escrow', () => {
   });
 });
 
-describe('Phase 6 — offers, counters and courier confirmation', () => {
+describe('Phase 6 — offers and counters', () => {
   it('only the seller answers a pending offer; the buyer answers a counter', async () => {
     const { offer } = await negotiation.makeOffer({
       itemId: 'mobiles-3',
@@ -141,33 +141,6 @@ describe('Phase 6 — offers, counters and courier confirmation', () => {
         delivery,
       }),
     ).rejects.toMatchObject({ code: 'VALIDATION' });
-  });
-
-  it('releases escrow only with the right PIN, then the listing is sold', async () => {
-    const order = await orders.createOrder({
-      listingId: 'fashion-1',
-      delivery,
-    });
-    await expect(
-      orders.confirmDelivery(order.id, '1234'),
-    ).rejects.toMatchObject(
-      { code: 'VALIDATION' }, // not paid yet
-    );
-    const { pin } = await orders.payOrder(order.id, 'mock_visa_4242');
-    const wrong = pin === '0000' ? '1111' : '0000';
-
-    await expect(orders.confirmDelivery(order.id, wrong)).rejects.toMatchObject(
-      { code: 'INVALID_PIN' },
-    );
-    expect((await orders.getOrder(order.id)).status).toBe('escrow_held');
-
-    const done = await orders.confirmDelivery(order.id.toLowerCase(), pin!);
-    expect(done.status).toBe('completed');
-    expect(done.deliveredAt).toBeDefined();
-    expect((await catalog.getItem('fashion-1')).status).toBe('sold');
-    await expect(orders.confirmDelivery(order.id, pin!)).rejects.toMatchObject({
-      code: 'VALIDATION',
-    });
   });
 
   it('an ended auction sells only to its winner, at the winning bid', async () => {

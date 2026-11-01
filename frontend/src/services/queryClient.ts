@@ -34,4 +34,5 @@ export const queryKeys = {
   offer: (offerId: string) => ['offers', offerId],
   blocked: ['me', 'blocked'],
   orders: ['me', 'orders'],
+  deliveries: ['courier', 'deliveries'],
 } as const;

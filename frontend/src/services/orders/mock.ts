@@ -12,8 +12,10 @@ import { blocked, findItem, me, publicItem } from '../mock/marketplace';
 import { findMockOffer } from '../negotiation/mock';
 import type { OrdersService } from './types';
 
-/** Orders with who bought them (the API keeps that server-side). */
-const orders: (Order & { buyerId: string })[] = [];
+export type MockOrder = Order & { buyerId: string };
+
+/** Orders with who bought them (the API keeps that server-side). The courier mock reads them too. */
+export const orders: MockOrder[] = [];
 
 /** Short, readable order numbers the buyer can read out to the courier. */
 const nextOrderNumber = () =>
@@ -25,10 +27,10 @@ const find = (orderId: string) => {
   return order;
 };
 
-const publicOrder = ({
+export const publicOrder = ({
   buyerId: _buyerId,
   ...order
-}: Order & { buyerId: string }): Order => ({
+}: MockOrder): Order => ({
   ...order,
   delivery: { ...order.delivery },
 });
@@ -115,21 +117,5 @@ export const mockOrdersService: OrdersService = {
     await mockLatency();
     const buyer = me().id;
     return orders.filter(o => o.buyerId === buyer).map(publicOrder);
-  },
-
-  confirmDelivery: async (orderId, pin) => {
-    await mockLatency();
-    const order = orders.find(
-      o => o.id.toUpperCase() === orderId.trim().toUpperCase(),
-    );
-    if (!order) throw new ApiError('NOT_FOUND', 'Order not found', 404);
-    if (order.status !== 'escrow_held')
-      throw new ApiError('VALIDATION', 'Order is not awaiting delivery', 422);
-    if (order.pin !== pin.trim())
-      throw new ApiError('INVALID_PIN', 'Wrong delivery PIN', 422);
-    order.status = 'completed';
-    order.deliveredAt = Date.now();
-    findItem(order.itemId).status = 'sold';
-    return publicOrder(order);
   },
 };

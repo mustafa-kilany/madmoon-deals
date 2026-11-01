@@ -778,7 +778,7 @@ building and floor, and can change anything. The order is unchanged: it carries 
 * **`User.role`**: optional, `"courier"` for courier accounts. Couriers see only the courier screens
   (below), never browsing, selling or buying.
 
-### Couriers (drivers) *(backend done: BACKEND_PLAN B14.3–B14.6; the app's courier mode is B14.7)*
+### Couriers (drivers) *(backend: BACKEND_PLAN B14.3–B14.6; the app's courier mode: B14.7)*
 
 Couriers are Sahla staff. **Nobody signs up as a courier:** an admin creates the account with a company
 email (the staff domain, e.g. `@sahla.jo`) and an invite code is emailed; the courier sets a password with

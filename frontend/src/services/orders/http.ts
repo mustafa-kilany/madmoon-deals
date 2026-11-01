@@ -5,9 +5,9 @@ import { api } from '../api/client';
 import { fromIso, fromIsoMaybe, type Dated } from '../api/wire';
 import type { OrdersService } from './types';
 
-type OrderDto = Dated<Order, 'createdAt' | 'deliveredAt'>;
+export type OrderDto = Dated<Order, 'createdAt' | 'deliveredAt'>;
 
-const toOrder = (o: OrderDto): Order => ({
+export const toOrder = (o: OrderDto): Order => ({
   ...o,
   createdAt: fromIso(o.createdAt),
   deliveredAt: fromIsoMaybe(o.deliveredAt),
@@ -26,8 +26,4 @@ export const httpOrdersService: OrdersService = {
     toOrder(await api.get<OrderDto>(orderPath(orderId))),
   getMyOrders: async () =>
     (await api.get<OrderDto[]>('/me/orders')).map(toOrder),
-  confirmDelivery: async (orderId, pin) =>
-    toOrder(
-      await api.post<OrderDto>('/courier/confirm-delivery', { orderId, pin }),
-    ),
 };

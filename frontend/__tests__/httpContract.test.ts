@@ -5,6 +5,7 @@
 
 import { httpAuthService } from '@/services/auth/http';
 import { httpCatalogService } from '@/services/catalog/http';
+import { httpCourierService } from '@/services/courier/http';
 import { httpNegotiationService } from '@/services/negotiation/http';
 import { httpOrdersService } from '@/services/orders/http';
 import { emptyFilters } from '@/lib/browsing';
@@ -392,9 +393,22 @@ const rows: Row[] = [
     reply: [order],
     url: '/me/orders',
   },
+  // Courier mode
+  {
+    endpoint: 'GET /courier/deliveries',
+    call: () => httpCourierService.getDeliveries(),
+    reply: [{ orderId: 'SA-1', assignedAt: T }],
+    url: '/courier/deliveries',
+  },
+  {
+    endpoint: 'POST /courier/deliveries/:orderId/picked-up',
+    call: () => httpCourierService.markPickedUp('SA-1'),
+    reply: { orderId: 'SA-1', assignedAt: T, pickedUpAt: T },
+    url: '/courier/deliveries/SA-1/picked-up',
+  },
   {
     endpoint: 'POST /courier/confirm-delivery',
-    call: () => httpOrdersService.confirmDelivery('SA-1', '1234'),
+    call: () => httpCourierService.confirmDelivery('SA-1', '1234'),
     reply: order,
     url: '/courier/confirm-delivery',
     body: { orderId: 'SA-1', pin: '1234' },

@@ -32,8 +32,9 @@ export type RootStackParamList = {
   AddListing: undefined;
   Saved: undefined;
   OrderTracking: undefined;
-  /** Courier: enter the buyer's PIN to confirm delivery (role 'courier'). */
-  CourierConfirm: undefined;
+  /** Courier mode (role 'courier'): the assigned deliveries, and one of them. */
+  Deliveries: undefined;
+  Delivery: { orderId: string };
   /** Sign-in choice; reached through startAuth / useRequireAuth. */
   Auth: undefined;
   EmailAuth: { mode: 'signup' | 'login' } | undefined;

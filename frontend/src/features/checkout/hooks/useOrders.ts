@@ -28,13 +28,3 @@ export const useMyOrders = () =>
     // Picks up "delivered" once the courier confirms the PIN.
     refetchInterval: config.pollMs.orders,
   });
-
-/** Courier: buyer's PIN → server releases escrow. */
-export const useConfirmDelivery = () =>
-  useMutation({
-    mutationFn: (input: { orderId: string; pin: string }) =>
-      ordersService.confirmDelivery(input.orderId, input.pin),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.orders });
-    },
-  });

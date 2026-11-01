@@ -1,7 +1,7 @@
 // Slide-in drawer (prototype components/SidebarMenu) from the start edge: left
 // in English, right in Arabic. Account summary, quick links, and sign-in or
-// log-out. Rendered once above the navigators; open it with
-// useUiStore().openSidebar.
+// log-out; couriers get only the language switch and log-out. Rendered once
+// above the navigators; open it with useUiStore().openSidebar.
 
 import { useEffect } from 'react';
 import {
@@ -26,6 +26,7 @@ import { Button, Heading, Text } from '@/components/ui';
 import { go, startAuth, type AppRoute } from '@/features/auth/authFlow';
 import { useLogOut } from '@/features/auth/hooks/useAccount';
 import { useUser } from '@/features/auth/sessionStore';
+import { changeLanguage, useLang } from '@/i18n';
 import { useUiStore } from '@/store/uiStore';
 import { colors } from '@/theme/colors';
 
@@ -42,8 +43,7 @@ const links: {
     | 'sidebar.refurbished'
     | 'sidebar.myListings'
     | 'sidebar.savedItems'
-    | 'sidebar.settings'
-    | 'sidebar.courier';
+    | 'sidebar.settings';
   route: AppRoute;
 }[] = [
   { icon: 'Profile', label: 'sidebar.profileSettings', route: profile },
@@ -62,13 +62,6 @@ const links: {
   { icon: 'Settings', label: 'sidebar.settings', route: profile },
 ];
 
-/** Shown first, and only to couriers. */
-const courierLink: (typeof links)[number] = {
-  icon: 'Truck',
-  label: 'sidebar.courier',
-  route: { name: 'CourierConfirm' },
-};
-
 export function SidebarMenu() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -76,6 +69,8 @@ export function SidebarMenu() {
   const isOpen = useUiStore(s => s.isSidebarOpen);
   const close = useUiStore(s => s.closeSidebar);
   const user = useUser();
+  const courier = user?.role === 'courier';
+  const lang = useLang();
   const logOut = useLogOut();
 
   const width = Math.min(screenWidth * 0.8, MAX_WIDTH);
@@ -141,7 +136,14 @@ export function SidebarMenu() {
           <Heading className="text-2xl">
             {user ? user.name : t('sidebar.guest')}
           </Heading>
-          {user?.verified ? (
+          {courier ? (
+            <View className="mt-1 flex-row items-center gap-1">
+              <Icon name="Truck" size={16} color={colors.primary} />
+              <Text className="font-sans-bold text-sm text-brand-primary">
+                {t('courier.role')}
+              </Text>
+            </View>
+          ) : user?.verified ? (
             <View className="mt-1 flex-row items-center gap-1">
               <Icon name="BadgeCheck" size={16} color={colors.success} />
               <Text className="font-sans-bold text-sm text-brand-success">
@@ -156,20 +158,21 @@ export function SidebarMenu() {
         </View>
 
         <ScrollView contentContainerClassName="gap-2 p-4">
-          {(user?.role === 'courier' ? [courierLink, ...links] : links).map(
-            link => (
-              <Pressable
+          {courier ? (
+            <MenuRow
+              icon="Settings"
+              label={t('language.toggleLabel')}
+              onPress={then(() => changeLanguage(lang === 'ar' ? 'en' : 'ar'))}
+            />
+          ) : (
+            links.map(link => (
+              <MenuRow
                 key={link.label}
+                icon={link.icon}
+                label={t(link.label)}
                 onPress={then(() => go(link.route))}
-                accessibilityRole="button"
-                className="flex-row items-center gap-3 rounded-xl p-4 active:bg-brand-lightgray"
-              >
-                <View className="h-10 w-10 items-center justify-center rounded-xl bg-brand-lightgray">
-                  <Icon name={link.icon} size={20} color={colors.primary} />
-                </View>
-                <Text className="font-sans-bold">{t(link.label)}</Text>
-              </Pressable>
-            ),
+              />
+            ))
           )}
         </ScrollView>
 
@@ -194,6 +197,32 @@ export function SidebarMenu() {
         </View>
       </Animated.View>
     </View>
+  );
+}
+
+function MenuRow({
+  icon,
+  label,
+  accessibilityLabel,
+  onPress,
+}: {
+  icon: IconName;
+  label: string;
+  accessibilityLabel?: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      className="flex-row items-center gap-3 rounded-xl p-4 active:bg-brand-lightgray"
+    >
+      <View className="h-10 w-10 items-center justify-center rounded-xl bg-brand-lightgray">
+        <Icon name={icon} size={20} color={colors.primary} />
+      </View>
+      <Text className="font-sans-bold">{label}</Text>
+    </Pressable>
   );
 }
 

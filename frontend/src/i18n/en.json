@@ -51,7 +51,6 @@
     "signIn": "Sign Up / Log In",
     "logOut": "Log Out",
     "close": "Close menu",
-    "courier": "Confirm a Delivery",
     "refurbished": "Certified Refurbished"
   },
   "screens": {
@@ -470,14 +469,27 @@
     "deliverTo": "Deliver to {{name}} · {{area}}"
   },
   "courier": {
-    "title": "Confirm a Delivery",
-    "body": "Hand over the item, ask the buyer for their 4-digit PIN, and enter it with the order number.",
-    "orderNumber": "Order number (e.g. SA-123456)",
+    "role": "Sahla courier",
+    "deliveries": "My Deliveries",
+    "toDo": "Still to deliver: {{n}}",
+    "empty": "No deliveries assigned to you right now. New ones appear here by themselves.",
+    "route": "{{from}} → {{to}}",
+    "statusTo_pickup": "To pick up",
+    "statusPicked_up": "On the way",
+    "statusDelivered": "Delivered",
+    "pickup": "Pick up from (seller)",
+    "dropoff": "Deliver to (buyer)",
+    "noPickupYet": "The seller hasn't added the pickup address yet. Call Sahla support before going.",
+    "call": "Call",
+    "maps": "Open in Maps",
+    "pickedUp": "I Picked It Up",
+    "handOver": "Hand over",
+    "body": "Hand over the item and ask the buyer for their 4-digit PIN.",
     "pin": "Delivery PIN",
     "confirm": "Confirm Delivery",
     "confirmed": "Delivery confirmed. Payment released to the seller.",
-    "another": "Confirm Another",
-    "notCourier": "Only Sahla couriers can confirm deliveries."
+    "pinLocked": "Locked after 5 wrong PINs. Call Sahla support to unlock it.",
+    "gone": "This delivery is no longer assigned to you."
   },
   "location": {
     "choose": "Choose your area",

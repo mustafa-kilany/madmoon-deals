@@ -314,6 +314,25 @@ export type Order = {
   deliveredAt?: number;
 };
 
+/** The courier's progress: collect from the seller, then hand over with the buyer's PIN. */
+export type CourierStatus = 'to_pickup' | 'picked_up' | 'delivered';
+
+/** One of the courier's deliveries (GET /courier/deliveries). */
+export type Delivery = {
+  /** The order number, e.g. SA-123456. */
+  orderId: string;
+  status: CourierStatus;
+  itemTitle: Localized;
+  itemImageUrl: string;
+  /** The seller. Until they give the pickup address, phone and address are empty. */
+  pickup: DeliveryDetails;
+  /** The buyer's delivery details from the order. */
+  dropoff: DeliveryDetails;
+  assignedAt: number;
+  pickedUpAt?: number;
+  deliveredAt?: number;
+};
+
 /** One request for a page of listings (GET /listings). The server filters, sorts and pages. */
 export type ListingQuery = {
   /** Free-text search. */

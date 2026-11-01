@@ -239,7 +239,7 @@ Tasks:
 - **Not code:** a customs broker, TRC type approval per phone model, a freight forwarder, the first sample
   order from one supplier.
 
-## B14 — Courier (driver) app ⬜ (orders from B7; the app side can start on mock data)
+## B14 — Courier (driver) app 🔨 (orders from B7)
 
 Couriers are **staff**, not customers: nobody can sign up as one. An admin creates the account with a
 **company email** (`@sahla.jo`, D9); the courier sets a password with the emailed code (the normal reset
@@ -260,14 +260,18 @@ buying, chats or offers.
   (`POST /orders/:id/pickup`). ⬜ App: a pickup form on the seller's sale.
 - 🔨 **B14.6** Assigning: an admin assigns each paid order to a courier in the dashboard (later: by area).
   ✅ `POST /admin/orders/:id/assign`; ⬜ the dashboard screen (B8).
-- ⬜ **B14.7** App: courier mode. Log in → **Deliveries** list → a delivery: order number, pickup and drop-off
-  with **Call** and **Open in Maps**, **Picked up** button, **PIN** boxes → **Delivered**. The menu has only
-  language and log out. Built on the mock service first, like the rest of the app.
+- ✅ **B14.7** App: courier mode (`frontend/src/features/courier`, `services/courier`, `config.mock.courier`
+  false = the real API). A courier account gets only these screens: **Deliveries** (assigned ones oldest
+  first, then today's delivered; refreshes every 30 s) → a delivery: order number, pickup and drop-off with
+  **Call** and **Open in Maps**, **Picked up**, then the **PIN** → **Confirm delivery**. Five wrong PINs:
+  "call Sahla support". The menu has only language and log out. Replaces the old "Confirm a delivery" screen.
 
 ---
 
 ## Log
 Short notes on what changed, newest first.
+- 2026-10-31: B14.7 done: courier mode in the app (deliveries list, call / maps, picked up, PIN), on the
+  real API. Still open for couriers: the seller's pickup-address form (B14.5) and a courier page in the dashboard.
 - 2026-10-31: B8.5 done: orders, payouts and users pages in the dashboard; suspending takes listings off sale.
   The audit log keeps the admin's IP (kept: it shows where a stolen admin account was used).
 - 2026-10-31: B8.2 done: the dashboard website (log-in with 2FA, overview).

@@ -18,6 +18,11 @@ export const config = {
     auth: false,
     negotiation: true,
     orders: true,
+    /**
+     * The courier's deliveries. Real: couriers log in with the real auth, and
+     * admins assign orders to them in the dashboard.
+     */
+    courier: false,
   },
   /** Fake network delay for mock calls, so loading states are visible in dev. */
   mockLatencyMs: __DEV__ ? 400 : 0,
@@ -33,5 +38,6 @@ export const config = {
     auction: 3_000, // current bid + bid list
     chat: 5_000, // threads and open conversation
     orders: 15_000, // order status (courier delivered → completed)
+    deliveries: 30_000, // the courier's list (newly assigned orders)
   },
 } as const;
