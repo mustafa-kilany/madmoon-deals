@@ -182,8 +182,16 @@ Tasks:
   two-step log-in with the QR code set-up, layout, overview page from `GET /v1/admin/stats` (needs
   attention, money, marketplace; refreshed every minute). `npm run dev` → http://localhost:5174 (5173 is the
   Figma prototype); `/v1` is proxied to the backend. Demo admin in the seed: `admin@sahla.jo`. CI builds it.
-- ⬜ **B8.3** Queues: certificates to review, ID photos, risk flags, reports.
-- ⬜ **B8.4** Refurbished: upload the Excel sheet with preview (dry run), stores, keys, import history.
+- ✅ **B8.3** Review queues: **reports** (listings: keep = back on sale, remove = withdrawn + push to the seller;
+  accounts: dismiss, or suspend from the user page), **suspicious accounts** (risk flags: dismissed / actioned with
+  a note), **test certificates** (the stamp check: the original photo for admins only, approve, or reject = the
+  listing off sale + push, and that paper can't be used again). Reports get `resolvedAt` / `resolution`: only open
+  reports hide a listing. Suspending an account closes its reports and flags. _(ID photos: none, ID checks are
+  Sanad only since B3.5.)_
+- ✅ **B8.4** Certified Refurbished: stores (create), API keys (shown once, revoke), the store's sheet as
+  **CSV UTF-8** with a preview (dry run) then publish, import history (who: admin, key or command line). The server
+  reads the CSV with the same code as `npm run store -- import`. _(`.xlsx` directly: later, if admins need it.)_
+  Also the **Couriers** page (B14.1): add, disable, enable again.
 - ✅ **B8.5** Orders: search (number, email, name, status, "need a courier"), the whole order (never the PIN),
   refund, unlock PIN, assign a courier; payouts: list, mark sent with the bank reference; users: look up, details
   (activity, reports, risk flags), suspend / unsuspend with a reason. Suspending signs them out and takes their
@@ -250,8 +258,8 @@ screen) and then logs in like anyone else, but sees **only the driver screens**:
 buying, chats or offers.
 
 - 🔨 **B14.1** Staff accounts: ✅ `npm run staff -- courier "Name" name@sahla.jo` (and `disable`, `list`),
-  ✅ sign-up refuses the staff domain (`STAFF_EMAIL_DOMAIN`, default `sahla.jo`); ✅ `POST /admin/couriers` (+ list, disable)
-  for the dashboard (B8); only the staff domain; an invite code is emailed. Public sign-up refuses the staff
+  ✅ sign-up refuses the staff domain (`STAFF_EMAIL_DOMAIN`, default `sahla.jo`); ✅ `POST /admin/couriers` (+ list,
+  disable, enable) and ✅ the dashboard's Couriers page (B8.4); only the staff domain; an invite code is emailed. Public sign-up refuses the staff
   domain, so nobody can make a look-alike account.
 - 🔨 **B14.2** (✅ uploads; the rest with each endpoint) Couriers can only call courier endpoints: everything for customers (listing, offers, chats,
   orders, saving) answers `FORBIDDEN` for them.
@@ -261,8 +269,9 @@ buying, chats or offers.
   `POST /courier/confirm-delivery` with the buyer's 4-digit **PIN** (locks after 5 wrong tries).
 - ✅ **B14.5** Pickup address: the seller gives it when the order is paid (B7), shown only to the courier
   (`POST /orders/:id/pickup`). ⬜ App: a pickup form on the seller's sale.
-- 🔨 **B14.6** Assigning: an admin assigns each paid order to a courier in the dashboard (later: by area).
-  ✅ `POST /admin/orders/:id/assign`; ⬜ the dashboard screen (B8).
+- ✅ **B14.6** Assigning: an admin assigns each paid order to a courier in the dashboard (later: by area).
+  ✅ `POST /admin/orders/:id/assign`; ✅ on the dashboard's order page (B8.5), "Paid orders without a courier" on the
+  overview.
 - ✅ **B14.7** App: courier mode (`frontend/src/features/courier`, `services/courier`, `config.mock.courier`
   false = the real API). A courier account gets only these screens: **Deliveries** (assigned ones oldest
   first, then today's delivered; refreshes every 30 s) → a delivery: order number, pickup and drop-off with
@@ -273,6 +282,10 @@ buying, chats or offers.
 
 ## Log
 Short notes on what changed, newest first.
+- 2026-11-01: B8.3–B8.4 done: review queues (reports, suspicious accounts, certificate stamps), Certified
+  Refurbished stores / keys / sheet upload with preview / history, and the Couriers page. A certificate an admin
+  rejects can't be reused on a new listing. B14.6's dashboard screen was already on the order page (B8.5).
+- 2026-11-01: B10.3 Google sign-in on Android done and tested with a real Gmail.
 - 2026-10-31: B14.7 done: courier mode in the app (deliveries list, call / maps, picked up, PIN), on the
   real API. Still open for couriers: the seller's pickup-address form (B14.5) and a courier page in the dashboard.
 - 2026-10-31: B8.5 done: orders, payouts and users pages in the dashboard; suspending takes listings off sale.

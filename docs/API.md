@@ -820,7 +820,8 @@ type Delivery = {
 * **Courier accounts (admin):** `GET /admin/couriers` → `{ id, name, email, active, createdAt }[]`;
   `POST /admin/couriers` with `{ name, email }` (staff domain only, else `VALIDATION`; already a courier:
   `EMAIL_TAKEN`) → 201 and the invite code is emailed; `POST /admin/couriers/:id/disable` → 204 (signed out at
-  once, can't log in).
+  once, can't log in); `POST /admin/couriers/:id/enable` → 204 (can log in again; `VALIDATION` when already
+  active).
 
 ### Safety: report and block
 
@@ -830,7 +831,7 @@ be able to report content and block people, and the team must act on reports wit
 * **`POST /reports` *(Authenticated)*** → Body: `{ "targetType": "listing" | "user", "targetId": "...", "reason": "scam" | "prohibited" | "offensive" | "wrong_info" | "other", "details"?: "max 500 chars" }` → 204
   * The app offers it on every product page ("Report this listing") and in the chat menu (the other person).
   * `NOT_FOUND` (404) for an unknown target, `VALIDATION` (422) for an unknown reason.
-  * Store with the reporter's id and time and show them in the admin tool. Hide a listing quickly when several people report it (the server: 3 different reporters hide it from browsing until an admin looks).
+  * Store with the reporter's id and time and show them in the admin tool. Hide a listing quickly when several people report it (the server: 3 different reporters hide it from browsing until an admin looks). Only reports no admin has handled count: a listing an admin kept needs 3 new reporters to be hidden again (Admin dashboard → Review queues).
 * **`POST /me/blocked` *(Authenticated)*** → Body: `{ "userId": "..." }` → 204 (blocking twice is fine; yourself is `VALIDATION`)
 * **`GET /me/blocked` *(Authenticated)*** → `{ "id": string, "name": string }[]` (Profile → Blocked users)
 * **`DELETE /me/blocked/:userId` *(Authenticated)*** → 204
@@ -843,9 +844,9 @@ Refurbished stock never comes from the app. Each brand has an official **store a
 Certified"). Its stock arrives in one of two ways, both through the same endpoint:
 
 1. **Admin dashboard → Excel.** An admin uploads the store's sheet (columns =
-   `docs/refurbished-import-template.csv`, open it in Excel and save as `.xlsx` or `.csv`). The
-   dashboard reads the rows, calls the endpoint with `dryRun: true` to show the problems per row,
-   then again without `dryRun` to publish.
+   `docs/refurbished-import-template.csv`; in Excel save it as "CSV UTF-8"). The dashboard sends it
+   to `POST /admin/refurbished/stores/:id/import` (Admin dashboard → Certified Refurbished stores)
+   with `dryRun: true` to show the problems per row, then again without `dryRun` to publish.
 2. **Brand's system → API.** The brand calls the endpoint itself with its store API key, e.g.
    nightly or whenever stock or prices change.
 
@@ -950,6 +951,8 @@ type Stats = {
   payouts: { pending: { count: number; amountFils: number } }; // to send to sellers
   queues: {
     hiddenByReports: number;  // listings 3 people reported
+    reportedListings: number; // listings with reports no admin handled yet (hidden or not)
+    reportedUsers: number;    // accounts with reports no admin handled yet
     riskFlags: number;        // open suspicious-account flags
     certificates: number;     // passed on the text, stamp not checked, listing on sale
   };
@@ -992,9 +995,59 @@ admin sends a bank transfer and records it.
   puts everything back. `VALIDATION` (422) for yourself, a staff account (couriers: the courier endpoints;
   admins: `npm run staff`), or no change.
 
+**Review queues** *(BACKEND_PLAN B8.3)*. Every decision needs `{ "reason": "..." }` (3–500 characters, kept in
+the audit log) unless said otherwise. Queues return at most 100 entries.
+* **`GET /admin/reports/listings`** *(admin)* → listings with open reports, hidden ones first, then the most
+  reports: `{ listing: { id, title, imageUrl, priceFils, status, reportHidden, createdAt }, seller: (Person &
+  { suspended }) | null, reasons: { [reason]: count }, reports: Report[] }[]`, `Report = { id, reporter: { id, name },
+  reason, details, createdAt }` (newest first). A brand store as seller has `email: ""`.
+* **`POST /admin/listings/:id/keep`** *(admin)* → 204. Nothing wrong: back in browsing if it was hidden; its open
+  reports are closed (`resolution: kept`), so they no longer count towards hiding it.
+* **`POST /admin/listings/:id/remove`** *(admin)* → 204. Breaks the rules: `withdrawn` for good, reports closed
+  (`removed`), and the seller gets a push (`data.type: "sale"`). `OPEN_ORDERS` (409) when paid for and waiting for
+  delivery (refund first), `ITEM_UNAVAILABLE` (409) when sold, `VALIDATION` (422) when already off sale.
+* **`GET /admin/reports/users`** *(admin)* → accounts with open reports about them, the most reports first:
+  `{ user: Person & { suspended, createdAt }, reasons, reports: Report[] }[]`.
+* **`POST /admin/reports/users/:id/dismiss`** *(admin)* → 204 (`VALIDATION` when there are no open reports).
+  Suspending the account (`POST /admin/users/:id/suspend`) also closes its open reports (`suspended`) and marks
+  its open risk flags `actioned`.
+* **`GET /admin/risk-flags`** *(admin)* → Query `status` = `open` (default; the highest score first) | `dismissed`
+  | `actioned` (the latest review first). `{ id, user: Person & { suspended, createdAt }, score, signals: { kind,
+  points, details }[], aiSummary, status, reviewedBy: { id, name } | null, reviewNote, createdAt, reviewedAt }[]`.
+* **`POST /admin/risk-flags/:id/review`** *(admin)* → Body: `{ "status": "dismissed" | "actioned", "note": "..." }`
+  → 204. Once only (`VALIDATION` after). The checker can flag the account again later if its score is still high.
+* **`GET /admin/certificates`** *(admin)* → test certificates that passed on the text but whose stamp nobody has
+  checked, on a listing that is on sale or paid for, the oldest first: `{ id, listing: { id, title, imageUrl,
+  priceFils, status } | null, seller: Person, device: { category, type, brand, model }, read: { shopName,
+  shopPhone, testedAt, device, specs }, blurredUrl, createdAt }[]`.
+* **`GET /admin/certificates/:id/photo`** *(admin)* → the original photo (IMEI readable), `Cache-Control: private,
+  no-store`. The dashboard loads it with its token; it is never a public URL.
+* **`POST /admin/certificates/:id/approve`** *(admin)* → 204, no body. The stamp is fine.
+* **`POST /admin/certificates/:id/reject`** *(admin)* → 204. The certificate fails, the listing comes off sale and
+  the seller gets a push. The same photo or IMEI / serial can't pass on a new listing (`already_used`).
+  `OPEN_ORDERS` (409) when paid for. Both: `VALIDATION` (422) when already reviewed.
+
+**Certified Refurbished stores** *(BACKEND_PLAN B8.4; the same as `npm run store`)*. Under
+`/admin/refurbished/`, so request bodies may be up to 5 MB.
+* **`GET /admin/refurbished/stores`** *(admin)* → `{ id, nameEn, nameAr, onSale, lastImportAt, keys: StoreKey[],
+  createdAt }[]`, `StoreKey = { id, label, createdAt, lastUsedAt, revokedAt }` (never the key itself).
+* **`POST /admin/refurbished/stores`** *(admin)* → Body: `{ id: "store-<brand>", nameEn, nameAr }` → 201, the store.
+  `VALIDATION` for another id format or an id that exists.
+* **`POST /admin/refurbished/stores/:id/keys`** *(admin)* → Body: `{ "label": "Apple stock system" }` → 201,
+  `StoreKey & { key }`: the only time `key` (`sahla_sk_…`) is shown; only its hash is kept.
+* **`POST /admin/refurbished/stores/:id/keys/:keyId/revoke`** *(admin)* → the key, revoked (it gets 401 at once).
+* **`GET /admin/refurbished/stores/:id/imports`** *(admin)* → the latest 50 imports: `{ id, source ("Admin: Sara",
+  "Key: Apple stock system", "Command line"), mode, created, updated, withdrawn, errors, createdAt }[]`. Previews
+  (`dryRun`) aren't kept.
+* **`POST /admin/refurbished/stores/:id/import`** *(admin)* → Body: `{ csv: string, mode?: "upsert" | "replace",
+  dryRun?: boolean }` → the import response above plus `rows` (how many rows the sheet had). `csv` is the
+  store's sheet (the template's columns) saved from Excel as "CSV UTF-8": the server reads it like `npm run store
+  -- import`. The dashboard sends `dryRun: true` first (the preview), then the same without it to publish.
+  `VALIDATION` for a file that isn't CSV, a header that isn't the template's, no rows, or more than 1000 rows.
+
 **Audit log.** Every change an admin makes is recorded (who, what, when, from which IP, and the
 details): log-ins, refunds, PIN unlocks, courier assignments, payouts sent, suspensions, courier accounts,
-category pictures.
+category pictures, review decisions, stores, keys and imports.
 * **`GET /admin/actions`** *(admin)* → `AdminAction[]`, newest first. Query: `targetType` and `targetId`
   (e.g. `order` + `SA-123456`: the history of one order), `before` (an ISO time: the last row's
   `createdAt`, for the next page), `limit` (1–100, default 50).
@@ -1004,8 +1057,12 @@ category pictures.
     admin: { id: string; name: string; email: string } | null; // null once that account is deleted
     action: string;          // "admin.login", "admin.2fa_setup", "order.refund", "order.unlock_pin",
                              // "order.assign", "payout.paid", "user.suspend", "user.unsuspend",
-                             // "courier.create", "courier.disable", "category.image"
-    target?: { type: string; id: string }; // "order", "user", "category"
+                             // "courier.create", "courier.disable", "courier.enable", "category.image",
+                             // "listing.keep", "listing.remove", "user.reports_dismiss",
+                             // "risk_flag.dismissed", "risk_flag.actioned", "certificate.approve",
+                             // "certificate.reject", "store.create", "store.key_create",
+                             // "store.key_revoke", "store.import"
+    target?: { type: string; id: string }; // "order", "user", "category", "listing", "certificate", "store"
     details?: unknown;       // e.g. { before, after } for an assignment or a picture
     createdAt: string;
   };

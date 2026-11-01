@@ -93,9 +93,20 @@ adminUsersRoutes.post('/admin/users/:id/suspend', ...requireAdmin, async (req, r
   const user = await customer(req.params.id as string, currentUser(res.locals).id);
   if (user.suspended) throw new ApiError(422, 'VALIDATION', 'Already suspended');
   // Signed out on every phone at once; their phones' push tokens go with the sessions.
+  // The review queues (B8.3) close what this decides: reports about them, open risk flags.
+  const adminId = currentUser(res.locals).id;
+  const now = new Date();
   const [updated] = await prisma.$transaction([
     prisma.user.update({ where: { id: user.id }, data: { suspended: true } }),
     prisma.session.deleteMany({ where: { userId: user.id } }),
+    prisma.report.updateMany({
+      where: { targetType: 'user', targetId: user.id, resolvedAt: null },
+      data: { resolvedAt: now, resolvedById: adminId, resolution: 'suspended' },
+    }),
+    prisma.riskFlag.updateMany({
+      where: { userId: user.id, status: 'open' },
+      data: { status: 'actioned', reviewNote: `Suspended: ${reason}`, reviewedById: adminId, reviewedAt: now },
+    }),
   ]);
   await adminDid(req, res, 'user.suspend', { type: 'user', id: user.id }, { reason });
   res.json(toAdminUserSummary(updated));

@@ -53,3 +53,10 @@ export const privateStorage: Storage = {
     await rm(file, { force: true });
   },
 };
+
+/** The file behind a private ref ("private:…"), for the dashboard to show; never outside the folder. */
+export function privateFilePath(ref: string): string | undefined {
+  if (!ref.startsWith(PRIVATE_PREFIX)) return undefined;
+  const file = path.resolve(privateDir, ref.slice(PRIVATE_PREFIX.length));
+  return file.startsWith(privateDir + path.sep) ? file : undefined;
+}

@@ -36,9 +36,16 @@ export function OverviewPage() {
       <h2>Needs attention</h2>
       <div className="tiles">
         <Tile label="Paid orders without a courier" value={orders.toAssign} alert to="/orders?filter=unassigned" />
-        <Tile label="Listings hidden by reports" value={queues.hiddenByReports} alert />
-        <Tile label="Suspicious accounts to review" value={queues.riskFlags} alert />
-        <Tile label="Certificates to check (stamp)" value={queues.certificates} alert />
+        <Tile label="Listings hidden by reports" value={queues.hiddenByReports} alert to="/reports" />
+        <Tile
+          label="Reported, not handled yet"
+          value={queues.reportedListings + queues.reportedUsers}
+          sub={`${plural(queues.reportedListings, 'listing')} · ${plural(queues.reportedUsers, 'account')}`}
+          alert
+          to={queues.reportedListings ? '/reports' : '/reports?tab=users'}
+        />
+        <Tile label="Suspicious accounts to review" value={queues.riskFlags} alert to="/risk" />
+        <Tile label="Certificates to check (stamp)" value={queues.certificates} alert to="/certificates" />
       </div>
 
       <h2>Money</h2>
@@ -68,11 +75,13 @@ export function OverviewPage() {
       <div className="tiles">
         <Tile label="Customers" value={users.total} sub={`+${users.newThisWeek} this week`} to="/users" />
         <Tile label="Listings on sale" value={listings.active} sub={`+${listings.newThisWeek} new this week`} />
-        <Tile label="Active couriers" value={couriers.active} />
+        <Tile label="Active couriers" value={couriers.active} to="/couriers" />
       </div>
     </div>
   );
 }
+
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 /** A number; with `to`, a link to the page that lists them. */
 function Tile({ label, value, sub, alert, to }: { label: string; value: number | string; sub?: string; alert?: boolean; to?: string }) {

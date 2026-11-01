@@ -61,4 +61,16 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 export const api = {
   get: <T>(path: string) => request<T>('GET', path),
   post: <T>(path: string, body?: unknown) => request<T>('POST', path, body ?? {}),
+  /** A file only admins may see (a certificate's original photo): an <img> can't send the token itself. */
+  async blob(path: string): Promise<Blob> {
+    const saved = token.get();
+    const response = await fetch(BASE + path, {
+      headers: saved ? { Authorization: `Bearer ${saved}` } : {},
+      signal: AbortSignal.timeout(30_000),
+    }).catch(() => {
+      throw new ApiError('NETWORK', 'Can’t reach the server. Is the backend running?', 0);
+    });
+    if (!response.ok) throw new ApiError('NOT_FOUND', `Couldn’t load the file (${response.status})`, response.status);
+    return response.blob();
+  },
 };

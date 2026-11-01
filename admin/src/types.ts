@@ -22,7 +22,7 @@ export type Stats = {
     completedLast30Days: Money;
   };
   payouts: { pending: { count: number; amountFils: number } };
-  queues: { hiddenByReports: number; riskFlags: number; certificates: number };
+  queues: { hiddenByReports: number; reportedListings: number; reportedUsers: number; riskFlags: number; certificates: number };
   couriers: { active: number };
 };
 
@@ -104,5 +104,102 @@ export type AdminAction = {
   action: string;
   target?: { type: string; id: string };
   details?: unknown;
+  createdAt: string;
+};
+
+// ── Review queues (B8.3) ──────────────────────────────────────────────────────
+
+export type ReportReason = 'scam' | 'prohibited' | 'offensive' | 'wrong_info' | 'other';
+
+export type Report = {
+  id: string;
+  reporter: { id: string; name: string };
+  reason: ReportReason;
+  details: string | null;
+  createdAt: string;
+};
+
+export type ReportedListing = {
+  listing: {
+    id: string;
+    title: string;
+    imageUrl: string;
+    priceFils: number;
+    status: 'active' | 'reserved' | 'sold' | 'withdrawn';
+    reportHidden: boolean;
+    createdAt: string;
+  };
+  /** A brand store has email "" and is never suspended; null = a deleted account. */
+  seller: (Person & { suspended: boolean }) | null;
+  reasons: Partial<Record<ReportReason, number>>;
+  reports: Report[];
+};
+
+export type ReportedUser = {
+  user: Person & { suspended: boolean; createdAt: string };
+  reasons: Partial<Record<ReportReason, number>>;
+  reports: Report[];
+};
+
+export type RiskFlagStatus = 'open' | 'dismissed' | 'actioned';
+
+export type RiskFlag = {
+  id: string;
+  user: Person & { suspended: boolean; createdAt: string };
+  score: number;
+  signals: { kind: string; points: number; details: Record<string, unknown> }[];
+  aiSummary: string | null;
+  status: RiskFlagStatus;
+  reviewedBy: { id: string; name: string } | null;
+  reviewNote: string | null;
+  createdAt: string;
+  reviewedAt: string | null;
+};
+
+export type CertificateToCheck = {
+  id: string;
+  listing: { id: string; title: string; imageUrl: string; priceFils: number; status: string } | null;
+  seller: Person;
+  /** What the seller chose when listing. */
+  device: { category: string; type: string; brand: string; model: string | null };
+  /** What was read off the paper. */
+  read: { shopName: string | null; shopPhone: string | null; testedAt: string | null; device: string | null; specs: string[] };
+  blurredUrl: string | null;
+  createdAt: string;
+};
+
+// ── Certified Refurbished (B8.4) ──────────────────────────────────────────────
+
+export type StoreKey = { id: string; label: string; createdAt: string; lastUsedAt: string | null; revokedAt: string | null };
+
+export type Store = {
+  id: string;
+  nameEn: string;
+  nameAr: string;
+  onSale: number;
+  lastImportAt: string | null;
+  keys: StoreKey[];
+  createdAt: string;
+};
+
+export type ImportRowError = { row: number; sku?: string; field: string; message: string };
+
+export type ImportResult = {
+  dryRun: boolean;
+  created: number;
+  updated: number;
+  withdrawn: number;
+  errors: ImportRowError[];
+  rows: number;
+};
+
+export type ImportRun = {
+  id: string;
+  source: string;
+  mode: 'upsert' | 'replace';
+  created: number;
+  updated: number;
+  withdrawn: number;
+  errors: ImportRowError[];
   createdAt: string;
 };

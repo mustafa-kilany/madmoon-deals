@@ -2,12 +2,17 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router';
+import { CertificatesPage } from './CertificatesPage';
+import { CouriersPage } from './CouriersPage';
 import { Layout } from './Layout';
 import { LoginPage } from './LoginPage';
 import { OrderPage } from './OrderPage';
 import { OrdersPage } from './OrdersPage';
 import { OverviewPage } from './OverviewPage';
 import { PayoutsPage } from './PayoutsPage';
+import { RefurbishedPage, StorePage } from './RefurbishedPage';
+import { ReportsPage } from './ReportsPage';
+import { RiskFlagsPage } from './RiskFlagsPage';
 import { SessionProvider, useSession } from './session';
 import './styles.css';
 import { UserPage, UsersPage } from './UsersPage';
@@ -30,6 +35,12 @@ function Pages() {
         <Route path="payouts" element={<PayoutsPage />} />
         <Route path="users" element={<UsersPage />} />
         <Route path="users/:id" element={<UserPage />} />
+        <Route path="reports" element={<ReportsPage />} />
+        <Route path="risk" element={<RiskFlagsPage />} />
+        <Route path="certificates" element={<CertificatesPage />} />
+        <Route path="refurbished" element={<RefurbishedPage />} />
+        <Route path="refurbished/:id" element={<StorePage />} />
+        <Route path="couriers" element={<CouriersPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

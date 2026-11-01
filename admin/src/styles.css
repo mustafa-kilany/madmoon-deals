@@ -522,3 +522,135 @@ ul.history {
     font-size: 22px;
   }
 }
+
+/* Review queues and management pages (B8.3, B8.4) */
+.nav-section {
+  margin: 14px 12px 2px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--warmgray);
+}
+.stack {
+  display: grid;
+  gap: 12px;
+}
+.box.attention {
+  border-color: var(--secondary);
+}
+.queue-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.queue-head .item {
+  margin-bottom: 8px;
+}
+.badges.wrap {
+  flex-wrap: wrap;
+}
+ul.reports li + li {
+  border-top: 1px solid var(--border);
+  padding-top: 6px;
+}
+.quote {
+  margin: 4px 0 0;
+  padding: 6px 10px;
+  border-left: 3px solid var(--border);
+  background: var(--cream);
+  border-radius: 0 6px 6px 0;
+  font-size: 14px;
+}
+ul.signals {
+  margin: 8px 0;
+}
+.points {
+  display: inline-block;
+  min-width: 36px;
+  font-weight: 700;
+  color: var(--secondary);
+  font-variant-numeric: tabular-nums;
+}
+.certificate {
+  display: grid;
+  grid-template-columns: minmax(200px, 320px) 1fr;
+  gap: 16px;
+  margin-top: 8px;
+}
+.certificate dl {
+  align-content: start;
+}
+.certificate dd {
+  text-align: left;
+}
+.page > section.card + section.card {
+  margin-top: 12px;
+}
+.photo {
+  display: block;
+  width: 100%;
+  max-height: 420px;
+  object-fit: contain;
+  background: var(--cream);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.photo.placeholder {
+  height: 240px;
+  display: grid;
+  place-items: center;
+}
+.success {
+  color: var(--primary-dark);
+  background: #f1f4ed;
+  padding: 10px 12px;
+  border-radius: 8px;
+  margin: 0 0 12px;
+}
+.note {
+  margin: 0 0 12px;
+}
+.narrow-form {
+  max-width: 440px;
+  margin-top: 16px;
+}
+button.small-button {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+a.button {
+  display: inline-block;
+  border-radius: 10px;
+  padding: 10px 16px;
+  text-decoration: none;
+}
+a.button.danger {
+  background: var(--secondary);
+  color: #fff;
+  font-weight: 600;
+}
+code {
+  font-size: 13px;
+  background: var(--cream);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+.box .table-wrap {
+  margin: 8px 0 12px;
+}
+.box .toolbar input:not([type='file']) {
+  flex: 1;
+  min-width: 220px;
+  max-width: 420px;
+}
+@media (max-width: 720px) {
+  .certificate {
+    grid-template-columns: 1fr;
+  }
+  .nav-section {
+    display: none;
+  }
+}

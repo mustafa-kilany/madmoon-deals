@@ -34,6 +34,9 @@ function ocrFor(device: FakeDevice): OcrProvider {
 /** A listing that counts as "another listing" for reuse: still for sale or sold through Sahla. */
 const liveListing = { listing: { status: { not: 'withdrawn' as const } } };
 
+/** In `problems` of a certificate an admin rejected in the review queue (B8.3); never sent to the app. */
+export const ADMIN_REJECTED = 'admin_rejected';
+
 export async function checkCertificate(userId: string, photo: Buffer, device: CertificateDevice) {
   const type = findType(device.category, device.type);
   if (!type) throw new ApiError(422, 'VALIDATION', `No type ${device.type} in ${device.category}`);
@@ -52,12 +55,13 @@ export async function checkCertificate(userId: string, photo: Buffer, device: Ce
   const problems: CertificateProblem[] = [...text.problems];
   if (stamp.found === false) problems.push('no_stamp');
 
-  // Step 7: the same photo, or the same IMEI / serial, on another listing.
+  // Step 7: the same photo, or the same IMEI / serial, on another listing, or
+  // on one an admin rejected (B8.3: a fake doesn't come back on a new listing).
   const serialHashes = text.serials.map(serial => keyedHash('serial', serial));
   const reused = await prisma.testCertificate.findFirst({
     where: {
       OR: [{ imageHash: hash }, ...(serialHashes.length ? [{ serialHashes: { hasSome: serialHashes } }] : [])],
-      ...liveListing,
+      AND: [{ OR: [liveListing, { problems: { has: ADMIN_REJECTED } }] }],
     },
     select: { id: true },
   });

@@ -441,6 +441,9 @@ erDiagram
     text reason "scam | prohibited | offensive | wrong_info | other"
     text details "max 500"
     timestamp createdAt
+    timestamp resolvedAt "an admin handled it (B8.3)"
+    text resolvedById "the admin"
+    text resolution "kept | removed | dismissed | suspended"
   }
   Block {
     text blockerId PK,FK
@@ -482,7 +485,7 @@ erDiagram
 
 | Table | Status | Purpose and rules | Indexes |
 |---|---|---|---|
-| **Report** | ✅ table, endpoint B5 | Reports on a listing or a user (App Store rule: act within 24 h). `targetId` points at either table, so there's no foreign key. | `(targetType, targetId)` |
+| **Report** | ✅ table, endpoint B5 | Reports on a listing or a user (App Store rule: act within 24 h). `targetId` points at either table, so there's no foreign key. An admin closes them in the review queue (B8.3: `resolvedAt`, `resolution`); only open ones count towards hiding a listing. | `(targetType, targetId)` |
 | **Block** | ✅ table, endpoints B5 | Who blocked whom; works both ways in listings, chats, offers and orders. | primary key `(blockerId, blockedId)`, `blockedId` |
 | **AccountSignal** | ✅ | What the suspicious-account checker noticed. | `(userId, createdAt)` |
 | **RiskFlag** | ✅ | The admin queue. The checker only creates these; it never acts. | `(status, createdAt)`, `userId` |

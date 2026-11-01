@@ -10,7 +10,7 @@ import { queueRiskCheck } from '../risk/triggers';
 
 export const safetyRoutes = Router();
 
-/** This many different people reporting one listing hide it until an admin looks (B8). */
+/** This many different people reporting one listing hide it until an admin looks (B8.3). */
 export const HIDE_AFTER_REPORTS = 3;
 
 const report = z.object({
@@ -31,9 +31,10 @@ safetyRoutes.post('/reports', ...requireCustomer, async (req, res) => {
 
   await prisma.report.create({ data: { ...input, details: input.details || undefined, reporterId } });
   if (input.targetType === 'listing') {
+    // Reports an admin already handled (restored the listing) don't count again.
     const reporters = await prisma.report.groupBy({
       by: ['reporterId'],
-      where: { targetType: 'listing', targetId: input.targetId },
+      where: { targetType: 'listing', targetId: input.targetId, resolvedAt: null },
     });
     if (reporters.length >= HIDE_AFTER_REPORTS)
       await prisma.listing.update({ where: { id: input.targetId }, data: { reportHidden: true } });

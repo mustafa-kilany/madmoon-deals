@@ -2,11 +2,12 @@
 // action history of one order or user, and a dialog that asks for a reason.
 
 import { useQuery } from '@tanstack/react-query';
-import { useState, type ReactNode } from 'react';
+import { Link } from 'react-router';
+import { useEffect, useState, type ReactNode } from 'react';
 import { formatJOD } from '@/lib/money';
 import { cities } from '@/services/mock/places';
 import { api } from './api';
-import type { AdminAction, CourierStatus, OrderStatus } from './types';
+import type { AdminAction, CourierStatus, OrderStatus, Report, ReportReason } from './types';
 
 export const jod = (fils: number) => formatJOD(fils, 'en');
 export const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' }) : '—');
@@ -55,6 +56,18 @@ const actionLabels: Record<string, string> = {
   'user.unsuspend': 'Lifted the suspension',
   'courier.create': 'Added the courier',
   'courier.disable': 'Disabled the courier',
+  'courier.enable': 'Enabled the courier again',
+  'listing.keep': 'Kept the reported listing',
+  'listing.remove': 'Removed the listing',
+  'user.reports_dismiss': 'Dismissed the reports about them',
+  'risk_flag.dismissed': 'Dismissed a risk flag',
+  'risk_flag.actioned': 'Dealt with a risk flag',
+  'certificate.approve': 'Approved the certificate',
+  'certificate.reject': 'Rejected the certificate',
+  'store.create': 'Created the store',
+  'store.key_create': 'Made an API key',
+  'store.key_revoke': 'Revoked an API key',
+  'store.import': 'Imported the sheet',
 };
 
 /** What admins did to this order or user (GET /admin/actions), newest first. */
@@ -139,5 +152,67 @@ export function ConfirmDialog({
         </div>
       </form>
     </div>
+  );
+}
+
+export const reasonLabels: Record<ReportReason, string> = {
+  scam: 'Scam or fraud',
+  prohibited: 'Prohibited item',
+  offensive: 'Offensive',
+  wrong_info: 'Wrong information',
+  other: 'Other',
+};
+
+/** "Scam or fraud ×3 · Offensive ×1" */
+export const ReasonChips = ({ reasons }: { reasons: Partial<Record<ReportReason, number>> }) => (
+  <span className="badges wrap">
+    {(Object.entries(reasons) as [ReportReason, number][]).map(([reason, count]) => (
+      <Badge key={reason} tone={reason === 'scam' || reason === 'prohibited' ? 'red' : 'amber'}>
+        {reasonLabels[reason] ?? reason} ×{count}
+      </Badge>
+    ))}
+  </span>
+);
+
+/** Who reported, why and when, with what they wrote. */
+export const ReportList = ({ reports }: { reports: Report[] }) => (
+  <ul className="plain reports">
+    {reports.map(r => (
+      <li key={r.id}>
+        <span className="small">
+          <Link to={`/users/${r.reporter.id}`}>{r.reporter.name}</Link> · {reasonLabels[r.reason] ?? r.reason} · {when(r.createdAt)}
+        </span>
+        {r.details && <div className="quote">“{r.details}”</div>}
+      </li>
+    ))}
+  </ul>
+);
+
+/** An image only admins may see, loaded with the dashboard token. */
+export function PrivateImage({ path, alt }: { path: string; alt: string }) {
+  const [url, setUrl] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    let objectUrl: string | null = null;
+    let cancelled = false;
+    api
+      .blob(path)
+      .then(blob => {
+        if (cancelled) return;
+        objectUrl = URL.createObjectURL(blob);
+        setUrl(objectUrl);
+      })
+      .catch(e => !cancelled && setError(e instanceof Error ? e.message : 'Couldn’t load the photo'));
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [path]);
+  if (error) return <p className="error small">{error}</p>;
+  if (!url) return <div className="photo placeholder muted small">Loading photo…</div>;
+  return (
+    <a href={url} target="_blank" rel="noreferrer" title="Open full size">
+      <img className="photo" src={url} alt={alt} />
+    </a>
   );
 }

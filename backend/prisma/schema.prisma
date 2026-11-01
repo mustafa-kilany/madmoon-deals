@@ -577,6 +577,11 @@ model Report {
   reason     String // scam | prohibited | offensive | wrong_info | other
   details    String?
   createdAt  DateTime @default(now())
+  // An admin handled it (B8.3): only unresolved reports count towards hiding a
+  // listing, so a restored listing needs new reports to be hidden again.
+  resolvedAt   DateTime?
+  resolvedById String? // the admin (who did what is in the audit log too)
+  resolution   String? // kept | removed | dismissed | suspended
 
   @@index([targetType, targetId])
 }

@@ -153,3 +153,30 @@ export function pushDelivered(orderId: string) {
     );
   });
 }
+
+/**
+ * An admin took the seller's listing off sale (B8.3: reports, a rejected test
+ * certificate). The reason itself stays in the audit log; the push says what
+ * happened and where to ask.
+ */
+export function pushListingRemoved(listingId: string, why: 'reports' | 'certificate') {
+  later(`push:removed:${listingId}`, async () => {
+    const listing = await prisma.listing.findUnique({ where: { id: listingId } });
+    if (!listing || listing.status !== 'withdrawn') return;
+    await sendTo(
+      listing.sellerUserId,
+      lang => ({
+        title: titleOf(listing, lang),
+        body:
+          why === 'certificate'
+            ? lang === 'ar'
+              ? 'أزلنا إعلانك لأن شهادة الفحص لم تجتز المراجعة. يمكنك نشره من جديد بشهادة من محل فحص.'
+              : 'We took your listing down: its test certificate didn’t pass our review. You can list it again with a certificate from a testing shop.'
+            : lang === 'ar'
+              ? 'أزلنا إعلانك بعد بلاغات من المستخدمين لأنه يخالف قواعد سهلة. تواصل مع الدعم إن كان هناك خطأ.'
+              : 'We took your listing down after reports from other users: it breaks Sahla’s rules. Contact support if you think this is a mistake.',
+      }),
+      { type: 'sale', id: listingId },
+    );
+  });
+}

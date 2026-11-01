@@ -151,6 +151,10 @@ test('already_used: the same photo or IMEI on another listing', async () => {
   // Withdrawn: the report is free again.
   await prisma.listing.update({ where: { id: 'cert-listing' }, data: { status: 'withdrawn' } });
   assert.deepEqual((await check(await paper(32))).body.problems, []);
+
+  // Unless an admin rejected it (B8.3, a fake): withdrawn, but never usable again.
+  await prisma.testCertificate.update({ where: { id: first.body.id }, data: { status: 'failed', problems: { push: 'admin_rejected' } } });
+  assert.deepEqual((await check(await paper(33))).body.problems, ['already_used']);
 });
 
 test('bad requests are 422 VALIDATION', async () => {

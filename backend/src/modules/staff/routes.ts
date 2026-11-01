@@ -37,3 +37,13 @@ staffRoutes.post('/admin/couriers/:id/disable', ...requireAdmin, async (req, res
   await adminDid(req, res, 'courier.disable', { type: 'user', id: courier.id });
   res.status(204).end();
 });
+
+/** A disabled courier can work again: they log in with their old password (or reset it). */
+staffRoutes.post('/admin/couriers/:id/enable', ...requireAdmin, async (req, res) => {
+  const courier = await prisma.user.findUnique({ where: { id: req.params.id as string } });
+  if (!courier || courier.role !== 'courier') throw new ApiError(404, 'NOT_FOUND', 'No such courier');
+  if (!courier.suspended) throw new ApiError(422, 'VALIDATION', 'Already active');
+  await prisma.user.update({ where: { id: courier.id }, data: { suspended: false } });
+  await adminDid(req, res, 'courier.enable', { type: 'user', id: courier.id });
+  res.status(204).end();
+});
