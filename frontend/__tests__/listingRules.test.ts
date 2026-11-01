@@ -42,6 +42,7 @@ const phone: CreateListingInput = {
   type: 'phones',
   locationId: 'salt',
   saleType: 'fixed',
+  pickup: { phone: '0791234567', address: 'Main St, building 1' },
 };
 
 describe('descriptions', () => {

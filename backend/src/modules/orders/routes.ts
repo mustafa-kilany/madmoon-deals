@@ -4,7 +4,7 @@ import { ApiError } from '../../lib/errors';
 import { publicUrl } from '../../lib/publicUrl';
 import { currentUser, requireCustomer } from '../auth/requireUser';
 import { deliveryDetails } from './delivery';
-import { createOrder, getOrder, listMyOrders, listMySales, setPickup } from './orders';
+import { createOrder, getOrder, listMyOrders, listMySales } from './orders';
 import { payOrder } from './pay';
 import { toApiOrder, toApiSale } from './shapes';
 
@@ -47,10 +47,4 @@ orderRoutes.get('/me/sales', ...requireCustomer, async (req, res) => {
 orderRoutes.get('/orders/:id', ...requireCustomer, async (req, res) => {
   const { order, role } = await getOrder(currentUser(res.locals).id, req.params.id as string);
   res.json(role === 'buyer' ? toApiOrder(order, req) : toApiSale(order, req));
-});
-
-// The seller's pickup address for the courier (B14.5).
-orderRoutes.post('/orders/:id/pickup', ...requireCustomer, async (req, res) => {
-  const order = await setPickup(currentUser(res.locals).id, req.params.id as string, deliveryDetails.parse(req.body));
-  res.json(toApiSale(order, req));
 });

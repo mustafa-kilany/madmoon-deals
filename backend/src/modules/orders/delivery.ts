@@ -28,6 +28,14 @@ export const deliveryDetails = z.object({
 
 export type DeliveryInput = z.infer<typeof deliveryDetails>;
 
+/**
+ * Where the courier collects an item (B14.5), given with the listing: the
+ * seller's phone and street address. The name is the seller's and the area is
+ * the listing's, so they aren't asked again.
+ */
+export const pickupDetails = deliveryDetails.pick({ phone: true, address: true, notes: true });
+export type PickupInput = z.infer<typeof pickupDetails>;
+
 /** DeliveryDetails → the order's delivery* columns. */
 export const deliveryColumns = (d: DeliveryInput) => ({
   deliveryName: d.name,
@@ -37,11 +45,9 @@ export const deliveryColumns = (d: DeliveryInput) => ({
   deliveryNotes: d.notes ?? null,
 });
 
-/** The seller's pickup details → the order's pickup* columns (BACKEND_PLAN B14.5). */
-export const pickupColumns = (d: DeliveryInput) => ({
-  pickupName: d.name,
-  pickupPhone: d.phone,
-  pickupCityId: d.cityId,
-  pickupAddress: d.address,
-  pickupNotes: d.notes ?? null,
+/** A listing's pickup → its pickup* columns. */
+export const listingPickupColumns = (p: PickupInput) => ({
+  pickupPhone: p.phone,
+  pickupAddress: p.address,
+  pickupNotes: p.notes ?? null,
 });

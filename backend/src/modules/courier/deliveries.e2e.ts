@@ -1,5 +1,5 @@
-// The courier flow (BACKEND_PLAN B14.3–B14.6): the seller gives the pickup
-// address, an admin assigns the paid order, the courier sees pickup + drop-off,
+// The courier flow (BACKEND_PLAN B14.3–B14.6): the pickup comes with the listing
+// and is copied onto the order, an admin assigns the paid order, the courier sees pickup + drop-off,
 // marks it picked up and delivers it with the buyer's PIN.
 
 import assert from 'node:assert/strict';
@@ -26,7 +26,8 @@ const call = async (method: string, path: string, who: { token: string }, body?:
   return { status: r.status, body: r.status === 204 ? undefined : await r.json() };
 };
 const dropoff = { name: 'Rana', phone: '0799998887', cityId: 'amman-khalda', address: 'Wasfi Al-Tal St, building 40' };
-const pickup = { name: 'Khaled', phone: '+962 78 555 1234', cityId: 'zarqa', address: 'Factory St, warehouse 3', notes: 'Call first' };
+// What the seller gave with the listing; the order adds the seller's name and the listing's area.
+const pickup = { phone: '0785551234', address: 'Factory St, warehouse 3', notes: 'Call first' };
 
 before(async () => {
   await new Promise(resolve => server.once('listening', resolve));
@@ -49,6 +50,7 @@ before(async () => {
       imageUrls: ['https://images.example.com/washer.jpg'], condition: 'good', locationId: 'zarqa',
       description: 'An eight kilo front loading washing machine, quiet, all programs work fine.',
       sellerUserId: people[0].id,
+      pickupPhone: pickup.phone, pickupAddress: pickup.address, pickupNotes: pickup.notes,
     },
   });
 });
@@ -60,17 +62,16 @@ after(async () => {
   await prisma.$disconnect();
 });
 
-test('pickup → assign → picked up → delivered, seen only by the assigned courier', async () => {
+test('assign → picked up → delivered: pickup and drop-off come from the order, seen only by the assigned courier', async () => {
   const created = (await call('POST', '/orders', buyer(), { listingId: LISTING, delivery: dropoff })).body;
-  // Not paid yet: not a sale, no pickup.
-  assert.equal((await call('POST', `/orders/${created.id}/pickup`, seller(), pickup)).status, 404);
   const order = (await call('POST', `/orders/${created.id}/pay`, buyer(), { cardToken: 'mock_visa_4242' })).body;
-
-  // The seller gives the pickup address (and sees it on the sale); nobody else can.
-  assert.equal((await call('POST', `/orders/${order.id}/pickup`, buyer(), pickup)).status, 404);
-  assert.equal((await call('POST', `/orders/${order.id}/pickup`, seller(), { ...pickup, phone: '123' })).status, 422);
-  const sale = await call('POST', `/orders/${order.id}/pickup`, seller(), pickup);
-  assert.deepEqual(sale.body.pickup, { ...pickup, phone: '0785551234' });
+  const expectedPickup = { name: EMAILS[0]!.split('@')[0], cityId: 'zarqa', ...pickup };
+  // The seller sees on the sale where it will be collected; the old seller form is gone.
+  const [sale] = (await call('GET', '/me/sales', seller())).body;
+  assert.deepEqual(sale.pickup, expectedPickup);
+  assert.equal((await call('POST', `/orders/${order.id}/pickup`, seller(), pickup)).status, 404);
+  // A pickup changed on the listing afterwards is for new orders: this one keeps its own.
+  await prisma.listing.update({ where: { id: LISTING }, data: { pickupAddress: 'Somewhere else 1' } });
 
   // Before assigning, no courier sees it.
   assert.deepEqual((await call('GET', '/courier/deliveries', courier())).body, []);
@@ -81,7 +82,7 @@ test('pickup → assign → picked up → delivered, seen only by the assigned c
   const [delivery] = (await call('GET', '/courier/deliveries', courier())).body;
   assert.deepEqual(
     [delivery.orderId, delivery.status, delivery.itemTitle.en, delivery.pickup, delivery.dropoff],
-    [order.id, 'to_pickup', 'Washer', { ...pickup, phone: '0785551234' }, dropoff],
+    [order.id, 'to_pickup', 'Washer', expectedPickup, dropoff],
   );
   assert.ok(delivery.assignedAt);
   assert.equal(delivery.pin, undefined); // the buyer tells the courier at the door
@@ -94,8 +95,7 @@ test('pickup → assign → picked up → delivered, seen only by the assigned c
   assert.deepEqual([picked.status, picked.body.status], [200, 'picked_up']);
   assert.ok(picked.body.pickedUpAt);
   assert.equal((await call('POST', `/courier/deliveries/${order.id}/picked-up`, courier())).status, 422);
-  // With the courier now: the seller can't change the pickup, the admin can't reassign.
-  assert.equal((await call('POST', `/orders/${order.id}/pickup`, seller(), pickup)).status, 422);
+  // With the courier now: the admin can't reassign.
   assert.equal((await call('POST', `/admin/orders/${order.id}/assign`, admin(), { courierId: courier2().id })).status, 422);
   assert.equal((await call('POST', '/courier/confirm-delivery', courier2(), { orderId: order.id, pin: order.pin })).status, 404);
 

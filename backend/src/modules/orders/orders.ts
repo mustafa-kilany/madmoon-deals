@@ -5,7 +5,7 @@ import { Prisma } from '../../generated/prisma/client';
 import { ApiError } from '../../lib/errors';
 import { closeEndedAuctions } from '../negotiation/bids';
 import { isBlockedBetween, sellerSuspended } from '../safety/blocks';
-import { deliveryColumns, pickupColumns, type DeliveryInput } from './delivery';
+import { deliveryColumns, type DeliveryInput } from './delivery';
 import { orderInclude } from './shapes';
 
 // POST /orders (BACKEND_PLAN B7.2), docs/API.md → Phase 6. The server prices
@@ -50,6 +50,26 @@ async function itemPrice(buyerId: string, input: NewOrder) {
 }
 
 /**
+ * Where the courier collects the item (B14.5), copied onto the order so the
+ * assigned courier sees it with the drop-off and nobody types it after the sale:
+ * a person's listing has its own pickup; a brand store's comes from the store.
+ * The area falls back to the listing's area.
+ */
+async function pickupFor(listing: { sellerUserId: string | null; storeId: string | null; locationId: string; pickupPhone: string | null; pickupAddress: string | null; pickupNotes: string | null }) {
+  const [seller, store] = await Promise.all([
+    listing.sellerUserId ? prisma.user.findUnique({ where: { id: listing.sellerUserId }, select: { name: true } }) : null,
+    listing.storeId ? prisma.store.findUnique({ where: { id: listing.storeId } }) : null,
+  ]);
+  return {
+    pickupName: store?.nameEn ?? seller?.name ?? null,
+    pickupPhone: store ? store.pickupPhone : listing.pickupPhone,
+    pickupCityId: store?.pickupCityId ?? listing.locationId,
+    pickupAddress: store ? store.pickupAddress : listing.pickupAddress,
+    pickupNotes: store ? null : listing.pickupNotes,
+  };
+}
+
+/**
  * → an order awaiting payment. Checking out again (a changed address, an offer
  * accepted since) updates the buyer's unpaid order for this listing instead of
  * adding another one.
@@ -61,6 +81,7 @@ export async function createOrder(buyerId: string, input: NewOrder) {
     ...breakdown,
     offerId: input.offerId ?? null,
     ...deliveryColumns(input.delivery),
+    ...(await pickupFor(listing)),
   };
 
   const unpaid = await prisma.order.findFirst({
@@ -113,15 +134,3 @@ export async function getOrder(userId: string, orderId: string) {
   return { order, role } as const;
 }
 
-/**
- * POST /orders/:id/pickup (B14.5): where the courier collects the item. The seller
- * gives it once the order is paid and can change it until the courier picks it up.
- */
-export async function setPickup(sellerId: string, orderId: string, pickup: DeliveryInput) {
-  const order = await prisma.order.findUnique({ where: { id: orderId } });
-  if (!order || order.sellerUserId !== sellerId || order.status === 'awaiting_payment')
-    throw new ApiError(404, 'NOT_FOUND', `No order ${orderId}`);
-  if (order.status !== 'escrow_held' || (order.courierStatus && order.courierStatus !== 'to_pickup'))
-    throw invalid('The courier already has the item');
-  return prisma.order.update({ where: { id: orderId }, data: pickupColumns(pickup), include: orderInclude });
-}

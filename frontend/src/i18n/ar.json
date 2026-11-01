@@ -347,7 +347,17 @@
     "descriptionPlaceholder": "الحالة، ما المرفق معه، أي عيوب، سبب البيع…",
     "descriptionHint": "يظهر هذا الوصف للمشترين في صفحة إعلانك.",
     "descriptionWords": "{{n}} من {{min}} كلمات على الأقل: الحالة، وما المرفق معه، وأي عيوب.",
-    "descriptionTooShort": "اكتب {{min}} كلمات على الأقل عن المنتج."
+    "descriptionTooShort": "اكتب {{min}} كلمات على الأقل عن المنتج.",
+    "pickupTitle": "مكان الاستلام للمندوب",
+    "pickupExplain": "عند البيع يستلم مندوب سهلة المنتج من هنا. يراه المندوب فقط، ولا يظهر للمشترين.",
+    "pickupAddress": "الشارع والمبنى",
+    "pickupAddressPlaceholder": "مثال: شارع وصفي التل، بناية 40، الطابق الثاني",
+    "pickupAddressError": "اكتب الشارع والمبنى ليصل إليك المندوب.",
+    "pickupPhone": "رقم الهاتف للمندوب",
+    "pickupPhoneError": "رقم موبايل أردني (077، 078، 079).",
+    "pickupNotes": "ملاحظات للمندوب (اختياري)",
+    "pickupNotesPlaceholder": "مثال: اتصل عند الوصول",
+    "pickupMissing": "أضف مكان استلام المنتج للمندوب."
   },
   "certificate": {
     "title": "شهادة فحص من محل",

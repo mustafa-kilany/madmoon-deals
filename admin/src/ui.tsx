@@ -68,6 +68,7 @@ const actionLabels: Record<string, string> = {
   'store.key_create': 'Made an API key',
   'store.key_revoke': 'Revoked an API key',
   'store.import': 'Imported the sheet',
+  'store.pickup': 'Set the pickup address',
 };
 
 /** What admins did to this order or user (GET /admin/actions), newest first. */

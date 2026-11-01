@@ -5,6 +5,8 @@
 // location, and sale format (fixed price vs. live auction).
 
 import { useState } from 'react';
+import { storage } from '@/lib/storage';
+import { ADDRESS_MAX, ADDRESS_MIN, NOTES_MAX, normalizeJordanMobile } from '@/lib/delivery';
 import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { BackButton } from '@/components/BackButton';
@@ -56,6 +58,16 @@ import { TestCertificateField } from '../TestCertificateField';
 
 const conditions: Condition[] = ['new', 'excellent', 'good', 'loved'];
 
+/** The pickup of the seller's last listing, so the next one starts filled in. */
+const LAST_PICKUP = 'sell.lastPickup';
+function lastPickup(): { phone?: string; address?: string; notes?: string } {
+  try {
+    return JSON.parse(storage.getString(LAST_PICKUP) ?? '{}');
+  } catch {
+    return {};
+  }
+}
+
 /** A test report photo and the device it was checked against. */
 type Certificate = {
   photo: LocalPhoto;
@@ -95,6 +107,10 @@ export function AddListingScreen({
   const [incrementJod, setIncrementJod] = useState('1');
   const [durationDays, setDurationDays] = useState<'1' | '3' | '7'>('3');
   const [certificate, setCertificate] = useState<Certificate>();
+  const [savedPickup] = useState(lastPickup);
+  const [pickupPhone, setPickupPhone] = useState(savedPickup.phone ?? '');
+  const [pickupAddress, setPickupAddress] = useState(savedPickup.address ?? '');
+  const [pickupNotes, setPickupNotes] = useState(savedPickup.notes ?? '');
   const checkCertificate = useCheckTestCertificate();
   // Field errors show after the first Publish attempt, not while typing.
   const [showErrors, setShowErrors] = useState(false);
@@ -147,6 +163,10 @@ export function AddListingScreen({
     (certificate?.check?.status === 'passed' && !certificateStale);
   const words = countWords(description);
   const descriptionOk = descriptionValid(description);
+  const pickupPhoneOk = !!normalizeJordanMobile(pickupPhone);
+  const pickupAddressLength = pickupAddress.trim().length;
+  const pickupAddressOk =
+    pickupAddressLength >= ADDRESS_MIN && pickupAddressLength <= ADDRESS_MAX;
 
   const runCheck = (photo: LocalPhoto) => {
     if (!device.brand) return;
@@ -220,6 +240,11 @@ export function AddListingScreen({
       toast.error(t('certificate.missing'));
       return;
     }
+    if (!pickupPhoneOk || !pickupAddressOk) {
+      setShowErrors(true);
+      toast.error(t('addListing.pickupMissing'));
+      return;
+    }
 
     const numericPrice = parseFloat(priceJod || startingBidJod || '0');
     if (isNaN(numericPrice) || numericPrice <= 0) {
@@ -250,9 +275,22 @@ export function AddListingScreen({
           saleType === 'auction'
             ? Math.round((parseFloat(incrementJod) || 1) * 1000)
             : undefined,
+        pickup: {
+          phone: pickupPhone.trim(),
+          address: pickupAddress.trim(),
+          notes: pickupNotes.trim() || undefined,
+        },
       },
       {
         onSuccess: () => {
+          storage.set(
+            LAST_PICKUP,
+            JSON.stringify({
+              phone: pickupPhone.trim(),
+              address: pickupAddress.trim(),
+              notes: pickupNotes.trim(),
+            }),
+          );
           toast.success(t('addListing.success'));
           navigation.goBack();
         },
@@ -459,6 +497,50 @@ export function AddListingScreen({
             label={t('addListing.location')}
             value={activeCity}
             onChange={setCityId}
+          />
+        </View>
+
+        {/* Pickup: where the courier collects it after a sale. Never shown to buyers. */}
+        <View className="gap-3">
+          <View className="gap-1">
+            <Text className="font-sans-bold text-sm">
+              {t('addListing.pickupTitle')}
+            </Text>
+            <Text className="text-xs text-brand-warmgray">
+              {t('addListing.pickupExplain')}
+            </Text>
+          </View>
+          <TextField
+            label={t('addListing.pickupAddress')}
+            value={pickupAddress}
+            onChangeText={setPickupAddress}
+            placeholder={t('addListing.pickupAddressPlaceholder')}
+            maxLength={ADDRESS_MAX}
+            error={
+              showErrors && !pickupAddressOk
+                ? t('addListing.pickupAddressError')
+                : undefined
+            }
+          />
+          <TextField
+            label={t('addListing.pickupPhone')}
+            value={pickupPhone}
+            onChangeText={setPickupPhone}
+            placeholder="079 123 4567"
+            keyboardType="phone-pad"
+            ltr
+            error={
+              showErrors && !pickupPhoneOk
+                ? t('addListing.pickupPhoneError')
+                : undefined
+            }
+          />
+          <TextField
+            label={t('addListing.pickupNotes')}
+            value={pickupNotes}
+            onChangeText={setPickupNotes}
+            placeholder={t('addListing.pickupNotesPlaceholder')}
+            maxLength={NOTES_MAX}
           />
         </View>
 

@@ -178,6 +178,8 @@ export type Store = {
   nameAr: string;
   onSale: number;
   lastImportAt: string | null;
+  /** Where couriers collect this store's orders; null until set. */
+  pickup: { phone: string; cityId: string; address: string } | null;
   keys: StoreKey[];
   createdAt: string;
 };

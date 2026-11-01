@@ -47,8 +47,9 @@ export async function markPickedUp(courierId: string, orderId: string) {
 }
 
 /**
- * docs/API.md `Delivery`. Until the seller gives the pickup address, `pickup`
- * has the seller's name and the listing's area, with an empty phone and address.
+ * docs/API.md `Delivery`: pickup and drop-off both come from the order (the
+ * pickup was copied from the listing or the store when the order was placed,
+ * B14.5). Older orders without one show the seller's name and the listing's area.
  */
 export const toApiDelivery = (order: DeliveryRow, req: Request) => ({
   orderId: order.id,

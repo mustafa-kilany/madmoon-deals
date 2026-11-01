@@ -35,7 +35,15 @@ export type CreateListingInput = {
   incrementFils?: number;
   /** A passed checkTestCertificate result; required for tested types. */
   testCertificateId?: string;
+  /**
+   * Where the courier collects the item (the area is locationId). Copied onto
+   * each order for the assigned courier; buyers never see it.
+   */
+  pickup: ListingPickup;
 };
+
+/** The seller's phone and street address for the courier. */
+export type ListingPickup = { phone: string; address: string; notes?: string };
 
 /** The photo of a shop's test report and the device it should describe. */
 export type CertificateCheckInput = {

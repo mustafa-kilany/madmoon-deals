@@ -347,7 +347,17 @@
     "descriptionPlaceholder": "Condition, what's included, any faults, why you're selling…",
     "descriptionHint": "Buyers see this on your listing page.",
     "descriptionWords": "{{n}} of {{min}} words at least: the condition, what's included, any faults.",
-    "descriptionTooShort": "Write at least {{min}} words about the item."
+    "descriptionTooShort": "Write at least {{min}} words about the item.",
+    "pickupTitle": "Pickup for the courier",
+    "pickupExplain": "When it sells, a Sahla courier collects it here. Only the courier sees this, never buyers.",
+    "pickupAddress": "Street and building",
+    "pickupAddressPlaceholder": "e.g. Wasfi Al-Tal St, building 40, 2nd floor",
+    "pickupAddressError": "Write the street and building so the courier can find you.",
+    "pickupPhone": "Phone for the courier",
+    "pickupPhoneError": "A Jordanian mobile number (077, 078, 079).",
+    "pickupNotes": "Notes for the courier (optional)",
+    "pickupNotesPlaceholder": "e.g. call when you arrive",
+    "pickupMissing": "Add where the courier picks the item up."
   },
   "certificate": {
     "title": "Shop test certificate",

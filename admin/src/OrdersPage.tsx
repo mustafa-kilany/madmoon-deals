@@ -1,10 +1,11 @@
 // Find an order (GET /admin/orders): by number, the buyer's or seller's email
 // or name, or what state it's in. A row opens the order.
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { api } from './api';
+import { AssignCourier } from './OrderPage';
 import type { OrderSummary } from './types';
 import { courierLabel, Failed, jod, Loading, OrderBadge, when } from './ui';
 
@@ -32,6 +33,11 @@ export function OrdersPage() {
     queryFn: () => api.get<OrderSummary[]>(`/admin/orders?${query}`),
   });
 
+  const queryClient = useQueryClient();
+  const assigned = () => {
+    queryClient.invalidateQueries({ queryKey: ['orders'] });
+    queryClient.invalidateQueries({ queryKey: ['stats'] });
+  };
   const set = (next: { filter?: string; q?: string }) => {
     const merged = { filter, q, ...next };
     setParams(Object.fromEntries(Object.entries(merged).filter(([, v]) => v)));
@@ -75,7 +81,7 @@ export function OrdersPage() {
                 <th>Seller</th>
                 <th className="num">Total</th>
                 <th>Status</th>
-                <th>Delivery</th>
+                <th>Delivery / driver</th>
                 <th>Ordered</th>
               </tr>
             </thead>
@@ -92,7 +98,21 @@ export function OrdersPage() {
                   <td>
                     <OrderBadge status={o.status} />
                   </td>
-                  <td className="small">{o.status === 'escrow_held' ? (o.courier ? `${courierLabel(o.courierStatus)}: ${o.courier.name}` : 'No courier yet') : '—'}</td>
+                  <td className="small">
+                    {o.status !== 'escrow_held' ? (
+                      '—'
+                    ) : (
+                      <>
+                        {o.courier && (
+                          <div>
+                            {courierLabel(o.courierStatus)}: {o.courier.name}
+                          </div>
+                        )}
+                        {/* Until the driver picks it up, it can be given to (another) driver right here. */}
+                        {(!o.courierStatus || o.courierStatus === 'to_pickup') && <AssignCourier compact order={o} onDone={assigned} />}
+                      </>
+                    )}
+                  </td>
                   <td className="small">{when(o.createdAt)}</td>
                 </tr>
               ))}

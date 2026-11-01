@@ -54,7 +54,7 @@ const toDelivery = (order: MockOrder): Delivery => {
     status,
     itemTitle: order.itemTitle,
     itemImageUrl: order.itemImageUrl,
-    // Demo sellers have a made-up pickup address, as if they had given one.
+    // Demo sellers have a made-up pickup address, as if given with the listing.
     pickup: {
       name: item.seller.en,
       phone: '0795550123',

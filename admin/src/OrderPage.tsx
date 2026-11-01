@@ -6,7 +6,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { api } from './api';
-import type { Courier, Order } from './types';
+import type { Courier, Order, OrderSummary } from './types';
 import { areaName, Badge, ConfirmDialog, courierLabel, Failed, History, jod, Loading, OrderBadge, when } from './ui';
 
 type Dialog = 'refund' | 'unlock' | null;
@@ -113,7 +113,7 @@ export function OrderPage() {
         <section className="card box">
           <h2>Seller · pick up from</h2>
           <PersonLine person={o.seller} />
-          {o.pickup ? <Address a={o.pickup} /> : <p className="muted small">The seller hasn’t given a pickup address yet.</p>}
+          {o.pickup ? <Address a={o.pickup} /> : <p className="muted small">No pickup address on this order (placed before pickups came with listings).</p>}
         </section>
 
         <section className="card box">
@@ -211,7 +211,19 @@ function Address({ a }: { a: Order['delivery'] }) {
   );
 }
 
-function AssignCourier({ order, onDone }: { order: Order; onDone: () => void }) {
+/**
+ * Choose the driver for a paid order (POST /admin/orders/:id/assign): pickup and
+ * drop-off reach their screen from the order itself. Also in the Orders list.
+ */
+export function AssignCourier({
+  order,
+  onDone,
+  compact,
+}: {
+  order: Pick<OrderSummary, 'id' | 'courier'>;
+  onDone: () => void;
+  compact?: boolean;
+}) {
   const { data: couriers } = useQuery({ queryKey: ['couriers'], queryFn: () => api.get<Courier[]>('/admin/couriers') });
   const [courierId, setCourierId] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -220,7 +232,7 @@ function AssignCourier({ order, onDone }: { order: Order; onDone: () => void }) 
   if (couriers && !active.length) return <p className="muted small">No active couriers. Add one first.</p>;
   return (
     <form
-      className="toolbar"
+      className={compact ? 'assign-inline' : 'toolbar'}
       onSubmit={async e => {
         e.preventDefault();
         setBusy(true);
@@ -237,7 +249,7 @@ function AssignCourier({ order, onDone }: { order: Order; onDone: () => void }) 
       }}
     >
       <select value={courierId} onChange={e => setCourierId(e.target.value)} required aria-label="Courier">
-        <option value="">{order.courier ? 'Give it to another courier…' : 'Choose a courier…'}</option>
+        <option value="">{order.courier ? (compact ? 'Change driver…' : 'Give it to another courier…') : 'Choose a driver…'}</option>
         {active
           .filter(c => c.id !== order.courier?.id)
           .map(c => (
@@ -249,7 +261,7 @@ function AssignCourier({ order, onDone }: { order: Order; onDone: () => void }) 
       <button className="secondary" disabled={!courierId || busy}>
         {busy ? 'Assigning…' : 'Assign'}
       </button>
-      {error && <p className="error">{error}</p>}
+      {error && <p className={compact ? 'error small' : 'error'}>{error}</p>}
     </form>
   );
 }

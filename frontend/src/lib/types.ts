@@ -324,7 +324,7 @@ export type Delivery = {
   status: CourierStatus;
   itemTitle: Localized;
   itemImageUrl: string;
-  /** The seller. Until they give the pickup address, phone and address are empty. */
+  /** Where the courier collects it: given with the listing, copied onto the order (empty phone and address on older orders). */
   pickup: DeliveryDetails;
   /** The buyer's delivery details from the order. */
   dropoff: DeliveryDetails;

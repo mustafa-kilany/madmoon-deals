@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '../../db';
 import { ApiError } from '../../lib/errors';
 import { currentUser, requireAdmin } from '../auth/requireUser';
+import { deliveryDetails } from '../orders/delivery';
 import { parseImportCsv } from '../refurbished/csv';
 import { importRefurbished } from '../refurbished/service';
 import { hashKey, newStoreKey } from '../refurbished/storeKeys';
@@ -50,6 +51,7 @@ adminStoreRoutes.get('/admin/refurbished/stores', ...requireAdmin, async (_req, 
       nameAr: s.nameAr,
       onSale: count.get(s.id) ?? 0,
       lastImportAt: iso(last.get(s.id) ?? null),
+      pickup: s.pickupAddress ? { phone: s.pickupPhone ?? '', cityId: s.pickupCityId ?? '', address: s.pickupAddress } : null,
       keys: s.apiKeys.map(toApiKey),
       createdAt: s.createdAt.toISOString(),
     })),
@@ -68,7 +70,19 @@ adminStoreRoutes.post('/admin/refurbished/stores', ...requireAdmin, async (req, 
     throw new ApiError(422, 'VALIDATION', `There is already a store ${input.id}`);
   const created = await prisma.store.create({ data: input });
   await adminDid(req, res, 'store.create', { type: 'store', id: created.id }, input);
-  res.status(201).json({ ...created, onSale: 0, lastImportAt: null, keys: [], createdAt: created.createdAt.toISOString() });
+  res.status(201).json({ ...created, onSale: 0, lastImportAt: null, pickup: null, keys: [], createdAt: created.createdAt.toISOString() });
+});
+
+/**
+ * Where couriers collect this store's orders (B14.5): copied onto each new order,
+ * like a person's listing pickup. Orders already placed keep theirs.
+ */
+adminStoreRoutes.post('/admin/refurbished/stores/:id/pickup', ...requireAdmin, async (req, res) => {
+  const pickup = deliveryDetails.pick({ phone: true, cityId: true, address: true }).parse(req.body);
+  const { id } = await store(req.params.id as string);
+  await prisma.store.update({ where: { id }, data: { pickupPhone: pickup.phone, pickupCityId: pickup.cityId, pickupAddress: pickup.address } });
+  await adminDid(req, res, 'store.pickup', { type: 'store', id }, pickup);
+  res.json(pickup);
 });
 
 /** A new key for the brand's own system: shown once, only its hash is kept. */

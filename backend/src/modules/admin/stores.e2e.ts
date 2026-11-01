@@ -8,6 +8,7 @@ import type { AddressInfo } from 'node:net';
 import { after, before, test } from 'node:test';
 import { app } from '../../app';
 import { prisma } from '../../db';
+import { hashPassword } from '../auth/password';
 import { adminToken } from './testing';
 
 let base = '';
@@ -15,6 +16,7 @@ const server = app.listen(0);
 const STORE = 'store-e2e-dashboard';
 const ADMIN_EMAIL = 'e2e.stores.admin@sahla.jo';
 const COURIER_EMAIL = 'e2e.stores.rider@sahla.jo';
+const BUYER_EMAIL = 'stores.buyer@example.com';
 let admin = { id: '', token: '' };
 // The template sheet: two good rows (an iPhone and a PS5).
 const template = readFileSync(new URL('../../../../docs/refurbished-import-template.csv', import.meta.url), 'utf8');
@@ -40,10 +42,11 @@ before(async () => {
 });
 after(async () => {
   server.close();
+  await prisma.order.deleteMany({ where: { storeId: STORE } });
   await prisma.listing.deleteMany({ where: { storeId: STORE } });
   await prisma.store.deleteMany({ where: { id: STORE } });
   await prisma.adminAction.deleteMany({ where: { adminId: admin.id } });
-  await prisma.user.deleteMany({ where: { email: { in: [ADMIN_EMAIL, COURIER_EMAIL] } } });
+  await prisma.user.deleteMany({ where: { email: { in: [ADMIN_EMAIL, COURIER_EMAIL, BUYER_EMAIL] } } });
   await prisma.$disconnect();
 });
 
@@ -126,4 +129,29 @@ test('couriers: a disabled courier can be enabled again', async () => {
   assert.equal((await prisma.user.findUniqueOrThrow({ where: { id: courier.id } })).suspended, false);
   assert.equal((await call('POST', `/admin/couriers/${courier.id}/enable`, admin.token)).status, 422);
   assert.equal((await call('POST', `/admin/couriers/${admin.id}/enable`, admin.token)).status, 404);
+});
+
+test('the store’s pickup: set once in the dashboard, copied onto each order for the courier', async () => {
+  const bad = await call('POST', `/admin/refurbished/stores/${STORE}/pickup`, admin.token, { phone: '123', cityId: 'amman-abdali', address: 'Abdali Blvd, tower 2' });
+  assert.equal(bad.status, 422);
+  const set = await call('POST', `/admin/refurbished/stores/${STORE}/pickup`, admin.token, {
+    phone: '+962 79 000 1111', cityId: 'amman-abdali', address: 'Abdali Blvd, tower 2, ground floor',
+  });
+  assert.deepEqual(set.body, { phone: '0790001111', cityId: 'amman-abdali', address: 'Abdali Blvd, tower 2, ground floor' });
+  const store = (await call('GET', '/admin/refurbished/stores', admin.token)).body.find((s: { id: string }) => s.id === STORE);
+  assert.deepEqual(store.pickup, set.body);
+
+  await prisma.user.create({ data: { name: 'Store Buyer', email: BUYER_EMAIL, passwordHash: await hashPassword('longenough') } });
+  const buyer = (await call('POST', '/auth/login', undefined, { email: BUYER_EMAIL, password: 'longenough' })).body.token;
+  const listing = await prisma.listing.findFirstOrThrow({ where: { storeId: STORE, status: 'active' } });
+  const order = await call('POST', '/orders', buyer, {
+    listingId: listing.id,
+    delivery: { name: 'Omar Haddad', phone: '0791234567', cityId: 'amman', address: 'Rainbow St, building 12' },
+  });
+  assert.equal(order.status, 201);
+  const saved = await prisma.order.findUniqueOrThrow({ where: { id: order.body.id } });
+  assert.deepEqual(
+    [saved.pickupName, saved.pickupPhone, saved.pickupCityId, saved.pickupAddress],
+    ['Dashboard Phones', '0790001111', 'amman-abdali', 'Abdali Blvd, tower 2, ground floor'],
+  );
 });

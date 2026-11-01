@@ -237,6 +237,7 @@ const rows: Row[] = [
         auctionEndsAt: Date.parse(T),
         incrementFils: 1000,
         testCertificateId: 'cert-1',
+        pickup: { phone: '0791234567', address: 'Main St 1' },
       }),
     url: '/listings',
     body: {
@@ -253,6 +254,7 @@ const rows: Row[] = [
       auctionEndsAt: '2026-10-19T12:00:00.000Z',
       incrementFils: 1000,
       testCertificateId: 'cert-1',
+      pickup: { phone: '0791234567', address: 'Main St 1' },
     },
   },
   {

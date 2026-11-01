@@ -46,6 +46,7 @@ const sofa = async (extra: Record<string, unknown> = {}) => ({
   description: DESCRIPTION,
   locationId: 'amman-khalda',
   saleType: 'fixed',
+  pickup: PICKUP,
   ...extra,
 });
 
@@ -70,6 +71,8 @@ after(async () => {
   await prisma.$disconnect();
 });
 
+const PICKUP = { phone: '+962 79 123 4567', address: 'Wasfi Al-Tal St, building 40', notes: 'Ring twice' };
+
 test('publish: an active Item from the caller, findable in search; the photos are marked used', async () => {
   const input = await sofa();
   const r = await call('POST', '/listings', input);
@@ -83,6 +86,12 @@ test('publish: an active Item from the caller, findable in search; the photos ar
   assert.deepEqual(item.imageUrls, input.imageUrls);
   assert.equal(item.imageUrl, input.imageUrls[0].replace(/\.jpg$/, '_400.jpg')); // the thumbnail
   assert.equal(item.location.id, 'amman-khalda');
+  // The pickup is kept for the courier, never shown on the listing.
+  const saved = await prisma.listing.findUniqueOrThrow({ where: { id: item.id } });
+  assert.deepEqual([saved.pickupPhone, saved.pickupAddress, saved.pickupNotes], ['0791234567', PICKUP.address, 'Ring twice']);
+  assert.ok(!JSON.stringify(item).includes('0791234567') && !JSON.stringify(item).includes('Wasfi'));
+  const page = await (await fetch(`${base}/listings/${item.id}`)).json();
+  assert.ok(!JSON.stringify(page).includes('0791234567') && !JSON.stringify(page).includes('Wasfi'));
 
   const search = await (await fetch(`${base}/listings?q=${encodeURIComponent('طاوله')}&category=furniture`)).json();
   assert.ok(search.items.some((i: { id: string }) => i.id === item.id), 'found by its Arabic title, folded');
@@ -120,6 +129,9 @@ test('every rule in docs/API.md is a 422 VALIDATION', async () => {
     ['auction without an end', { saleType: 'auction' }],
     ['auction ending in 30 minutes', { saleType: 'auction', auctionEndsAt: new Date(Date.now() + hour / 2).toISOString() }],
     ['auction of 30 days', { saleType: 'auction', auctionEndsAt: new Date(Date.now() + 720 * hour).toISOString() }],
+    ['no pickup', { pickup: undefined }],
+    ['pickup phone not Jordanian', { pickup: { ...PICKUP, phone: '+44 20 7946 0000' } }],
+    ['pickup without an address', { pickup: { phone: PICKUP.phone, address: '' } }],
   ];
   for (const [name, change] of bad) {
     const r = await call('POST', '/listings', { ...(await sofa()), ...change });
@@ -140,6 +152,13 @@ test('PATCH: price and condition, only by the seller', async () => {
   assert.equal((await call('PATCH', `/listings/${item.id}`, { condition: 'refurbished_good' })).status, 422);
   assert.equal((await call('PATCH', `/listings/${item.id}`, { titleEn: 'New title' })).status, 422);
   assert.equal((await call('PATCH', `/listings/${item.id}`, {})).status, 422);
+
+  // A new pickup (moved house): for orders from now on.
+  const moved = await call('PATCH', `/listings/${item.id}`, { pickup: { phone: '0781112223', address: 'Mecca St, building 7' } });
+  assert.equal(moved.status, 200);
+  const saved = await prisma.listing.findUniqueOrThrow({ where: { id: item.id } });
+  assert.deepEqual([saved.pickupPhone, saved.pickupAddress, saved.pickupNotes], ['0781112223', 'Mecca St, building 7', null]);
+  assert.equal((await call('PATCH', `/listings/${item.id}`, { pickup: { phone: '123', address: 'Mecca St, building 7' } })).status, 422);
 });
 
 test('an auction with bids keeps its price and can’t be withdrawn', async () => {

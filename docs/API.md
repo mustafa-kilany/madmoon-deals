@@ -519,7 +519,12 @@ the listing with the returned URLs.
     contain the seller's GPS position); resize (e.g. 1600 px long side) and serve from a CDN.
     Uploads that no listing uses within ~24 h can be deleted.
 * **`POST /listings` *(Authenticated)***
-  * **Request (JSON):** `category`, `titleAr`, `titleEn`, `priceFils`, `imageUrls` (1–5 URLs from the upload above, cover first), `condition`, `description` (required, see below), `brand?`, `model?`, `type`, `locationId` (area id), `saleType` (`fixed` or `auction`), `auctionEndsAt?` (ISO-8601), `incrementFils?`, `testCertificateId?` (required for types with `requiresTestCertificate`, see below).
+  * **Request (JSON):** `category`, `titleAr`, `titleEn`, `priceFils`, `imageUrls` (1–5 URLs from the upload above, cover first), `condition`, `description` (required, see below), `brand?`, `model?`, `type`, `locationId` (area id), `saleType` (`fixed` or `auction`), `auctionEndsAt?` (ISO-8601), `incrementFils?`, `testCertificateId?` (required for types with `requiresTestCertificate`, see below), `pickup` (required, see below).
+  * **`pickup`:** `{ phone: string, address: string, notes?: string }`: where the courier collects the item
+    when it sells (the same phone and address rules as `DeliveryDetails`; the area is `locationId`, the name the
+    seller's). It is copied onto each order, so the assigned courier sees it with the drop-off and nobody types
+    anything after the sale. **Never** in `Item` or any listing response: buyers don't see it. The app fills it
+    in from the seller's last listing.
   * The seller is the caller: set `sellerId` and `seller` from the token, `status: "active"`.
   * Only accept `imageUrls` that this server issued **to the caller** and that no other listing uses. For
     auctions, `priceFils` is the starting bid.
@@ -603,7 +608,8 @@ type, brand or model, the app asks them to check it again.
 * Refurbished imports (`POST /admin/refurbished/import`) don't need a certificate: the brand
   certifies them.
 * **`PATCH /listings/:id` *(Authenticated)***
-  * **Request:** `{ "priceFils"?: 50000, "condition"?: "excellent" }` (nothing else can change)
+  * **Request:** `{ "priceFils"?: 50000, "condition"?: "excellent", "pickup"?: { "phone", "address", "notes"? } }`
+    (nothing else can change). A new pickup is for orders from now on; orders already placed keep theirs.
   * **Response (200):** `Item`
   * **Errors:** `FORBIDDEN` (403) not the seller; `NOT_FOUND` (404) withdrawn; `OPEN_ORDERS` (409) paid for
     (`reserved`); `ITEM_UNAVAILABLE` (409) sold; `VALIDATION` (422) a refurbished grade, or a new price on an
@@ -714,7 +720,7 @@ type DeliveryDetails = {
 ```
 
 The app remembers the last delivery details on the phone and fills them in next time. Show
-`delivery` to the courier (and the seller's pickup address, once that exists) but never to other users.
+`delivery` to the courier (and the pickup the seller gave with the listing) but never to other users.
 
 **Filling the address from the buyer's location.** When checkout opens with no saved address, the
 app asks the buyer whether to use their location (there is also a "Use my current location" button
@@ -793,7 +799,8 @@ type Delivery = {
   status: 'to_pickup' | 'picked_up' | 'delivered';
   itemTitle: Localized;
   itemImageUrl: string;
-  pickup: DeliveryDetails;          // the seller: name, phone, area, address, notes
+  pickup: DeliveryDetails;          // from the order: the seller's name, the listing's area, and the phone,
+                                    // address and notes given with the listing (a store: set in the dashboard)
   dropoff: DeliveryDetails;         // the buyer's delivery details from the order
   assignedAt: string;               // ISO-8601
   pickedUpAt?: string;
@@ -808,12 +815,12 @@ type Delivery = {
   it isn't assigned to me; `VALIDATION` if it isn't `to_pickup`.
 * **`POST /courier/confirm-delivery`** *(above)*: the buyer tells the courier the 4-digit PIN at the door;
   a correct PIN completes the order (`delivered`), a wrong one is `INVALID_PIN`, five wrong ones lock it.
-* Admins assign paid orders to couriers in the dashboard; the seller gives the pickup address when the order
-  is paid.
-* **`POST /orders/:id/pickup`** *(the seller, once the order is paid)* → Body: `DeliveryDetails` (where the courier
-  collects the item) → the sale (`GET /me/sales` shape, with `pickup`). Can be changed until the courier picks
-  it up (`VALIDATION` after that); `NOT_FOUND` for anyone else or an unpaid order. Until it's given, a
-  `Delivery`'s `pickup` has the seller's name and the listing's area with an empty `phone` and `address`.
+* **Nobody types an address after the sale.** An admin picks the paid order and the driver in the dashboard (the
+  Orders list or the order page); the driver's screen then shows the **pickup** and the **drop-off** from the order:
+  the drop-off is the buyer's `DeliveryDetails` from checkout, the pickup was copied from the listing's `pickup`
+  (a brand store's: `POST /admin/refurbished/stores/:id/pickup`) when the order was placed. The seller sees it on
+  the sale (`GET /me/sales` → `pickup`). Orders placed before pickups came with listings show the seller's name
+  and the listing's area with an empty `phone` and `address`.
 * **`POST /admin/orders/:id/assign`** *(admin)* → Body: `{ "courierId": "..." }` → `Order`. Paid orders not
   picked up yet (it can be reassigned until then); the courier must be an active courier account.
 * `orderId` in the courier paths is case-insensitive. "Today" for delivered ones is Jordan time.
@@ -1056,6 +1063,9 @@ the audit log) unless said otherwise. Queues return at most 100 entries.
   createdAt }[]`, `StoreKey = { id, label, createdAt, lastUsedAt, revokedAt }` (never the key itself).
 * **`POST /admin/refurbished/stores`** *(admin)* → Body: `{ id: "store-<brand>", nameEn, nameAr }` → 201, the store.
   `VALIDATION` for another id format or an id that exists.
+* **`POST /admin/refurbished/stores/:id/pickup`** *(admin)* → Body: `{ phone, cityId, address }` → the same,
+  normalized. Where couriers collect this store's orders: copied onto each new order (orders already placed
+  keep theirs). `GET /admin/refurbished/stores` returns it as `pickup` (`null` until set).
 * **`POST /admin/refurbished/stores/:id/keys`** *(admin)* → Body: `{ "label": "Apple stock system" }` → 201,
   `StoreKey & { key }`: the only time `key` (`sahla_sk_…`) is shown; only its hash is kept.
 * **`POST /admin/refurbished/stores/:id/keys/:keyId/revoke`** *(admin)* → the key, revoked (it gets 401 at once).

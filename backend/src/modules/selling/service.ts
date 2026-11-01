@@ -4,6 +4,7 @@ import { ApiError } from '../../lib/errors';
 import { findType } from '../../reference';
 import { itemInclude } from '../catalog/apiItem';
 import { searchTextFor } from '../catalog/searchText';
+import { listingPickupColumns, type PickupInput } from '../orders/delivery';
 import type { NewListing } from './rules';
 
 const invalid = (message: string) => new ApiError(422, 'VALIDATION', message);
@@ -74,6 +75,7 @@ export async function createListing(seller: User, input: NewListing) {
         sellerVerified: seller.verified,
         sellerUserId: seller.id,
         testCertificateId,
+        ...listingPickupColumns(input.pickup),
       },
       include: itemInclude,
     });
@@ -103,12 +105,24 @@ async function ownActiveListing(sellerId: string, id: string) {
   return listing;
 }
 
-/** PATCH /listings/:id: price and condition (B4.2). An auction's price is fixed once bidding starts. */
-export async function updateListing(sellerId: string, id: string, patch: { priceFils?: number; condition?: NewListing['condition'] }) {
+/**
+ * PATCH /listings/:id: price, condition and the pickup (B4.2, B14.5). An auction's
+ * price is fixed once bidding starts. A new pickup is for orders from now on:
+ * an order keeps the one it was placed with.
+ */
+export async function updateListing(
+  sellerId: string,
+  id: string,
+  { pickup, ...patch }: { priceFils?: number; condition?: NewListing['condition']; pickup?: PickupInput },
+) {
   const listing = await ownActiveListing(sellerId, id);
   if (patch.priceFils !== undefined && listing.saleType === 'auction' && listing.bidCount > 0)
     throw invalid('priceFils: an auction with bids keeps its price');
-  return prisma.listing.update({ where: { id }, data: patch, include: itemInclude });
+  return prisma.listing.update({
+    where: { id },
+    data: { ...patch, ...(pickup && listingPickupColumns(pickup)) },
+    include: itemInclude,
+  });
 }
 
 /** DELETE /listings/:id: withdrawn, never shown again (B4.2). Not once paid for, nor an auction with bids. */

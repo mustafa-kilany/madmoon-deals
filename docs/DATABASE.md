@@ -182,6 +182,9 @@ erDiagram
     text auctionWinnerId FK "highest bidder at the end"
     timestamp auctionClosedAt "set by the closing job"
     bool reportHidden "3 reporters: hidden"
+    text pickupPhone "for the courier (B14.5)"
+    text pickupAddress "never shown to buyers"
+    text pickupNotes
     int views
     text searchText "folded search words"
     bool sellerVerified "copy of the badge"
@@ -198,6 +201,9 @@ erDiagram
     text id PK "store-apple"
     text nameEn
     text nameAr
+    text pickupPhone "couriers collect here (B14.5)"
+    text pickupCityId
+    text pickupAddress
     timestamp createdAt
   }
   StoreApiKey {

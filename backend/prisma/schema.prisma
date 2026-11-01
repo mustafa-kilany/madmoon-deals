@@ -179,6 +179,13 @@ model Listing {
   // Hidden from browsing after several people reported it, until an admin looks (B5.1).
   reportHidden Boolean @default(false)
 
+  // Where the courier collects it (B14.5): given with the listing, copied onto each
+  // order, shown only to the assigned courier and admins (never in listing responses).
+  // The area is locationId. Brand stores use their Store pickup instead.
+  pickupPhone   String?
+  pickupAddress String?
+  pickupNotes   String?
+
   // Certified refurbished (POST /admin/refurbished/import)
   storeId        String?
   store          Store?  @relation(fields: [storeId], references: [id])
@@ -259,6 +266,10 @@ model Store {
   id        String   @id // "store-apple": the listings' sellerId
   nameEn    String
   nameAr    String
+  // Where couriers collect this store's orders (B14.5), set in the dashboard.
+  pickupPhone   String?
+  pickupCityId  String?
+  pickupAddress String?
   createdAt DateTime @default(now())
 
   listings Listing[]

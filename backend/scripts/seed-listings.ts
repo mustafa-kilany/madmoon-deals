@@ -53,6 +53,8 @@ const listingFields = (item: Item) => ({
   sellerVerified: item.verified,
 });
 
+const DEMO_PICKUP = { pickupPhone: '0795550123', pickupAddress: 'Building 7, ground floor (demo address)' };
+
 /** The listings as the app's mock builds them at `now` (also the tests' reference). */
 export const demoItems = (now: number) => [...buildItems(now), ...buildRefurbishedItems()];
 
@@ -85,7 +87,8 @@ export async function seedListings(now = Date.now()) {
   }
 
   for (const item of items) {
-    const fields = { ...listingFields(item), sellerUserId: item.sellerId };
+    // A made-up pickup (B14.5), as the app's courier demo shows (frontend/src/services/courier/mock.ts).
+    const fields = { ...listingFields(item), sellerUserId: item.sellerId, ...DEMO_PICKUP };
     const listing = await prisma.listing.upsert({
       where: { id: item.id },
       update: fields,
@@ -121,10 +124,11 @@ export async function seedListings(now = Date.now()) {
   }
 
   for (const item of refurbished) {
+    const storePickup = { pickupPhone: DEMO_PICKUP.pickupPhone, pickupCityId: item.location.id, pickupAddress: `${item.seller.en} warehouse (demo address)` };
     await prisma.store.upsert({
       where: { id: item.sellerId },
-      update: {},
-      create: { id: item.sellerId, nameEn: item.seller.en, nameAr: item.seller.ar },
+      update: storePickup,
+      create: { id: item.sellerId, nameEn: item.seller.en, nameAr: item.seller.ar, ...storePickup },
     });
     const fields = {
       ...listingFields(item),

@@ -90,6 +90,7 @@ describe('Phase 6 — orders and escrow', () => {
       type: 'accessories',
       locationId: 'salt',
       saleType: 'fixed',
+      pickup: { phone: '0791234567', address: 'Main St, building 1' },
     });
     expect(mine.sellerId).toBe('user-demo');
     await expect(

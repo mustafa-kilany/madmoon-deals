@@ -861,3 +861,28 @@ rect.is-active {
     grid-template-columns: 1fr;
   }
 }
+
+/* Choosing a driver inside an Orders row */
+.assign-inline {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.assign-inline select {
+  padding: 5px 8px;
+  font-size: 13px;
+  max-width: 170px;
+}
+.assign-inline button {
+  padding: 5px 10px;
+  font-size: 13px;
+}
+.assign-inline .error {
+  margin: 0;
+  padding: 4px 8px;
+}
+.narrow-form-inner {
+  max-width: 440px;
+}

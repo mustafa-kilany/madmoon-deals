@@ -7,7 +7,8 @@ import { useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { api } from './api';
 import type { ImportResult, ImportRun, Store, StoreKey } from './types';
-import { Badge, ConfirmDialog, Failed, Loading, when } from './ui';
+import { cities } from '@/services/mock/places';
+import { areaName, Badge, ConfirmDialog, Failed, Loading, when } from './ui';
 
 export function RefurbishedPage() {
   const { data, isPending, isError, error, refetch } = useQuery({
@@ -130,10 +131,84 @@ export function StorePage() {
       <p className="muted">
         {store.id} · {store.onSale} on sale · created {when(store.createdAt)}
       </p>
+      <StorePickup store={store} />
       <UploadSheet storeId={store.id} />
       <Keys store={store} />
       <ImportHistory storeId={store.id} />
     </div>
+  );
+}
+
+/** Where couriers collect this store's orders: copied onto each new order (B14.5). */
+function StorePickup({ store }: { store: Store }) {
+  const queryClient = useQueryClient();
+  const [editing, setEditing] = useState(!store.pickup);
+  const [form, setForm] = useState({ phone: store.pickup?.phone ?? '', cityId: store.pickup?.cityId ?? '', address: store.pickup?.address ?? '' });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const save = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      await api.post(`/admin/refurbished/stores/${store.id}/pickup`, form);
+      queryClient.invalidateQueries({ queryKey: ['stores'] });
+      setEditing(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Something went wrong');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <section className="card box">
+      <h2>Pickup for couriers</h2>
+      {!editing && store.pickup ? (
+        <div className="queue-head">
+          <p className="address">
+            {store.pickup.address}, {areaName(store.pickup.cityId)} · {store.pickup.phone}
+          </p>
+          <button className="secondary small-button" onClick={() => setEditing(true)}>
+            Change
+          </button>
+        </div>
+      ) : (
+        <form onSubmit={save} className="narrow-form-inner">
+          {!store.pickup && <p className="note small">Set this before the store’s items sell: the courier’s screen shows it for every order.</p>}
+          <label>
+            Area
+            <select value={form.cityId} onChange={e => setForm({ ...form, cityId: e.target.value })} required>
+              <option value="">Choose…</option>
+              {cities.map(c => (
+                <option key={c.id} value={c.id}>
+                  {c.name.en}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Street and building
+            <input value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} required minLength={5} placeholder="Abdali Blvd, tower 2, ground floor" />
+          </label>
+          <label>
+            Phone for the courier
+            <input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} required placeholder="079 123 4567" />
+          </label>
+          {error && <p className="error">{error}</p>}
+          <div className="actions">
+            {store.pickup && (
+              <button type="button" className="secondary" onClick={() => setEditing(false)}>
+                Cancel
+              </button>
+            )}
+            <button className="secondary" disabled={busy}>
+              {busy ? 'Saving…' : 'Save pickup'}
+            </button>
+          </div>
+        </form>
+      )}
+      <p className="small muted">New orders take this address; orders already placed keep theirs.</p>
+    </section>
   );
 }
 

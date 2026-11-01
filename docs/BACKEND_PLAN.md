@@ -274,9 +274,13 @@ buying, chats or offers.
   name, phone, area, address) and **drop-off** (buyer's delivery details), status.
 - ✅ **B14.4** `POST /courier/deliveries/:orderId/picked-up`, then the existing
   `POST /courier/confirm-delivery` with the buyer's 4-digit **PIN** (locks after 5 wrong tries).
-- ✅ **B14.5** Pickup address: the seller gives it when the order is paid (B7), shown only to the courier
-  (`POST /orders/:id/pickup`). ⬜ App: a pickup form on the seller's sale.
-- ✅ **B14.6** Assigning: an admin assigns each paid order to a courier in the dashboard (later: by area).
+- ✅ **B14.5** Pickup address, **automatic from the order** (owner's decision 2026-11-01: nobody types an address
+  after the sale). The seller gives the pickup phone and street with the listing (the Sell form fills it in from
+  their last listing; buyers never see it); a brand store's is set once in the dashboard. Each new order copies it,
+  so the driver's screen shows pickup and drop-off as soon as an admin assigns the order. The old after-sale
+  `POST /orders/:id/pickup` is removed.
+- ✅ **B14.6** Assigning: an admin assigns each paid order to a courier in the dashboard (later: by area): right in the
+  Orders list (a driver dropdown on each paid order) or on the order page.
   ✅ `POST /admin/orders/:id/assign`; ✅ on the dashboard's order page (B8.5), "Paid orders without a courier" on the
   overview.
 - ✅ **B14.7** App: courier mode (`frontend/src/features/courier`, `services/courier`, `config.mock.courier`
@@ -289,6 +293,8 @@ buying, chats or offers.
 
 ## Log
 Short notes on what changed, newest first.
+- 2026-11-01: pickups come with the listing (B14.5): the admin only picks the order and the driver, and the
+  driver sees pickup + drop-off from the order. Driver choice right in the Orders list; stores' pickup in the dashboard.
 - 2026-11-01: B8.8 done: the dashboard's Analytics page (trends and breakdowns, 7 / 30 / 90 days).
 - 2026-11-01: `ADMIN_2FA=off` lets the dashboard log in with email + password only, for local development until
   the dashboard is hosted (B8.6). Production refuses it; the tests always run with it on.

@@ -1,6 +1,7 @@
 import { DESCRIPTION_MAX, descriptionValid } from '@/lib/listing';
 import { z } from 'zod';
 import { categoryInfo, cityIds, findType } from '../../reference';
+import { pickupDetails } from '../orders/delivery';
 
 // docs/API.md → Phase 4: Selling. The description rule is the app's own
 // (frontend/src/lib/listing.ts), so the Sell form and the server never disagree.
@@ -39,6 +40,8 @@ export const newListing = z
     auctionEndsAt: z.iso.datetime({ offset: true }).optional(),
     incrementFils: z.number().int().min(100).max(MAX_PRICE_FILS).optional(),
     testCertificateId: z.string().optional(),
+    // Where the courier collects it (B14.5): never shown to buyers.
+    pickup: pickupDetails,
   })
   .superRefine((input, ctx) => {
     const type = findType(input.category, input.type);
@@ -52,6 +55,6 @@ export const newListing = z
 export type NewListing = z.infer<typeof newListing>;
 
 export const listingPatch = z
-  .object({ priceFils: price.optional(), condition: sellerCondition.optional() })
+  .object({ priceFils: price.optional(), condition: sellerCondition.optional(), pickup: pickupDetails.optional() })
   .strict()
-  .refine(patch => patch.priceFils !== undefined || patch.condition !== undefined, 'nothing to change');
+  .refine(patch => Object.values(patch).some(v => v !== undefined), 'nothing to change');
