@@ -95,6 +95,7 @@
     "verifyAndSignIn": "VERIFY & SIGN IN",
     "resendOtp": "Resend Code",
     "demoHint": "Demo account: ahmad@sahla.jo / sahla1234",
+    "socialFailed": "{{provider}} sign-in didn’t work. Please try again.",
     "welcome": "Welcome, {{name}}!",
     "forgotPassword": "Forgot password?",
     "resetBody": "Enter your account's email and we'll send you a 6-digit code.",

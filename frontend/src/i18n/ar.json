@@ -95,6 +95,7 @@
     "verifyAndSignIn": "التحقق وتسجيل الدخول",
     "resendOtp": "إعادة إرسال الرمز",
     "demoHint": "حساب تجريبي: ahmad@sahla.jo / sahla1234",
+    "socialFailed": "لم ينجح تسجيل الدخول عبر {{provider}}. حاول مجدداً.",
     "welcome": "أهلاً بك، {{name}}!",
     "forgotPassword": "نسيت كلمة المرور؟",
     "resetBody": "أدخل البريد الإلكتروني لحسابك وسنرسل لك رمزاً من 6 أرقام.",

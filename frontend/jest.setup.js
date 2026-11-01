@@ -68,3 +68,25 @@ jest.mock('@react-native-firebase/messaging', () => ({
   requestPermission: jest.fn(async () => 1),
   setBackgroundMessageHandler: jest.fn(),
 }));
+
+// Google sign-in is native: the picker answers "success" with a test ID token
+// unless a test makes signIn() resolve or reject differently.
+jest.mock('@react-native-google-signin/google-signin', () => ({
+  GoogleSignin: {
+    configure: jest.fn(),
+    hasPlayServices: jest.fn(async () => true),
+    signIn: jest.fn(async () => ({
+      type: 'success',
+      data: { idToken: 'test-google-id-token-0123456789' },
+    })),
+    signOut: jest.fn(async () => null),
+    hasPreviousSignIn: jest.fn(() => true),
+  },
+  isCancelledResponse: response => response.type === 'cancelled',
+  isErrorWithCode: error => error != null && typeof error.code === 'string',
+  statusCodes: {
+    SIGN_IN_CANCELLED: 'SIGN_IN_CANCELLED',
+    IN_PROGRESS: 'IN_PROGRESS',
+    PLAY_SERVICES_NOT_AVAILABLE: 'PLAY_SERVICES_NOT_AVAILABLE',
+  },
+}));

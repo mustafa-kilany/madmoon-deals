@@ -9,6 +9,8 @@ import { AppleLogo, GoogleLogo } from '@/components/icons/BrandLogos';
 import { SahlaLogo } from '@/components/SahlaLogo';
 import { Button, Heading, Text } from '@/components/ui';
 import type { RootScreenProps } from '@/navigation/types';
+import { errorMessageKey } from '@/services/api/errors';
+import { toast } from '@/store/toastStore';
 import { colors } from '@/theme/colors';
 import { iconSize } from '@/theme/spacing';
 import { useAuthFlowStore } from '../authFlow';
@@ -22,6 +24,17 @@ export function AuthScreen({ navigation }: RootScreenProps<'Auth'>) {
   const logInApple = useLogInWithApple();
 
   const busy = logInGoogle.isPending || logInApple.isPending;
+
+  // A refused token comes back as INVALID_CREDENTIALS, whose usual text is
+  // about passwords: say the Google / Apple sign-in failed instead.
+  const onSocialError = (provider: string) => (error: unknown) => {
+    const key = errorMessageKey(error);
+    toast.error(
+      key === 'errors.INVALID_CREDENTIALS' || key === 'errors.UNKNOWN'
+        ? t('auth.socialFailed', { provider })
+        : t(key),
+    );
+  };
 
   const close = () => {
     setPending(null);
@@ -59,7 +72,9 @@ export function AuthScreen({ navigation }: RootScreenProps<'Auth'>) {
 
         <View className="gap-3">
           <Pressable
-            onPress={() => logInGoogle.mutate(undefined)}
+            onPress={() =>
+              logInGoogle.mutate(undefined, { onError: onSocialError('Google') })
+            }
             disabled={busy}
             accessibilityRole="button"
             accessibilityLabel={t('auth.continueWithGoogle')}
@@ -78,7 +93,9 @@ export function AuthScreen({ navigation }: RootScreenProps<'Auth'>) {
           {/* Apple's guidelines: black button, white logo; shown on iOS and,
               as Android also supports the web flow, kept visible there too. */}
           <Pressable
-            onPress={() => logInApple.mutate(undefined)}
+            onPress={() =>
+              logInApple.mutate(undefined, { onError: onSocialError('Apple') })
+            }
             disabled={busy}
             accessibilityRole="button"
             accessibilityLabel={t('auth.continueWithApple')}

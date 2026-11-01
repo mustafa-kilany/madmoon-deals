@@ -12,6 +12,13 @@ export const config = {
    * server; release builds the real API (address from the backend developer).
    */
   apiBaseUrl: __DEV__ ? 'http://10.0.2.2:4000/v1' : 'https://api.sahla.jo/v1',
+  /**
+   * Google sign-in: the WEB OAuth client id of Firebase project
+   * sahla-project-75cb2 (client_type 3 in android/app/google-services.json).
+   * Not a secret. The backend lists the same id in GOOGLE_CLIENT_IDS.
+   */
+  googleWebClientId:
+    '480175471997-c87tff478kbuv6qia35a5ui5pfis3lvo.apps.googleusercontent.com',
   /** true = that service answers from the in-app mock backend (src/services/mock). */
   mock: {
     catalog: true,

@@ -204,13 +204,16 @@ Tasks:
   a tap opens the chat / auction / order; while open, a toast. Android only until the iPhone key.
   ⬜ iPhone: APNs key (Apple Developer account).
 
-## B10 — Google and Apple sign-in: backend ✅, live when the client ids exist (Google Cloud; Apple Developer account)
+## B10 — Google and Apple sign-in: backend ✅, Google on Android ✅, Apple waits for an Apple Developer account
 - ✅ **B10.1** `POST /auth/google`: verify the ID token with Google's keys (audience = our client ids); link by
   verified email, else a new account; staff refused. `GOOGLE_CLIENT_IDS` in `.env` turns it on.
 - ✅ **B10.2** `POST /auth/apple`: same with Apple's keys; hidden relay emails and no email are fine; the app may
   send the name (Apple gives it to the app once). `APPLE_CLIENT_IDS` turns it on.
-- ⬜ **B10.3** App: Google / Apple sign-in SDKs send the real ID token (today the app's buttons are wired to
-  the mock), once the client ids exist.
+- ✅ **B10.3** App, Google on Android: `@react-native-google-signin/google-signin` 16.1.5 picks the account and
+  sends its ID token (`src/services/auth/google.ts`); the token is made for the WEB client id
+  (`config.googleWebClientId` = `GOOGLE_CLIENT_IDS`); Firebase holds the debug SHA-1/256. Tested on the emulator
+  with a real Gmail. Still open: Play App Signing SHA-1 in Firebase before release; iPhone (iOS client id +
+  URL scheme); Apple sign-in in the app (Apple Developer account).
 
 ## B11 — Sanad ID verification ⏸ (MoDEE agreement, see `backend/docs/ID-VERIFICATION.md`)
 - ⬜ **B11.1** Apply to MoDEE (company registration, privacy policy).

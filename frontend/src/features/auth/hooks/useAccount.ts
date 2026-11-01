@@ -4,8 +4,10 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { config } from '@/config';
 import type { LocalPhoto, Session, User } from '@/lib/types';
 import { authService, type ProfilePatch } from '@/services/auth';
+import { forgetGoogleAccount, pickGoogleAccount } from '@/services/auth/google';
 import { paymentProvider } from '@/services/payments';
 import { stopPush } from '@/services/push';
 import { queryKeys } from '@/services/queryClient';
@@ -36,11 +38,23 @@ export const useLogInWithEmail = () =>
     onSuccess: useFinishAuth(),
   });
 
-export const useLogInWithGoogle = () =>
-  useMutation({
-    mutationFn: authService.logInWithGoogle,
-    onSuccess: useFinishAuth(),
+/**
+ * Google's account picker → ID token → our server. Resolves to null (and does
+ * nothing) when the user closes the picker. The mock backend needs no token.
+ */
+export function useLogInWithGoogle() {
+  const finish = useFinishAuth();
+  return useMutation({
+    mutationFn: async (): Promise<Session | null> => {
+      if (config.mock.auth) return authService.logInWithGoogle();
+      const idToken = await pickGoogleAccount();
+      return idToken ? authService.logInWithGoogle(idToken) : null;
+    },
+    onSuccess: session => {
+      if (session) finish(session);
+    },
   });
+}
 
 export const useLogInWithApple = () =>
   useMutation({
@@ -106,10 +120,14 @@ export function useLogOut() {
     mutationFn: () =>
       stopPush()
         .then(() => authService.logOut())
-        .catch(() => {}),
+        .catch(() => {})
+        .then(forgetGoogleAccount),
     onSettled: () => {
+      // A courier's navigator has no Tabs: signing out swaps in the shopper's
+      // navigator, which already opens on Home.
+      const wasCourier = useSessionStore.getState().user?.role === 'courier';
       signOut();
-      go({ name: 'Tabs', params: { screen: 'Home' } });
+      if (!wasCourier) go({ name: 'Tabs', params: { screen: 'Home' } });
     },
   });
 }
@@ -121,6 +139,7 @@ export function useDeleteAccount() {
   return useMutation({
     mutationFn: authService.deleteAccount,
     onSuccess: () => {
+      forgetGoogleAccount();
       signOut();
       go({ name: 'Tabs', params: { screen: 'Home' } });
       toast.success(t('profile.accountDeleted'));
