@@ -933,6 +933,10 @@ the invite code sets the password through the app's reset screens.
 * **`GET /admin/me`** *(admin)* → `Admin` = `{ id, name, email }`.
 * **`POST /admin/auth/logout`** *(admin)* → 204.
 
+**Development only, `ADMIN_2FA=off`:** `POST /admin/auth/login` answers the second step's response right away
+(`{ token, expiresInHours, admin }`, no `challenge`), so email + password are enough. The server refuses to
+start with it in production.
+
 The token lasts 12 hours, with no refresh: the dashboard logs in again. Demoting or suspending an admin
 takes effect on their next request.
 

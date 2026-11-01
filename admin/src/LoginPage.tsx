@@ -32,8 +32,11 @@ export function LoginPage() {
     setBusy(true);
     setError(null);
     try {
-      setStep(await api.post<LoginStart>('/admin/auth/login', { email, password }));
+      const answer = await api.post<LoginStart | LoginDone>('/admin/auth/login', { email, password });
       setPassword('');
+      // The server's second step is off (ADMIN_2FA=off, local development): already signed in.
+      if ('token' in answer) signIn(answer);
+      else setStep(answer);
     } catch (e) {
       setError(messageFor(e));
     } finally {

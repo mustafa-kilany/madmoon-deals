@@ -3,6 +3,7 @@ import { ipKeyGenerator, rateLimit } from 'express-rate-limit';
 import { z } from 'zod';
 import { prisma } from '../../db';
 import { ApiError } from '../../lib/errors';
+import { env } from '../../env';
 import { seal, unseal } from '../../lib/sealed';
 import { burnPasswordCheck, passwordMatches } from '../auth/password';
 import { currentUser, requireAdmin } from '../auth/requireUser';
@@ -49,6 +50,14 @@ adminAuthRoutes.post('/admin/auth/login', passwordLimit, async (req, res) => {
   if (!user || !(await passwordMatches(body.password, user.passwordHash)))
     throw new ApiError(401, 'INVALID_CREDENTIALS', 'Wrong email or password');
   if (user.role !== 'admin' || user.suspended) throw new ApiError(403, 'FORBIDDEN', 'Admins only');
+
+  // Development until the dashboard is hosted (ADMIN_2FA=off): the password is enough.
+  if (env.ADMIN_2FA === 'off') {
+    const token = await issueToken(user.id, req, 'admin');
+    await logAdminAction(user.id, req, 'admin.login', undefined, { secondStep: 'off' });
+    res.json({ token, expiresInHours: ADMIN_SESSION_HOURS, admin: toApiAdmin(user) });
+    return;
+  }
 
   let setup: { secret: string; otpauthUrl: string } | undefined;
   if (!user.totpEnabledAt) {

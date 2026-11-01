@@ -19,6 +19,7 @@ const env = {
   PAYMENT_MODE: 'fake',
   GEOCODER: 'fake',
   PUSH_MODE: 'fake',
+  ADMIN_2FA: 'on', // the tests turn it off themselves where needed, whatever .env says
 };
 const run = (command: string) => execSync(command, { stdio: 'inherit', env });
 

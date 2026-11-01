@@ -200,6 +200,9 @@ Tasks:
   give us (WooCommerce, Shopify) or their product feed file (Google Merchant XML/CSV), map it to the import
   rows and run the same import on a schedule. Vendors without a shop keep using the Excel sheet.
 - ⬜ **B8.6** Deploy the dashboard at `admin.sahla.jo` (static hosting); the API allows that origin (CORS).
+  **Turn the authenticator code back on:** remove `ADMIN_2FA=off` from `.env` (it is off in local development
+  since 2026-11-01, at the owner's request; production refuses to start with it off), then each admin scans
+  their QR code on the next log-in.
 
 ## B9 — Emails and push notifications 🔨 (D3 for emails; Firebase project `sahla-project-75cb2`)
 - ⬜ **B9.1** Real email sending (codes) behind `mailer.ts`; Arabic + English templates.
@@ -282,6 +285,8 @@ buying, chats or offers.
 
 ## Log
 Short notes on what changed, newest first.
+- 2026-11-01: `ADMIN_2FA=off` lets the dashboard log in with email + password only, for local development until
+  the dashboard is hosted (B8.6). Production refuses it; the tests always run with it on.
 - 2026-11-01: B8.3–B8.4 done: review queues (reports, suspicious accounts, certificate stamps), Certified
   Refurbished stores / keys / sheet upload with preview / history, and the Couriers page. A certificate an admin
   rejects can't be reused on a new listing. B14.6's dashboard screen was already on the order page (B8.5).

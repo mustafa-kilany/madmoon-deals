@@ -6,6 +6,7 @@ import type { AddressInfo } from 'node:net';
 import { after, before, test } from 'node:test';
 import { app } from '../../app';
 import { prisma } from '../../db';
+import { env } from '../../env';
 import { hashPassword } from '../auth/password';
 import { currentStep, totpCode } from './totp';
 
@@ -145,4 +146,21 @@ test('the audit log lists log-ins and changes, newest first; log-out ends the to
 
   assert.equal((await call('POST', '/admin/auth/logout', {}, dashboard)).status, 204);
   assert.equal((await call('GET', '/admin/me', undefined, dashboard)).status, 401);
+});
+
+test('ADMIN_2FA=off (local development): the password alone gives a dashboard token', async () => {
+  env.ADMIN_2FA = 'off';
+  try {
+    const r = await login();
+    assert.equal(r.status, 200);
+    assert.equal(r.body.challenge, undefined);
+    assert.equal(r.body.admin.email, ADMIN);
+    assert.equal((await call('GET', '/admin/me', undefined, r.body.token)).status, 200);
+    assert.equal((await login(ADMIN, 'wrongpass1')).status, 401); // the password still counts
+    assert.equal((await login(CUSTOMER)).status, 403); // and only admins
+    const [latest] = (await call('GET', '/admin/actions?limit=1', undefined, r.body.token)).body;
+    assert.deepEqual([latest.action, latest.details], ['admin.login', { secondStep: 'off' }]);
+  } finally {
+    env.ADMIN_2FA = 'on';
+  }
 });

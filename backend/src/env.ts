@@ -27,6 +27,10 @@ const schema = z
     // Local testing only: this code is accepted for any email and nothing is
     // sent (the app's tests and demo use 123456). Never set in production.
     DEV_EMAIL_CODE: optional,
+    // The dashboard's second log-in step, the authenticator app code (BACKEND_PLAN B8.1).
+    // off = email + password only: local development until the dashboard is hosted (B8.6).
+    // Never off in production (the server refuses to start).
+    ADMIN_2FA: z.enum(['on', 'off']).default('on'),
     // Staff (couriers, admins) have emails at this domain; public sign-up refuses it.
     STAFF_EMAIL_DOMAIN: z
       .string()
@@ -67,6 +71,10 @@ const schema = z
   .refine(e => !(e.NODE_ENV === 'production' && e.DEV_EMAIL_CODE), {
     message: 'DEV_EMAIL_CODE must not be set in production',
     path: ['DEV_EMAIL_CODE'],
+  })
+  .refine(e => !(e.NODE_ENV === 'production' && e.ADMIN_2FA === 'off'), {
+    message: 'ADMIN_2FA=off must not be used in production: admins need the authenticator code',
+    path: ['ADMIN_2FA'],
   })
   .refine(e => !(e.NODE_ENV === 'production' && e.SANAD_MODE === 'fake'), {
     message: 'SANAD_MODE=fake must not be used in production',
