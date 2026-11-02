@@ -53,9 +53,14 @@ const UNNAMED = /^(unnamed road|طريق بدون اسم|طريق غير مسم�
  * first): the first named road, and the first neighbourhood / sub-locality.
  */
 export function streetFromGoogle(results: GoogleResult[], lang: Lang): string {
+  // Google puts invisible direction marks (U+200E, U+200F, …) inside some Arabic names.
+  const clean = (name: string) => name.replace(/[‎‏‪-‮⁦-⁩]/g, '').trim();
   const components = results.flatMap(result => result.address_components ?? []);
   const named = (types: string[]) =>
-    components.find(c => types.some(t => c.types.includes(t)) && !UNNAMED.test(c.long_name.trim()))?.long_name;
+    components
+      .filter(c => types.some(t => c.types.includes(t)))
+      .map(c => clean(c.long_name))
+      .find(name => name && !UNNAMED.test(name));
   const parts = [named(['route']), named(['neighborhood', 'sublocality_level_1', 'sublocality'])];
   return [...new Set(parts.filter(Boolean))].join(lang === 'ar' ? '، ' : ', ');
 }

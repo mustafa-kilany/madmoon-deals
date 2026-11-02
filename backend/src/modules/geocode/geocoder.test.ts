@@ -26,6 +26,11 @@ test('unnamed roads are skipped; only what exists is returned', () => {
   assert.equal(streetFromGoogle([], 'ar'), '');
 });
 
+test('invisible direction marks Google adds to Arabic names are removed', () => {
+  const results = [{ address_components: [component('شارع السلط‎', 'route'), component('‏الجدعة', 'neighborhood')] }];
+  assert.equal(streetFromGoogle(results, 'ar'), 'شارع السلط، الجدعة');
+});
+
 test('the same name as road and neighbourhood appears once', () => {
   const results = [{ address_components: [component('Rainbow St', 'route'), component('Rainbow St', 'neighborhood')] }];
   assert.equal(streetFromGoogle(results, 'en'), 'Rainbow St');
