@@ -268,8 +268,10 @@ buying, chats or offers.
   ✅ sign-up refuses the staff domain (`STAFF_EMAIL_DOMAIN`, default `sahla.jo`); ✅ `POST /admin/couriers` (+ list,
   disable, enable) and ✅ the dashboard's Couriers page (B8.4); only the staff domain; an invite code is emailed. Public sign-up refuses the staff
   domain, so nobody can make a look-alike account.
-- 🔨 **B14.2** (✅ uploads; the rest with each endpoint) Couriers can only call courier endpoints: everything for customers (listing, offers, chats,
-  orders, saving) answers `FORBIDDEN` for them.
+- ✅ **B14.2** Couriers can only call courier endpoints: everything for customers (listing, offers, chats,
+  orders, saving) answers `FORBIDDEN` for them, and customers get `FORBIDDEN` from `/courier/*`. They keep
+  `/me`, log-out and `/me/devices` (push). `src/modules/courier/staffOnly.e2e.ts` calls every customer
+  endpoint with a courier token: **add each new customer endpoint to its list.**
 - ✅ **B14.3** `GET /courier/deliveries`: the orders assigned to me: order number, item, **pickup** (seller's
   name, phone, area, address) and **drop-off** (buyer's delivery details), status.
 - ✅ **B14.4** `POST /courier/deliveries/:orderId/picked-up`, then the existing
@@ -293,6 +295,8 @@ buying, chats or offers.
 
 ## Log
 Short notes on what changed, newest first.
+- 2026-11-02: B14.2 done: `GET /me/listings` now customers only too; one test checks every customer endpoint
+  refuses couriers (and the courier endpoints refuse customers).
 - 2026-11-01: pickups come with the listing (B14.5): the admin only picks the order and the driver, and the
   driver sees pickup + drop-off from the order. Driver choice right in the Orders list; stores' pickup in the dashboard.
 - 2026-11-01: B8.8 done: the dashboard's Analytics page (trends and breakdowns, 7 / 30 / 90 days).

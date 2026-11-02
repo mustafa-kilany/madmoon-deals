@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { prisma } from '../../db';
 import { ApiError } from '../../lib/errors';
-import { currentUser, optionalUserId, requireUser } from '../auth/requireUser';
+import { currentUser, optionalUserId, requireCustomer } from '../auth/requireUser';
 import { itemInclude, toApiItem } from './apiItem';
 import { listingQuery } from './listingQuery';
 import { searchListings } from './listings.service';
@@ -58,7 +58,7 @@ listingRoutes.post('/listings/:id/views', async (req, res) => {
 });
 
 // The seller's own listings, every status but deleted, newest first.
-listingRoutes.get('/me/listings', requireUser, async (req, res) => {
+listingRoutes.get('/me/listings', ...requireCustomer, async (req, res) => {
   const rows = await prisma.listing.findMany({
     where: { sellerUserId: currentUser(res.locals).id, status: { not: 'withdrawn' } },
     orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
