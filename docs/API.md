@@ -740,7 +740,8 @@ building and floor, and can change anything. The order is unchanged: it carries 
     area) and only for positions in Jordan; if the request fails, the buyer still gets the area.
   * `VALIDATION` (422) for a missing or out-of-range `lat` / `lng`.
   * **Server (B7.1):** `GEOCODER` in `backend/.env`: `off` (always `""`), `fake` (the nearest area's main street),
-    `nominatim` (OpenStreetMap). Positions outside Jordan get `""` without a lookup; a failed lookup is `""` too.
+    `nominatim` (OpenStreetMap), `google` (Google Geocoding API, the launch choice; `backend/docs/GEOCODING.md`).
+    Positions outside Jordan get `""` without a lookup; a failed lookup is `""` too.
     More than 20 an hour per user: `RATE_LIMITED` (429).
 
 **The server prices every order.** The app shows the same breakdown (`calculateCheckoutBreakdown` in

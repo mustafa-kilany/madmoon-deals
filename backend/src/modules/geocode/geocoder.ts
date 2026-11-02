@@ -42,9 +42,60 @@ const nominatim: Geocoder = {
   },
 };
 
+type GoogleComponent = { long_name: string; types: string[] };
+type GoogleResult = { address_components?: GoogleComponent[] };
+
+// Google's placeholder for a road with no name, in either language.
+const UNNAMED = /^(unnamed road|طريق بدون اسم|طريق غير مسمى)$/i;
+
+/**
+ * "street, neighbourhood" from Google's reverse-geocoding results (best match
+ * first): the first named road, and the first neighbourhood / sub-locality.
+ */
+export function streetFromGoogle(results: GoogleResult[], lang: Lang): string {
+  const components = results.flatMap(result => result.address_components ?? []);
+  const named = (types: string[]) =>
+    components.find(c => types.some(t => c.types.includes(t)) && !UNNAMED.test(c.long_name.trim()))?.long_name;
+  const parts = [named(['route']), named(['neighborhood', 'sublocality_level_1', 'sublocality'])];
+  return [...new Set(parts.filter(Boolean))].join(lang === 'ar' ? '، ' : ', ');
+}
+
+/**
+ * Google Geocoding API (GEOCODER=google, GOOGLE_MAPS_API_KEY): paid per lookup
+ * after the free monthly allowance; best street names in Jordan, in Arabic and
+ * English. The key stays on the server and never appears in logs.
+ */
+const google: Geocoder = {
+  async street({ lat, lng }, lang) {
+    const url = new URL('https://maps.googleapis.com/maps/api/geocode/json');
+    url.search = new URLSearchParams({
+      latlng: `${lat},${lng}`,
+      language: lang,
+      result_type: 'street_address|route|neighborhood|sublocality',
+      key: env.GOOGLE_MAPS_API_KEY!,
+    }).toString();
+    const r = await fetch(url, { signal: AbortSignal.timeout(4000) });
+    if (!r.ok) throw new Error(`Google Geocoding answered ${r.status}`);
+    const body = (await r.json()) as { status: string; results?: GoogleResult[] };
+    if (body.status === 'ZERO_RESULTS') return '';
+    // REQUEST_DENIED (key / API not enabled / billing), OVER_QUERY_LIMIT, …: only the status, never the URL.
+    if (body.status !== 'OK') throw new Error(`Google Geocoding status ${body.status}`);
+    return streetFromGoogle(body.results ?? [], lang);
+  },
+};
+
 /** The geocoder in use, or null (GEOCODER=off): the app then fills only the area. */
 export function geocoder(): Geocoder | null {
-  return env.GEOCODER === 'fake' ? fakeGeocoder : env.GEOCODER === 'nominatim' ? nominatim : null;
+  switch (env.GEOCODER) {
+    case 'fake':
+      return fakeGeocoder;
+    case 'nominatim':
+      return nominatim;
+    case 'google':
+      return google;
+    default:
+      return null;
+  }
 }
 
 /** Roughly Jordan: anywhere else there's no area to deliver to, so no lookup is made. */

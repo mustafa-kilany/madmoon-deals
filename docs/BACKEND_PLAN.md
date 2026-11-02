@@ -28,7 +28,7 @@ endpoint does), [`DATABASE.md`](DATABASE.md) the database design and [`backend/R
 | D3 | Email service for codes | Amazon SES (cheapest) · Resend (easiest) · Postmark | B9 (sooner for real users) | |
 | D4 | Hosting for the API + database | Railway / Render (easiest) · DigitalOcean App Platform + Managed Postgres · AWS | B12 | |
 | D5 | Admin dashboard | Own web app in this repo (`admin/`, React + Vite) calling the same API · AdminJS (generated, less flexible) | B8 | _Own web app on the same API recommended (see B8)_ |
-| D6 | Reverse geocoding (street from GPS) | Google Geocoding · HERE · Mapbox · self-hosted Nominatim (free) | B7 | |
+| D6 | Reverse geocoding (street from GPS) | Google Geocoding · HERE · Mapbox · self-hosted Nominatim (free) | B7 | **Google** (2026-11-02) |
 | D7 | Search engine | Postgres only (enough to launch) · Meilisearch later for typo tolerance | B2 | _Postgres first_ |
 | D9 | Staff email domain (couriers, admins) | e.g. `@sahla.jo` (the domain Sahla owns) | B14 | |
 | D8 | Where refurbished stock comes from (`REFURBISHED_SOURCING.md`) | 1 Jordanian vendors · 2 Sahla imports graded stock (EU / US / UAE) and sells it · 3 order on demand | B13 | _1 now, 2 next; 3 later_ |
@@ -132,8 +132,8 @@ Two kinds (decided 2026-10-30): **users' listing photos** and **admins changing 
 
 ## B7 — Orders, payments, escrow, delivery 🔨 (branch `feat/backend-b7-orders`; needs D2 and a merchant account, fake provider until then)
 - ✅ **B7.1** `GET /geocode/reverse` (D6), no coordinates stored or logged, 20/hour per user. `GEOCODER=nominatim`
-  (OpenStreetMap, free) works now; streets are often Arabic-only there even for `lang=en`. For launch: self-host
-  Nominatim or add Google (one more `Geocoder` in `src/modules/geocode/geocoder.ts`).
+  (OpenStreetMap, free) for development; streets are often Arabic-only there even for `lang=en`. For launch:
+  ✅ `GEOCODER=google` (D6, `GOOGLE_MAPS_API_KEY`; the key's set-up in `backend/docs/GEOCODING.md`).
 - ✅ **B7.2** `POST /orders`: server prices it (3% buyer protection, min 1 JOD; 2 JOD delivery), checks the
   listing / offer / auction winner / blocks; readable ids `SA-123456`.
 - ✅ **B7.3** Payment provider module with a **fake provider** (development and tests): `PAYMENT_MODE=fake`,
@@ -295,6 +295,8 @@ buying, chats or offers.
 
 ## Log
 Short notes on what changed, newest first.
+- 2026-11-02: D6 = Google: `GEOCODER=google` added (street + neighbourhood in Arabic or English); the key's
+  set-up, quota and budget in `backend/docs/GEOCODING.md`.
 - 2026-11-02: B14.2 done: `GET /me/listings` now customers only too; one test checks every customer endpoint
   refuses couriers (and the courier endpoints refuse customers).
 - 2026-11-01: pickups come with the listing (B14.5): the admin only picks the order and the driver, and the

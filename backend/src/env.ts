@@ -55,9 +55,12 @@ const schema = z
     // added; fake = a pretend provider for development and tests (backend/docs/PAYMENTS.md).
     PAYMENT_MODE: z.enum(['off', 'fake']).default('off'),
     // Street from GPS at checkout (BACKEND_PLAN B7.1, decision D6). off = the app fills only the
-    // area; fake = the nearest area's main street; nominatim = OpenStreetMap (NOMINATIM_URL).
-    GEOCODER: z.enum(['off', 'fake', 'nominatim']).default('off'),
+    // area; fake = the nearest area's main street; nominatim = OpenStreetMap (NOMINATIM_URL);
+    // google = Google Geocoding API (GOOGLE_MAPS_API_KEY, paid; backend/docs/GEOCODING.md).
+    GEOCODER: z.enum(['off', 'fake', 'nominatim', 'google']).default('off'),
     NOMINATIM_URL: z.string().url().default('https://nominatim.openstreetmap.org'),
+    // A secret: never commit it. Restrict it to the Geocoding API in Google Cloud Console.
+    GOOGLE_MAPS_API_KEY: optional,
     // Push notifications (BACKEND_PLAN B9.3, backend/docs/PUSH.md). off = none sent; fake = recorded
     // for tests; fcm = Firebase Cloud Messaging with FIREBASE_SERVICE_ACCOUNT.
     PUSH_MODE: z.enum(['off', 'fake', 'fcm']).default('off'),
@@ -83,6 +86,14 @@ const schema = z
   .refine(e => !(e.NODE_ENV === 'production' && e.PAYMENT_MODE === 'fake'), {
     message: 'PAYMENT_MODE=fake must not be used in production',
     path: ['PAYMENT_MODE'],
+  })
+  .refine(e => e.GEOCODER !== 'google' || e.GOOGLE_MAPS_API_KEY, {
+    message: 'GEOCODER=google needs GOOGLE_MAPS_API_KEY',
+    path: ['GOOGLE_MAPS_API_KEY'],
+  })
+  .refine(e => !(e.NODE_ENV === 'production' && e.GEOCODER === 'fake'), {
+    message: 'GEOCODER=fake must not be used in production',
+    path: ['GEOCODER'],
   })
   .refine(e => e.PUSH_MODE !== 'fcm' || e.FIREBASE_SERVICE_ACCOUNT, {
     message: 'PUSH_MODE=fcm needs FIREBASE_SERVICE_ACCOUNT',
