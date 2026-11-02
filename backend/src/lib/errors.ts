@@ -16,6 +16,7 @@ export type ErrorCode =
   | 'PAYMENT_DECLINED' // 402: the card was declined; the buyer can try another
   | 'INVALID_CODE'
   | 'SANAD_UNAVAILABLE' // 503: ID verification with Sanad isn't switched on yet
+  | 'EMAIL_UNAVAILABLE' // 503: the email service is down; the code wasn't sent, ask again
   | 'RATE_LIMITED' // 429: shown as a generic error by the app
   | 'INTERNAL';
 

@@ -25,7 +25,7 @@ endpoint does), [`DATABASE.md`](DATABASE.md) the database design and [`backend/R
 |---|---|---|---|---|
 | D1 | Where photos are stored in production | Cloudflare R2 (cheap, no download fees) · AWS S3 · DigitalOcean Spaces | B3 | _R2 recommended_ |
 | D2 | Payment provider (JOD, cards, 3-D Secure, holding money until delivery) | MEPS (Jordanian banks) · a bank's payment gateway · HyperPay · PayTabs · Checkout.com | B7 | |
-| D3 | Email service for codes | Amazon SES (cheapest) · Resend (easiest) · Postmark | B9 (sooner for real users) | |
+| D3 | Email service for codes | Amazon SES (cheapest) · Resend (easiest) · Postmark | B9 (sooner for real users) | **Postmark** (2026-11-02; needs Sahla's own domain) |
 | D4 | Hosting for the API + database | Railway / Render (easiest) · DigitalOcean App Platform + Managed Postgres · AWS | B12 | |
 | D5 | Admin dashboard | Own web app in this repo (`admin/`, React + Vite) calling the same API · AdminJS (generated, less flexible) | B8 | _Own web app on the same API recommended (see B8)_ |
 | D6 | Reverse geocoding (street from GPS) | Google Geocoding · HERE · Mapbox · self-hosted Nominatim (free) | B7 | **Google** (2026-11-02) |
@@ -209,7 +209,10 @@ Tasks:
   their QR code on the next log-in.
 
 ## B9 — Emails and push notifications 🔨 (D3 for emails; Firebase project `sahla-project-75cb2`)
-- ⬜ **B9.1** Real email sending (codes) behind `mailer.ts`; Arabic + English templates.
+- 🔨 **B9.1** Real email sending (codes) behind `mailer.ts`; Arabic + English templates. ✅ Built:
+  `MAIL_MODE=postmark` (D3), one email in both languages (text + HTML), `503 EMAIL_UNAVAILABLE` when it can't
+  be sent (the code is forgotten, so asking again works at once). ⏸ Switching it on needs Sahla's domain
+  (DNS records) and Postmark's approval: `backend/docs/EMAIL.md`.
 - ✅ **B9.2** `POST /me/devices`, `DELETE /me/devices/:token` (`Device` table, with the phone's language and
   the sign-in it belongs to). ✅ App: sends the token and language after sign-in and at launch, removes it on
   log-out (`frontend/src/services/push`).
@@ -295,6 +298,8 @@ buying, chats or offers.
 
 ## Log
 Short notes on what changed, newest first.
+- 2026-11-02: D3 = Postmark: B9.1 built (`MAIL_MODE=postmark`, bilingual code emails, `EMAIL_UNAVAILABLE`);
+  goes live once Sahla has a domain (`backend/docs/EMAIL.md`).
 - 2026-11-02: D6 = Google: `GEOCODER=google` added (street + neighbourhood in Arabic or English); the key's
   set-up, quota and budget in `backend/docs/GEOCODING.md`.
 - 2026-11-02: B14.2 done: `GET /me/listings` now customers only too; one test checks every customer endpoint

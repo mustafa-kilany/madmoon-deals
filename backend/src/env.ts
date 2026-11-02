@@ -27,6 +27,12 @@ const schema = z
     // Local testing only: this code is accepted for any email and nothing is
     // sent (the app's tests and demo use 123456). Never set in production.
     DEV_EMAIL_CODE: optional,
+    // Emails (BACKEND_PLAN B9.1, backend/docs/EMAIL.md). console = printed in this terminal;
+    // postmark = sent with Postmark (POSTMARK_SERVER_TOKEN, a secret: never commit it).
+    MAIL_MODE: z.enum(['console', 'postmark']).default('console'),
+    POSTMARK_SERVER_TOKEN: optional,
+    // The sender: an address at a domain verified in Postmark.
+    MAIL_FROM: z.string().min(3).default('Sahla <no-reply@sahla.jo>'),
     // The dashboard's second log-in step, the authenticator app code (BACKEND_PLAN B8.1).
     // off = email + password only: local development until the dashboard is hosted (B8.6).
     // Never off in production (the server refuses to start).
@@ -86,6 +92,14 @@ const schema = z
   .refine(e => !(e.NODE_ENV === 'production' && e.PAYMENT_MODE === 'fake'), {
     message: 'PAYMENT_MODE=fake must not be used in production',
     path: ['PAYMENT_MODE'],
+  })
+  .refine(e => e.MAIL_MODE !== 'postmark' || e.POSTMARK_SERVER_TOKEN, {
+    message: 'MAIL_MODE=postmark needs POSTMARK_SERVER_TOKEN',
+    path: ['POSTMARK_SERVER_TOKEN'],
+  })
+  .refine(e => !(e.NODE_ENV === 'production' && e.MAIL_MODE === 'console'), {
+    message: 'MAIL_MODE=console must not be used in production: nobody would get their codes',
+    path: ['MAIL_MODE'],
   })
   .refine(e => e.GEOCODER !== 'google' || e.GOOGLE_MAPS_API_KEY, {
     message: 'GEOCODER=google needs GOOGLE_MAPS_API_KEY',

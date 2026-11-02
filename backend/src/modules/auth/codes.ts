@@ -2,7 +2,8 @@ import { createHmac, randomInt, timingSafeEqual } from 'node:crypto';
 import { prisma } from '../../db';
 import { env } from '../../env';
 import { ApiError } from '../../lib/errors';
-import { codeEmail, mailer } from './mailer';
+import { logger } from '../../lib/logger';
+import { codeEmail, mailer, MailerUnavailable } from './mailer';
 
 // 6-digit emailed codes (sign-up, password reset), docs/API.md → POST /auth/send-otp:
 // valid 10 minutes, 5 wrong tries, at most one new code a minute per email.
@@ -24,7 +25,7 @@ export async function sendCode(email: string, purpose: Purpose) {
   if (recent) return; // the code sent under a minute ago still works
 
   const code = env.DEV_EMAIL_CODE ?? String(randomInt(0, 1_000_000)).padStart(6, '0');
-  await prisma.emailCode.create({
+  const row = await prisma.emailCode.create({
     data: {
       email,
       purpose,
@@ -33,7 +34,15 @@ export async function sendCode(email: string, purpose: Purpose) {
     },
   });
   if (env.DEV_EMAIL_CODE) return; // local testing: nothing is sent
-  await mailer.send({ to: email, ...codeEmail(purpose, code) });
+  try {
+    await mailer.send({ to: email, ...codeEmail(purpose, code) });
+  } catch (error) {
+    if (!(error instanceof MailerUnavailable)) throw error;
+    // Not sent: forget the code so "send again" works at once, not after the minute.
+    await prisma.emailCode.delete({ where: { id: row.id } });
+    logger.error({ err: error }, 'Email code not sent');
+    throw new ApiError(503, 'EMAIL_UNAVAILABLE', 'Emails can’t be sent right now: try again in a few minutes');
+  }
 }
 
 const invalid = () => new ApiError(422, 'INVALID_CODE', 'Wrong or expired code');

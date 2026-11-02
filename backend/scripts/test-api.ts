@@ -19,6 +19,7 @@ const env = {
   PAYMENT_MODE: 'fake',
   GEOCODER: 'fake',
   PUSH_MODE: 'fake',
+  MAIL_MODE: 'console', // never real emails from the tests
   ADMIN_2FA: 'on', // the tests turn it off themselves where needed, whatever .env says
 };
 const run = (command: string) => execSync(command, { stdio: 'inherit', env });

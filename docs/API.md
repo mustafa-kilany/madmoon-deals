@@ -170,6 +170,7 @@ export const config = {
 | `PAYMENT_DECLINED` | 402 | The card was declined (`POST /orders/:id/pay`); the order stays `awaiting_payment`, the buyer can try another card |
 | `INVALID_CODE` | 422 | Wrong or expired emailed code (sign-up, password reset) |
 | `SANAD_UNAVAILABLE` | 503 | ID verification with Sanad isn't switched on yet ("coming soon") |
+| `EMAIL_UNAVAILABLE` | 503 | The emailed code couldn't be sent (email service down or misconfigured); nothing was saved, so asking again works at once (`POST /auth/send-otp`, `POST /auth/forgot-password`) |
 | `RATE_LIMITED` | 429 | Too many tries: log-in / code attempts for one email from one IP (~15 minutes), delivery PINs (5 per order), location lookups (20 an hour) |
 
 Any other code is shown to the user as a generic error, so new codes need an app update to get their own message.
