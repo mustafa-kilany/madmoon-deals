@@ -185,7 +185,8 @@ export const useUpdateListing = () =>
 export const useWithdrawListing = () =>
   useMutation({
     mutationFn: catalogService.withdrawListing,
-    onSuccess: () => {
+    onSuccess: (_, id) => {
+      queryClient.removeQueries({ queryKey: queryKeys.item(id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.items });
       queryClient.invalidateQueries({ queryKey: queryKeys.myListings });
     },

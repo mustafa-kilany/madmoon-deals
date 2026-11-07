@@ -40,13 +40,6 @@ import { useSimilarItems } from '../hooks/useSimilarItems';
 const SELLER_AVATAR =
   'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=100&h=100&fit=crop';
 
-/** The prototype fakes a 3-photo gallery from one image with Unsplash effects. */
-const galleryOf = (url: string) => [
-  url,
-  url.replace('fit=crop', 'fit=crop&sat=-30'),
-  url.replace('fit=crop', 'fit=crop&flip=h'),
-];
-
 const isNotFound = (error: unknown) =>
   error instanceof ApiError && error.code === 'NOT_FOUND';
 
@@ -92,10 +85,8 @@ function ProductDetail({ item }: { item: Item }) {
   const forSale = item.status === 'active';
 
   const title = localized(item.title);
-  // Real listings carry their own photos; demo listings fake a gallery.
-  const gallery = item.imageUrls?.length
-    ? item.imageUrls
-    : galleryOf(item.imageUrl);
+  // Every photo, full size (a list card only has the cover until the listing loads).
+  const gallery = item.imageUrls?.length ? item.imageUrls : [item.imageUrl];
   // Same kind of item at a similar price, e.g. other cars around 10,000 JOD.
   const similar = useSimilarItems(item, 'price');
   // Prototype: the seller's Chat button also starts an offer.
@@ -128,7 +119,7 @@ function ProductDetail({ item }: { item: Item }) {
         <View className="-mt-8 flex-row gap-3 px-5">
           {gallery.map((uri, i) => (
             <Pressable
-              key={uri}
+              key={`${i}-${uri}`}
               onPress={() => setSelected(i)}
               accessibilityRole="button"
               accessibilityLabel={t('product.photo', { index: i + 1 })}

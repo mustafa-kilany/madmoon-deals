@@ -1,6 +1,7 @@
 # Seller lists a phone: photo from the gallery, brand + model pickers (the
 # model fills the title), a description, the shop test certificate, price,
-# publish, then finds it in My Listings.
+# publish, finds it in My Listings, then edits its price (B15.2). Against the
+# real backend: the server checks the certificate (fake reader without a key).
 appId: com.sahla
 name: Sell an item
 ---
@@ -12,6 +13,7 @@ name: Sell an item
     env:
       EMAIL: ahmad@sahla.jo
       PASSWORD: sahla1234
+- runFlow: subflows/accept-terms.yaml
 - tapOn: "Sell"
 - assertVisible: "List an Item"
 
@@ -62,6 +64,19 @@ name: Sell an item
 - tapOn: "Price (JOD)"
 - inputText: "650"
 - hideKeyboard
+# Where the driver collects it (B14.5): never shown to buyers
+- scrollUntilVisible:
+    element:
+        text: "Phone for the courier"
+- tapOn: "Phone for the courier"
+- inputText: "0795550123"
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+        text: "Street and building"
+- tapOn: "Street and building"
+- inputText: "Wasfi Al-Tal St, building 40"
+- hideKeyboard
 - scrollUntilVisible:
     element:
         text: "Publish Listing"
@@ -73,3 +88,36 @@ name: Sell an item
 - scrollUntilVisible:
     element:
         text: "Samsung Galaxy S24 Ultra"
+
+# B15.2: the seller opens it and edits the price
+- tapOn: "Samsung Galaxy S24 Ultra"
+- tapOn:
+    id: "product-edit"
+- assertVisible: "Edit listing"
+- tapOn:
+    id: "edit-price"
+- eraseText
+- inputText: "600"
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+        id: "edit-save"
+- tapOn:
+    id: "edit-save"
+- extendedWaitUntil:
+    visible: ".*600.*JOD" # the new price (the number is wrapped in direction marks)
+    timeout: 10000
+
+# Withdraw it (B15.2), so the flow can run again: the same certificate photo
+# can't be on two listings at once.
+- tapOn:
+    id: "product-edit"
+- scrollUntilVisible:
+    element:
+        id: "edit-withdraw"
+- tapOn:
+    id: "edit-withdraw"
+- tapOn: "(?i)withdraw listing" # the confirmation dialog
+- extendedWaitUntil:
+    notVisible: "Samsung Galaxy S24 Ultra"
+    timeout: 10000

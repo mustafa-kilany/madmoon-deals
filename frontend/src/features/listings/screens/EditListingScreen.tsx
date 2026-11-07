@@ -82,12 +82,25 @@ export function EditListingScreen({
     );
   return (
     <Screen tone="white" headerBorder header={header}>
-      <EditForm item={item} onDone={() => navigation.goBack()} />
+      <EditForm
+        item={item}
+        onDone={() => navigation.goBack()}
+        // Withdrawn: its own page (underneath) is gone too.
+        onWithdrawn={() => navigation.pop(2)}
+      />
     </Screen>
   );
 }
 
-function EditForm({ item, onDone }: { item: Item; onDone: () => void }) {
+function EditForm({
+  item,
+  onDone,
+  onWithdrawn,
+}: {
+  item: Item;
+  onDone: () => void;
+  onWithdrawn: () => void;
+}) {
   const { t } = useTranslation();
   const localized = useLocalized();
   const update = useUpdateListing();
@@ -175,7 +188,7 @@ function EditForm({ item, onDone }: { item: Item; onDone: () => void }) {
           withdraw.mutate(item.id, {
             onSuccess: () => {
               toast.success(t('editListing.withdrawn'));
-              onDone();
+              onWithdrawn();
             },
             onError: error => toast.error(t(errorMessageKey(error))),
           }),

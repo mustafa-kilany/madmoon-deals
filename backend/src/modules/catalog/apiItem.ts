@@ -36,7 +36,8 @@ export function toApiItem(listing: ListingRow, req: Request) {
     title: { ar: listing.titleAr, en: listing.titleEn },
     priceFils: listing.priceFils,
     imageUrl: coverUrl(listing.imageUrls, req),
-    ...(images.length > 1 && { imageUrls: images }),
+    // Every photo at full size (the product page and Edit), even when there is only one.
+    ...(images.length > 0 && { imageUrls: images }),
     condition: listing.condition,
     seller: listing.store
       ? { ar: listing.store.nameAr, en: listing.store.nameEn }

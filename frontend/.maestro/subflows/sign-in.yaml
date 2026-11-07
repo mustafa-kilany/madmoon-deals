@@ -11,5 +11,5 @@ appId: com.sahla
 - hideKeyboard
 - tapOn: "LOG IN"
 - extendedWaitUntil:
-    visible: "Log Out"
+    visible: "Profile & Settings" # signed in (Log Out may be below the fold)
     timeout: 15000
