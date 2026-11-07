@@ -103,15 +103,27 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        // SECURITY_PLAN S0.3: Sahla's own upload key. The file and passwords live OUTSIDE git, in
+        // %USERPROFILE%/.gradle/gradle.properties (SAHLA_UPLOAD_STORE_FILE, SAHLA_UPLOAD_KEY_ALIAS,
+        // SAHLA_UPLOAD_STORE_PASSWORD, SAHLA_UPLOAD_KEY_PASSWORD). Steps: docs/RELEASE_SIGNING.md.
+        if (project.hasProperty('SAHLA_UPLOAD_STORE_FILE')) {
+            release {
+                storeFile file(SAHLA_UPLOAD_STORE_FILE)
+                storePassword SAHLA_UPLOAD_STORE_PASSWORD
+                keyAlias SAHLA_UPLOAD_KEY_ALIAS
+                keyPassword SAHLA_UPLOAD_KEY_PASSWORD
+            }
+        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            // The upload key when it is set up on this computer; otherwise the debug key, for
+            // trying a release build on the emulator only. A Play Store bundle (bundleRelease)
+            // refuses the debug key (below).
+            signingConfig project.hasProperty('SAHLA_UPLOAD_STORE_FILE') ? signingConfigs.release : signingConfigs.debug
             minifyEnabled enableProguardInReleaseBuilds
             shrinkResources enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
@@ -127,5 +139,13 @@ dependencies {
         implementation("com.facebook.react:hermes-android")
     } else {
         implementation jscFlavor
+    }
+}
+
+// S0.3: never send a debug-signed bundle to the Play Store.
+tasks.matching { it.name == 'bundleRelease' }.configureEach {
+    doFirst {
+        if (!project.hasProperty('SAHLA_UPLOAD_STORE_FILE'))
+            throw new GradleException("bundleRelease needs Sahla's upload key: see docs/RELEASE_SIGNING.md (SECURITY_PLAN S0.3)")
     }
 }
