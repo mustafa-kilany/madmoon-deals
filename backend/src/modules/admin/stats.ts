@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { prisma } from '../../db';
 import { requireAdmin } from '../auth/requireUser';
+import { problemWhere } from '../orders/problems';
 
 // The dashboard's overview page (BACKEND_PLAN B8.2): business numbers only.
 // Technical health (errors, slow requests) belongs in Sentry and the host's
@@ -22,6 +23,7 @@ statsRoutes.get('/admin/stats', ...requireAdmin, async (_req, res) => {
     awaitingPayment,
     held,
     toAssign,
+    problems,
     completed,
     pendingPayouts,
     hiddenByReports,
@@ -40,6 +42,7 @@ statsRoutes.get('/admin/stats', ...requireAdmin, async (_req, res) => {
     prisma.order.count({ where: { status: 'awaiting_payment' } }),
     prisma.order.aggregate({ where: { status: 'escrow_held' }, _count: true, _sum: { totalFils: true } }),
     prisma.order.count({ where: { status: 'escrow_held', courierId: null } }),
+    prisma.order.count({ where: problemWhere }),
     prisma.order.aggregate({
       where: { status: 'completed', deliveredAt: { gte: monthAgo } },
       _count: true,
@@ -64,6 +67,8 @@ statsRoutes.get('/admin/stats', ...requireAdmin, async (_req, res) => {
       awaitingPayment,
       escrowHeld: { count: held._count, totalFils: held._sum.totalFils ?? 0 },
       toAssign,
+      // B15.4: failed deliveries and buyers' reports at the door, waiting for an admin.
+      problems,
       completedLast30Days: { count: completed._count, totalFils: completed._sum.totalFils ?? 0 },
     },
     payouts: { pending: { count: pendingPayouts._count, amountFils: pendingPayouts._sum.amountFils ?? 0 } },

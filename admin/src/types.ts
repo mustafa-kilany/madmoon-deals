@@ -19,6 +19,7 @@ export type Stats = {
     awaitingPayment: number;
     escrowHeld: Money;
     toAssign: number;
+    problems: number;
     completedLast30Days: Money;
   };
   payouts: { pending: { count: number; amountFils: number } };
@@ -28,8 +29,8 @@ export type Stats = {
 
 export type Person = { id: string; name: string; email: string };
 
-export type OrderStatus = 'awaiting_payment' | 'escrow_held' | 'completed' | 'refunded';
-export type CourierStatus = 'to_pickup' | 'picked_up' | 'delivered';
+export type OrderStatus = 'awaiting_payment' | 'escrow_held' | 'completed' | 'refunded' | 'cancelled';
+export type CourierStatus = 'to_pickup' | 'picked_up' | 'delivered' | 'failed';
 
 export type OrderSummary = {
   id: string;
@@ -40,8 +41,13 @@ export type OrderSummary = {
   buyer: Person | null;
   seller: Person | null;
   courier: { id: string; name: string } | null;
+  /** B15.4: a failed delivery or the buyer's report at the door, waiting for an admin. */
+  problem: boolean;
   createdAt: string;
 };
+
+/** Why an order didn't arrive (reason ids: frontend/src/lib/deliveryProblems.ts). */
+export type Problem = { reason: string; note: string | null; at: string | null };
 
 type Address = { name: string | null; phone: string | null; cityId: string | null; address: string | null; notes: string | null };
 
@@ -59,6 +65,10 @@ export type Order = OrderSummary & {
   pickedUpAt: string | null;
   deliveredAt: string | null;
   refundedAt: string | null;
+  cancel: Problem | null;
+  itemIssue: Problem | null;
+  deliveryFailed: (Problem & { stage: 'pickup' | 'dropoff' }) | null;
+  problemResolution: { action: 'retry' | 'refund'; at: string | null } | null;
   payments: { id: string; provider: string; status: string; amountFils: number; createdAt: string }[];
   payout: { id: string; status: string; amountFils: number; paidAt: string | null } | null;
 };

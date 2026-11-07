@@ -12,6 +12,7 @@ type ChipProps = {
   /** Optional leading element, e.g. a small category image. */
   leading?: ReactNode;
   className?: string;
+  testID?: string;
 };
 
 export function Chip({
@@ -20,10 +21,12 @@ export function Chip({
   onPress,
   leading,
   className = '',
+  testID,
 }: ChipProps) {
   return (
     <Pressable
       onPress={onPress}
+      testID={testID}
       accessibilityRole="button"
       accessibilityState={{ selected }}
       className={`min-h-11 flex-row items-center gap-2 rounded-xl border py-2 ${

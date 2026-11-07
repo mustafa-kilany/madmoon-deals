@@ -4,6 +4,7 @@
 // completes the order, five wrong PINs lock it.
 
 import { useSessionStore } from '@/features/auth/sessionStore';
+import { failReasonsFor } from '@/lib/deliveryProblems';
 import type { CourierStatus, Delivery } from '@/lib/types';
 import { ApiError } from '../api/errors';
 import { mockLatency } from '../mock/delay';
@@ -16,7 +17,12 @@ export const PIN_TRIES = 5;
 /** What the server keeps per order for the courier. */
 const progress = new Map<
   string,
-  { status: CourierStatus; pickedUpAt?: number; pinAttempts: number }
+  {
+    status: CourierStatus;
+    pickedUpAt?: number;
+    pinAttempts: number;
+    failed?: Delivery['failed'];
+  }
 >();
 const progressOf = (orderId: string) => {
   let row = progress.get(orderId);
@@ -65,6 +71,8 @@ const toDelivery = (order: MockOrder): Delivery => {
     assignedAt: order.createdAt,
     pickedUpAt,
     deliveredAt: order.deliveredAt,
+    buyerIssue: order.itemIssue,
+    failed: progressOf(order.id).failed,
   };
 };
 
@@ -91,6 +99,7 @@ export const mockCourierService: CourierService = {
     if (order.status !== 'escrow_held' || row.status !== 'to_pickup')
       throw new ApiError('VALIDATION', `This delivery is ${row.status}`, 422);
     row.status = 'picked_up';
+    order.courierStatus = 'picked_up';
     row.pickedUpAt = Date.now();
     return toDelivery(order);
   },
@@ -112,5 +121,25 @@ export const mockCourierService: CourierService = {
     row.status = 'delivered';
     findItem(order.itemId).status = 'sold';
     return publicOrder(order);
+  },
+
+  markFailed: async (orderId, reason, note) => {
+    await mockLatency();
+    requireCourier();
+    const order = findDelivery(orderId);
+    const row = progressOf(order.id);
+    if (
+      order.status !== 'escrow_held' ||
+      !['to_pickup', 'picked_up'].includes(row.status)
+    )
+      throw new ApiError('VALIDATION', `This delivery is ${row.status}`, 422);
+    const stage = row.status === 'to_pickup' ? 'pickup' : 'dropoff';
+    if (!failReasonsFor(stage).includes(reason))
+      throw new ApiError('VALIDATION', 'reason: not for this stage', 422);
+    row.status = 'failed';
+    row.failed = { stage, reason, note, at: Date.now() };
+    order.courierStatus = 'failed';
+    order.deliveryFailed = row.failed;
+    return toDelivery(order);
   },
 };

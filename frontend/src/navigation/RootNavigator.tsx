@@ -19,6 +19,7 @@ import { CheckoutScreen } from '@/features/checkout/screens/CheckoutScreen';
 import { SavedScreen } from '@/features/favorites/screens/SavedScreen';
 import { AddListingScreen } from '@/features/listings/screens/AddListingScreen';
 import { MakeOfferScreen } from '@/features/offers/screens/MakeOfferScreen';
+import { OrderProblemScreen } from '@/features/orders/screens/OrderProblemScreen';
 import { OrderTrackingScreen } from '@/features/orders/screens/OrderTrackingScreen';
 import { ReportScreen } from '@/features/safety/screens/ReportScreen';
 import { colors } from '@/theme/colors';
@@ -38,6 +39,7 @@ export function RootNavigator() {
       <Stack.Navigator screenOptions={screenOptions}>
         <Stack.Screen name="Deliveries" component={DeliveriesScreen} />
         <Stack.Screen name="Delivery" component={DeliveryScreen} />
+        <Stack.Screen name="OrderProblem" component={OrderProblemScreen} />
       </Stack.Navigator>
     );
 
@@ -54,6 +56,7 @@ export function RootNavigator() {
       <Stack.Screen name="AddListing" component={AddListingScreen} />
       <Stack.Screen name="Saved" component={SavedScreen} />
       <Stack.Screen name="OrderTracking" component={OrderTrackingScreen} />
+      <Stack.Screen name="OrderProblem" component={OrderProblemScreen} />
       <Stack.Screen name="Report" component={ReportScreen} />
       {/* Sign-in flow (removed from history once signed in, see authFlow). */}
       <Stack.Screen

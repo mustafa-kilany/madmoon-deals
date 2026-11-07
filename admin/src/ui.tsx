@@ -18,11 +18,13 @@ const orderStatus: Record<OrderStatus, [string, string]> = {
   escrow_held: ['Paid, not delivered', 'amber'],
   completed: ['Delivered', 'green'],
   refunded: ['Refunded', 'red'],
+  cancelled: ['Cancelled by the buyer', 'grey'],
 };
 const courierStatus: Record<CourierStatus, string> = {
   to_pickup: 'Courier to pick up',
   picked_up: 'With the courier',
   delivered: 'Delivered',
+  failed: 'Delivery failed',
 };
 
 export const OrderBadge = ({ status }: { status: OrderStatus }) => (

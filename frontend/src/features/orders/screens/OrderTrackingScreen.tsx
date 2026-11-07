@@ -1,9 +1,12 @@
 // Order tracking (prototype BuyerTracking): the buyer's orders with their
 // order number, an escrow timeline and, while the payment is held, the PIN to
 // give the courier. Pull down to refresh after the courier confirms. An order
-// waiting for the bank's card check can reopen the bank page.
+// waiting for the bank's card check can reopen the bank page. Until the driver
+// picks it up the buyer can cancel; at the door they can report a problem with
+// the item instead of giving the PIN; a failed delivery shows why (B15.3–B15.4).
 
 import { FlatList, Image, Linking, RefreshControl, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { BackButton } from '@/components/BackButton';
 import { Icon } from '@/components/icons';
@@ -13,6 +16,7 @@ import { Button, Card, Heading, Ltr, Screen, Text } from '@/components/ui';
 import { useCities } from '@/features/catalog/hooks/useCatalog';
 import { useMyOrders } from '@/features/checkout/hooks/useOrders';
 import { useLocalized } from '@/i18n';
+import { reasonLabel } from '@/lib/deliveryProblems';
 import { placeLabel } from '@/lib/places';
 import type { Order, OrderStatus } from '@/lib/types';
 import { colors } from '@/theme/colors';
@@ -22,6 +26,7 @@ const STATUS_KEY = {
   escrow_held: 'orders.statusEscrow_held',
   completed: 'orders.statusCompleted',
   refunded: 'orders.statusRefunded',
+  cancelled: 'orders.statusCancelled',
 } as const satisfies Record<OrderStatus, string>;
 
 const STEPS = [
@@ -30,9 +35,15 @@ const STEPS = [
   'orders.stepDelivered',
 ] as const;
 
-/** How many timeline steps are done: paid → out for delivery → delivered. */
-const stepsDone = (status: OrderStatus) =>
-  status === 'completed' ? 3 : status === 'escrow_held' ? 1 : 0;
+/** How many timeline steps are done: paid → picked up, on the way → delivered. */
+const stepsDone = (order: Order) =>
+  order.status === 'completed'
+    ? 3
+    : order.status !== 'escrow_held'
+    ? 0
+    : order.courierStatus === 'picked_up'
+    ? 2
+    : 1;
 
 export function OrderTrackingScreen() {
   const { t } = useTranslation();
@@ -88,7 +99,20 @@ function OrderCard({ order }: { order: Order }) {
   const { t } = useTranslation();
   const localized = useLocalized();
   const { data: cities } = useCities();
-  const done = stepsDone(order.status);
+  const navigation = useNavigation();
+  const done = stepsDone(order);
+  const label = (reason: string) => localized(reasonLabel(reason));
+  const canCancel =
+    (order.status === 'awaiting_payment' || order.status === 'escrow_held') &&
+    (!order.courierStatus || order.courierStatus === 'to_pickup');
+  const canReport =
+    order.status === 'escrow_held' &&
+    order.courierStatus === 'picked_up' &&
+    !order.itemIssue;
+  const failed =
+    order.status === 'escrow_held' && order.courierStatus === 'failed'
+      ? order.deliveryFailed
+      : undefined;
   const area = cities?.find(c => c.id === order.delivery.cityId);
 
   return (
@@ -132,10 +156,35 @@ function OrderCard({ order }: { order: Order }) {
         </View>
       )}
 
-      {order.status === 'refunded' ? (
+      {order.status === 'cancelled' ? (
+        <Text testID="order-cancelled" className="text-xs text-brand-warmgray">
+          {t('orders.cancelledNote', {
+            reason: order.cancel ? label(order.cancel.reason) : '',
+          })}{' '}
+          {order.refundedAt ? t('orders.cancelledRefund') : ''}
+        </Text>
+      ) : order.status === 'refunded' ? (
         <Text className="text-xs text-brand-warmgray">
+          {order.deliveryFailed
+            ? `${t(
+                order.deliveryFailed.stage === 'pickup'
+                  ? 'orders.failedPickup'
+                  : 'orders.failedDropoff',
+                { reason: label(order.deliveryFailed.reason) },
+              )} `
+            : ''}
           {t('orders.refundedNote')}
         </Text>
+      ) : failed ? (
+        <Notice
+          testID="order-failed"
+          text={`${t(
+            failed.stage === 'pickup'
+              ? 'orders.failedPickup'
+              : 'orders.failedDropoff',
+            { reason: label(failed.reason) },
+          )} ${t('orders.failedNext')}`}
+        />
       ) : (
         <View className="gap-2">
           {STEPS.map((step, index) => {
@@ -171,7 +220,16 @@ function OrderCard({ order }: { order: Order }) {
         </View>
       )}
 
-      {order.pin && order.status === 'escrow_held' && (
+      {order.itemIssue && order.status === 'escrow_held' && (
+        <Notice
+          testID="order-issue"
+          text={t('orders.issueSent', {
+            reason: label(order.itemIssue.reason),
+          })}
+        />
+      )}
+
+      {order.pin && order.status === 'escrow_held' && !failed && (
         <View className="items-center gap-1 rounded-xl bg-brand-lightgray p-3">
           <Text className="text-xs text-brand-warmgray">{t('orders.pin')}</Text>
           <Ltr
@@ -185,6 +243,61 @@ function OrderCard({ order }: { order: Order }) {
           </Text>
         </View>
       )}
+
+      {canReport && (
+        <View className="gap-2">
+          <Text className="text-xs text-brand-warmgray">
+            {t('orders.reportIssueHint')}
+          </Text>
+          <Button
+            size="sm"
+            variant="secondary"
+            icon="Flag"
+            testID="order-report-issue"
+            label={t('orders.reportIssue')}
+            onPress={() =>
+              navigation.navigate('OrderProblem', {
+                kind: 'itemIssue',
+                orderId: order.id,
+              })
+            }
+          />
+        </View>
+      )}
+
+      {canCancel && (
+        <View className="gap-2">
+          {order.status === 'escrow_held' && (
+            <Text className="text-xs text-brand-warmgray">
+              {t('orders.cancelHint')}
+            </Text>
+          )}
+          <Button
+            size="sm"
+            variant="secondary"
+            icon="X"
+            testID="order-cancel"
+            label={t('orders.cancel')}
+            onPress={() =>
+              navigation.navigate('OrderProblem', {
+                kind: 'cancel',
+                orderId: order.id,
+              })
+            }
+          />
+        </View>
+      )}
     </Card>
+  );
+}
+
+/** A warning box for a problem with the order. */
+function Notice({ text, testID }: { text: string; testID?: string }) {
+  return (
+    <View testID={testID} className="rounded-xl bg-brand-warning-soft p-3">
+      <Text className="text-xs leading-relaxed text-brand-warning-text">
+        {text}
+      </Text>
+    </View>
   );
 }

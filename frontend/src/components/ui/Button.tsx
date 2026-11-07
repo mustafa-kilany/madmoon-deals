@@ -24,6 +24,7 @@ type ButtonProps = {
   /** Layout only (w-full, flex-1, mt-4, …). */
   className?: string;
   accessibilityLabel?: string;
+  testID?: string;
 };
 
 const containerByVariant: Record<Variant, string> = {
@@ -52,6 +53,7 @@ export function Button({
   loading = false,
   className = '',
   accessibilityLabel,
+  testID,
 }: ButtonProps) {
   const inactive = disabled || loading;
   const contentColor =
@@ -59,6 +61,7 @@ export function Button({
   return (
     <Pressable
       onPress={onPress}
+      testID={testID}
       disabled={inactive}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}

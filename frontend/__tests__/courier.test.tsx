@@ -8,12 +8,14 @@ import {
   fireEvent,
   render,
   screen,
+  waitFor,
 } from '@testing-library/react-native';
 import { Linking } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useSessionStore } from '@/features/auth/sessionStore';
 import { callUrl, mapsUrl } from '@/features/courier/links';
 import { DeliveryScreen } from '@/features/courier/screens/DeliveryScreen';
+import { OrderProblemScreen } from '@/features/orders/screens/OrderProblemScreen';
 import { changeLanguage } from '@/i18n';
 import type { DeliveryDetails } from '@/lib/types';
 import type { RootScreenProps } from '@/navigation/types';
@@ -32,6 +34,9 @@ jest.mock('@/config', () => {
   const { config } = jest.requireActual('@/config');
   return { config: { ...config, mockLatencyMs: 0 } };
 });
+jest.mock('@/services/orders', () => ({
+  ordersService: jest.requireActual('@/services/orders/mock').mockOrdersService,
+}));
 jest.mock('@/services/courier', () => ({
   courierService: jest.requireActual('@/services/courier/mock')
     .mockCourierService,
@@ -227,5 +232,60 @@ describe('DeliveryScreen', () => {
     expect(
       await screen.findByText(/Payment released to the seller/, {}, timeout),
     ).toBeTruthy();
+  }, 15_000);
+});
+
+describe('OrderProblemScreen (B15.4)', () => {
+  afterEach(async () => {
+    await cleanup();
+    queryClient.clear();
+  });
+  const metrics = {
+    frame: { x: 0, y: 0, width: 390, height: 844 },
+    insets: { top: 0, left: 0, right: 0, bottom: 0 },
+  };
+
+  it('the driver marks a pickup failed: pickup reasons only, "other" needs a note', async () => {
+    const { orderId } = await paidOrder('furniture-1');
+    const goBack = jest.fn();
+    await render(
+      <SafeAreaProvider initialMetrics={metrics}>
+        <QueryClientProvider client={queryClient}>
+          <OrderProblemScreen
+            {...({
+              route: {
+                key: 'OrderProblem',
+                name: 'OrderProblem',
+                params: { kind: 'deliveryFailed', orderId, stage: 'pickup' },
+              },
+              navigation: { goBack },
+            } as unknown as RootScreenProps<'OrderProblem'>)}
+          />
+        </QueryClientProvider>
+      </SafeAreaProvider>,
+    );
+    expect(screen.getByText('Why couldn’t you pick it up?')).toBeTruthy();
+    expect(screen.getByText('The seller wasn’t there')).toBeTruthy();
+    expect(screen.queryByText('The buyer wasn’t there')).toBeNull();
+
+    const submit = screen.getByRole('button', { name: 'MARK AS FAILED' });
+    expect(submit).toBeDisabled();
+    await fireEvent.press(screen.getByText('Another reason'));
+    expect(submit).toBeDisabled();
+    expect(screen.getByText('Please say what happened.')).toBeTruthy();
+    await fireEvent.press(screen.getByText('The seller wasn’t there'));
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'MARK AS FAILED' }),
+    );
+    await waitFor(() => expect(goBack).toHaveBeenCalled());
+
+    const [failed] = (await courier.getDeliveries()).filter(
+      d => d.orderId === orderId,
+    );
+    expect(failed.status).toBe('failed');
+    expect(failed.failed).toMatchObject({
+      stage: 'pickup',
+      reason: 'seller_unavailable',
+    });
   }, 15_000);
 });

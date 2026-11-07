@@ -37,6 +37,7 @@ export function OverviewPage() {
 
       <h2>Needs attention</h2>
       <div className="tiles">
+        <Tile label="Delivery problems" value={orders.problems} alert to="/orders?filter=problems" />
         <Tile label="Paid orders without a courier" value={orders.toAssign} alert to="/orders?filter=unassigned" />
         <Tile label="Listings hidden by reports" value={queues.hiddenByReports} alert to="/reports" />
         <Tile

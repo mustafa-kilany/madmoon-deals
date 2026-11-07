@@ -89,7 +89,7 @@ adminAnalyticsRoutes.get('/admin/analytics', ...requireAdmin, async (req, res) =
     daily,
     // Orders started in the period, by where they are now.
     ordersByStatus: Object.fromEntries(
-      ['awaiting_payment', 'escrow_held', 'completed', 'refunded'].map(s => [s, statusCount.get(s) ?? 0]),
+      ['awaiting_payment', 'escrow_held', 'completed', 'refunded', 'cancelled'].map(s => [s, statusCount.get(s) ?? 0]),
     ),
     // Now, whatever the period: customers by how they sign in, what is on sale and where.
     customersBySignIn: Object.fromEntries(['email', 'google', 'apple'].map(m => [m, methods.find(r => r.method === m)?._count._all ?? 0])),

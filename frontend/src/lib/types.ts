@@ -275,7 +275,13 @@ export type OrderStatus =
   | 'awaiting_payment'
   | 'escrow_held'
   | 'completed'
-  | 'refunded';
+  | 'refunded'
+  /** The buyer cancelled before pickup (B15.3); the money went back. */
+  | 'cancelled';
+
+/** Why an order didn't simply arrive (B15.3–B15.4); reason ids in lib/deliveryProblems.ts. */
+export type OrderProblem = { reason: string; note?: string; at: number };
+export type DeliveryFailure = OrderProblem & { stage: 'pickup' | 'dropoff' };
 
 /** Where the courier delivers. `phone` is a Jordanian mobile, e.g. 0791234567. */
 export type DeliveryDetails = {
@@ -312,10 +318,19 @@ export type Order = {
   createdAt: number;
   /** When the courier confirmed delivery (escrow released). */
   deliveredAt?: number;
+  /** The driver's progress, once one is assigned. */
+  courierStatus?: CourierStatus;
+  /** The buyer cancelled (B15.3). */
+  cancel?: OrderProblem;
+  /** The buyer's report at the door instead of the PIN (B15.4). */
+  itemIssue?: OrderProblem;
+  /** The driver couldn't finish, and why (B15.4). */
+  deliveryFailed?: DeliveryFailure;
+  refundedAt?: number;
 };
 
 /** The courier's progress: collect from the seller, then hand over with the buyer's PIN. */
-export type CourierStatus = 'to_pickup' | 'picked_up' | 'delivered';
+export type CourierStatus = 'to_pickup' | 'picked_up' | 'delivered' | 'failed';
 
 /** One of the courier's deliveries (GET /courier/deliveries). */
 export type Delivery = {
@@ -331,6 +346,10 @@ export type Delivery = {
   assignedAt: number;
   pickedUpAt?: number;
   deliveredAt?: number;
+  /** The buyer reported a problem with the item at the door (B15.4). */
+  buyerIssue?: OrderProblem;
+  /** This delivery was marked failed (B15.4). */
+  failed?: DeliveryFailure;
 };
 
 /** One request for a page of listings (GET /listings). The server filters, sorts and pages. */

@@ -306,9 +306,9 @@ item, logged in `SECURITY_PLAN.md`.
 - ⬜ **B15.2** Edit a listing: title, description, price, condition, photos, pickup. Not once paid for or sold; an
   auction's price and end only before the first bid; the certificate's type / brand / model can't change. App: Edit on
   My listings (and Withdraw).
-- ⬜ **B15.3** **The buyer cancels a paid order until it is picked up** (`POST /orders/:id/cancel` with a reason from
+- ✅ **B15.3** **The buyer cancels a paid order until it is picked up** (`POST /orders/:id/cancel` with a reason from
   a list): money back at once, the listing on sale again, push to the seller (and the driver if one was assigned).
-- ⬜ **B15.4** **Delivery problems.** The driver can't finish → **"Delivery failed"** with a reason from a list
+- ✅ **B15.4** **Delivery problems.** The driver can't finish → **"Delivery failed"** with a reason from a list
   (at pickup: seller not there, seller refused, item not as listed, item damaged, wrong pickup address, other; at
   drop-off: buyer not there, buyer refused: defect, not as described, wrong item, changed mind, wrong address, other)
   plus a note. The buyer, at the door, can **report a problem with the item** instead of giving the PIN (defect, not

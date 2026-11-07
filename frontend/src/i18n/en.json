@@ -478,7 +478,20 @@
     "refundedNote": "Your payment was refunded from escrow.",
     "awaitingBank": "Waiting for your bank to confirm the payment.",
     "openBank": "Open bank page",
-    "deliverTo": "Deliver to {{name}} · {{area}}"
+    "deliverTo": "Deliver to {{name}} · {{area}}",
+    "statusCancelled": "Cancelled",
+    "cancelledNote": "You cancelled this order: {{reason}}.",
+    "cancelledRefund": "Your payment was given back.",
+    "cancel": "Cancel order",
+    "cancelHint": "You can cancel until the driver picks the item up. The money goes back to your card.",
+    "reportIssue": "Problem with the item?",
+    "reportIssueHint": "If something is wrong when the driver arrives, don’t give the PIN: tell us what’s wrong.",
+    "issueSent": "You reported: {{reason}}. Sahla’s team will contact you.",
+    "failedPickup": "The driver couldn’t pick it up: {{reason}}.",
+    "failedDropoff": "The driver couldn’t deliver it: {{reason}}.",
+    "failedNext": "Sahla’s team will contact you about what happens next.",
+    "onTheWay": "The driver has your item and is on the way.",
+    "stepPickedUp": "Picked up from the seller"
   },
   "courier": {
     "role": "Sahla courier",
@@ -501,7 +514,12 @@
     "confirm": "Confirm Delivery",
     "confirmed": "Delivery confirmed. Payment released to the seller.",
     "pinLocked": "Locked after 5 wrong PINs. Call Sahla support to unlock it.",
-    "gone": "This delivery is no longer assigned to you."
+    "gone": "This delivery is no longer assigned to you.",
+    "statusFailed": "Failed",
+    "failed": "Delivery failed",
+    "failedHint": "Can’t finish this delivery? Tell Sahla why.",
+    "failedAt": "Marked failed: {{reason}}. Sahla’s team decides what happens next.",
+    "buyerIssue": "The buyer reported a problem: {{reason}}"
   },
   "location": {
     "choose": "Choose your area",
@@ -536,5 +554,23 @@
     "details": "Details (optional)",
     "submit": "SEND REPORT",
     "thanks": "Thanks. Our team will review it within 24 hours."
+  },
+  "problem": {
+    "cancelTitle": "Cancel order",
+    "cancelWhy": "Why are you cancelling?",
+    "cancelSubmit": "CANCEL ORDER",
+    "cancelDone": "Order cancelled. Your money is on its way back.",
+    "issueTitle": "Problem with the item",
+    "issueWhy": "What’s wrong with the item?",
+    "issueSubmit": "SEND",
+    "issueDone": "Thanks. The driver and Sahla’s team have been told.",
+    "failedTitle": "Delivery failed",
+    "failedWhyPickup": "Why couldn’t you pick it up?",
+    "failedWhyDropoff": "Why couldn’t you deliver it?",
+    "failedSubmit": "MARK AS FAILED",
+    "failedDone": "Marked as failed. Sahla’s team will follow up.",
+    "note": "Details",
+    "noteOptional": "Details (optional)",
+    "noteNeeded": "Please say what happened."
   }
 }

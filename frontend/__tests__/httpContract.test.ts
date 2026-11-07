@@ -395,6 +395,21 @@ const rows: Row[] = [
     reply: [order],
     url: '/me/orders',
   },
+  {
+    endpoint: 'POST /orders/:id/cancel',
+    call: () =>
+      httpOrdersService.cancelOrder('SA-1', 'other', 'Found it nearby'),
+    reply: order,
+    url: '/orders/SA-1/cancel',
+    body: { reason: 'other', note: 'Found it nearby' },
+  },
+  {
+    endpoint: 'POST /orders/:id/problem',
+    call: () => httpOrdersService.reportItemIssue('SA-1', 'defect'),
+    reply: order,
+    url: '/orders/SA-1/problem',
+    body: { reason: 'defect' },
+  },
   // Courier mode
   {
     endpoint: 'GET /courier/deliveries',
@@ -414,6 +429,13 @@ const rows: Row[] = [
     reply: order,
     url: '/courier/confirm-delivery',
     body: { orderId: 'SA-1', pin: '1234' },
+  },
+  {
+    endpoint: 'POST /courier/deliveries/:orderId/failed',
+    call: () => httpCourierService.markFailed('SA-1', 'buyer_unavailable'),
+    reply: { orderId: 'SA-1', assignedAt: T },
+    url: '/courier/deliveries/SA-1/failed',
+    body: { reason: 'buyer_unavailable' },
   },
 ];
 

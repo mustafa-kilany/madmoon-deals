@@ -8,6 +8,7 @@ const pages = [
   { to: '/', label: 'Overview' },
   { to: '/analytics', label: 'Analytics' },
   { to: '/orders', label: 'Orders' },
+  { to: '/orders?filter=problems', label: 'Delivery problems' },
   { to: '/payouts', label: 'Payouts' },
   { to: '/users', label: 'Users' },
   { section: 'Review' },

@@ -3,6 +3,7 @@
 
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { config } from '@/config';
+import type { FailReason } from '@/lib/deliveryProblems';
 import type { Delivery } from '@/lib/types';
 import { courierService } from '@/services/courier';
 import { queryClient, queryKeys } from '@/services/queryClient';
@@ -28,6 +29,17 @@ const replace = (delivery: Delivery) =>
 export const useMarkPickedUp = () =>
   useMutation({
     mutationFn: courierService.markPickedUp,
+    onSuccess: replace,
+  });
+
+/** B15.4: can't finish, with a reason. */
+export const useMarkFailed = () =>
+  useMutation({
+    mutationFn: (input: {
+      orderId: string;
+      reason: FailReason;
+      note?: string;
+    }) => courierService.markFailed(input.orderId, input.reason, input.note),
     onSuccess: replace,
   });
 

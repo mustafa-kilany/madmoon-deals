@@ -118,4 +118,39 @@ export const mockOrdersService: OrdersService = {
     const buyer = me().id;
     return orders.filter(o => o.buyerId === buyer).map(publicOrder);
   },
+
+  cancelOrder: async (orderId, reason, note) => {
+    await mockLatency();
+    const order = find(orderId);
+    if (order.buyerId !== me().id)
+      throw new ApiError('NOT_FOUND', 'Order not found', 404);
+    if (
+      !['awaiting_payment', 'escrow_held'].includes(order.status) ||
+      (order.courierStatus && order.courierStatus !== 'to_pickup')
+    )
+      throw new ApiError('VALIDATION', 'Too late to cancel', 422);
+    if (order.status === 'escrow_held') {
+      findItem(order.itemId).status = 'active';
+      order.refundedAt = Date.now();
+    }
+    order.status = 'cancelled';
+    order.pin = undefined;
+    order.cancel = { reason, note, at: Date.now() };
+    return publicOrder(order);
+  },
+
+  reportItemIssue: async (orderId, reason, note) => {
+    await mockLatency();
+    const order = find(orderId);
+    if (order.buyerId !== me().id)
+      throw new ApiError('NOT_FOUND', 'Order not found', 404);
+    if (order.status !== 'escrow_held' || order.courierStatus !== 'picked_up')
+      throw new ApiError(
+        'VALIDATION',
+        'Only when the driver has the item',
+        422,
+      );
+    order.itemIssue = { reason, note, at: Date.now() };
+    return publicOrder(order);
+  },
 };

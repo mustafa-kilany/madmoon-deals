@@ -7,14 +7,16 @@ import { Link, useSearchParams } from 'react-router';
 import { api } from './api';
 import { AssignCourier } from './OrderPage';
 import type { OrderSummary } from './types';
-import { courierLabel, Failed, jod, Loading, OrderBadge, when } from './ui';
+import { Badge, courierLabel, Failed, jod, Loading, OrderBadge, when } from './ui';
 
 const filters = [
   { key: '', label: 'All' },
+  { key: 'problems', label: 'Delivery problems' },
   { key: 'unassigned', label: 'Need a courier' },
   { key: 'escrow_held', label: 'Paid, not delivered' },
   { key: 'completed', label: 'Delivered' },
   { key: 'refunded', label: 'Refunded' },
+  { key: 'cancelled', label: 'Cancelled' },
   { key: 'awaiting_payment', label: 'Waiting for payment' },
 ];
 
@@ -27,6 +29,7 @@ export function OrdersPage() {
   const query = new URLSearchParams({ limit: '100' });
   if (q) query.set('q', q);
   if (filter === 'unassigned') query.set('unassigned', 'true');
+  else if (filter === 'problems') query.set('problems', 'true');
   else if (filter) query.set('status', filter);
   const { data, isPending, isError, error, refetch } = useQuery({
     queryKey: ['orders', filter, q],
@@ -97,6 +100,12 @@ export function OrdersPage() {
                   <td className="num">{jod(o.totalFils)}</td>
                   <td>
                     <OrderBadge status={o.status} />
+                    {o.problem && (
+                      <>
+                        {' '}
+                        <Badge tone="red">Problem</Badge>
+                      </>
+                    )}
                   </td>
                   <td className="small">
                     {o.status !== 'escrow_held' ? (

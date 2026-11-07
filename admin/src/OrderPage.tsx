@@ -1,10 +1,11 @@
 // One order for support (GET /admin/orders/:id): who, what, where, the money,
 // and what admins did to it. Actions: assign a courier, unlock the delivery
-// PIN, refund (docs/API.md → Orders, Couriers).
+// PIN, refund, and a delivery problem's retry / refund (docs/API.md → Orders, Couriers, B15).
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router';
+import { reasonLabel } from '@/lib/deliveryProblems';
 import { api } from './api';
 import type { Courier, Order, OrderSummary } from './types';
 import { areaName, Badge, ConfirmDialog, courierLabel, Failed, History, jod, Loading, OrderBadge, when } from './ui';
@@ -52,6 +53,28 @@ export function OrderPage() {
           )}
         </div>
       </div>
+
+      {(o.cancel || o.itemIssue || o.deliveryFailed || o.problemResolution) && (
+        <section className={`card box${o.problem ? ' attention' : ''}`}>
+          <h2>{o.problem ? 'Delivery problem: decide what happens' : 'What happened'}</h2>
+          <dl>
+            {o.cancel && <ProblemRow title="Buyer cancelled" p={o.cancel} />}
+            {o.itemIssue && <ProblemRow title="Buyer reported at the door" p={o.itemIssue} />}
+            {o.deliveryFailed && (
+              <ProblemRow title={`Driver: failed at the ${o.deliveryFailed.stage === 'pickup' ? 'seller (pickup)' : 'buyer (drop-off)'}`} p={o.deliveryFailed} />
+            )}
+            {o.problemResolution && (
+              <>
+                <dt>Decided</dt>
+                <dd>
+                  {o.problemResolution.action === 'retry' ? 'Try again' : 'Refund'} · {when(o.problemResolution.at)}
+                </dd>
+              </>
+            )}
+          </dl>
+          {o.problem && <ResolveProblem order={o} onDone={changed} />}
+        </section>
+      )}
 
       <div className="grid-2">
         <section className="card box">
@@ -181,6 +204,70 @@ export function OrderPage() {
           onClose={() => setDialog(null)}
         />
       )}
+    </div>
+  );
+}
+
+function ProblemRow({ title, p }: { title: string; p: { reason: string; note: string | null; at: string | null } }) {
+  return (
+    <>
+      <dt>{title}</dt>
+      <dd>
+        <strong>{reasonLabel(p.reason).en}</strong> · <span className="muted small">{when(p.at)}</span>
+        {p.note && <div className="small">“{p.note}”</div>}
+      </dd>
+    </>
+  );
+}
+
+/**
+ * B15.4: try the delivery again (the same or another driver, from where it stopped),
+ * or refund the buyer; a faulty item can stay off sale.
+ */
+function ResolveProblem({ order, onDone }: { order: Order; onDone: () => void }) {
+  const { data: couriers } = useQuery({ queryKey: ['couriers'], queryFn: () => api.get<Courier[]>('/admin/couriers') });
+  const [courierId, setCourierId] = useState('');
+  const [relist, setRelist] = useState(!order.itemIssue && order.deliveryFailed?.stage !== 'dropoff');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const send = async (body: object) => {
+    setBusy(true);
+    setError(null);
+    try {
+      await api.post(`/admin/orders/${order.id}/resolve-problem`, body);
+      onDone();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Couldn’t save');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="resolve">
+      <div className="toolbar">
+        <select value={courierId} onChange={e => setCourierId(e.target.value)} aria-label="Driver for the retry">
+          <option value="">Same driver{order.courier ? ` (${order.courier.name})` : ''}</option>
+          {couriers
+            ?.filter(c => c.active && c.id !== order.courier?.id)
+            .map(c => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+        </select>
+        <button className="secondary" disabled={busy} onClick={() => send({ action: 'retry', ...(courierId && { courierId }) })}>
+          Try again
+        </button>
+      </div>
+      <div className="toolbar">
+        <label className="small">
+          <input type="checkbox" checked={relist} onChange={e => setRelist(e.target.checked)} /> Put the listing on sale again
+        </label>
+        <button className="danger" disabled={busy} onClick={() => send({ action: 'refund', relist })}>
+          Refund {jod(order.totalFils)}
+        </button>
+      </div>
+      {error && <p className="error">{error}</p>}
     </div>
   );
 }

@@ -124,7 +124,7 @@ function Charts({ data }: { data: Analytics }) {
   const statusParts: Part[] = [
     { label: 'Delivered', value: data.ordersByStatus.completed, slot: 1 },
     { label: 'Paid, not delivered yet', value: data.ordersByStatus.escrow_held, slot: 2 },
-    { label: 'Refunded', value: data.ordersByStatus.refunded, slot: 3 },
+    { label: 'Refunded or cancelled', value: data.ordersByStatus.refunded + (data.ordersByStatus.cancelled ?? 0), slot: 3 },
     { label: 'Not paid (yet)', value: data.ordersByStatus.awaiting_payment, slot: 4 },
   ];
   const signInParts: Part[] = [

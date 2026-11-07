@@ -2,7 +2,8 @@
 // to take it (the buyer), each with Call and Open in Maps. Collect → "Picked
 // up"; at the door the buyer tells the 4-digit PIN → "Confirm delivery", and
 // the server releases the payment to the seller. A wrong PIN releases nothing;
-// after five the order locks until Sahla support unlocks it.
+// after five the order locks until Sahla support unlocks it. Can't finish →
+// "Delivery failed" with a reason (B15.4); the buyer's report at the door shows here.
 
 import { useState } from 'react';
 import {
@@ -27,6 +28,7 @@ import {
 } from '@/components/ui';
 import { useCities } from '@/features/catalog/hooks/useCatalog';
 import { useLocalized } from '@/i18n';
+import { reasonLabel } from '@/lib/deliveryProblems';
 import { placeLabel } from '@/lib/places';
 import type { DeliveryDetails } from '@/lib/types';
 import type { RootScreenProps } from '@/navigation/types';
@@ -46,7 +48,10 @@ const errorKey = (error: unknown) =>
     ? 'courier.pinLocked'
     : errorMessageKey(error);
 
-export function DeliveryScreen({ route }: RootScreenProps<'Delivery'>) {
+export function DeliveryScreen({
+  route,
+  navigation,
+}: RootScreenProps<'Delivery'>) {
   const { orderId } = route.params;
   const { t } = useTranslation();
   const localized = useLocalized();
@@ -102,7 +107,9 @@ export function DeliveryScreen({ route }: RootScreenProps<'Delivery'>) {
             title={t('courier.pickup')}
             icon="Box"
             stop={delivery.pickup}
-            done={delivery.status !== 'to_pickup'}
+            done={
+              delivery.status === 'picked_up' || delivery.status === 'delivered'
+            }
             missing={!delivery.pickup.address.trim()}
           />
           <Stop
@@ -111,6 +118,37 @@ export function DeliveryScreen({ route }: RootScreenProps<'Delivery'>) {
             stop={delivery.dropoff}
             done={delivery.status === 'delivered'}
           />
+
+          {delivery.buyerIssue && delivery.status !== 'delivered' && (
+            <View
+              testID="delivery-buyer-issue"
+              className="gap-1 rounded-xl bg-brand-warning-soft p-3"
+            >
+              <Text className="font-sans-bold text-sm text-brand-warning-text">
+                {t('courier.buyerIssue', {
+                  reason: localized(reasonLabel(delivery.buyerIssue.reason)),
+                })}
+              </Text>
+              {delivery.buyerIssue.note && (
+                <Text className="text-sm text-brand-warning-text">
+                  “{delivery.buyerIssue.note}”
+                </Text>
+              )}
+            </View>
+          )}
+
+          {delivery.status === 'failed' && delivery.failed && (
+            <View
+              testID="delivery-failed"
+              className="rounded-xl bg-brand-warning-soft p-3"
+            >
+              <Text className="text-sm text-brand-warning-text">
+                {t('courier.failedAt', {
+                  reason: localized(reasonLabel(delivery.failed.reason)),
+                })}
+              </Text>
+            </View>
+          )}
 
           {delivery.status === 'to_pickup' && (
             <View className="gap-2">
@@ -156,6 +194,29 @@ export function DeliveryScreen({ route }: RootScreenProps<'Delivery'>) {
                 }
               />
             </Card>
+          )}
+
+          {(delivery.status === 'to_pickup' ||
+            delivery.status === 'picked_up') && (
+            <View className="gap-2 pt-2">
+              <Text className="text-center text-xs text-brand-warmgray">
+                {t('courier.failedHint')}
+              </Text>
+              <Button
+                variant="secondary"
+                icon="X"
+                testID="delivery-mark-failed"
+                label={t('courier.failed')}
+                onPress={() =>
+                  navigation.navigate('OrderProblem', {
+                    kind: 'deliveryFailed',
+                    orderId: delivery.orderId,
+                    stage:
+                      delivery.status === 'to_pickup' ? 'pickup' : 'dropoff',
+                  })
+                }
+              />
+            </View>
           )}
 
           {delivery.status === 'delivered' && (

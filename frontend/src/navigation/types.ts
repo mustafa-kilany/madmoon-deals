@@ -3,6 +3,7 @@
 
 import type { NavigatorScreenParams } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { FailStage } from '@/lib/deliveryProblems';
 import type { CategoryId, ReportTarget } from '@/lib/types';
 
 /** Bottom tabs: Home · Auctions · Sell · Chats · Profile. */
@@ -35,6 +36,13 @@ export type RootStackParamList = {
   /** Courier mode (role 'courier'): the assigned deliveries, and one of them. */
   Deliveries: undefined;
   Delivery: { orderId: string };
+  /**
+   * Pick a reason (B15.3–B15.4): the buyer cancels or reports a problem with the
+   * item; the driver marks a delivery failed at the pickup or drop-off.
+   */
+  OrderProblem:
+    | { kind: 'cancel' | 'itemIssue'; orderId: string }
+    | { kind: 'deliveryFailed'; orderId: string; stage: FailStage };
   /** Sign-in choice; reached through startAuth / useRequireAuth. */
   Auth: undefined;
   EmailAuth: { mode: 'signup' | 'login' } | undefined;
