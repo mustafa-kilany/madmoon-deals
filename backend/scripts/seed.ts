@@ -25,7 +25,8 @@ async function main() {
   for (const account of demo) {
     await prisma.user.upsert({
       where: { email: account.email },
-      update: {},
+      // Demo accounts come back as described here (role, type, saved card) but keep their password.
+      update: { ...account },
       create: { ...account, passwordHash, method: 'email' },
     });
     console.log(`${account.email} / sahla1234`);

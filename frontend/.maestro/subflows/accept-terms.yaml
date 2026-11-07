@@ -1,0 +1,10 @@
+# B15.8: accounts made before the terms existed are asked once to accept them.
+appId: com.sahla
+---
+- runFlow:
+    when:
+      visible:
+        id: "terms-accept"
+    commands:
+      - tapOn:
+          id: "terms-accept"

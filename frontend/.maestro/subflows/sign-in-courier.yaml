@@ -1,0 +1,15 @@
+# A driver logs in (Profile → email); the app then shows only "My Deliveries". Params: EMAIL, PASSWORD.
+appId: com.sahla
+---
+- tapOn: "Profile"
+- tapOn: "Sign In"
+- tapOn: "Continue with Email"
+- tapOn: "Email Address"
+- inputText: ${EMAIL}
+- tapOn: "Password"
+- inputText: ${PASSWORD}
+- hideKeyboard
+- tapOn: "LOG IN"
+- extendedWaitUntil:
+    visible: "My Deliveries"
+    timeout: 15000

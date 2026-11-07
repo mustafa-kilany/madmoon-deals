@@ -20,11 +20,12 @@ export const config = {
   googleWebClientId:
     '480175471997-c87tff478kbuv6qia35a5ui5pfis3lvo.apps.googleusercontent.com',
   /** true = that service answers from the in-app mock backend (src/services/mock). */
+  // B15.10: everything on the real backend (the seed's fake items, PAYMENT_MODE=fake).
   mock: {
-    catalog: true,
+    catalog: false,
     auth: false,
-    negotiation: true,
-    orders: true,
+    negotiation: false,
+    orders: false,
     /**
      * The courier's deliveries. Real: couriers log in with the real auth, and
      * admins assign orders to them in the dashboard.
