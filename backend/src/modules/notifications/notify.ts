@@ -155,6 +155,72 @@ export function pushDelivered(orderId: string) {
 }
 
 /**
+ * B15.1: the buyer paid. The seller hears at once (the listing left browsing in the
+ * same transaction as the payment), so they get the item ready for the driver.
+ */
+export function pushSold(orderId: string) {
+  later(`push:sold:${orderId}`, async () => {
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { listing: { select: { titleAr: true, titleEn: true } } },
+    });
+    if (!order || order.status !== 'escrow_held') return;
+    await sendTo(
+      order.sellerUserId,
+      lang => ({
+        title: titleOf(order.listing, lang),
+        body:
+          lang === 'ar'
+            ? `تم البيع! دفع المشتري ${formatJOD(order.itemPriceFils, lang)}. جهّز المنتج، سيأتي سائق سهلة لاستلامه.`
+            : `Sold! The buyer paid ${formatJOD(order.itemPriceFils, lang)}. Get the item ready: a Sahla driver will pick it up.`,
+      }),
+      { type: 'sale', id: orderId },
+    );
+  });
+}
+
+/** B15.5: an admin gave this order to a driver. */
+export function pushAssigned(orderId: string) {
+  later(`push:assigned:${orderId}`, async () => {
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { listing: { select: { titleAr: true, titleEn: true } } },
+    });
+    if (!order?.courierId || order.status !== 'escrow_held' || order.courierStatus !== 'to_pickup') return;
+    await sendTo(
+      order.courierId,
+      lang => ({
+        title: titleOf(order.listing, lang),
+        body: lang === 'ar' ? `توصيلة جديدة: الطلب ${order.id}.` : `New delivery: order ${order.id}.`,
+      }),
+      { type: 'delivery', id: orderId },
+    );
+  });
+}
+
+/** B15.5: the driver has the item: the buyer should be ready to receive it. */
+export function pushPickedUp(orderId: string) {
+  later(`push:picked:${orderId}`, async () => {
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { listing: { select: { titleAr: true, titleEn: true } } },
+    });
+    if (!order || order.courierStatus !== 'picked_up') return;
+    await sendTo(
+      order.buyerId,
+      lang => ({
+        title: titleOf(order.listing, lang),
+        body:
+          lang === 'ar'
+            ? `طلبك ${order.id} في الطريق إليك. جهّز رمز التسليم.`
+            : `Your order ${order.id} is on the way. Have your delivery PIN ready.`,
+      }),
+      { type: 'order', id: orderId },
+    );
+  });
+}
+
+/**
  * An admin took the seller's listing off sale (B8.3: reports, a rejected test
  * certificate). The reason itself stays in the audit log; the push says what
  * happened and where to ask.

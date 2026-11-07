@@ -4,6 +4,7 @@ import { prisma } from '../../db';
 import { ApiError } from '../../lib/errors';
 import { adminDid } from '../admin/audit';
 import { requireAdmin } from '../auth/requireUser';
+import { pushAssigned } from '../notifications/notify';
 import { provider } from './pay';
 import { orderInclude, toApiOrder } from './shapes';
 
@@ -69,6 +70,7 @@ adminOrderRoutes.post('/admin/orders/:id/assign', ...requireAdmin, async (req, r
     data: { courierId, courierStatus: 'to_pickup', assignedAt: new Date() },
     include: orderInclude,
   });
+  pushAssigned(order.id);
   await adminDid(req, res, 'order.assign', { type: 'order', id: order.id }, { before: order.courierId, after: courierId });
   res.json(toApiOrder(updated, req));
 });

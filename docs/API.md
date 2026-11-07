@@ -1139,6 +1139,9 @@ now; iPhones once an Apple push key is added to Firebase.
   | New offer, counter-offer, accepted, declined | the other side | `{ "type": "offer", "id": chatId }` |
   | Outbid | the bidder who was on top | `{ "type": "outbid", "id": listingId }` |
   | Auction won | the winner | `{ "type": "auction_won", "id": listingId }` |
+  | Paid ("Sold!", B15.1) | the seller | `{ "type": "sale", "id": orderId }` |
+  | Assigned to a driver (B15.5) | the driver | `{ "type": "delivery", "id": orderId }` |
+  | Picked up, on the way (B15.5) | the buyer | `{ "type": "order", "id": orderId }` |
   | Delivered | the buyer | `{ "type": "order", "id": orderId }` |
   | Delivered | the seller | `{ "type": "sale", "id": orderId }` |
 

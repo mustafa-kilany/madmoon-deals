@@ -10,10 +10,12 @@ import { prisma } from '../../db';
 import { flushJobs } from '../../lib/jobs';
 import { hashPassword } from '../auth/password';
 import { closeEndedAuctions } from '../negotiation/bids';
+import { adminToken } from '../admin/testing';
 import { fakePushes } from './push';
 
 let base = '';
 const server = app.listen(0);
+const ADMIN_EMAIL = 'e2e.push.admin@sahla.jo';
 const EMAILS = ['push.seller@example.com', 'push.buyer@example.com', 'push.bidder@example.com', 'e2e.push.rider@sahla.jo'];
 const people: { id: string; token: string; phone: string }[] = [];
 const [seller, buyer, bidder, courier] = [0, 1, 2, 3].map(i => () => people[i]);
@@ -80,7 +82,7 @@ after(async () => {
   server.close();
   await prisma.order.deleteMany({ where: { listingId: { in: LISTINGS } } });
   await prisma.listing.deleteMany({ where: { id: { in: LISTINGS } } });
-  await prisma.user.deleteMany({ where: { email: { in: EMAILS } } });
+  await prisma.user.deleteMany({ where: { email: { in: [...EMAILS, ADMIN_EMAIL] } } });
   await prisma.$disconnect();
 });
 
@@ -121,7 +123,24 @@ test('delivered: the buyer and the seller', async () => {
   const delivery = { name: 'Omar', phone: '0791234567', cityId: 'amman', address: 'Rainbow St, building 12' };
   const order = (await call('POST', '/orders', buyer(), { listingId: LISTINGS[1], delivery })).body;
   const paid = (await call('POST', `/orders/${order.id}/pay`, buyer(), { cardToken: 'mock_visa_4242' })).body;
-  await sent();
+  // B15.1: the seller hears the moment it's paid, and nobody else can buy it any more.
+  assert.deepEqual(await sent(), [
+    ['seller', 'ساعة', 'تم البيع! دفع المشتري 30 د.أ. جهّز المنتج، سيأتي سائق سهلة لاستلامه.', { type: 'sale', id: order.id }],
+  ]);
+  const browse = (await call('GET', '/listings?limit=50', bidder())).body;
+  assert.ok(!browse.items.some((i: { id: string }) => i.id === LISTINGS[1]), 'off browsing once paid');
+  const second = await call('POST', '/orders', bidder(), { listingId: LISTINGS[1], delivery });
+  assert.equal(second.status, 409);
+
+  // B15.5: the driver hears about the job, the buyer when it's on the way.
+  const adminUser = await prisma.user.create({ data: { name: 'Admin', email: ADMIN_EMAIL, role: 'admin' } });
+  const admin = await adminToken(adminUser.id);
+  assert.equal((await call('POST', `/admin/orders/${order.id}/assign`, { token: admin }, { courierId: courier().id })).status, 200);
+  assert.deepEqual(await sent(), [['courier', 'Clock', `New delivery: order ${order.id}.`, { type: 'delivery', id: order.id }]]);
+  assert.equal((await call('POST', `/courier/deliveries/${order.id}/picked-up`, courier())).status, 200);
+  assert.deepEqual(await sent(), [
+    ['buyer', 'Clock', `Your order ${order.id} is on the way. Have your delivery PIN ready.`, { type: 'order', id: order.id }],
+  ]);
   assert.equal((await call('POST', '/courier/confirm-delivery', courier(), { orderId: order.id, pin: paid.pin })).status, 200);
   assert.deepEqual(await sent(), [
     ['buyer', 'Clock', `Your order ${order.id} was delivered.`, { type: 'order', id: order.id }],

@@ -3,6 +3,7 @@ import { prisma } from '../../db';
 import type { Prisma } from '../../generated/prisma/client';
 import { ApiError } from '../../lib/errors';
 import { coverUrl } from '../catalog/apiItem';
+import { pushPickedUp } from '../notifications/notify';
 
 // The courier app's list (BACKEND_PLAN B14.3, B14.4), docs/API.md → Couriers.
 // Pickup and drop-off are shown only to the courier the order is assigned to.
@@ -43,6 +44,7 @@ export async function markPickedUp(courierId: string, orderId: string) {
     data: { courierStatus: 'picked_up', pickedUpAt: new Date() },
   });
   if (!count) throw new ApiError(422, 'VALIDATION', `This delivery is ${order.courierStatus}, not waiting for pickup`);
+  pushPickedUp(orderId);
   return prisma.order.findUniqueOrThrow({ where: { id: orderId }, include: deliveryInclude });
 }
 

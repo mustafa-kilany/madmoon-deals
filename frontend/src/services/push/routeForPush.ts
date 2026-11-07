@@ -20,6 +20,8 @@ export function routeForPush(
       return id ? { name: 'AuctionBidding', params: { itemId: id } } : null;
     case 'order':
       return { name: 'OrderTracking' };
+    case 'delivery':
+      return id ? { name: 'Delivery', params: { orderId: id } } : null;
     case 'sale':
       return { name: 'Tabs', params: { screen: 'Profile' } };
     default:

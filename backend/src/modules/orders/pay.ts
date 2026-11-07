@@ -3,6 +3,7 @@ import { prisma } from '../../db';
 import type { Payment } from '../../generated/prisma/client';
 import { ApiError } from '../../lib/errors';
 import { paymentProvider, type ChargeResult, type PaymentProvider } from '../payments/provider';
+import { pushSold } from '../notifications/notify';
 import { orderInclude } from './shapes';
 
 // POST /orders/:id/pay and the bank's callback (BACKEND_PLAN B7.4). Paying
@@ -50,6 +51,7 @@ async function settle(payment: Payment, result: ChargeResult): Promise<Outcome> 
     await tx.payment.update({ where: { id: payment.id }, data: { status: 'succeeded', paymentUrl: null, providerData: result.data } });
     return 'paid' as const;
   });
+  if (outcome === 'paid') pushSold(payment.orderId);
   if (outcome === 'settled_paid') return 'paid';
   if (outcome === 'settled_refunded') return 'sold';
   if (outcome !== 'paid') {

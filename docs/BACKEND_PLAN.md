@@ -300,7 +300,7 @@ buying, chats or offers.
 journey works in the app **against this backend** (no in-app demo data). Security work runs alongside, item by
 item, logged in `SECURITY_PLAN.md`.
 
-- ⬜ **B15.1** The seller is told **the moment the item is paid** (push "Sold!", a tap opens My sales). The listing is
+- ✅ **B15.1** The seller is told **the moment the item is paid** (push "Sold!", a tap opens My sales). The listing is
   already off browsing from that moment (`reserved` in the same transaction as the payment): a test proves nobody else
   can open checkout for it.
 - ⬜ **B15.2** Edit a listing: title, description, price, condition, photos, pickup. Not once paid for or sold; an
@@ -315,7 +315,7 @@ item, logged in `SECURITY_PLAN.md`.
   as described, wrong item, missing parts, damaged in delivery, other + note): the driver's screen shows it. The
   buyer and seller see why the delivery didn't happen. Admins get a **Delivery problems** queue: try again (same or
   another driver) or refund (item back to the seller). Pushes to buyer and seller.
-- ⬜ **B15.5** Pushes for drivers and buyers: the driver when an order is assigned to them, the buyer when the item
+- ✅ **B15.5** Pushes for drivers and buyers: the driver when an order is assigned to them, the buyer when the item
   is picked up ("on the way").
 - ⬜ **B15.6** **Support:** a support email (setting `SUPPORT_EMAIL`, shown in the app) and an in-app **chat with
   the support team** for customers and drivers (one conversation per person); the dashboard gets a Support inbox; a
