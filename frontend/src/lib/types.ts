@@ -174,6 +174,8 @@ export type User = {
   card?: PaymentCard;
   /** Couriers confirm deliveries with the buyer's PIN (Courier screen). */
   role?: 'courier';
+  /** B15.8: the terms version this account accepted (asked again when it changes). */
+  termsVersion?: string;
 };
 
 export type Session = { token: string; user: User };

@@ -48,6 +48,9 @@ model User {
   cardToken     String?
   role          Role?
   adminRole     AdminRole? // role admin only (B15.7)
+  // B15.8: the terms + privacy policy version accepted (frontend/src/legal LEGAL_VERSION), and when.
+  termsVersion    String?
+  termsAcceptedAt DateTime?
   suspended     Boolean    @default(false) // set by an admin only (never by the risk checker)
   // Admins' two-step log-in (B8.1): an authenticator-app secret, encrypted (lib/sealed.ts).
   // Set on the first dashboard log-in, enabled once a code from it was accepted.
@@ -383,6 +386,9 @@ model IdVerification {
   // Hash of the one-time state sent to Sanad; cleared once Sanad answers.
   stateHash      String?              @unique
   rejectReason   String?
+  // B15.8: the person agreed to this Sanad consent text (SANAD_CONSENT_VERSION) before the lookup.
+  consentVersion String?
+  consentAt      DateTime?
   createdAt      DateTime             @default(now())
   decidedAt      DateTime?
 

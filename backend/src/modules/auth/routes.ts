@@ -12,6 +12,7 @@ import { burnPasswordCheck, hashPassword, passwordMatches } from './password';
 import { currentUser, requireUser } from './requireUser';
 import { accountFor, verifyIdToken } from './social';
 import { issueToken } from './tokens';
+import { LEGAL_VERSION } from '@/legal';
 
 // docs/API.md → Accounts & Authentication (email). Google / Apple sign-in,
 // avatar, ID verification and the payment card come later.
@@ -24,7 +25,9 @@ const email = z
 const password = z.string().min(8, 'at least 8 characters').max(200);
 const name = z.string().trim().min(2, 'at least 2 characters').max(60);
 
-const signupBody = z.object({ name, email, password, code: z.unknown() });
+// B15.8: sign-up means agreeing to the terms and privacy policy (the app shows them with links).
+const acceptTerms = z.literal(true, { error: 'acceptTerms: agree to the Terms and the Privacy Policy' });
+const signupBody = z.object({ name, email, password, code: z.unknown(), acceptTerms });
 const loginBody = z.object({ email, password: z.string().max(200) });
 const emailBody = z.object({ email });
 const resetBody = z.object({ email, password, code: z.unknown() });
@@ -88,6 +91,8 @@ authRoutes.post('/auth/signup', limited(10), async (req, res) => {
         email: body.email,
         passwordHash: await hashPassword(body.password),
         method: 'email',
+        termsVersion: LEGAL_VERSION,
+        termsAcceptedAt: new Date(),
       },
     })
     .catch(error => {
@@ -113,11 +118,13 @@ authRoutes.post('/auth/login', limited(10), async (req, res) => {
 const socialBody = z.object({
   idToken: z.string().min(20).max(10_000),
   name: z.string().max(60).optional(),
+  // B15.8: needed when this sign-in creates a new account.
+  acceptTerms: z.boolean().optional(),
 });
 for (const provider of ['google', 'apple'] as const)
   authRoutes.post(`/auth/${provider}`, limited(20), async (req, res) => {
     const body = socialBody.parse(req.body);
-    const user = await accountFor(await verifyIdToken(provider, body.idToken), body.name);
+    const user = await accountFor(await verifyIdToken(provider, body.idToken), body.name, body.acceptTerms === true);
     if (user.suspended) throw new ApiError(403, 'FORBIDDEN', 'This account is suspended');
     res.json(await session(user.id, req));
   });
@@ -153,6 +160,16 @@ authRoutes.post('/auth/logout', requireUser, async (_req, res) => {
 
 authRoutes.get('/me', requireUser, (req, res) => {
   res.json(toApiUser(currentUser(res.locals), req));
+});
+
+// B15.8: an existing account accepts the current terms (after they changed, or made before consent existed).
+authRoutes.post('/me/terms', requireUser, async (req, res) => {
+  const { version } = z.object({ version: z.literal(LEGAL_VERSION, { error: `version: the current one is ${LEGAL_VERSION}` }) }).parse(req.body);
+  const user = await prisma.user.update({
+    where: { id: currentUser(res.locals).id },
+    data: { termsVersion: version, termsAcceptedAt: new Date() },
+  });
+  res.json(toApiUser(user, req));
 });
 
 authRoutes.patch('/me', requireUser, async (req, res) => {

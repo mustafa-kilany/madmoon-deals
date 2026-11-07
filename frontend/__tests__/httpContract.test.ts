@@ -67,7 +67,13 @@ const rows: Row[] = [
         code: '123456',
       }),
     url: '/auth/signup',
-    body: { name: 'A', email: 'a@b.co', password: 'x', code: '123456' },
+    body: {
+      name: 'A',
+      email: 'a@b.co',
+      password: 'x',
+      code: '123456',
+      acceptTerms: true,
+    },
   },
   {
     endpoint: 'POST /auth/login',
@@ -80,13 +86,13 @@ const rows: Row[] = [
     endpoint: 'POST /auth/google',
     call: () => httpAuthService.logInWithGoogle('g'),
     url: '/auth/google',
-    body: { idToken: 'g' },
+    body: { idToken: 'g', acceptTerms: true },
   },
   {
     endpoint: 'POST /auth/apple',
     call: () => httpAuthService.logInWithApple('a'),
     url: '/auth/apple',
-    body: { idToken: 'a' },
+    body: { idToken: 'a', acceptTerms: true },
   },
   {
     endpoint: 'POST /auth/send-otp',
@@ -433,6 +439,13 @@ const rows: Row[] = [
     reply: order,
     url: '/orders/SA-1/problem',
     body: { reason: 'defect' },
+  },
+  {
+    endpoint: 'POST /me/terms',
+    call: () => httpAuthService.acceptTerms('2026-11-07'),
+    reply: { id: 'u1' },
+    url: '/me/terms',
+    body: { version: '2026-11-07' },
   },
   // Support (B15.6)
   {

@@ -324,7 +324,7 @@ item, logged in `SECURITY_PLAN.md`.
   delivery problems, stores, categories), `support` (support chat, reports, users, certificates, orders read-only),
   `finance` (refunds, payouts, analytics, orders read-only). The dashboard shows each admin only their pages; the
   server checks every endpoint. Owner's Admins page: add, change type, disable.
-- ⬜ **B15.8** **Privacy policy, terms and consent:** pages in the app (Arabic + English) and on the API
+- ✅ **B15.8** **Privacy policy, terms and consent:** pages in the app (Arabic + English) and on the API
   (`/legal/privacy`, `/legal/terms`, for the Play Store); sign-up (email, Google, Apple) records which version was
   accepted; a Sanad consent screen records consent before any lookup (MoDEE's pledge). Text is a draft for a lawyer.
 - ✅ **B15.9** App: **My sales** (`GET /me/sales`): what sold, the order's status, delivery problems, payout status.

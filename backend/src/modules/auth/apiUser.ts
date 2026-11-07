@@ -24,5 +24,7 @@ export function toApiUser(user: User, req: Request) {
     ...(user.cardBrand &&
       user.cardLast4 && { card: { brand: user.cardBrand, last4: user.cardLast4 } }),
     ...(user.role === 'courier' && { role: 'courier' as const }),
+    // B15.8: the app asks again when it differs from the current LEGAL_VERSION.
+    ...(user.termsVersion && { termsVersion: user.termsVersion }),
   };
 }

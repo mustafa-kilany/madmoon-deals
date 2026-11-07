@@ -14,6 +14,7 @@ import { toast } from '@/store/toastStore';
 import { colors } from '@/theme/colors';
 import { iconSize } from '@/theme/spacing';
 import { useAuthFlowStore } from '../authFlow';
+import { TermsNote } from '@/features/legal/TermsNote';
 import { useLogInWithApple, useLogInWithGoogle } from '../hooks/useAccount';
 
 export function AuthScreen({ navigation }: RootScreenProps<'Auth'>) {
@@ -73,7 +74,9 @@ export function AuthScreen({ navigation }: RootScreenProps<'Auth'>) {
         <View className="gap-3">
           <Pressable
             onPress={() =>
-              logInGoogle.mutate(undefined, { onError: onSocialError('Google') })
+              logInGoogle.mutate(undefined, {
+                onError: onSocialError('Google'),
+              })
             }
             disabled={busy}
             accessibilityRole="button"
@@ -125,6 +128,7 @@ export function AuthScreen({ navigation }: RootScreenProps<'Auth'>) {
             label={t('auth.continueWithEmail')}
             onPress={() => navigation.navigate('EmailAuth', { mode: 'login' })}
           />
+          <TermsNote />
         </View>
       </ScrollView>
     </View>

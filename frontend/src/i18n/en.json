@@ -611,5 +611,16 @@
     "team": "Sahla support",
     "contact": "Contact Sahla support",
     "aboutOrder": "About order {{id}}: "
+  },
+  "legal": {
+    "privacy": "Privacy Policy",
+    "terms": "Terms and Conditions",
+    "version": "Version {{version}}",
+    "agreeStart": "By continuing, you agree to Sahla’s ",
+    "agreeAnd": " and ",
+    "agreeEnd": ".",
+    "updateTitle": "Our terms and privacy policy",
+    "updateBody": "Please read and accept Sahla’s Terms and Conditions and Privacy Policy to keep using Sahla.",
+    "accept": "I accept"
   }
 }

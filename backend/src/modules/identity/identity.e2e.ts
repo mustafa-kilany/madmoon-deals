@@ -14,7 +14,11 @@ const EMAILS = ['sanad.one@example.com', 'sanad.two@example.com'];
 const tokens: string[] = [];
 
 const start = async (token = tokens[0]) => {
-  const r = await fetch(`${base}/me/id-verification/sanad`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+  const r = await fetch(`${base}/me/id-verification/sanad`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ consent: true }), // B15.8
+  });
   return { status: r.status, body: await r.json() };
 };
 /** What Sanad does: send the browser to our callback (here with any code we like). */
@@ -33,7 +37,7 @@ before(async () => {
     const r = await fetch(`${base}/auth/signup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'Nour', email, password: 'longenough', code: '123456' }),
+      body: JSON.stringify({ name: 'Nour', email, password: 'longenough', acceptTerms: true, code: '123456' }),
     });
     tokens.push((await r.json()).token);
   }

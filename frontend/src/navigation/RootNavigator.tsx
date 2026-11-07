@@ -25,6 +25,7 @@ import { OrderProblemScreen } from '@/features/orders/screens/OrderProblemScreen
 import { OrderTrackingScreen } from '@/features/orders/screens/OrderTrackingScreen';
 import { ReportScreen } from '@/features/safety/screens/ReportScreen';
 import { SupportScreen } from '@/features/support/SupportScreen';
+import { LegalScreen } from '@/features/legal/LegalScreen';
 import { colors } from '@/theme/colors';
 import { TabNavigator } from './TabNavigator';
 import type { RootStackParamList } from './types';
@@ -44,6 +45,8 @@ export function RootNavigator() {
         <Stack.Screen name="Delivery" component={DeliveryScreen} />
         <Stack.Screen name="OrderProblem" component={OrderProblemScreen} />
         <Stack.Screen name="Support" component={SupportScreen} />
+        <Stack.Screen name="Legal" component={LegalScreen} />
+        <Stack.Screen name="Legal" component={LegalScreen} />
         <Stack.Screen name="Support" component={SupportScreen} />
       </Stack.Navigator>
     );

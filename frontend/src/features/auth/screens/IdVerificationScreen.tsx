@@ -2,13 +2,15 @@
 // Sanad's page; Sanad sends the user back to the server, which verifies the
 // account. When the user returns to the app, it reloads the account.
 
-import { useEffect, useRef } from 'react';
-import { AppState, Linking, ScrollView, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { AppState, Linking, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { BackButton } from '@/components/BackButton';
 import { Icon } from '@/components/icons';
 import { Button, Heading, Screen, Text } from '@/components/ui';
+import { useLocalized } from '@/i18n';
+import { sanadConsent } from '@/legal';
 import type { RootScreenProps } from '@/navigation/types';
 import { errorMessageKey } from '@/services/api/errors';
 import { toast } from '@/store/toastStore';
@@ -23,6 +25,9 @@ export function IdVerificationScreen({
   const insets = useSafeAreaInsets();
   const user = useUser();
   const start = useStartIdVerification();
+  const localized = useLocalized();
+  // B15.8: MoDEE's pledge: the person agrees before Sahla asks Sanad anything.
+  const [consent, setConsent] = useState(false);
   const { mutate: reloadUser } = useReloadUser();
   /** Sanad was opened: reload the account when the user comes back. */
   const inSanad = useRef(false);
@@ -80,6 +85,39 @@ export function IdVerificationScreen({
             {t('idVerification.secure')}
           </Text>
         </View>
+
+        <View className="gap-2 rounded-xl bg-brand-lightgray p-4">
+          <Text className="font-sans-bold text-sm">
+            {localized(sanadConsent.title)}
+          </Text>
+          {sanadConsent.points.map(point => (
+            <Text key={point.en} className="text-xs leading-relaxed">
+              • {localized(point)}
+            </Text>
+          ))}
+          <Pressable
+            testID="sanad-consent"
+            onPress={() => setConsent(c => !c)}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: consent }}
+            className="mt-1 min-h-11 flex-row items-center gap-3"
+          >
+            <View
+              className={`h-6 w-6 items-center justify-center rounded-md border-2 ${
+                consent
+                  ? 'border-brand-primary bg-brand-primary'
+                  : 'border-brand-border'
+              }`}
+            >
+              {consent && (
+                <Icon name="Check" size={14} color={colors.onPrimary} />
+              )}
+            </View>
+            <Text className="flex-1 font-sans-bold text-xs">
+              {localized(sanadConsent.agree)}
+            </Text>
+          </Pressable>
+        </View>
       </ScrollView>
 
       <View
@@ -97,6 +135,7 @@ export function IdVerificationScreen({
         <Button
           size="lg"
           label={t('idVerification.withSanad')}
+          disabled={!consent}
           loading={start.isPending}
           onPress={openSanad}
         />

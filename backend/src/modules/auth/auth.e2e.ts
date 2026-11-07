@@ -50,7 +50,7 @@ test('email sign-up → session with a JWT; bad input → VALIDATION; duplicate 
     name: 'Lina',
     email: 'Lina@Example.com',
     password: 'longenough',
-    code: '123456',
+    acceptTerms: true, code: '123456',
   });
   assert.equal(r.status, 201);
   assert.equal(r.body.user.email, 'lina@example.com');
@@ -65,11 +65,11 @@ test('email sign-up → session with a JWT; bad input → VALIDATION; duplicate 
   assert.ok(days >= 30 && days <= 90, `token lasts ${days} days`);
 
   assert.deepEqual(
-    code(await call('POST', '/auth/signup', { name: 'L', email: 'n@e.com', password: 'x'.repeat(8), code: '123456' })),
+    code(await call('POST', '/auth/signup', { name: 'L', email: 'n@e.com', password: 'x'.repeat(8), acceptTerms: true, code: '123456' })),
     [422, 'VALIDATION'],
   );
   assert.deepEqual(
-    code(await call('POST', '/auth/signup', { name: 'Lina', email: 'lina@example.com', password: 'x'.repeat(8), code: '123456' })),
+    code(await call('POST', '/auth/signup', { name: 'Lina', email: 'lina@example.com', password: 'x'.repeat(8), acceptTerms: true, code: '123456' })),
     [409, 'EMAIL_TAKEN'],
   );
 });
@@ -110,7 +110,7 @@ test('tokens: missing, forged, or logged out → 401', async () => {
 
 test('sign-up needs the emailed code; send-otp refuses a taken email', async () => {
   assert.deepEqual(
-    code(await call('POST', '/auth/signup', { name: 'Rami', email: 'rami@example.com', password: 'longenough', code: '000000' })),
+    code(await call('POST', '/auth/signup', { name: 'Rami', email: 'rami@example.com', password: 'longenough', acceptTerms: true, code: '000000' })),
     [422, 'INVALID_CODE'],
   );
   assert.equal((await call('POST', '/auth/send-otp', { email: 'rami@example.com' })).status, 204);
@@ -122,7 +122,7 @@ test('password reset: the new password works, the old one and old sessions do no
     name: 'Huda',
     email: 'huda@example.com',
     password: 'oldpassword',
-    code: '123456',
+    acceptTerms: true, code: '123456',
   });
   assert.equal((await call('POST', '/auth/forgot-password', { email: 'huda@example.com' })).status, 204);
   assert.equal((await call('POST', '/auth/forgot-password', { email: 'nobody@example.com' })).status, 204);
@@ -154,7 +154,7 @@ test('delete account: the token stops working and the email is free again', asyn
     name: 'Tala',
     email: 'tala@example.com',
     password: 'longenough',
-    code: '123456',
+    acceptTerms: true, code: '123456',
   });
   assert.equal((await call('DELETE', '/me', undefined, body.token)).status, 204);
   assert.deepEqual(code(await call('GET', '/me', undefined, body.token)), [401, 'UNAUTHORIZED']);

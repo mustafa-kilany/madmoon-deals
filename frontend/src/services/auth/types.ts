@@ -37,9 +37,12 @@ export interface AuthService {
   /**
    * Start verifying the signed-in account with Sanad. The app opens redirectUrl;
    * Sanad sends the user back to the server, then GET /me shows verified: true.
-   * SANAD_UNAVAILABLE until Sahla has Sanad access.
+   * SANAD_UNAVAILABLE until Sahla has Sanad access. Sends the person's consent
+   * (B15.8): the screen asks for it first.
    */
   startIdVerification(): Promise<IdVerificationStart>;
+  /** B15.8: accept the current terms and privacy policy (LEGAL_VERSION). */
+  acceptTerms(version: string): Promise<User>;
   /** The signed-in account, fresh from the server. */
   getMe(): Promise<User>;
   updateProfile(patch: ProfilePatch): Promise<User>;

@@ -3,6 +3,7 @@ import { browserPage, type PageMessage } from '../../lib/page';
 import { publicUrl } from '../../lib/publicUrl';
 import { currentUser, requireCustomer } from '../auth/requireUser';
 import { finishSanad, startSanad, type SanadOutcome } from './sanad';
+import { z } from 'zod';
 
 export const identityRoutes = Router();
 
@@ -11,6 +12,8 @@ const callbackUrl = (req: Request) => publicUrl(req, '/v1/id-verification/sanad/
 
 /** Starts a check: the app opens `redirectUrl` (Sanad). 503 SANAD_UNAVAILABLE until Sanad is live. */
 identityRoutes.post('/me/id-verification/sanad', ...requireCustomer, async (req, res) => {
+  // B15.8: MoDEE's pledge: no Sanad lookup without the person's consent, recorded with the check.
+  z.object({ consent: z.literal(true, { error: 'consent: agree to the Sanad consent first' }) }).parse(req.body ?? {});
   res.json({ redirectUrl: await startSanad(currentUser(res.locals).id, callbackUrl(req)) });
 });
 

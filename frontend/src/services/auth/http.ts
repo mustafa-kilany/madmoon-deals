@@ -5,15 +5,22 @@ import { api, photoForm } from '../api/client';
 import type { AuthService, IdVerificationStart } from './types';
 
 export const httpAuthService: AuthService = {
-  signUpWithEmail: input => api.post<Session>('/auth/signup', input),
+  // B15.8: the sign-up screens show the terms with the button: pressing it is acceptance.
+  signUpWithEmail: input =>
+    api.post<Session>('/auth/signup', { ...input, acceptTerms: true }),
   logInWithEmail: input => api.post<Session>('/auth/login', input),
-  logInWithGoogle: idToken => api.post<Session>('/auth/google', { idToken }),
-  logInWithApple: idToken => api.post<Session>('/auth/apple', { idToken }),
+  logInWithGoogle: idToken =>
+    api.post<Session>('/auth/google', { idToken, acceptTerms: true }),
+  logInWithApple: idToken =>
+    api.post<Session>('/auth/apple', { idToken, acceptTerms: true }),
   sendOtp: input => api.post<void>('/auth/send-otp', input),
   forgotPassword: input => api.post<void>('/auth/forgot-password', input),
   resetPassword: input => api.post<Session>('/auth/reset-password', input),
   startIdVerification: () =>
-    api.post<IdVerificationStart>('/me/id-verification/sanad'),
+    api.post<IdVerificationStart>('/me/id-verification/sanad', {
+      consent: true,
+    }),
+  acceptTerms: version => api.post<User>('/me/terms', { version }),
   getMe: () => api.get<User>('/me'),
   updateProfile: patch => api.patch<User>('/me', patch),
   changeAvatar: photo =>

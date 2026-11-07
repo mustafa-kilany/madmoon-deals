@@ -37,6 +37,8 @@ export type RootStackParamList = {
   MySales: undefined;
   /** B15.6: the support email and chat; orderId = started from that order or delivery. */
   Support: { orderId?: string } | undefined;
+  /** B15.8: the privacy policy or the terms. */
+  Legal: { doc: 'privacy' | 'terms' };
   Saved: undefined;
   OrderTracking: undefined;
   /** Courier mode (role 'courier'): the assigned deliveries, and one of them. */

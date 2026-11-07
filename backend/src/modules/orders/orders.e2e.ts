@@ -39,7 +39,7 @@ before(async () => {
     const r = await fetch(`${base}/auth/signup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: email.split('.')[1].split('@')[0], email, password: 'longenough', code: '123456' }),
+      body: JSON.stringify({ name: email.split('.')[1].split('@')[0], email, password: 'longenough', acceptTerms: true, code: '123456' }),
     });
     const { token, user } = await r.json();
     people.push({ id: user.id, token });

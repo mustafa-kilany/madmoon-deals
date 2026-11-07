@@ -22,7 +22,7 @@ before(async () => {
   const r = await fetch(`${base}/auth/signup`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: 'Geo', email: EMAIL, password: 'longenough', code: '123456' }),
+    body: JSON.stringify({ name: 'Geo', email: EMAIL, password: 'longenough', acceptTerms: true, code: '123456' }),
   });
   token = (await r.json()).token;
 });

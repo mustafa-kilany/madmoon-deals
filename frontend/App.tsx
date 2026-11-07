@@ -15,6 +15,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { SidebarMenu } from '@/components/SidebarMenu';
+import { TermsUpdatePrompt } from '@/features/legal/TermsUpdatePrompt';
 import { Toast } from '@/components/Toast';
 import { useSessionRefresh } from '@/features/auth/hooks/useAccount';
 import { restoreSession, useUser } from '@/features/auth/sessionStore';
@@ -61,6 +62,7 @@ function App() {
               <PushRegistration />
               <RootNavigator />
               <SidebarMenu />
+              <TermsUpdatePrompt />
               <Toast />
             </NavigationContainer>
           </ErrorBoundary>

@@ -3,6 +3,7 @@ import { prisma } from '../../db';
 import { env } from '../../env';
 import { ApiError } from '../../lib/errors';
 import { isStaffEmail } from '../staff/service';
+import { LEGAL_VERSION } from '@/legal';
 
 // POST /auth/google and /auth/apple (docs/API.md, BACKEND_PLAN B10). The app signs
 // in with Google's / Apple's own SDK and sends us the ID token it gets. We check
@@ -74,7 +75,7 @@ export async function verifyIdToken(provider: Provider, idToken: string): Promis
  * with the same verified email (linked now), else a new one. Staff accounts sign
  * in with their password only.
  */
-export async function accountFor(identity: SocialIdentity, nameFromApp?: string) {
+export async function accountFor(identity: SocialIdentity, nameFromApp?: string, acceptedTerms = false) {
   const idField = identity.provider === 'google' ? 'googleId' : 'appleId';
   const linked = await prisma.user.findUnique({ where: { [idField]: identity.id } as never });
   if (linked) return linked;
@@ -89,6 +90,8 @@ export async function accountFor(identity: SocialIdentity, nameFromApp?: string)
 
   if (identity.email && isStaffEmail(identity.email))
     throw new ApiError(422, 'VALIDATION', 'This email is for Sahla staff: ask an admin for an account');
+  // B15.8: a new account only with the terms accepted (the app shows them with the buttons).
+  if (!acceptedTerms) throw new ApiError(422, 'VALIDATION', 'acceptTerms: agree to the Terms and the Privacy Policy');
   // Apple shares the name only with the app, once, so the app may send it.
   const name =
     [identity.name, nameFromApp?.trim()].find(n => n && n.length >= 2)?.slice(0, 60) ??
@@ -100,6 +103,8 @@ export async function accountFor(identity: SocialIdentity, nameFromApp?: string)
       email: identity.email ?? null,
       method: identity.provider,
       [idField]: identity.id,
+      termsVersion: LEGAL_VERSION,
+      termsAcceptedAt: new Date(),
       ...(identity.picture && { avatarUrl: identity.picture }),
     },
   });

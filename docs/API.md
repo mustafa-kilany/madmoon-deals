@@ -209,6 +209,7 @@ type User = {
   avatarUrl: string;
   card?: { brand: string; last4: string };
   role?: 'courier';  // courier accounts only
+  termsVersion?: string; // B15.8: the terms + privacy version accepted; the app asks again when it changes
 };
 ```
 
@@ -216,8 +217,9 @@ type User = {
 
 #### 1. `POST /auth/signup`
 Creates a new account. The app first calls `POST /auth/send-otp`; the user types the emailed code here, which proves they own the address.
-* **Request Body:** `{ "name": "Ahmad", "email": "ahmad@sahla.jo", "password": "password123", "code": "482913" }`
-* **Rules:** name ≥ 2 characters, password ≥ 8 characters, email stored lower-cased. Check `EMAIL_TAKEN` and `VALIDATION` before the code.
+* **Request Body:** `{ "name": "Ahmad", "email": "ahmad@sahla.jo", "password": "password123", "code": "482913", "acceptTerms": true }`
+* **Rules:** `acceptTerms: true` is required (B15.8: the screen shows the Terms and Privacy Policy with the button;
+  the server stores the current version and time). Name ≥ 2 characters, password ≥ 8 characters, email stored lower-cased. Check `EMAIL_TAKEN` and `VALIDATION` before the code.
 * **Response (200 or 201):** `Session`
 * **Errors:** `EMAIL_TAKEN` (409), `VALIDATION` (422), `INVALID_CODE` (422)
 
@@ -229,7 +231,8 @@ Authenticates an existing user.
 
 #### 3. `POST /auth/google`
 Signs in or signs up with the ID token from Google's sign-in SDK.
-* **Request Body:** `{ "idToken": "<Google ID token>" }`. The server **verifies** it with Google's public keys
+* **Request Body:** `{ "idToken": "<Google ID token>", "acceptTerms": true }` (B15.8: needed when it creates a new account,
+  else `VALIDATION`; the app always sends it, the terms are shown with the buttons). The server **verifies** it with Google's public keys
   (signature, issuer, audience = one of Sahla's OAuth client ids, expiry) and takes the account id and email
   from it, never from the request.
 * **Which account:** the one already linked to that Google account; else the account with the same
@@ -280,6 +283,16 @@ Updates user profile settings (name or city).
 * **Request Body:** `{ "name"?: "Ahmad", "cityId"?: "amman" }`
 * **Response (200):** `User`
 
+#### 10b. `POST /me/terms` *(Authenticated)*
+Accepts the current Terms and Privacy Policy (B15.8), e.g. after they changed. The app shows a prompt when
+`User.termsVersion` differs from its own `LEGAL_VERSION` (customers only).
+* **Request Body:** `{ "version": "2026-11-07" }` (must be the current one, else `VALIDATION`)
+* **Response (200):** `User`
+
+**Legal pages (public):** `GET /legal` → `{ version, sanadConsentVersion, supportEmail }`; `GET /legal/privacy` and
+`GET /legal/terms` (`?lang=ar|en`, Arabic by default) → HTML pages for the stores and the website, from the same text
+as the app (`frontend/src/legal`). The text is a draft for a lawyer to review.
+
 #### 11. `POST /me/avatar` *(Authenticated)*
 Uploads a new profile picture.
 * **Request Body:** `multipart/form-data` with field `avatar` (JPEG/PNG up to 10MB)
@@ -289,7 +302,8 @@ Uploads a new profile picture.
 Starts verifying the account with **Sanad** (Jordan's national digital ID) for the Verified badge. Accounts are
 created with email (or Google/Apple) only; ID verification happens afterwards. Sahla never sees an ID photo or
 stores the national number (only a keyed hash: one ID verifies one account).
-* **Request Body:** none
+* **Request Body:** `{ "consent": true }` (B15.8, MoDEE's pledge: the app shows what Sahla asks Sanad for and why, and the
+  person ticks agree; the server stores the consent version and time with the check). Without it: `VALIDATION`.
 * **Response (200):** `{ "redirectUrl": "https://…" }`: Sanad's consent page. The app opens it in the browser.
 * Sanad then sends the user to the server (`GET /v1/id-verification/sanad/callback?code&state`, the redirect URI
   registered with MoDEE), which checks the answer with Sanad and shows a short "go back to the app" page.

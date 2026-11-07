@@ -1,6 +1,7 @@
 // Email sign-up & log-in. Sign-up proves the email first: the server emails
 // a 6-digit code (send-otp) and the account is created with it (signup).
 
+import { TermsNote } from '@/features/legal/TermsNote';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -308,6 +309,7 @@ export function EmailAuthScreen({ route }: RootScreenProps<'EmailAuth'>) {
                     : () => handleCredentialsSubmit()
                 }
               />
+              {isSignUp && <TermsNote />}
               {step === 'credentials' && !isSignUp && config.mock.auth && (
                 <Text className="text-center text-xs text-brand-warmgray">
                   {t('auth.demoHint')}

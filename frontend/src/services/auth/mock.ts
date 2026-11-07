@@ -3,6 +3,7 @@
 // server reads the Authorization header, and failures throw the contract's
 // error codes.
 
+import { LEGAL_VERSION } from '@/legal';
 import type { Session, User } from '@/lib/types';
 import { ApiError } from '../api/errors';
 import { tokenStorage } from '../api/tokenStorage';
@@ -86,9 +87,18 @@ export const mockAuthService: AuthService = {
       verified: false,
       cityId: 'amman',
       avatarUrl: avatarOptions[0],
+      termsVersion: LEGAL_VERSION,
     };
     saveUser(account);
     return openSession(account);
+  },
+
+  acceptTerms: async version => {
+    await mockLatency();
+    const account = currentAccount();
+    account.termsVersion = version;
+    saveUser(account);
+    return publicUser(account);
   },
 
   logInWithEmail: async ({ email, password }) => {
@@ -113,6 +123,7 @@ export const mockAuthService: AuthService = {
         verified: false,
         cityId: 'amman',
         avatarUrl: avatarOptions[0],
+        termsVersion: LEGAL_VERSION,
       };
       saveUser(account);
     }
@@ -132,6 +143,7 @@ export const mockAuthService: AuthService = {
         verified: false,
         cityId: 'amman',
         avatarUrl: avatarOptions[0],
+        termsVersion: LEGAL_VERSION,
       };
       saveUser(account);
     }

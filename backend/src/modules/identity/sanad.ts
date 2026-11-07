@@ -3,6 +3,7 @@ import { prisma } from '../../db';
 import { ApiError } from '../../lib/errors';
 import { keyedHash } from '../../lib/hash';
 import { idProvider } from './provider';
+import { SANAD_CONSENT_VERSION } from '@/legal';
 
 // A check is started by the app and finished when Sanad sends the user back to
 // our callback. Unanswered checks expire; one national ID verifies one account.
@@ -23,7 +24,9 @@ export async function startSanad(userId: string, callbackUrl: string) {
   await prisma.$transaction([
     // An earlier check the user never finished is replaced.
     prisma.idVerification.deleteMany({ where: { userId, status: 'pending' } }),
-    prisma.idVerification.create({ data: { userId, stateHash: sha256(state) } }),
+    prisma.idVerification.create({
+      data: { userId, stateHash: sha256(state), consentVersion: SANAD_CONSENT_VERSION, consentAt: new Date() },
+    }),
   ]);
   return provider.authorizeUrl(state, callbackUrl);
 }

@@ -47,7 +47,7 @@ before(async () => {
   origin = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
   base = `${origin}/v1`;
   tokens.customer = (
-    await json('/auth/signup', { name: 'Photo Tester', email: 'photos@example.com', password: 'longenough', code: '123456' })
+    await json('/auth/signup', { name: 'Photo Tester', email: 'photos@example.com', password: 'longenough', acceptTerms: true, code: '123456' })
   ).token;
   await createCourier({ name: 'E2E Photo Courier', email: 'e2e.photo.courier@sahla.jo' });
   const admin = await createAdmin({ name: 'E2E Photo Admin', email: 'e2e.photo.admin@sahla.jo' }, 'owner');

@@ -65,11 +65,12 @@ function idToken(
     .sign(options.key ?? provider.privateKey);
 }
 
-async function signIn(who: 'google' | 'apple', token: string, name?: string) {
+// The app shows the terms with the buttons, so it always sends acceptTerms (B15.8).
+async function signIn(who: 'google' | 'apple', token: string, name?: string, acceptTerms: boolean | undefined = true) {
   const response = await fetch(`${base}/auth/${who}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ idToken: token, ...(name && { name }) }),
+    body: JSON.stringify({ idToken: token, ...(name && { name }), acceptTerms }),
   });
   return { status: response.status, body: await response.json() };
 }
@@ -98,7 +99,7 @@ test('a verified email that already has an account is linked, not duplicated', a
   const signup = await fetch(`${base}/auth/signup`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: 'Link Me', email: 'link@example.com', password: 'longenough', code: '123456' }),
+    body: JSON.stringify({ name: 'Link Me', email: 'link@example.com', password: 'longenough', acceptTerms: true, code: '123456' }),
   });
   const owner = (await signup.json()).user;
   const google = await signIn('google', await idToken('google', 'g-222', { email: 'link@example.com', email_verified: true }));

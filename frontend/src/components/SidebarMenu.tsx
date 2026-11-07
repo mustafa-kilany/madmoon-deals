@@ -187,6 +187,26 @@ export function SidebarMenu() {
               />
             ))
           )}
+          <View className="mt-2 flex-row justify-center gap-4">
+            <Text
+              accessibilityRole="link"
+              onPress={then(() =>
+                go({ name: 'Legal', params: { doc: 'privacy' } }),
+              )}
+              className="py-2 text-xs text-brand-warmgray underline"
+            >
+              {t('legal.privacy')}
+            </Text>
+            <Text
+              accessibilityRole="link"
+              onPress={then(() =>
+                go({ name: 'Legal', params: { doc: 'terms' } }),
+              )}
+              className="py-2 text-xs text-brand-warmgray underline"
+            >
+              {t('legal.terms')}
+            </Text>
+          </View>
         </ScrollView>
 
         <View

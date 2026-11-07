@@ -38,7 +38,7 @@ test('nobody can sign up with the staff domain', async () => {
     name: 'Fake Courier',
     email: 'fake@sahla.jo',
     password: 'longenough',
-    code: '123456',
+    acceptTerms: true, code: '123456',
   });
   assert.deepEqual([signup.status, signup.body.error.code], [422, 'VALIDATION']);
 });
@@ -88,7 +88,7 @@ test('admins manage couriers from the dashboard: add, list, disable', async () =
   assert.equal((await post('/admin/couriers/nope/disable', {}, token)).status, 404);
 
   // Customers can't.
-  const customer = await post('/auth/signup', { name: 'Customer', email: 'e2e.customer@example.com', password: 'longenough', code: '123456' });
+  const customer = await post('/auth/signup', { name: 'Customer', email: 'e2e.customer@example.com', password: 'longenough', acceptTerms: true, code: '123456' });
   assert.equal((await post('/admin/couriers', { name: 'E2E X', email: 'e2e.x@sahla.jo' }, customer.body.token)).status, 403);
   await prisma.user.deleteMany({ where: { email: 'e2e.customer@example.com' } });
 });

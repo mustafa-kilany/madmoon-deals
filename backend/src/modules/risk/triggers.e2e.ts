@@ -19,7 +19,7 @@ const signup = async (email: string) => {
   const r = await fetch(`${base}/auth/signup`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: 'Risk', email, password: 'longenough', code: '123456' }),
+    body: JSON.stringify({ name: 'Risk', email, password: 'longenough', acceptTerms: true, code: '123456' }),
   });
   const { token, user } = await r.json();
   return { id: user.id, token };
