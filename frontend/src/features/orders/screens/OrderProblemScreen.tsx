@@ -149,6 +149,7 @@ export function OrderProblemScreen({
         />
         <Button
           size="lg"
+          testID="problem-submit"
           label={t(copy.submit)}
           disabled={!ready}
           loading={pending}

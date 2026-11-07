@@ -328,7 +328,7 @@ item, logged in `SECURITY_PLAN.md`.
   (`/legal/privacy`, `/legal/terms`, for the Play Store); sign-up (email, Google, Apple) records which version was
   accepted; a Sanad consent screen records consent before any lookup (MoDEE's pledge). Text is a draft for a lawyer.
 - ✅ **B15.9** App: **My sales** (`GET /me/sales`): what sold, the order's status, delivery problems, payout status.
-- ⬜ **B15.10** **The app off the demo data:** `mock.catalog`, `mock.negotiation`, `mock.orders` = false; every
+- 🔨 **B15.10** (app switched; Maestro 01–04 pass on the emulator against the backend: browse, buy → admin assigns → pickup → PIN, sell → edit → withdraw, cancel / problem at the door / delivery failed / support. Still to run by hand: auctions and offers/chat on the real backend, the dashboard pages for B15.) **The app off the demo data:** `mock.catalog`, `mock.negotiation`, `mock.orders` = false; every
   journey run on the emulator against this backend and the seed; the Maestro flows run against it too.
 - Apple sign-in button stays (the owner will finish Apple sign-in before production).
 

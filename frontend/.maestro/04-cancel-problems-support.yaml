@@ -1,0 +1,130 @@
+# B15.3, B15.4, B15.6 against the real backend:
+# 1. the buyer cancels a paid order before pickup (money back, with a reason);
+# 2. the driver picks up the next order, the buyer reports a problem with the
+#    item at the door, the driver sees it and marks the delivery failed;
+#    the buyer sees why it wasn't delivered;
+# 3. the buyer writes to support from that order.
+# Before running: `npm run db:seed` in backend/.
+appId: com.sahla
+name: Cancel, problem at the door, delivery failed, support
+---
+- runFlow: subflows/launch.yaml
+- runFlow:
+    file: subflows/sign-in.yaml
+    env:
+      EMAIL: ahmad@sahla.jo
+      PASSWORD: sahla1234
+- runFlow: subflows/accept-terms.yaml
+
+# 1. Buy the office chair, then cancel before pickup
+- runFlow:
+    file: subflows/buy.yaml
+    env:
+      QUERY: "office" # not the full title: Maestro would match the search box itself
+      TITLE: "Office Chair"
+- tapOn:
+    id: "order-cancel"
+- assertVisible: "Why are you cancelling?"
+- tapOn: "I found a better deal"
+- tapOn:
+    id: "problem-submit" # (by text it would match the page title)
+- extendedWaitUntil:
+    visible:
+      id: "order-cancelled"
+    timeout: 10000
+- assertVisible: ".*You cancelled this order: I found a better deal.*"
+
+# 2. Buy the wardrobe; an admin assigns the driver
+- runFlow:
+    file: subflows/buy.yaml
+    env:
+      QUERY: "wardrob"
+      TITLE: "Wardrobe"
+# The admin gives the newest paid order to the driver (and tells us its number)
+- runScript: scripts/assign-courier.js
+
+# The driver picks it up
+- runFlow: subflows/sign-out.yaml
+- runFlow:
+    file: subflows/sign-in-courier.yaml
+    env:
+      EMAIL: courier@sahla.jo
+      PASSWORD: sahla1234
+- extendedWaitUntil:
+    visible: ${output.orderId}
+    timeout: 35000
+- tapOn: ${output.orderId}
+- tapOn: "I Picked It Up"
+- extendedWaitUntil:
+    visible: "Hand over"
+    timeout: 10000
+- back
+- tapOn: "Open menu"
+- tapOn: "Log Out"
+- extendedWaitUntil:
+    visible: "Welcome to Sahla"
+    timeout: 15000
+
+# At the door the buyer finds a defect: no PIN, a problem report instead
+- runFlow:
+    file: subflows/sign-in.yaml
+    env:
+      EMAIL: ahmad@sahla.jo
+      PASSWORD: sahla1234
+- tapOn: "Home"
+- tapOn: "Open menu"
+- tapOn: "My Purchases"
+- extendedWaitUntil:
+    visible:
+      id: "order-report-issue"
+    timeout: 10000
+- tapOn:
+    id: "order-report-issue"
+- tapOn: "The item has a defect"
+- tapOn: "Details (optional)"
+- inputText: "The door hinge is broken"
+- hideKeyboard
+- tapOn:
+    id: "problem-submit"
+- extendedWaitUntil:
+    visible:
+      id: "order-issue"
+    timeout: 10000
+
+# 3. Support, about this order
+- tapOn:
+    id: "order-support"
+- assertVisible: "Help & support"
+- tapOn:
+    id: "support-send"
+- extendedWaitUntil:
+    visible: ".*About order SA-\\d+.*"
+    timeout: 10000
+
+# The driver sees the buyer's report and marks the delivery failed
+- back
+- back
+- runFlow: subflows/sign-out.yaml
+- runFlow:
+    file: subflows/sign-in-courier.yaml
+    env:
+      EMAIL: courier@sahla.jo
+      PASSWORD: sahla1234
+- extendedWaitUntil:
+    visible: ${output.orderId}
+    timeout: 35000
+- tapOn: ${output.orderId}
+- assertVisible: ".*The buyer reported a problem: The item has a defect.*"
+- scrollUntilVisible:
+    element:
+      id: "delivery-mark-failed"
+- tapOn:
+    id: "delivery-mark-failed"
+- assertVisible: "Why couldn’t you deliver it?"
+- tapOn: "Buyer refused: the item has a defect"
+- tapOn:
+    id: "problem-submit"
+- extendedWaitUntil:
+    visible:
+      id: "delivery-failed"
+    timeout: 10000

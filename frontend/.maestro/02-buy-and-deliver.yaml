@@ -58,12 +58,9 @@ name: Buy, driver picks up and delivers with the PIN
 - assertVisible:
     id: "order-support"
 
-- copyTextFrom:
-    id: "order-number"
-- evalScript: ${output.orderId = maestro.copiedText.match(/SA-\d+/)[0]}
-- copyTextFrom:
-    id: "order-pin"
-- evalScript: ${output.pin = maestro.copiedText.replace(/\D/g, '')}
+# The order number and PIN the buyer sees (read through the API: the list on
+# screen may still be refreshing).
+- runScript: scripts/newest-order.js
 
 # The admin gives it to the driver (the dashboard's Orders page does the same call).
 - runScript: scripts/assign-courier.js
