@@ -116,7 +116,8 @@
     "codeInvalid": "Enter the 6-digit code",
     "phoneInvalid": "Enter a Jordanian mobile number, e.g. 0791234567",
     "addressRequired": "Enter the street, building and floor",
-    "counterTooLow": "The counter price must be above the offer"
+    "counterTooLow": "The counter price must be above the offer",
+    "passwordCommon": "That password is too common. Choose one that’s hard to guess."
   },
   "idVerification": {
     "title": "Verify with Sanad",

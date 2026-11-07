@@ -1,6 +1,7 @@
 // Email sign-up & log-in. Sign-up proves the email first: the server emails
 // a 6-digit code (send-otp) and the account is created with it (signup).
 
+import { isCommonPassword } from '@/lib/commonPasswords';
 import { TermsNote } from '@/features/legal/TermsNote';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
@@ -39,7 +40,10 @@ const logInSchema = z.object({
 
 const signUpSchema = logInSchema.extend({
   name: z.string().trim().min(2, 'validation.nameRequired'),
-  password: z.string().min(8, 'validation.passwordShort'),
+  password: z
+    .string()
+    .min(8, 'validation.passwordShort')
+    .refine(p => !isCommonPassword(p), 'validation.passwordCommon'),
 });
 
 type FormValues = z.infer<typeof logInSchema>;

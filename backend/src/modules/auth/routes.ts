@@ -13,6 +13,7 @@ import { currentUser, requireUser } from './requireUser';
 import { accountFor, verifyIdToken } from './social';
 import { issueToken } from './tokens';
 import { LEGAL_VERSION } from '@/legal';
+import { isCommonPassword } from '@/lib/commonPasswords';
 
 // docs/API.md → Accounts & Authentication (email). Google / Apple sign-in,
 // avatar, ID verification and the payment card come later.
@@ -22,7 +23,12 @@ const email = z
   .trim()
   .toLowerCase()
   .pipe(z.email({ message: 'invalid' }));
-const password = z.string().min(8, 'at least 8 characters').max(200);
+// S1.2: 8–200 characters, and not one of the passwords every attacker tries first.
+const password = z
+  .string()
+  .min(8, 'at least 8 characters')
+  .max(200)
+  .refine(p => !isCommonPassword(p), 'too common: choose a password people can’t guess');
 const name = z.string().trim().min(2, 'at least 2 characters').max(60);
 
 // B15.8: sign-up means agreeing to the terms and privacy policy (the app shows them with links).

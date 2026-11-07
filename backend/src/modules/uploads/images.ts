@@ -8,6 +8,9 @@ import { ApiError } from '../../lib/errors';
 
 const ACCEPTED = new Set(['jpeg', 'png', 'webp']);
 const MIN_BYTES = 1024;
+// S4.2: a small file can claim a huge picture (a decompression bomb). The app sends at most
+// 2000 px photos; 40 million pixels leaves room for any camera, read from the header only.
+export const MAX_PIXELS = 40_000_000;
 
 const unusable = (field: string, detail: string) =>
   new ApiError(422, 'VALIDATION', `"${field}" is not a usable photo (${detail})`);
@@ -21,6 +24,7 @@ export async function checkImage(data: Buffer, field: string) {
       throw unusable(field, 'not an image');
     });
   if (!meta.format || !ACCEPTED.has(meta.format)) throw unusable(field, `type ${meta.format ?? 'unknown'}`);
+  if ((meta.width ?? 0) * (meta.height ?? 0) * (meta.pages ?? 1) > MAX_PIXELS) throw unusable(field, 'too many pixels');
   return meta;
 }
 

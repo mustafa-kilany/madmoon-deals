@@ -64,13 +64,13 @@ users get 403 · ✅ app tokens can't open `/admin`, dashboard tokens open nothi
 | # | Check | How |
 |---|---|---|
 | ⬜ S1.1 | `JWT_SECRET` in production is new, random (≥ 32 bytes), only in the host's secret settings, different from development. | `npm run secret`; never in `.env` committed; compare to dev = different. |
-| ⬜ S1.2 | Password rules: minimum length ≥ 8 (prefer 10), max length capped (e.g. 128, scrypt cost), common-password list refused. | Read `password.ts` + sign-up schema; e2e with `password123`. |
+| ✅ S1.2 | Password rules: minimum length ≥ 8 (prefer 10), max length capped (e.g. 128, scrypt cost), common-password list refused. | Read `password.ts` + sign-up schema; e2e with `password123`. |
 | ⬜ S1.3 | No account enumeration: sign-up, log-in, forgot-password give the same answer and similar timing for "no such email". | Call each with a known and an unknown email; compare body and time. |
-| ⬜ S1.4 | Email codes: 6 digits, expire (≤ 10 min), one use, ≤ 5 wrong tries then a new code needed. | Read `codes.ts`; e2e: 6th wrong try refused even with the right code. |
+| ✅ S1.4 | Email codes: 6 digits, expire (≤ 10 min), one use, ≤ 5 wrong tries then a new code needed. | Read `codes.ts`; e2e: 6th wrong try refused even with the right code. |
 | ⬜ S1.5 | Reset password signs out every other session; changing the email (if allowed) needs the code to the new address. | e2e: two sessions, reset, the old token → 401. |
 | ⬜ S1.6 | Session length: 60 days for the app is long. Decide: keep 60, or 30 + sliding renewal. Admin 12 h ✅. | Decision note here. |
-| ⬜ S1.7 | `alg` is pinned to HS256 when verifying (no `none`, no RS/HS confusion). | Read `tokens.ts` (`jwtVerify(…, { algorithms: ['HS256'] })`); unit test with an `alg: none` token. |
-| ⬜ S1.8 | Google sign-in links to an existing account **only when Google says the email is verified** (`email_verified`). | Read `social.ts`; unit test with `email_verified: false`. |
+| ✅ S1.7 | `alg` is pinned to HS256 when verifying (no `none`, no RS/HS confusion). | Read `tokens.ts` (`jwtVerify(…, { algorithms: ['HS256'] })`); unit test with an `alg: none` token. |
+| ✅ S1.8 | Google sign-in links to an existing account **only when Google says the email is verified** (`email_verified`). | Read `social.ts`; unit test with `email_verified: false`. |
 | ⬜ S1.9 | Account deletion really deletes or anonymises personal data (keeping only what law/accounting needs). | Delete a test account, look at every table for its email/name/phone. |
 
 ## S2 — Who can see and change what (authorization / IDOR)
@@ -87,7 +87,7 @@ Already in place: ✅ `requireUser` / `requireCustomer` / `requireCourier` / `re
 | ⬜ S2.1 | **Two-user test for every endpoint with an id**: user B tries user A's order, chat, messages, offer, listing edit/delete, certificate, upload, device token, blocked list. All → 404 (or 403). | One e2e file `authz.e2e.ts` looping a table of endpoints (like `staffOnly.e2e.ts`). Add each new endpoint to it. |
 | ✅ S2.2 | A courier only sees **their own** assigned deliveries; can't mark picked-up / confirm another courier's order. | e2e with two couriers. |
 | ⬜ S2.3 | A seller sees the buyer's delivery details **only** after payment, and a courier only while assigned. | e2e: before pay → no address; after delivery → decide if it should disappear. |
-| ⬜ S2.4 | Mass assignment: `PATCH /me` and `PATCH /listings/:id` ignore `role`, `verified`, `suspended`, `status`, `sellerUserId`, prices of others… (zod `.strict()` or picked fields). | e2e: send `{"role":"admin"}` → no change. |
+| ✅ S2.4 | Mass assignment: `PATCH /me` and `PATCH /listings/:id` ignore `role`, `verified`, `suspended`, `status`, `sellerUserId`, prices of others… (zod `.strict()` or picked fields). | e2e: send `{"role":"admin"}` → no change. |
 | ⬜ S2.5 | Store API keys (refurbished import) only touch **their own store**; revoked keys → 401. | e2e with two stores. |
 | ⬜ S2.6 | Responses don't leak fields: no `passwordHash`, `cardToken`, `pin`, `nationalIdHash`, `pickupPhone`, other users' emails in any JSON. | Grep the `toApi*` shape functions; e2e snapshot of each response's keys. |
 
@@ -118,8 +118,8 @@ for buyers · ✅ private paths can't leave their folder · ✅ JSON body limit 
 | # | Check | How |
 |---|---|---|
 | 🔴 S4.1 | Cloud storage with a private bucket (= S0.5). | See S0.5. |
-| ⬜ S4.2 | Upload size limit and pixel limit (decompression bomb: a tiny PNG that expands to 50 000 × 50 000). `sharp({ limitInputPixels })`. | Upload a bomb image → 4xx, server memory stays flat. |
-| ⬜ S4.3 | SVG, HTML, PDF uploads refused (only JPEG/PNG/WebP/HEIC). | e2e upload of an `.svg` renamed `.jpg` → refused. |
+| ✅ S4.2 | Upload size limit and pixel limit (decompression bomb: a tiny PNG that expands to 50 000 × 50 000). `sharp({ limitInputPixels })`. | Upload a bomb image → 4xx, server memory stays flat. |
+| ✅ S4.3 | SVG, HTML, PDF uploads refused (only JPEG/PNG/WebP/HEIC). | e2e upload of an `.svg` renamed `.jpg` → refused. |
 | ⬜ S4.4 | Photos served with `X-Content-Type-Options: nosniff` and the right `Content-Type` (from the CDN too). | `curl -I` a photo URL. |
 | ⬜ S4.5 | CSV import: formula injection (`=HYPERLINK(…)` in a cell) can't reach an admin's Excel when exported; 1000-row cap ✅. | Import a row starting with `=`; check it's stored/escaped. |
 
@@ -134,7 +134,7 @@ Already in place: ✅ password → 5-minute ticket → TOTP code (secret AES-GCM
 | ⬜ S5.1 | **Turn 2FA back on** before hosting (remove `ADMIN_2FA=off`), each admin scans a new QR. | Production start refuses `off` ✅; log in once to confirm. |
 | ⬜ S5.2 | Change the seeded `admin@sahla.jo / sahla1234`: **the seed must never run in production**. Create real admins with `npm run staff`. | `db:seed` refuses when `NODE_ENV=production`; no `sahla1234` account in production. |
 | ⬜ S5.3 | Dashboard hosting headers: strict **Content-Security-Policy** (no inline scripts), `frame-ancestors 'none'`, HSTS, `Referrer-Policy: no-referrer`. A CSP is what protects the `sessionStorage` token from XSS. | securityheaders.com on `admin.sahla.jo` → A. |
-| ⬜ S5.4 | XSS: user text (listing titles, chat, report reasons, names) shown in the dashboard is escaped (React does this; check no `dangerouslySetInnerHTML`). | `grep -r dangerouslySetInnerHTML admin/src`; create a listing titled `<img src=x onerror=alert(1)>` and open it in the dashboard. |
+| ✅ S5.4 | XSS: user text (listing titles, chat, report reasons, names) shown in the dashboard is escaped (React does this; check no `dangerouslySetInnerHTML`). | `grep -r dangerouslySetInnerHTML admin/src`; create a listing titled `<img src=x onerror=alert(1)>` and open it in the dashboard. |
 | ⬜ S5.5 | Optional: allow `/v1/admin/*` only from the office IP or a VPN / Cloudflare Access. Decide at B12. | Decision note. |
 | ⬜ S5.6 | Least privilege: decide if all admins need refunds + payouts, or split roles (support vs finance). | Decision note; roles later if needed. |
 | ⬜ S5.7 | Staff leaving: disable courier/admin account → their sessions die at once. | e2e: disable → old token 401/403 ✅ check. |
@@ -169,7 +169,7 @@ without query strings, headers or bodies · ✅ `.env` refuses dangerous product
 | ⬜ S7.1 | HTTPS only (`api.sahla.jo`, `admin.sahla.jo`), HSTS, TLS 1.2+. | ssllabs.com → A. |
 | ⬜ S7.2 | Database not reachable from the internet (private network / IP allow list), its own strong password, TLS, the app's DB user is not a superuser. | `psql` from home → refused. |
 | ⬜ S7.3 | Every secret only in the host's secret store: `JWT_SECRET`, `ID_HASH_SECRET`, `DATABASE_URL`, Postmark, Maps, Vision, Firebase service account, Anthropic, payment keys, the TOTP sealing key. Listed with who can see it and how to rotate it. | Table at the end of this file; `git log -p` + `gitleaks detect` → nothing. |
-| ⬜ S7.4 | Raw SQL (`$queryRaw`) only with tagged templates, never string-built (`$queryRawUnsafe`). | `grep -rn "queryRawUnsafe\|executeRawUnsafe" backend/src` → none, or each reviewed. |
+| ✅ S7.4 | Raw SQL (`$queryRaw`) only with tagged templates, never string-built (`$queryRawUnsafe`). | `grep -rn "queryRawUnsafe\|executeRawUnsafe" backend/src` → none, or each reviewed. |
 | ⬜ S7.5 | Outgoing calls (geocoder, Google, Firebase, Vision) have timeouts and never fetch a URL a user typed (SSRF). | Read each `fetch(`; grep for user-controlled URLs. |
 | ⬜ S7.6 | Error answers in production show no stack traces or SQL. | Force a 500 in staging; body is the standard error only. |
 | ⬜ S7.7 | Backups: daily, encrypted, kept 30 days, **a restore tested** (B12.3). | Restore into a fresh DB and run the e2e smoke. |
@@ -241,6 +241,19 @@ without query strings, headers or bodies · ✅ `.env` refuses dangerous product
 
 ## Log
 Newest first. Each entry: what was done, the commit, how it was checked.
+- 2026-11-07: **Code checks S1.2, S1.4, S1.7, S1.8, S2.4, S4.2, S4.3, S5.4, S7.4.**
+  * S1.7 ✅ already: `jwtVerify` pins `algorithms: ['HS256']`, issuer and audience (`auth/tokens.ts`).
+  * S1.8 ✅ already: Google / Apple link an existing account only when the token says `email_verified` (`auth/social.ts`), tested in `social.e2e.ts`.
+  * S1.4 ✅ already: codes valid 10 minutes, 5 tries counted before comparing (`auth/codes.ts`).
+  * S2.4 ✅ already: `PATCH /me` takes only name and city (zod drops the rest); `PATCH /listings/:id` is `.strict()` (a `brand` → 422, `selling.e2e.ts`).
+  * S5.4 ✅: no `dangerouslySetInnerHTML` in the dashboard or the app (grep).
+  * S7.4 ✅: no `$queryRawUnsafe` / `$executeRawUnsafe`; raw SQL only as tagged templates (grep).
+  * **S1.2 fixed:** 8–200 characters plus a refused list of the most common passwords (`frontend/src/lib/commonPasswords.ts`,
+    shared: the app's sign-up form says why, the server refuses). Log-in is unchanged, so existing demo accounts still work.
+  * **S4.2 fixed:** an image's header may claim at most 40 million pixels (`uploads/images.ts`), before any decoding;
+    sharp itself refuses above 268 MP. **S4.3** ✅: the type comes from the bytes (an SVG named `.jpg` → 422).
+  * Checked by `src/lib/hardening.e2e.ts` (4 common passwords → 422; a 64 MP PNG header of 1.3 KB → 422 "too many
+    pixels"; an SVG named `.jpg` → 422). 146 e2e + 201 app tests pass.
 - 2026-11-07: **S0.3 prepared.** `frontend/android/app/build.gradle` signs release builds with Sahla's upload key
   when `SAHLA_UPLOAD_*` is set in `%USERPROFILE%/.gradle/gradle.properties` (outside git); without it a release
   build for the emulator still uses the debug key, but `bundleRelease` (the Play Store file) **refuses** to run.
