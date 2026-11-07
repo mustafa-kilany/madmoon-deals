@@ -119,6 +119,18 @@ export const mockOrdersService: OrdersService = {
     return orders.filter(o => o.buyerId === buyer).map(publicOrder);
   },
 
+  getMySales: async () => {
+    await mockLatency();
+    const seller = me().id;
+    return orders
+      .filter(
+        o =>
+          o.status !== 'awaiting_payment' &&
+          findItem(o.itemId).sellerId === seller,
+      )
+      .map(publicOrder);
+  },
+
   cancelOrder: async (orderId, reason, note) => {
     await mockLatency();
     const order = find(orderId);

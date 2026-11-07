@@ -150,7 +150,7 @@ test('PATCH: price and condition, only by the seller', async () => {
   assert.deepEqual([r.status, r.body.priceFils, r.body.condition], [200, 99_000, 'excellent']);
   assert.equal((await call('PATCH', `/listings/${item.id}`, { priceFils: 1 }, tokens[1])).status, 403);
   assert.equal((await call('PATCH', `/listings/${item.id}`, { condition: 'refurbished_good' })).status, 422);
-  assert.equal((await call('PATCH', `/listings/${item.id}`, { titleEn: 'New title' })).status, 422);
+  assert.equal((await call('PATCH', `/listings/${item.id}`, { brand: 'IKEA' })).status, 422); // not editable
   assert.equal((await call('PATCH', `/listings/${item.id}`, {})).status, 422);
 
   // A new pickup (moved house): for orders from now on.
@@ -161,12 +161,43 @@ test('PATCH: price and condition, only by the seller', async () => {
   assert.equal((await call('PATCH', `/listings/${item.id}`, { pickup: { phone: '123', address: 'Mecca St, building 7' } })).status, 422);
 });
 
+test('B15.2 edit: titles, description and photos (kept, added, dropped); search follows the new title', async () => {
+  const { body: item } = await call('POST', '/listings', await sofa());
+  const [first, second] = item.imageUrls as string[];
+  const added = await photo();
+  const r = await call('PATCH', `/listings/${item.id}`, {
+    titleEn: 'Walnut dining table',
+    titleAr: 'طاولة سفرة جوز',
+    description: 'Walnut dining table with six chairs, refinished last year, no wobble, seats eight people easily.',
+    imageUrls: [second, added],
+  });
+  assert.equal(r.status, 200);
+  assert.equal(r.body.title.en, 'Walnut dining table');
+  assert.match(r.body.description, /^Walnut/);
+  assert.deepEqual(r.body.imageUrls.map((u: string) => new URL(u).pathname), [new URL(second).pathname, new URL(added).pathname]);
+  // The dropped photo is let go (the clean-up deletes it); the new one is in use.
+  const dropped = await prisma.upload.findFirstOrThrow({ where: { url: new URL(first).pathname } });
+  assert.equal(dropped.usedAt, null);
+  assert.notEqual((await prisma.upload.findFirstOrThrow({ where: { url: new URL(added).pathname } })).usedAt, null);
+  // Search finds the new title.
+  const found = (await call('GET', '/listings?q=walnut&limit=50')).body.items;
+  assert.ok(found.some((i: { id: string }) => i.id === item.id));
+
+  // Rules: description still 10+ words; someone else's photo; no photos at all.
+  assert.equal((await call('PATCH', `/listings/${item.id}`, { description: 'Too short now' })).status, 422);
+  assert.equal((await call('PATCH', `/listings/${item.id}`, { imageUrls: [await photo(tokens[1])] })).status, 422);
+  assert.equal((await call('PATCH', `/listings/${item.id}`, { imageUrls: [] })).status, 422);
+});
+
 test('an auction with bids keeps its price and can’t be withdrawn', async () => {
   const endsAt = new Date(Date.now() + 86_400_000).toISOString();
   const { body: item } = await call('POST', '/listings', await sofa({ saleType: 'auction', auctionEndsAt: endsAt }));
   await prisma.listing.update({ where: { id: item.id }, data: { bidCount: 1 } }); // bids come in B6
   assert.equal((await call('PATCH', `/listings/${item.id}`, { priceFils: 1000 })).status, 422);
-  assert.equal((await call('PATCH', `/listings/${item.id}`, { condition: 'excellent' })).status, 200);
+  // B15.2: what buyers bid on stays as it was; only the pickup can change.
+  assert.equal((await call('PATCH', `/listings/${item.id}`, { condition: 'excellent' })).status, 422);
+  assert.equal((await call('PATCH', `/listings/${item.id}`, { titleEn: 'Better sofa' })).status, 422);
+  assert.equal((await call('PATCH', `/listings/${item.id}`, { pickup: { phone: '0781112223', address: 'Mecca St, building 7' } })).status, 200);
   assert.equal((await call('DELETE', `/listings/${item.id}`)).status, 422);
 });
 

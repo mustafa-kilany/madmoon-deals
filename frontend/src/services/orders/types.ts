@@ -21,6 +21,8 @@ export interface OrdersService {
   getOrder(orderId: string): Promise<Order>;
   /** The signed-in buyer's orders, newest first. */
   getMyOrders(): Promise<Order[]>;
+  /** B15.9: the signed-in seller's sold (paid) orders, newest first. */
+  getMySales(): Promise<Order[]>;
   /** Cancel until the driver has picked it up; a paid order's money goes back (B15.3). */
   cancelOrder(
     orderId: string,

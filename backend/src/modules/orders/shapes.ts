@@ -8,6 +8,7 @@ export const orderInclude = {
   listing: { select: { titleAr: true, titleEn: true, imageUrls: true } },
   // The bank's card check page, while the latest attempt waits for it.
   payments: { where: { status: 'pending' }, orderBy: { createdAt: 'desc' }, take: 1, select: { paymentUrl: true } },
+  payout: { select: { status: true, amountFils: true } },
 } satisfies Prisma.OrderInclude;
 export type OrderRow = Prisma.OrderGetPayload<{ include: typeof orderInclude }>;
 
@@ -88,5 +89,7 @@ export const toApiSale = (order: OrderRow, req: Request) => {
     ...common(order, req),
     delivery: { name: order.deliveryName, cityId: order.deliveryCityId },
     ...(pickup && { pickup }),
+    // B15.9: the seller's money once delivered.
+    ...(order.payout && { payout: order.payout }),
   };
 };

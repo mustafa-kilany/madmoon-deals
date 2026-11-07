@@ -327,6 +327,8 @@ export type Order = {
   /** The driver couldn't finish, and why (B15.4). */
   deliveryFailed?: DeliveryFailure;
   refundedAt?: number;
+  /** The seller's view (GET /me/sales): their money once delivered. */
+  payout?: { status: 'pending' | 'paid' | 'failed'; amountFils: number };
 };
 
 /** The courier's progress: collect from the seller, then hand over with the buyer's PIN. */

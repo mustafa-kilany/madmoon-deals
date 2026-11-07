@@ -23,7 +23,7 @@ export function routeForPush(
     case 'delivery':
       return id ? { name: 'Delivery', params: { orderId: id } } : null;
     case 'sale':
-      return { name: 'Tabs', params: { screen: 'Profile' } };
+      return { name: 'MySales' };
     default:
       return null; // unknown: just open the app
   }

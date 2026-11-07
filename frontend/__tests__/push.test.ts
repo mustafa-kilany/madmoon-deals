@@ -89,8 +89,7 @@ test('each push type opens its screen', () => {
     name: 'OrderTracking',
   });
   expect(routeForPush({ type: 'sale', id: 'SA-123456' })).toEqual({
-    name: 'Tabs',
-    params: { screen: 'Profile' },
+    name: 'MySales',
   });
   expect(routeForPush({ type: 'delivery', id: 'SA-123456' })).toEqual({
     name: 'Delivery',

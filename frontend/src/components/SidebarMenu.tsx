@@ -40,6 +40,7 @@ const links: {
   label:
     | 'sidebar.profileSettings'
     | 'sidebar.myPurchases'
+    | 'sidebar.mySales'
     | 'sidebar.refurbished'
     | 'sidebar.myListings'
     | 'sidebar.savedItems'
@@ -52,6 +53,7 @@ const links: {
     label: 'sidebar.myPurchases',
     route: { name: 'OrderTracking' },
   },
+  { icon: 'Truck', label: 'sidebar.mySales', route: { name: 'MySales' } },
   {
     icon: 'BadgeCheck',
     label: 'sidebar.refurbished',

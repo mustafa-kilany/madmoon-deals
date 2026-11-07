@@ -188,6 +188,46 @@ export const mockCatalogService: CatalogService = {
     userListings.unshift(newItem);
     return publicItem(newItem);
   },
+  updateListing: async (id, patch) => {
+    await mockLatency();
+    const item = userListings.find(i => i.id === id);
+    if (!item) throw new ApiError('NOT_FOUND', 'No such listing', 404);
+    if (item.sellerId !== me().id)
+      throw new ApiError('FORBIDDEN', 'Not your listing', 403);
+    if (item.status !== 'active')
+      throw new ApiError('OPEN_ORDERS', 'Paid for or sold', 409);
+    if (patch.description !== undefined && !descriptionValid(patch.description))
+      throw new ApiError('VALIDATION', 'Description: at least 10 words', 422);
+    if (item.auction?.bidCount && Object.keys(patch).some(k => k !== 'pickup'))
+      throw new ApiError(
+        'VALIDATION',
+        'An auction with bids: pickup only',
+        422,
+      );
+    if (patch.titleAr || patch.titleEn)
+      item.title = {
+        ar: patch.titleAr ?? item.title.ar,
+        en: patch.titleEn ?? item.title.en,
+      };
+    if (patch.description !== undefined) item.description = patch.description;
+    if (patch.priceFils !== undefined) item.priceFils = patch.priceFils;
+    if (patch.condition) item.condition = patch.condition;
+    if (patch.imageUrls?.length) {
+      item.imageUrls = patch.imageUrls;
+      item.imageUrl = patch.imageUrls[0];
+    }
+    return publicItem(item);
+  },
+  withdrawListing: async id => {
+    await mockLatency();
+    const index = userListings.findIndex(
+      i => i.id === id && i.sellerId === me().id,
+    );
+    if (index < 0) throw new ApiError('NOT_FOUND', 'No such listing', 404);
+    if (userListings[index].status !== 'active')
+      throw new ApiError('OPEN_ORDERS', 'Paid for or sold', 409);
+    userListings.splice(index, 1);
+  },
   reverseGeocode: async (position, lang) => {
     await mockLatency();
     // Stand-in for a maps service: the nearest area's main street.

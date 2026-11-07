@@ -129,6 +129,13 @@ export const httpCatalogService: CatalogService = {
           auctionEndsAt === undefined ? undefined : toIso(auctionEndsAt),
       }),
     ),
+  updateListing: async (id, patch) =>
+    toItem(
+      await api.patch<ItemDto>(`/listings/${encodeURIComponent(id)}`, patch),
+    ),
+  withdrawListing: async id => {
+    await api.delete(`/listings/${encodeURIComponent(id)}`);
+  },
   // ~1 m precision is plenty for a street; the server doesn't keep it.
   reverseGeocode: async ({ lat, lng }, lang) =>
     (

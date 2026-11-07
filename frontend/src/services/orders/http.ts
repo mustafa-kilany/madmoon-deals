@@ -43,6 +43,7 @@ export const httpOrdersService: OrdersService = {
     toOrder(await api.get<OrderDto>(orderPath(orderId))),
   getMyOrders: async () =>
     (await api.get<OrderDto[]>('/me/orders')).map(toOrder),
+  getMySales: async () => (await api.get<OrderDto[]>('/me/sales')).map(toOrder),
   cancelOrder: async (orderId, reason, note) =>
     toOrder(
       await api.post<OrderDto>(`${orderPath(orderId)}/cancel`, {

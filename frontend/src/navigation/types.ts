@@ -31,6 +31,10 @@ export type RootStackParamList = {
   /** Listing price, or the accepted offer's price when offerId is given. */
   Checkout: { itemId: string; offerId?: string };
   AddListing: undefined;
+  /** B15.2: the seller edits or withdraws their listing. */
+  EditListing: { itemId: string };
+  /** B15.9: what I sold and where each delivery stands. */
+  MySales: undefined;
   Saved: undefined;
   OrderTracking: undefined;
   /** Courier mode (role 'courier'): the assigned deliveries, and one of them. */

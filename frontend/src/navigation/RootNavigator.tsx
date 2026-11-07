@@ -18,7 +18,9 @@ import { SearchScreen } from '@/features/catalog/screens/SearchScreen';
 import { CheckoutScreen } from '@/features/checkout/screens/CheckoutScreen';
 import { SavedScreen } from '@/features/favorites/screens/SavedScreen';
 import { AddListingScreen } from '@/features/listings/screens/AddListingScreen';
+import { EditListingScreen } from '@/features/listings/screens/EditListingScreen';
 import { MakeOfferScreen } from '@/features/offers/screens/MakeOfferScreen';
+import { MySalesScreen } from '@/features/orders/screens/MySalesScreen';
 import { OrderProblemScreen } from '@/features/orders/screens/OrderProblemScreen';
 import { OrderTrackingScreen } from '@/features/orders/screens/OrderTrackingScreen';
 import { ReportScreen } from '@/features/safety/screens/ReportScreen';
@@ -54,6 +56,8 @@ export function RootNavigator() {
       <Stack.Screen name="MakeOffer" component={MakeOfferScreen} />
       <Stack.Screen name="Checkout" component={CheckoutScreen} />
       <Stack.Screen name="AddListing" component={AddListingScreen} />
+      <Stack.Screen name="EditListing" component={EditListingScreen} />
+      <Stack.Screen name="MySales" component={MySalesScreen} />
       <Stack.Screen name="Saved" component={SavedScreen} />
       <Stack.Screen name="OrderTracking" component={OrderTrackingScreen} />
       <Stack.Screen name="OrderProblem" component={OrderProblemScreen} />

@@ -9,6 +9,7 @@
 import { useState } from 'react';
 import { Image, Modal, Pressable, ScrollView, Share, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { BackButton } from '@/components/BackButton';
 import { ConditionTag } from '@/components/ConditionTag';
@@ -85,6 +86,7 @@ function ProductDetail({ item }: { item: Item }) {
   const toggleFavorite = useToggleFavorite();
   const [selected, setSelected] = useState(0);
   const requireAuth = useRequireAuth();
+  const navigation = useNavigation();
   const user = useUser();
   const isMine = !!user && user.id === item.sellerId;
   const forSale = item.status === 'active';
@@ -336,9 +338,23 @@ function ProductDetail({ item }: { item: Item }) {
         className="flex-row items-center gap-3 border-t border-brand-border bg-brand-surface px-4 pt-4"
         style={{ paddingBottom: Math.max(insets.bottom, 16) }}
       >
-        {isMine || !forSale ? (
+        {isMine ? (
+          <Button
+            size="lg"
+            variant={forSale ? 'primary' : 'secondary'}
+            icon={forSale ? 'Settings' : 'Truck'}
+            testID={forSale ? 'product-edit' : 'product-my-sales'}
+            className="flex-1"
+            label={t(forSale ? 'editListing.open' : 'sales.open')}
+            onPress={() =>
+              forSale
+                ? navigation.navigate('EditListing', { itemId: item.id })
+                : navigation.navigate('MySales')
+            }
+          />
+        ) : !forSale ? (
           <Text className="flex-1 py-4 text-center font-sans-bold text-sm text-brand-warmgray">
-            {t(isMine ? 'listing.yours' : 'listing.unavailable')}
+            {t('listing.unavailable')}
           </Text>
         ) : (
           <>

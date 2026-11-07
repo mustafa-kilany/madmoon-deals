@@ -42,6 +42,20 @@ export type CreateListingInput = {
   pickup: ListingPickup;
 };
 
+/**
+ * B15.2: what a seller can change while the listing is on sale. imageUrls is the
+ * whole new list (kept URLs and new uploads). An auction with bids: pickup only.
+ */
+export type ListingPatch = {
+  titleAr?: string;
+  titleEn?: string;
+  description?: string;
+  imageUrls?: string[];
+  priceFils?: number;
+  condition?: Condition;
+  pickup?: ListingPickup;
+};
+
 /** The seller's phone and street address for the courier. */
 export type ListingPickup = { phone: string; address: string; notes?: string };
 
@@ -81,6 +95,10 @@ export interface CatalogService {
    */
   checkTestCertificate(input: CertificateCheckInput): Promise<CertificateCheck>;
   createListing(input: CreateListingInput): Promise<Item>;
+  /** B15.2: edit while on sale (not once paid for). */
+  updateListing(id: string, patch: ListingPatch): Promise<Item>;
+  /** Take it off sale for good. */
+  withdrawListing(id: string): Promise<void>;
   /**
    * Street and neighbourhood at a GPS position, in the app's language, for
    * the delivery address ('' when unknown). The server asks a maps service.

@@ -51,7 +51,8 @@
     "signIn": "Sign Up / Log In",
     "logOut": "Log Out",
     "close": "Close menu",
-    "refurbished": "Certified Refurbished"
+    "refurbished": "Certified Refurbished",
+    "mySales": "My Sales"
   },
   "screens": {
     "auctions": "Auctions",
@@ -148,7 +149,8 @@
     "deleteConfirmTitle": "Delete your account?",
     "deleteConfirmBody": "Your profile, listings, chats and saved card will be deleted. This can't be undone.",
     "deleteConfirm": "Delete",
-    "accountDeleted": "Your account was deleted."
+    "accountDeleted": "Your account was deleted.",
+    "mySales": "My sales"
   },
   "errors": {
     "NETWORK": "No connection. Check your internet and try again.",
@@ -572,5 +574,33 @@
     "note": "Details",
     "noteOptional": "Details (optional)",
     "noteNeeded": "Please say what happened."
+  },
+  "editListing": {
+    "open": "Edit listing",
+    "title": "Edit listing",
+    "save": "Save changes",
+    "saved": "Listing updated.",
+    "withdraw": "Withdraw listing",
+    "withdrawTitle": "Withdraw this listing?",
+    "withdrawBody": "It disappears from Sahla for good. You can list it again later.",
+    "withdrawn": "Listing withdrawn.",
+    "lockedByBids": "This auction has bids, so what people bid on can’t change. You can still update the pickup for the driver.",
+    "pickupKeep": "Leave these empty to keep the current pickup."
+  },
+  "sales": {
+    "open": "Sold: see My sales",
+    "title": "My sales",
+    "empty": "Nothing sold yet. When a buyer pays, the sale appears here.",
+    "getReady": "Get it ready",
+    "getReadyHint": "The buyer paid. Keep the item ready: a Sahla driver will come to pick it up.",
+    "withDriver": "With the driver",
+    "delivered": "Delivered",
+    "paidOut": "Paid out",
+    "problem": "Delivery problem",
+    "cancelled": "Cancelled",
+    "refunded": "Refunded",
+    "cancelledWhy": "The buyer cancelled before pickup: {{reason}}. Your listing is on sale again.",
+    "payoutPending": "Your money is on its way: Sahla sends it to your bank.",
+    "payoutSent": "Your money was sent to your bank."
   }
 }

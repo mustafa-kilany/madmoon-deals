@@ -619,8 +619,11 @@ type, brand or model, the app asks them to check it again.
 * Refurbished imports (`POST /admin/refurbished/import`) don't need a certificate: the brand
   certifies them.
 * **`PATCH /listings/:id` *(Authenticated)***
-  * **Request:** `{ "priceFils"?: 50000, "condition"?: "excellent", "pickup"?: { "phone", "address", "notes"? } }`
-    (nothing else can change). A new pickup is for orders from now on; orders already placed keep theirs.
+  * **Request:** `{ "titleAr"?, "titleEn"?, "description"?, "imageUrls"?, "priceFils"?: 50000, "condition"?: "excellent", "pickup"?: { "phone", "address", "notes"? } }`
+    (B15.2; same rules as `POST /listings`). `imageUrls` is the whole new list (1–5): photos already on the listing
+    and/or new ones from `POST /uploads/listing-photo`; dropped photos are deleted later. The category, type,
+    brand, model and sale type can't change. **An auction with bids:** only `pickup` (anything else is
+    `VALIDATION`). A new pickup is for orders from now on; orders already placed keep theirs.
   * **Response (200):** `Item`
   * **Errors:** `FORBIDDEN` (403) not the seller; `NOT_FOUND` (404) withdrawn; `OPEN_ORDERS` (409) paid for
     (`reserved`); `ITEM_UNAVAILABLE` (409) sold; `VALIDATION` (422) a refurbished grade, or a new price on an
@@ -784,7 +787,8 @@ building and floor, and can change anything. The order is unchanged: it carries 
 * **`GET /me/orders` *(Authenticated)*** → `Order[]` (Buyer order history, newest first, up to 100)
 * **`GET /me/sales` *(Authenticated)*** → `Order[]` (Seller sales history: paid orders only, newest first). For the
   seller an order has **no `pin`**, and `delivery` is only `{ name, cityId }`: the buyer's phone and address
-  are for the courier.
+  are for the courier. Once delivered: `payout: { status: "pending" | "paid" | "failed", amountFils }` (B15.9).
+  The app's **My sales** screen shows it; a sale appears the moment the buyer pays (push `type: "sale"`).
 * **`GET /orders/:id` *(Authenticated)*** → `Order` (the buyer's, with the delivery `pin`; or the seller's paid
   order, shaped as in `/me/sales`). Anyone else: `NOT_FOUND`.
 * **`GET /offers/:id` *(Authenticated, buyer or seller)*** → `Offer` (Checkout loads the accepted offer to show its price)

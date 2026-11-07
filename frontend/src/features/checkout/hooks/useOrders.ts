@@ -44,6 +44,14 @@ export const useReportItemIssue = () =>
       queryClient.invalidateQueries({ queryKey: queryKeys.orders }),
   });
 
+/** B15.9: what I sold; re-asked like the buyer's orders. */
+export const useMySales = () =>
+  useQuery({
+    queryKey: [...queryKeys.orders, 'sales'],
+    queryFn: ordersService.getMySales,
+    refetchInterval: config.pollMs.orders,
+  });
+
 export const useMyOrders = () =>
   useQuery({
     queryKey: queryKeys.orders,

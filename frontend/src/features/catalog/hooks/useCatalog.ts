@@ -13,7 +13,10 @@ import { emptyFilters, validPriceRange } from '@/lib/browsing';
 import type { Item, ListingQuery, LocalPhoto } from '@/lib/types';
 import { useUser } from '@/features/auth/sessionStore';
 import { catalogService } from '@/services/catalog';
-import type { CreateListingInput } from '@/services/catalog/types';
+import type {
+  CreateListingInput,
+  ListingPatch,
+} from '@/services/catalog/types';
 import { queryClient, queryKeys } from '@/services/queryClient';
 
 export const useCategories = () =>
@@ -143,6 +146,45 @@ export const useCreateListing = () =>
       );
       return catalogService.createListing({ ...input, imageUrls });
     },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.items });
+      queryClient.invalidateQueries({ queryKey: queryKeys.myListings });
+    },
+  });
+
+/**
+ * B15.2: edit a listing. Photos are the new list: URLs already on the listing,
+ * and new photos from the phone (uploaded first, in parallel).
+ */
+export const useUpdateListing = () =>
+  useMutation({
+    mutationFn: async ({
+      id,
+      photos,
+      ...patch
+    }: Omit<ListingPatch, 'imageUrls'> & {
+      id: string;
+      photos?: (string | LocalPhoto)[];
+    }) => {
+      const imageUrls = photos
+        ? await Promise.all(
+            photos.map(p =>
+              typeof p === 'string' ? p : catalogService.uploadListingPhoto(p),
+            ),
+          )
+        : undefined;
+      return catalogService.updateListing(id, { ...patch, imageUrls });
+    },
+    onSuccess: item => {
+      queryClient.setQueryData(queryKeys.item(item.id), item);
+      queryClient.invalidateQueries({ queryKey: queryKeys.items });
+      queryClient.invalidateQueries({ queryKey: queryKeys.myListings });
+    },
+  });
+
+export const useWithdrawListing = () =>
+  useMutation({
+    mutationFn: catalogService.withdrawListing,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.items });
       queryClient.invalidateQueries({ queryKey: queryKeys.myListings });

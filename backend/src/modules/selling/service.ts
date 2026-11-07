@@ -5,7 +5,7 @@ import { findType } from '../../reference';
 import { itemInclude } from '../catalog/apiItem';
 import { searchTextFor } from '../catalog/searchText';
 import { listingPickupColumns, type PickupInput } from '../orders/delivery';
-import type { NewListing } from './rules';
+import type { ListingPatch, NewListing } from './rules';
 
 const invalid = (message: string) => new ApiError(422, 'VALIDATION', message);
 
@@ -105,23 +105,61 @@ async function ownActiveListing(sellerId: string, id: string) {
   return listing;
 }
 
+/** Paths of the photos in a request (stored as /files/…, sent back as full URLs). */
+const pathsOf = (urls: string[]) => urls.map(url => new URL(url).pathname);
+
 /**
- * PATCH /listings/:id: price, condition and the pickup (B4.2, B14.5). An auction's
+ * B15.2: the edited photo list. Photos already on the listing stay; new ones must be
+ * this seller's unused uploads; dropped ones are let go (the clean-up job deletes them).
+ */
+async function editedPhotos(sellerId: string, current: string[], urls: string[]) {
+  const paths = pathsOf(urls);
+  if (new Set(paths).size !== paths.length) throw invalid('imageUrls: the same photo twice');
+  const added = paths.filter(p => !current.includes(p));
+  const { uploadIds } = added.length ? await ownPhotos(sellerId, added.map(p => `http://x${p}`)) : { uploadIds: [] };
+  const dropped = current.filter(p => !paths.includes(p));
+  return { paths, uploadIds, dropped };
+}
+
+/**
+ * PATCH /listings/:id: title, description, photos, price, condition and the pickup
+ * (B4.2, B14.5, B15.2). An auction with bids keeps everything buyers bid on: only
+ * its pickup can change. An auction's
  * price is fixed once bidding starts. A new pickup is for orders from now on:
  * an order keeps the one it was placed with.
  */
 export async function updateListing(
   sellerId: string,
   id: string,
-  { pickup, ...patch }: { priceFils?: number; condition?: NewListing['condition']; pickup?: PickupInput },
+  { pickup, imageUrls, ...patch }: ListingPatch,
 ) {
   const listing = await ownActiveListing(sellerId, id);
-  if (patch.priceFils !== undefined && listing.saleType === 'auction' && listing.bidCount > 0)
-    throw invalid('priceFils: an auction with bids keeps its price');
-  return prisma.listing.update({
-    where: { id },
-    data: { ...patch, ...(pickup && listingPickupColumns(pickup)) },
-    include: itemInclude,
+  const changesItem = imageUrls !== undefined || Object.values(patch).some(v => v !== undefined);
+  if (changesItem && listing.saleType === 'auction' && listing.bidCount > 0)
+    throw invalid(
+      patch.priceFils !== undefined
+        ? 'priceFils: an auction with bids keeps its price'
+        : 'An auction with bids can only change its pickup',
+    );
+  const photos = imageUrls && (await editedPhotos(sellerId, listing.imageUrls, imageUrls));
+  const titles = { titleAr: patch.titleAr ?? listing.titleAr, titleEn: patch.titleEn ?? listing.titleEn };
+  return prisma.$transaction(async tx => {
+    if (photos?.uploadIds.length) {
+      const used = await tx.upload.updateMany({ where: { id: { in: photos.uploadIds }, usedAt: null }, data: { usedAt: new Date() } });
+      if (used.count !== photos.uploadIds.length) throw invalid('imageUrls: a photo is already on another listing');
+    }
+    if (photos?.dropped.length)
+      await tx.upload.updateMany({ where: { url: { in: photos.dropped }, userId: sellerId, kind: 'listing' }, data: { usedAt: null } });
+    return tx.listing.update({
+      where: { id },
+      data: {
+        ...patch,
+        ...(photos && { imageUrls: photos.paths }),
+        ...((patch.titleAr || patch.titleEn) && { searchText: searchTextFor({ ...listing, ...titles }) }),
+        ...(pickup && listingPickupColumns(pickup)),
+      },
+      include: itemInclude,
+    });
   });
 }
 

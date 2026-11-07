@@ -201,6 +201,10 @@ test('B15.4 failed at the seller; an admin retries with another driver, who then
   const pin = (await call('GET', `/orders/${order.id}`, buyer())).body.pin;
   assert.equal((await call('POST', '/courier/confirm-delivery', rider2(), { orderId: order.id, pin })).status, 200);
   assert.equal(await listingStatus(LISTINGS[2]), 'sold');
+  // B15.9: the seller's My sales shows the payout on its way.
+  const sale = (await call('GET', '/me/sales', seller())).body.find((o: { id: string }) => o.id === order.id);
+  assert.deepEqual(sale.payout, { status: 'pending', amountFils: 90_000 });
+  assert.equal(sale.pin, undefined);
 });
 
 test('B15.3 an unpaid checkout can be cancelled too (nothing to refund)', async () => {

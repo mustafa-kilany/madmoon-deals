@@ -258,6 +258,23 @@ const rows: Row[] = [
     },
   },
   {
+    endpoint: 'PATCH /listings/:id',
+    call: () =>
+      httpCatalogService.updateListing('l1', {
+        titleEn: 'New',
+        imageUrls: ['https://cdn/p.jpg'],
+        priceFils: 4000,
+      }),
+    url: '/listings/l1',
+    body: { titleEn: 'New', imageUrls: ['https://cdn/p.jpg'], priceFils: 4000 },
+  },
+  {
+    endpoint: 'DELETE /listings/:id',
+    call: () => httpCatalogService.withdrawListing('l1'),
+    reply: null,
+    url: '/listings/l1',
+  },
+  {
     endpoint: 'GET /geocode/reverse',
     call: () =>
       httpCatalogService.reverseGeocode(
@@ -394,6 +411,12 @@ const rows: Row[] = [
     call: () => httpOrdersService.getMyOrders(),
     reply: [order],
     url: '/me/orders',
+  },
+  {
+    endpoint: 'GET /me/sales',
+    call: () => httpOrdersService.getMySales(),
+    reply: [order],
+    url: '/me/sales',
   },
   {
     endpoint: 'POST /orders/:id/cancel',

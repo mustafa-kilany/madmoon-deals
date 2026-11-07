@@ -54,7 +54,28 @@ export const newListing = z
 
 export type NewListing = z.infer<typeof newListing>;
 
+const description = z
+  .string()
+  .trim()
+  .refine(descriptionValid, `description: at least 10 words, at most ${DESCRIPTION_MAX} characters`);
+
+/**
+ * B15.2: what a seller can change while the listing is on sale. Not the category,
+ * type, brand or model (search facets, and a test certificate is for one device),
+ * nor the sale type.
+ */
 export const listingPatch = z
-  .object({ priceFils: price.optional(), condition: sellerCondition.optional(), pickup: pickupDetails.optional() })
+  .object({
+    titleAr: title.optional(),
+    titleEn: title.optional(),
+    description: description.optional(),
+    // The new list, in order: photos already on the listing and/or new uploads.
+    imageUrls: z.array(z.string().url()).min(1).max(5).optional(),
+    priceFils: price.optional(),
+    condition: sellerCondition.optional(),
+    pickup: pickupDetails.optional(),
+  })
   .strict()
   .refine(patch => Object.values(patch).some(v => v !== undefined), 'nothing to change');
+
+export type ListingPatch = z.infer<typeof listingPatch>;

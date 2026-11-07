@@ -303,7 +303,7 @@ item, logged in `SECURITY_PLAN.md`.
 - ✅ **B15.1** The seller is told **the moment the item is paid** (push "Sold!", a tap opens My sales). The listing is
   already off browsing from that moment (`reserved` in the same transaction as the payment): a test proves nobody else
   can open checkout for it.
-- ⬜ **B15.2** Edit a listing: title, description, price, condition, photos, pickup. Not once paid for or sold; an
+- ✅ **B15.2** Edit a listing: title, description, price, condition, photos, pickup. Not once paid for or sold; an
   auction's price and end only before the first bid; the certificate's type / brand / model can't change. App: Edit on
   My listings (and Withdraw).
 - ✅ **B15.3** **The buyer cancels a paid order until it is picked up** (`POST /orders/:id/cancel` with a reason from
@@ -327,7 +327,7 @@ item, logged in `SECURITY_PLAN.md`.
 - ⬜ **B15.8** **Privacy policy, terms and consent:** pages in the app (Arabic + English) and on the API
   (`/legal/privacy`, `/legal/terms`, for the Play Store); sign-up (email, Google, Apple) records which version was
   accepted; a Sanad consent screen records consent before any lookup (MoDEE's pledge). Text is a draft for a lawyer.
-- ⬜ **B15.9** App: **My sales** (`GET /me/sales`): what sold, the order's status, delivery problems, payout status.
+- ✅ **B15.9** App: **My sales** (`GET /me/sales`): what sold, the order's status, delivery problems, payout status.
 - ⬜ **B15.10** **The app off the demo data:** `mock.catalog`, `mock.negotiation`, `mock.orders` = false; every
   journey run on the emulator against this backend and the seed; the Maestro flows run against it too.
 - Apple sign-in button stays (the owner will finish Apple sign-in before production).
