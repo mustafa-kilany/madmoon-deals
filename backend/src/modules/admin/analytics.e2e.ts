@@ -26,7 +26,7 @@ const analytics = async (days = 7) => (await call(`/admin/analytics?days=${days}
 before(async () => {
   await new Promise(resolve => server.once('listening', resolve));
   base = `http://127.0.0.1:${(server.address() as AddressInfo).port}/v1`;
-  const a = await prisma.user.create({ data: { name: 'Stats Admin', email: EMAILS[2]!, role: 'admin' } });
+  const a = await prisma.user.create({ data: { name: 'Stats Admin', email: EMAILS[2]!, role: 'admin', adminRole: 'owner' } });
   admin = await adminToken(a.id);
 });
 after(async () => {

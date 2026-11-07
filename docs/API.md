@@ -984,7 +984,7 @@ the invite code sets the password through the app's reset screens.
   * Each code works once. A code from 30 seconds before or after is accepted (phone clocks drift).
   * **Errors:** `INVALID_CODE` (422) for a wrong or already used code, `UNAUTHORIZED` (401) for an
     expired ticket (log in again), `RATE_LIMITED` (429) after 10 tries in 15 minutes per admin.
-* **`GET /admin/me`** *(admin)* → `Admin` = `{ id, name, email }`.
+* **`GET /admin/me`** *(admin)* → `Admin` = `{ id, name, email, adminRole, permissions }` (B15.7).
 * **`POST /admin/auth/logout`** *(admin)* → 204.
 
 **Development only, `ADMIN_2FA=off`:** `POST /admin/auth/login` answers the second step's response right away
@@ -993,6 +993,21 @@ start with it in production.
 
 The token lasts 12 hours, with no refresh: the dashboard logs in again. Demoting or suspending an admin
 takes effect on their next request.
+
+**Admin types (B15.7).** `adminRole`: `owner` (everything; the only one who manages admins), `operations`
+(orders, drivers, retrying delivery problems, stores, category pictures), `support` (support chat, reports,
+suspicious accounts, certificates, suspending, retrying delivery problems), `finance` (refunds, payouts,
+analytics). Every admin sees the overview, orders and users. `permissions` lists what the type opens:
+`orders`, `dispatch`, `refund`, `payouts`, `analytics`, `reports`, `risk`, `certificates`, `suspend`, `stores`,
+`categories`, `couriers`, `support`, `admins` (the server's table: `backend/src/modules/admin/permissions.ts`).
+An endpoint the type doesn't open is `FORBIDDEN` (403); an admin without a type opens nothing.
+`POST /admin/orders/:id/resolve-problem` needs `dispatch` to retry and `refund` to refund.
+* **`GET /admin/admins`** *(owner)* → `{ id, name, email, adminRole, permissions, active, twoFactor, createdAt }[]`.
+* **`POST /admin/admins`** *(owner)* → Body: `{ name, email, adminRole }` → 201. Staff domain only; the invite code
+  is emailed (they set a password, then the authenticator on the first log-in). Already an admin: `EMAIL_TAKEN`.
+* **`POST /admin/admins/:id/role`** `{ adminRole }`, **`/disable`** (signs them out at once), **`/enable`** *(owner)*.
+  Not on yourself (`VALIDATION`); the last active owner can't lose the type. All in the audit log.
+  From the terminal: `npm run staff -- admin "Name" name@sahla.jo [owner|operations|support|finance]` (default owner).
 
 **Overview.** **`GET /admin/stats`** *(admin)* → business numbers for the dashboard's first page (technical
 health is in the error tracker and the host's metrics, not here):

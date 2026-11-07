@@ -2,7 +2,8 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../../db';
 import { Prisma } from '../../generated/prisma/client';
-import { requireAdmin } from '../auth/requireUser';
+
+import { can } from './permissions';
 
 // The dashboard's Analytics page (BACKEND_PLAN B8.8): what happened day by
 // day over the chosen period, compared with the period before, plus how the
@@ -36,7 +37,7 @@ async function perDay(table: string, column: string, from: string, extra: Prisma
 
 const query = z.object({ days: z.coerce.number().refine(d => [7, 30, 90].includes(d), '7, 30 or 90').default(30) });
 
-adminAnalyticsRoutes.get('/admin/analytics', ...requireAdmin, async (req, res) => {
+adminAnalyticsRoutes.get('/admin/analytics', ...can('analytics'), async (req, res) => {
   const { days } = query.parse(req.query);
   const today = jordanDay(new Date());
   const from = addDays(today, -(days - 1));

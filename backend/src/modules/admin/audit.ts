@@ -3,7 +3,8 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../../db';
 import type { Prisma } from '../../generated/prisma/client';
-import { currentUser, requireAdmin } from '../auth/requireUser';
+import { currentUser } from '../auth/requireUser';
+import { can } from './permissions';
 
 // The audit log (BACKEND_PLAN B8.1): one AdminAction row for every change an
 // admin makes. Written after the change succeeded; rows are never edited.
@@ -36,7 +37,7 @@ const listQuery = z.object({
 });
 
 /** Newest first; `before` = the last row's createdAt for the next page. */
-auditRoutes.get('/admin/actions', ...requireAdmin, async (req, res) => {
+auditRoutes.get('/admin/actions', ...can('orders'), async (req, res) => {
   const q = listQuery.parse(req.query);
   const rows = await prisma.adminAction.findMany({
     where: {

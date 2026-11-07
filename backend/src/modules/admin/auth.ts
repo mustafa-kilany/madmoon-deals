@@ -10,6 +10,8 @@ import { currentUser, requireAdmin } from '../auth/requireUser';
 import { ADMIN_SESSION_HOURS, challengeSubject, issueToken, signChallenge, verifyChallenge } from '../auth/tokens';
 import { logAdminAction } from './audit';
 import { matchTotp, newTotpSecret, otpauthUrl } from './totp';
+import type { AdminRole } from '../../generated/prisma/client';
+import { permissionsOf } from './permissions';
 
 // docs/API.md → Admin dashboard → Log-in (BACKEND_PLAN B8.1). Two steps:
 // password → a 5-minute ticket → a code from the admin's authenticator app →
@@ -39,7 +41,14 @@ const codeLimit = rateLimit({
   handler: tooMany,
 });
 
-const toApiAdmin = (u: { id: string; name: string; email: string | null }) => ({ id: u.id, name: u.name, email: u.email ?? '' });
+// B15.7: the dashboard shows only the pages these permissions open.
+const toApiAdmin = (u: { id: string; name: string; email: string | null; adminRole: AdminRole | null }) => ({
+  id: u.id,
+  name: u.name,
+  email: u.email ?? '',
+  adminRole: u.adminRole,
+  permissions: permissionsOf(u.adminRole),
+});
 
 const loginBody = z.object({ email: z.string().trim().toLowerCase().max(200), password: z.string().max(200) });
 

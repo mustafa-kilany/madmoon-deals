@@ -37,7 +37,7 @@ before(async () => {
   base = `http://127.0.0.1:${(server.address() as AddressInfo).port}/v1`;
   const passwordHash = await hashPassword('longenough');
   for (const email of EMAILS) {
-    await prisma.user.create({ data: { name: email.split('@')[0], email, passwordHash, ...(email.startsWith('refund.admin') && { role: 'admin' }) } });
+    await prisma.user.create({ data: { name: email.split('@')[0], email, passwordHash, ...(email.startsWith('refund.admin') && { role: 'admin', adminRole: 'owner' }) } });
     const r = await fetch(`${base}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

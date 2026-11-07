@@ -8,8 +8,9 @@ import { storage } from '../../lib/storage';
 import { categoryInfo } from '../../reference';
 import { adminDid } from '../admin/audit';
 import { toApiUser } from '../auth/apiUser';
-import { currentUser, requireAdmin, requireCustomer } from '../auth/requireUser';
+import { currentUser, requireCustomer } from '../auth/requireUser';
 import { checkImage, fullSize, square } from './images';
+import { can } from '../admin/permissions';
 
 // docs/API.md: POST /uploads/listing-photo, POST /me/avatar; admin category pictures
 // (BACKEND_PLAN B3.8). One photo per request, up to 10 MB, kept in memory only
@@ -58,7 +59,7 @@ uploadRoutes.post('/me/avatar', ...requireCustomer, one('avatar'), async (req, r
 });
 
 /** An admin replaces a category's picture (the dashboard). */
-uploadRoutes.put('/admin/categories/:id/image', ...requireAdmin, one('image'), async (req, res) => {
+uploadRoutes.put('/admin/categories/:id/image', ...can('categories'), one('image'), async (req, res) => {
   const id = req.params.id as string;
   if (!categoryInfo.some(c => c.id === id)) throw new ApiError(404, 'NOT_FOUND', `No category ${id}`);
   const data = fileOf(req, 'image');

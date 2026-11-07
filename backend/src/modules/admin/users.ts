@@ -3,8 +3,9 @@ import { z } from 'zod';
 import { prisma } from '../../db';
 import type { Prisma } from '../../generated/prisma/client';
 import { ApiError } from '../../lib/errors';
-import { currentUser, requireAdmin } from '../auth/requireUser';
+import { currentUser } from '../auth/requireUser';
 import { adminDid } from './audit';
+import { can } from './permissions';
 
 // Users in the dashboard (BACKEND_PLAN B8.5): look up, suspend, unsuspend.
 // Suspending signs the person out everywhere, takes their listings off sale
@@ -37,7 +38,7 @@ const listQuery = z.object({
 });
 
 /** Newest first; `before` = the last row's createdAt for the next page. */
-adminUsersRoutes.get('/admin/users', ...requireAdmin, async (req, res) => {
+adminUsersRoutes.get('/admin/users', ...can('orders'), async (req, res) => {
   const q = listQuery.parse(req.query);
   const contains = (text: string) => ({ contains: text, mode: 'insensitive' as const });
   const rows = await prisma.user.findMany({
@@ -52,7 +53,7 @@ adminUsersRoutes.get('/admin/users', ...requireAdmin, async (req, res) => {
   res.json(rows.map(toAdminUserSummary));
 });
 
-adminUsersRoutes.get('/admin/users/:id', ...requireAdmin, async (req, res) => {
+adminUsersRoutes.get('/admin/users/:id', ...can('orders'), async (req, res) => {
   const id = req.params.id as string;
   const user = await prisma.user.findUnique({ where: { id } });
   if (!user) throw new ApiError(404, 'NOT_FOUND', `No user ${id}`);
@@ -88,7 +89,7 @@ async function customer(id: string, adminId: string) {
   return user;
 }
 
-adminUsersRoutes.post('/admin/users/:id/suspend', ...requireAdmin, async (req, res) => {
+adminUsersRoutes.post('/admin/users/:id/suspend', ...can('suspend'), async (req, res) => {
   const { reason } = z.object({ reason: z.string().trim().min(3).max(500) }).parse(req.body);
   const user = await customer(req.params.id as string, currentUser(res.locals).id);
   if (user.suspended) throw new ApiError(422, 'VALIDATION', 'Already suspended');
@@ -112,7 +113,7 @@ adminUsersRoutes.post('/admin/users/:id/suspend', ...requireAdmin, async (req, r
   res.json(toAdminUserSummary(updated));
 });
 
-adminUsersRoutes.post('/admin/users/:id/unsuspend', ...requireAdmin, async (req, res) => {
+adminUsersRoutes.post('/admin/users/:id/unsuspend', ...can('suspend'), async (req, res) => {
   const { reason } = z.object({ reason: z.string().trim().min(3).max(500) }).parse(req.body);
   const user = await customer(req.params.id as string, currentUser(res.locals).id);
   if (!user.suspended) throw new ApiError(422, 'VALIDATION', 'Not suspended');

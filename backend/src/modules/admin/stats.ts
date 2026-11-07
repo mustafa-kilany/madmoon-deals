@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { prisma } from '../../db';
-import { requireAdmin } from '../auth/requireUser';
+
 import { problemWhere } from '../orders/problems';
+import { can } from './permissions';
 
 // The dashboard's overview page (BACKEND_PLAN B8.2): business numbers only.
 // Technical health (errors, slow requests) belongs in Sentry and the host's
@@ -11,7 +12,7 @@ export const statsRoutes = Router();
 
 const DAY = 86_400_000;
 
-statsRoutes.get('/admin/stats', ...requireAdmin, async (_req, res) => {
+statsRoutes.get('/admin/stats', ...can('orders'), async (_req, res) => {
   const now = Date.now();
   const weekAgo = new Date(now - 7 * DAY);
   const monthAgo = new Date(now - 30 * DAY);

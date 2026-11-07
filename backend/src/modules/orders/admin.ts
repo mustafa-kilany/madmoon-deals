@@ -3,11 +3,12 @@ import { z } from 'zod';
 import { prisma } from '../../db';
 import { ApiError } from '../../lib/errors';
 import { adminDid } from '../admin/audit';
-import { requireAdmin } from '../auth/requireUser';
+import { currentUser, requireAdmin } from '../auth/requireUser';
 import { pushAssigned } from '../notifications/notify';
 import { provider } from './pay';
 import { resolveInput, resolveProblem } from './problems';
 import { orderInclude, toApiOrder } from './shapes';
+import { allowed, can } from '../admin/permissions';
 
 // Support's order tools (BACKEND_PLAN B7.7), for the admin dashboard (B8.5).
 // No app endpoint: the buyer asks support when an item never arrives.
@@ -39,14 +40,14 @@ export async function refundOrder(orderId: string) {
   return prisma.order.findUniqueOrThrow({ where: { id: orderId }, include: orderInclude });
 }
 
-adminOrderRoutes.post('/admin/orders/:id/refund', ...requireAdmin, async (req, res) => {
+adminOrderRoutes.post('/admin/orders/:id/refund', ...can('refund'), async (req, res) => {
   const order = await refundOrder(req.params.id as string);
   await adminDid(req, res, 'order.refund', { type: 'order', id: order.id }, { totalFils: order.totalFils });
   res.json(toApiOrder(order, req));
 });
 
 /** After 5 wrong delivery PINs (the buyer confirmed it's really the courier at the door). */
-adminOrderRoutes.post('/admin/orders/:id/unlock-pin', ...requireAdmin, async (req, res) => {
+adminOrderRoutes.post('/admin/orders/:id/unlock-pin', ...can('dispatch'), async (req, res) => {
   const order = await findOrder(req.params.id as string);
   if (order.status !== 'escrow_held') throw new ApiError(422, 'VALIDATION', `This order is ${order.status}`);
   await prisma.order.update({ where: { id: order.id }, data: { pinAttempts: 0 } });
@@ -58,7 +59,7 @@ adminOrderRoutes.post('/admin/orders/:id/unlock-pin', ...requireAdmin, async (re
  * B14.6: give a paid order to a courier (later: by area, automatically). Can be
  * changed until it's picked up.
  */
-adminOrderRoutes.post('/admin/orders/:id/assign', ...requireAdmin, async (req, res) => {
+adminOrderRoutes.post('/admin/orders/:id/assign', ...can('dispatch'), async (req, res) => {
   const { courierId } = z.object({ courierId: z.string().min(1) }).parse(req.body);
   const order = await findOrder(req.params.id as string);
   if (order.status !== 'escrow_held' || (order.courierStatus && order.courierStatus !== 'to_pickup'))
@@ -82,6 +83,9 @@ adminOrderRoutes.post('/admin/orders/:id/assign', ...requireAdmin, async (req, r
  */
 adminOrderRoutes.post('/admin/orders/:id/resolve-problem', ...requireAdmin, async (req, res) => {
   const input = resolveInput.parse(req.body);
+  // B15.7: retrying is dispatching; a refund needs the refund permission.
+  if (!allowed(currentUser(res.locals).adminRole, input.action === 'refund' ? 'refund' : 'dispatch'))
+    throw new ApiError(403, 'FORBIDDEN', `Your admin type can’t do this (${input.action})`);
   const { before, after } = await resolveProblem((req.params.id as string).toUpperCase(), input);
   await adminDid(req, res, `order.problem_${input.action}`, { type: 'order', id: after.id }, {
     failed: before.failedReason && { stage: before.failedStage, reason: before.failedReason, note: before.failedNote },

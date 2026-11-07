@@ -22,6 +22,14 @@ enum Role {
   admin // the admin dashboard: refurbished import, review queues (never sent to the app)
 }
 
+// B15.7: what an admin may do in the dashboard (src/modules/admin/permissions.ts).
+enum AdminRole {
+  owner // everything, and the only one who manages admins
+  operations // orders, drivers, delivery problems (retry), stores, categories
+  support // support chat, reports, users, certificates, orders read-only
+  finance // refunds, payouts, analytics, orders read-only
+}
+
 // API `User`. `card` is stored as cardBrand + cardLast4 (never the card number), and
 // cardToken is the payment provider's token for charging it again (B7.8).
 model User {
@@ -39,6 +47,7 @@ model User {
   cardLast4     String?
   cardToken     String?
   role          Role?
+  adminRole     AdminRole? // role admin only (B15.7)
   suspended     Boolean    @default(false) // set by an admin only (never by the risk checker)
   // Admins' two-step log-in (B8.1): an authenticator-app secret, encrypted (lib/sealed.ts).
   // Set on the first dashboard log-in, enabled once a code from it was accepted.

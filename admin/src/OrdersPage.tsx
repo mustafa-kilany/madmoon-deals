@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { api } from './api';
 import { AssignCourier } from './OrderPage';
+import { useCan } from './session';
 import type { OrderSummary } from './types';
 import { Badge, courierLabel, Failed, jod, Loading, OrderBadge, when } from './ui';
 
@@ -37,6 +38,7 @@ export function OrdersPage() {
   });
 
   const queryClient = useQueryClient();
+  const can = useCan();
   const assigned = () => {
     queryClient.invalidateQueries({ queryKey: ['orders'] });
     queryClient.invalidateQueries({ queryKey: ['stats'] });
@@ -118,7 +120,7 @@ export function OrdersPage() {
                           </div>
                         )}
                         {/* Until the driver picks it up, it can be given to (another) driver right here. */}
-                        {(!o.courierStatus || o.courierStatus === 'to_pickup') && <AssignCourier compact order={o} onDone={assigned} />}
+                        {can('dispatch') && (!o.courierStatus || o.courierStatus === 'to_pickup') && <AssignCourier compact order={o} onDone={assigned} />}
                       </>
                     )}
                   </td>

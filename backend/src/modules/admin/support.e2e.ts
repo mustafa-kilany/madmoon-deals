@@ -42,7 +42,7 @@ before(async () => {
   const passwordHash = await hashPassword('longenough');
   for (const email of EMAILS) {
     const role = email.includes('admin') ? 'admin' : email.endsWith('@sahla.jo') ? 'courier' : undefined;
-    const user = await prisma.user.create({ data: { name: email.split('@')[0], email, passwordHash, ...(role && { role }) } });
+    const user = await prisma.user.create({ data: { name: email.split('@')[0], email, passwordHash, ...(role && { role }), ...(role === 'admin' && { adminRole: 'owner' as const }) } });
     people.push({ id: user.id, token: role === 'admin' ? await adminToken(user.id) : (await logIn(email)).body.token });
   }
   await prisma.listing.createMany({

@@ -69,7 +69,7 @@ test('an admin creates a courier; the invite code sets the password; they log in
 
 test('admins manage couriers from the dashboard: add, list, disable', async () => {
   const admin = await prisma.user.create({
-    data: { name: 'E2E Admin', email: 'e2e.admin@sahla.jo', role: 'admin', passwordHash: await hashPassword('adminpass1') },
+    data: { name: 'E2E Admin', email: 'e2e.admin@sahla.jo', role: 'admin', adminRole: 'owner', passwordHash: await hashPassword('adminpass1') },
   });
   const token = await adminToken(admin.id);
   const get = async (path: string, t = token) =>

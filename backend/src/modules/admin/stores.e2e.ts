@@ -37,7 +37,7 @@ const onSale = () => prisma.listing.count({ where: { storeId: STORE, status: 'ac
 before(async () => {
   await new Promise(resolve => server.once('listening', resolve));
   base = `http://127.0.0.1:${(server.address() as AddressInfo).port}/v1`;
-  const user = await prisma.user.create({ data: { name: 'Sara Admin', email: ADMIN_EMAIL, role: 'admin' } });
+  const user = await prisma.user.create({ data: { name: 'Sara Admin', email: ADMIN_EMAIL, role: 'admin', adminRole: 'owner' } });
   admin = { id: user.id, token: await adminToken(user.id) };
 });
 after(async () => {

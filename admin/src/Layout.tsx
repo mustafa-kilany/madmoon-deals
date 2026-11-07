@@ -2,33 +2,39 @@
 // and the signed-in admin.
 
 import { NavLink, Outlet } from 'react-router';
-import { useSession } from './session';
+import { useCan, useSession } from './session';
+import type { Permission } from './types';
 
-const pages = [
-  { to: '/', label: 'Overview' },
-  { to: '/analytics', label: 'Analytics' },
-  { to: '/orders', label: 'Orders' },
-  { to: '/orders?filter=problems', label: 'Delivery problems' },
-  { to: '/payouts', label: 'Payouts' },
-  { to: '/users', label: 'Users' },
+// Each page shows only for admins whose type opens it (B15.7).
+const pages: ({ section: string } | { to: string; label: string; needs: Permission })[] = [
+  { to: '/', label: 'Overview', needs: 'orders' },
+  { to: '/analytics', label: 'Analytics', needs: 'analytics' },
+  { to: '/orders', label: 'Orders', needs: 'orders' },
+  { to: '/orders?filter=problems', label: 'Delivery problems', needs: 'orders' },
+  { to: '/payouts', label: 'Payouts', needs: 'payouts' },
+  { to: '/users', label: 'Users', needs: 'orders' },
   { section: 'Review' },
-  { to: '/reports', label: 'Reports' },
-  { to: '/risk', label: 'Suspicious accounts' },
-  { to: '/certificates', label: 'Test certificates' },
+  { to: '/reports', label: 'Reports', needs: 'reports' },
+  { to: '/risk', label: 'Suspicious accounts', needs: 'risk' },
+  { to: '/certificates', label: 'Test certificates', needs: 'certificates' },
   { section: 'Manage' },
-  { to: '/refurbished', label: 'Certified Refurbished' },
-  { to: '/couriers', label: 'Couriers' },
-] as const;
+  { to: '/refurbished', label: 'Certified Refurbished', needs: 'stores' },
+  { to: '/couriers', label: 'Couriers', needs: 'couriers' },
+  { to: '/admins', label: 'Admins', needs: 'admins' },
+];
 
 export function Layout() {
   const { admin, signOut } = useSession();
+  const can = useCan();
   return (
     <div className="shell">
       <nav className="sidebar" aria-label="Main">
         <div className="brand">
           <span className="brand-mark">S</span> Sahla Admin
         </div>
-        {pages.map(page =>
+        {pages
+          .filter(page => 'section' in page || can(page.needs))
+          .map(page =>
           'section' in page ? (
             <span key={page.section} className="nav-section">
               {page.section}
@@ -43,7 +49,7 @@ export function Layout() {
       <div className="main">
         <header className="topbar">
           <span className="muted">
-            {admin?.name} · {admin?.email}
+            {admin?.name} · {admin?.email} · {admin?.adminRole ?? 'no type'}
           </span>
           <button className="secondary" onClick={() => signOut()}>
             Log out

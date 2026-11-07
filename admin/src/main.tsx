@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router';
+import { AdminsPage } from './AdminsPage';
 import { AnalyticsPage } from './AnalyticsPage';
 import { CertificatesPage } from './CertificatesPage';
 import { CouriersPage } from './CouriersPage';
@@ -43,6 +44,7 @@ function Pages() {
         <Route path="refurbished" element={<RefurbishedPage />} />
         <Route path="refurbished/:id" element={<StorePage />} />
         <Route path="couriers" element={<CouriersPage />} />
+        <Route path="admins" element={<AdminsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

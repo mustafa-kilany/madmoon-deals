@@ -5,7 +5,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import { api, setSignedOutHandler, token } from './api';
-import type { Admin, LoginDone } from './types';
+import type { Admin, LoginDone, Permission } from './types';
 
 type Session = {
   /** undefined while checking a saved token; null = signed out. */
@@ -50,6 +50,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [queryClient]);
 
   return <SessionContext.Provider value={{ admin, endedNote, signIn, signOut }}>{children}</SessionContext.Provider>;
+}
+
+/** B15.7: may the signed-in admin do this? (The server checks too.) */
+export function useCan() {
+  const { admin } = useSession();
+  return (permission: Permission) => !!admin?.permissions.includes(permission);
 }
 
 export function useSession() {

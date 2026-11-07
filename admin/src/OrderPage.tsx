@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { reasonLabel } from '@/lib/deliveryProblems';
 import { api } from './api';
+import { useCan } from './session';
 import type { Courier, Order, OrderSummary } from './types';
 import { areaName, Badge, ConfirmDialog, courierLabel, Failed, History, jod, Loading, OrderBadge, when } from './ui';
 
@@ -16,6 +17,7 @@ export function OrderPage() {
   const id = useParams().id!;
   const queryClient = useQueryClient();
   const [dialog, setDialog] = useState<Dialog>(null);
+  const can = useCan();
   const { data: o, isPending, isError, error, refetch } = useQuery({
     queryKey: ['order', id],
     queryFn: () => api.get<Order>(`/admin/orders/${encodeURIComponent(id)}`),
@@ -30,7 +32,7 @@ export function OrderPage() {
   if (isPending) return <div className="page"><Loading /></div>;
   if (isError) return <div className="page"><Failed error={error} retry={refetch} /></div>;
 
-  const canAssign = o.status === 'escrow_held' && (!o.courierStatus || o.courierStatus === 'to_pickup');
+  const canAssign = can('dispatch') && o.status === 'escrow_held' && (!o.courierStatus || o.courierStatus === 'to_pickup');
   return (
     <div className="page">
       <p className="small">
@@ -41,12 +43,12 @@ export function OrderPage() {
           {o.id} <OrderBadge status={o.status} />
         </h1>
         <div className="actions">
-          {o.pinLocked && (
+          {o.pinLocked && can('dispatch') && (
             <button className="secondary" onClick={() => setDialog('unlock')}>
               Unlock PIN
             </button>
           )}
-          {o.status === 'escrow_held' && (
+          {o.status === 'escrow_held' && can('refund') && (
             <button className="danger" onClick={() => setDialog('refund')}>
               Refund
             </button>
@@ -225,6 +227,7 @@ function ProblemRow({ title, p }: { title: string; p: { reason: string; note: st
  * or refund the buyer; a faulty item can stay off sale.
  */
 function ResolveProblem({ order, onDone }: { order: Order; onDone: () => void }) {
+  const can = useCan();
   const { data: couriers } = useQuery({ queryKey: ['couriers'], queryFn: () => api.get<Courier[]>('/admin/couriers') });
   const [courierId, setCourierId] = useState('');
   const [relist, setRelist] = useState(!order.itemIssue && order.deliveryFailed?.stage !== 'dropoff');
@@ -244,6 +247,7 @@ function ResolveProblem({ order, onDone }: { order: Order; onDone: () => void })
   };
   return (
     <div className="resolve">
+      {can('dispatch') && (
       <div className="toolbar">
         <select value={courierId} onChange={e => setCourierId(e.target.value)} aria-label="Driver for the retry">
           <option value="">Same driver{order.courier ? ` (${order.courier.name})` : ''}</option>
@@ -259,6 +263,8 @@ function ResolveProblem({ order, onDone }: { order: Order; onDone: () => void })
           Try again
         </button>
       </div>
+      )}
+      {can('refund') && (
       <div className="toolbar">
         <label className="small">
           <input type="checkbox" checked={relist} onChange={e => setRelist(e.target.checked)} /> Put the listing on sale again
@@ -267,6 +273,7 @@ function ResolveProblem({ order, onDone }: { order: Order; onDone: () => void })
           Refund {jod(order.totalFils)}
         </button>
       </div>
+      )}
       {error && <p className="error">{error}</p>}
     </div>
   );

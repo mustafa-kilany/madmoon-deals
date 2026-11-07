@@ -36,7 +36,7 @@ before(async () => {
   await new Promise(resolve => server.once('listening', resolve));
   base = `http://127.0.0.1:${(server.address() as AddressInfo).port}/v1`;
   const passwordHash = await hashPassword(PASSWORD);
-  await prisma.user.create({ data: { name: 'Dash Admin', email: ADMIN, passwordHash, role: 'admin', verified: true } });
+  await prisma.user.create({ data: { name: 'Dash Admin', email: ADMIN, passwordHash, role: 'admin', adminRole: 'owner', verified: true } });
   await prisma.user.create({ data: { name: 'Dash Customer', email: CUSTOMER, passwordHash } });
 });
 after(async () => {
@@ -72,7 +72,7 @@ test('the code finishes the log-in, once; later log-ins ask for a code only', as
   const ok = await call('POST', '/admin/auth/verify', { challenge, code });
   assert.equal(ok.status, 200);
   assert.equal(ok.body.expiresInHours, 12);
-  assert.deepEqual(ok.body.admin, { id: ok.body.admin.id, name: 'Dash Admin', email: ADMIN });
+  assert.deepEqual(ok.body.admin, { id: ok.body.admin.id, name: 'Dash Admin', email: ADMIN, adminRole: 'owner', permissions: ok.body.admin.permissions });
   dashboard = ok.body.token;
 
   // The same code can't be used again, even with a new ticket.

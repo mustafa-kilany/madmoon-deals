@@ -320,7 +320,7 @@ item, logged in `SECURITY_PLAN.md`.
 - ⬜ **B15.6** **Support:** a support email (setting `SUPPORT_EMAIL`, shown in the app) and an in-app **chat with
   the support team** for customers and drivers (one conversation per person); the dashboard gets a Support inbox; a
   reply is pushed. No support phone number for now.
-- ⬜ **B15.7** **Admin types:** `owner` (everything, the only one who manages admins), `operations` (orders, drivers,
+- ✅ **B15.7** **Admin types:** `owner` (everything, the only one who manages admins), `operations` (orders, drivers,
   delivery problems, stores, categories), `support` (support chat, reports, users, certificates, orders read-only),
   `finance` (refunds, payouts, analytics, orders read-only). The dashboard shows each admin only their pages; the
   server checks every endpoint. Owner's Admins page: add, change type, disable.

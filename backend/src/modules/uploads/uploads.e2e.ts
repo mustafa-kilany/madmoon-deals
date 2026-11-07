@@ -50,7 +50,7 @@ before(async () => {
     await json('/auth/signup', { name: 'Photo Tester', email: 'photos@example.com', password: 'longenough', code: '123456' })
   ).token;
   await createCourier({ name: 'E2E Photo Courier', email: 'e2e.photo.courier@sahla.jo' });
-  const admin = await createAdmin({ name: 'E2E Photo Admin', email: 'e2e.photo.admin@sahla.jo' });
+  const admin = await createAdmin({ name: 'E2E Photo Admin', email: 'e2e.photo.admin@sahla.jo' }, 'owner');
   tokens.courier = (
     await json('/auth/reset-password', { email: 'e2e.photo.courier@sahla.jo', code: '123456', password: 'staffpass1' })
   ).token;

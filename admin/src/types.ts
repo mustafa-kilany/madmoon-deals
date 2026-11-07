@@ -1,6 +1,24 @@
 // Response shapes of the admin endpoints (docs/API.md → Admin dashboard).
 
-export type Admin = { id: string; name: string; email: string };
+/** B15.7: admin types and what they open (backend src/modules/admin/permissions.ts). */
+export type AdminRole = 'owner' | 'operations' | 'support' | 'finance';
+export type Permission =
+  | 'orders'
+  | 'dispatch'
+  | 'refund'
+  | 'payouts'
+  | 'analytics'
+  | 'reports'
+  | 'risk'
+  | 'certificates'
+  | 'suspend'
+  | 'stores'
+  | 'categories'
+  | 'couriers'
+  | 'support'
+  | 'admins';
+export type Admin = { id: string; name: string; email: string; adminRole: AdminRole | null; permissions: Permission[] };
+export type AdminRow = Admin & { active: boolean; twoFactor: boolean; createdAt: string };
 
 export type LoginStart = {
   challenge: string;

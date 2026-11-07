@@ -58,7 +58,7 @@ before(async () => {
   base = `http://127.0.0.1:${(server.address() as AddressInfo).port}/v1`;
   const passwordHash = await hashPassword('longenough');
   for (const [i, email] of EMAILS.entries()) {
-    const user = await prisma.user.create({ data: { name: NAMES[i], email, passwordHash, ...(ROLES[i] && { role: ROLES[i] }) } });
+    const user = await prisma.user.create({ data: { name: NAMES[i], email, passwordHash, ...(ROLES[i] && { role: ROLES[i] }), ...(ROLES[i] === 'admin' && { adminRole: 'owner' as const }) } });
     let token: string;
     if (ROLES[i] === 'admin') token = await adminToken(user.id);
     else {

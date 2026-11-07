@@ -3,11 +3,12 @@ import { z } from 'zod';
 import { prisma } from '../../db';
 import type { Prisma } from '../../generated/prisma/client';
 import { ApiError } from '../../lib/errors';
-import { requireAdmin } from '../auth/requireUser';
+
 import { coverUrl } from '../catalog/apiItem';
 import { PIN_TRIES } from '../courier/delivery';
 import { problemWhere } from '../orders/problems';
 import { adminDid } from './audit';
+import { can } from './permissions';
 
 // Orders and payouts in the dashboard (BACKEND_PLAN B8.5). Support sees the
 // whole order (delivery and pickup details too) but never the delivery PIN.
@@ -87,7 +88,7 @@ const contains = (q: string) => ({ contains: q, mode: 'insensitive' as const });
 const matchingPerson = (q: string) => ({ OR: [{ email: contains(q) }, { name: contains(q) }] });
 
 /** Newest first; `before` = the last row's createdAt for the next page. */
-adminOrdersRoutes.get('/admin/orders', ...requireAdmin, async (req, res) => {
+adminOrdersRoutes.get('/admin/orders', ...can('orders'), async (req, res) => {
   const q = listQuery.parse(req.query);
   const where: Prisma.OrderWhereInput = {
     ...(q.status && { status: q.status }),
@@ -103,7 +104,7 @@ adminOrdersRoutes.get('/admin/orders', ...requireAdmin, async (req, res) => {
   res.json(rows.map(o => toAdminOrderSummary(o, req)));
 });
 
-adminOrdersRoutes.get('/admin/orders/:id', ...requireAdmin, async (req, res) => {
+adminOrdersRoutes.get('/admin/orders/:id', ...can('orders'), async (req, res) => {
   const order = await prisma.order.findUnique({
     where: { id: (req.params.id as string).toUpperCase() },
     include: adminOrderInclude,
@@ -139,7 +140,7 @@ const toAdminPayout = (p: Prisma.PayoutGetPayload<{ include: typeof payoutInclud
 });
 
 /** Oldest first for pending (pay in order), newest first otherwise. */
-adminOrdersRoutes.get('/admin/payouts', ...requireAdmin, async (req, res) => {
+adminOrdersRoutes.get('/admin/payouts', ...can('payouts'), async (req, res) => {
   const q = payoutQuery.parse(req.query);
   const oldestFirst = q.status === 'pending';
   const rows = await prisma.payout.findMany({
@@ -152,7 +153,7 @@ adminOrdersRoutes.get('/admin/payouts', ...requireAdmin, async (req, res) => {
 });
 
 /** The bank transfer was sent. `reference` = the bank's transfer number, kept in the audit log. */
-adminOrdersRoutes.post('/admin/payouts/:id/paid', ...requireAdmin, async (req, res) => {
+adminOrdersRoutes.post('/admin/payouts/:id/paid', ...can('payouts'), async (req, res) => {
   const { reference } = z.object({ reference: z.string().trim().min(1).max(100) }).parse(req.body);
   const id = req.params.id as string;
   const { count } = await prisma.payout.updateMany({ where: { id, status: { not: 'paid' } }, data: { status: 'paid', paidAt: new Date() } });

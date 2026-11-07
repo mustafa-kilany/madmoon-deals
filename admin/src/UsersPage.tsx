@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router';
 import { api } from './api';
+import { useCan } from './session';
 import type { UserDetail, UserSummary } from './types';
 import { areaName, Badge, ConfirmDialog, Failed, History, jod, Loading, OrderBadge, when } from './ui';
 
@@ -96,6 +97,7 @@ export function UserPage() {
   const id = useParams().id!;
   const queryClient = useQueryClient();
   const [dialog, setDialog] = useState(false);
+  const can = useCan();
   const { data: u, isPending, isError, error, refetch } = useQuery({
     queryKey: ['user', id],
     queryFn: () => api.get<UserDetail>(`/admin/users/${encodeURIComponent(id)}`),
@@ -125,7 +127,7 @@ export function UserPage() {
         <h1>
           {u.name} <UserBadges user={u} />
         </h1>
-        {!u.role && (
+        {!u.role && can('suspend') && (
           <div className="actions">
             <button className={u.suspended ? 'secondary' : 'danger'} onClick={() => setDialog(true)}>
               {u.suspended ? 'Lift suspension' : 'Suspend'}

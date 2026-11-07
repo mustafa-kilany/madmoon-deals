@@ -1,7 +1,7 @@
 // Staff accounts from the terminal, until the admin dashboard (B8) has a page for it.
 //
 //   npm run staff -- courier "Omar Courier" omar@sahla.jo   creates it and emails the invite code
-//   npm run staff -- admin "Mustafa" mustafa@sahla.jo          an admin (dashboard, category pictures)
+//   npm run staff -- admin "Mustafa" mustafa@sahla.jo [owner|operations|support|finance]   an admin (default owner)
 //   npm run staff -- reset-2fa mustafa@sahla.jo               lost authenticator app: set up again at next log-in
 //   npm run staff -- disable omar@sahla.jo                    stops them signing in
 //   npm run staff -- list
@@ -12,6 +12,7 @@
 import { prisma } from '../src/db';
 import { env } from '../src/env';
 import { createAdmin, createCourier, disableCourier, resetAdmin2fa } from '../src/modules/staff/service';
+import type { AdminRole } from '../src/generated/prisma/client';
 
 const [command, ...args] = process.argv.slice(2);
 
@@ -30,10 +31,11 @@ async function main() {
       break;
     }
     case 'admin': {
-      const [name, email] = args;
-      if (!name || !email) throw new Error(`Usage: admin "<name>" <name>@${env.STAFF_EMAIL_DOMAIN}`);
-      const admin = await createAdmin({ name, email });
-      console.log(`Admin ${admin.name} <${admin.email}> ready; set the password with the emailed code.`);
+      const [name, email, type = 'owner'] = args;
+      if (!name || !email || !['owner', 'operations', 'support', 'finance'].includes(type))
+        throw new Error(`Usage: admin "<name>" <name>@${env.STAFF_EMAIL_DOMAIN} [owner|operations|support|finance]`);
+      const admin = await createAdmin({ name, email }, type as AdminRole);
+      console.log(`Admin (${type}) ${admin.name} <${admin.email}> ready; set the password with the emailed code.`);
       console.log('Then log in to the dashboard: the first log-in shows a QR code for an authenticator app.');
       break;
     }

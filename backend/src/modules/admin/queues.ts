@@ -4,11 +4,12 @@ import { prisma } from '../../db';
 import { ApiError } from '../../lib/errors';
 import { publicUrl } from '../../lib/publicUrl';
 import { privateFilePath } from '../../lib/storage';
-import { currentUser, requireAdmin } from '../auth/requireUser';
+import { currentUser } from '../auth/requireUser';
 import { coverUrl } from '../catalog/apiItem';
 import { ADMIN_REJECTED } from '../certificates/service';
 import { pushListingRemoved } from '../notifications/notify';
 import { adminDid } from './audit';
+import { can } from './permissions';
 
 // The dashboard's review queues (BACKEND_PLAN B8.3): reported listings and
 // users, suspicious-account flags, and test certificates whose stamp nobody has
@@ -54,7 +55,7 @@ const resolveReports = (targetType: 'listing' | 'user', targetId: string, resolu
 // ── Reported listings ────────────────────────────────────────────────────────
 
 /** Listings with open reports: hidden ones first, then the most reporters. */
-adminQueueRoutes.get('/admin/reports/listings', ...requireAdmin, async (req, res) => {
+adminQueueRoutes.get('/admin/reports/listings', ...can('reports'), async (req, res) => {
   const groups = await prisma.report.groupBy({
     by: ['targetId'],
     where: { targetType: 'listing', resolvedAt: null },
@@ -101,7 +102,7 @@ adminQueueRoutes.get('/admin/reports/listings', ...requireAdmin, async (req, res
 });
 
 /** "Nothing wrong": back on sale if it was hidden; its open reports are closed. */
-adminQueueRoutes.post('/admin/listings/:id/keep', ...requireAdmin, async (req, res) => {
+adminQueueRoutes.post('/admin/listings/:id/keep', ...can('reports'), async (req, res) => {
   const { reason: why } = reason.parse(req.body);
   const id = req.params.id as string;
   const listing = await prisma.listing.findUnique({ where: { id } });
@@ -115,7 +116,7 @@ adminQueueRoutes.post('/admin/listings/:id/keep', ...requireAdmin, async (req, r
 });
 
 /** Breaks the rules: off sale for good (withdrawn); the seller gets a push. Not once paid for. */
-adminQueueRoutes.post('/admin/listings/:id/remove', ...requireAdmin, async (req, res) => {
+adminQueueRoutes.post('/admin/listings/:id/remove', ...can('reports'), async (req, res) => {
   const { reason: why } = reason.parse(req.body);
   const id = req.params.id as string;
   const listing = await prisma.listing.findUnique({ where: { id } });
@@ -136,7 +137,7 @@ adminQueueRoutes.post('/admin/listings/:id/remove', ...requireAdmin, async (req,
 // ── Reported users ───────────────────────────────────────────────────────────
 
 /** Accounts with open reports about them (not about their listings), the most reporters first. */
-adminQueueRoutes.get('/admin/reports/users', ...requireAdmin, async (_req, res) => {
+adminQueueRoutes.get('/admin/reports/users', ...can('reports'), async (_req, res) => {
   const groups = await prisma.report.groupBy({
     by: ['targetId'],
     where: { targetType: 'user', resolvedAt: null },
@@ -164,7 +165,7 @@ adminQueueRoutes.get('/admin/reports/users', ...requireAdmin, async (_req, res) 
 });
 
 /** "Nothing wrong": closes the open reports about this account (suspending closes them too). */
-adminQueueRoutes.post('/admin/reports/users/:id/dismiss', ...requireAdmin, async (req, res) => {
+adminQueueRoutes.post('/admin/reports/users/:id/dismiss', ...can('reports'), async (req, res) => {
   const { reason: why } = reason.parse(req.body);
   const id = req.params.id as string;
   const { count } = await resolveReports('user', id, 'dismissed', currentUser(res.locals).id);
@@ -178,7 +179,7 @@ adminQueueRoutes.post('/admin/reports/users/:id/dismiss', ...requireAdmin, async
 const flagQuery = z.object({ status: z.enum(['open', 'dismissed', 'actioned']).default('open') });
 
 /** Open flags: the highest score first. Reviewed ones: the latest review first. */
-adminQueueRoutes.get('/admin/risk-flags', ...requireAdmin, async (req, res) => {
+adminQueueRoutes.get('/admin/risk-flags', ...can('risk'), async (req, res) => {
   const { status } = flagQuery.parse(req.query);
   const flags = await prisma.riskFlag.findMany({
     where: { status },
@@ -210,7 +211,7 @@ adminQueueRoutes.get('/admin/risk-flags', ...requireAdmin, async (req, res) => {
  * something (warned, suspended…). The checker only adds a new flag for this
  * account once this one is closed and the score is still high.
  */
-adminQueueRoutes.post('/admin/risk-flags/:id/review', ...requireAdmin, async (req, res) => {
+adminQueueRoutes.post('/admin/risk-flags/:id/review', ...can('risk'), async (req, res) => {
   const { status, note } = z
     .object({ status: z.enum(['dismissed', 'actioned']), note: z.string().trim().min(3).max(500) })
     .parse(req.body);
@@ -228,7 +229,7 @@ adminQueueRoutes.post('/admin/risk-flags/:id/review', ...requireAdmin, async (re
 // ── Test certificates: the stamp check (B4.3) ─────────────────────────────────
 
 /** Passed on the text alone, on a listing that is on sale: the oldest first (it has been on sale longest). */
-adminQueueRoutes.get('/admin/certificates', ...requireAdmin, async (req, res) => {
+adminQueueRoutes.get('/admin/certificates', ...can('certificates'), async (req, res) => {
   const certificates = await prisma.testCertificate.findMany({
     where: { status: 'passed', stampChecked: false, listing: { status: { in: ['active', 'reserved'] } } },
     include: {
@@ -258,7 +259,7 @@ adminQueueRoutes.get('/admin/certificates', ...requireAdmin, async (req, res) =>
 });
 
 /** The original photo (IMEI / serial readable): admins only, never cached by the browser. */
-adminQueueRoutes.get('/admin/certificates/:id/photo', ...requireAdmin, async (req, res) => {
+adminQueueRoutes.get('/admin/certificates/:id/photo', ...can('certificates'), async (req, res) => {
   const certificate = await prisma.testCertificate.findUnique({ where: { id: req.params.id as string }, select: { photoUrl: true } });
   const file = certificate && privateFilePath(certificate.photoUrl);
   if (!file) throw new ApiError(404, 'NOT_FOUND', 'No such certificate photo');
@@ -276,7 +277,7 @@ async function uncheckedCertificate(id: string) {
 }
 
 /** The stamp is there and it looks genuine. */
-adminQueueRoutes.post('/admin/certificates/:id/approve', ...requireAdmin, async (req, res) => {
+adminQueueRoutes.post('/admin/certificates/:id/approve', ...can('certificates'), async (req, res) => {
   const certificate = await uncheckedCertificate(req.params.id as string);
   await prisma.testCertificate.update({ where: { id: certificate.id }, data: { stampChecked: true } });
   await adminDid(req, res, 'certificate.approve', { type: 'certificate', id: certificate.id }, { listingId: certificate.listing?.id ?? null });
@@ -288,7 +289,7 @@ adminQueueRoutes.post('/admin/certificates/:id/approve', ...requireAdmin, async 
  * off sale and the seller gets a push. The same photo or IMEI can't be used
  * again on a new listing. Not once paid for (refund first).
  */
-adminQueueRoutes.post('/admin/certificates/:id/reject', ...requireAdmin, async (req, res) => {
+adminQueueRoutes.post('/admin/certificates/:id/reject', ...can('certificates'), async (req, res) => {
   const { reason: why } = reason.parse(req.body);
   const certificate = await uncheckedCertificate(req.params.id as string);
   const listing = certificate.listing;

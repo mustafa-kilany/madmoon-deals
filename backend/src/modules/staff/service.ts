@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { prisma } from '../../db';
 import { env } from '../../env';
 import { ApiError } from '../../lib/errors';
+import type { AdminRole } from '../../generated/prisma/client';
 import { sendCode } from '../auth/codes';
 
 // Staff accounts (couriers now, admins with the dashboard). Nobody signs up as
@@ -37,12 +38,13 @@ export async function createCourier(input: { name: string; email: string }) {
 }
 
 /** An admin for the dashboard. Same invite as couriers; the first dashboard log-in sets up 2FA (B8.1). */
-export async function createAdmin(input: { name: string; email: string }) {
+export async function createAdmin(input: { name: string; email: string }, adminRole: AdminRole) {
   const { name, email } = courierInput.parse(input);
   const existing = await prisma.user.findUnique({ where: { email } });
+  if (existing?.role === 'admin') throw new ApiError(409, 'EMAIL_TAKEN', `${email} is already an admin`);
   const admin = existing
-    ? await prisma.user.update({ where: { id: existing.id }, data: { role: 'admin' } })
-    : await prisma.user.create({ data: { name, email, method: 'email', verified: true, role: 'admin' } });
+    ? await prisma.user.update({ where: { id: existing.id }, data: { role: 'admin', adminRole } })
+    : await prisma.user.create({ data: { name, email, method: 'email', verified: true, role: 'admin', adminRole } });
   await sendCode(email, 'reset');
   return admin;
 }

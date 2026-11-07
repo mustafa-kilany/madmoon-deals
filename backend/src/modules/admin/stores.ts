@@ -2,12 +2,13 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../../db';
 import { ApiError } from '../../lib/errors';
-import { currentUser, requireAdmin } from '../auth/requireUser';
+import { currentUser } from '../auth/requireUser';
 import { deliveryDetails } from '../orders/delivery';
 import { parseImportCsv } from '../refurbished/csv';
 import { importRefurbished } from '../refurbished/service';
 import { hashKey, newStoreKey } from '../refurbished/storeKeys';
 import { adminDid } from './audit';
+import { can } from './permissions';
 
 // Certified Refurbished in the dashboard (BACKEND_PLAN B8.4): the brands'
 // stores, their API keys, the import history, and uploading a store's sheet
@@ -36,7 +37,7 @@ async function store(id: string) {
   return found;
 }
 
-adminStoreRoutes.get('/admin/refurbished/stores', ...requireAdmin, async (_req, res) => {
+adminStoreRoutes.get('/admin/refurbished/stores', ...can('stores'), async (_req, res) => {
   const [stores, onSale, lastImports] = await Promise.all([
     prisma.store.findMany({ include: { apiKeys: { orderBy: { createdAt: 'desc' } } }, orderBy: { nameEn: 'asc' } }),
     prisma.listing.groupBy({ by: ['storeId'], where: { storeId: { not: null }, status: 'active' }, _count: { _all: true } }),
@@ -58,7 +59,7 @@ adminStoreRoutes.get('/admin/refurbished/stores', ...requireAdmin, async (_req, 
   );
 });
 
-adminStoreRoutes.post('/admin/refurbished/stores', ...requireAdmin, async (req, res) => {
+adminStoreRoutes.post('/admin/refurbished/stores', ...can('stores'), async (req, res) => {
   const input = z
     .object({
       id: z.string().trim().regex(/^store-[a-z0-9-]{2,40}$/, 'store-<brand>: lowercase letters, digits and dashes'),
@@ -77,7 +78,7 @@ adminStoreRoutes.post('/admin/refurbished/stores', ...requireAdmin, async (req, 
  * Where couriers collect this store's orders (B14.5): copied onto each new order,
  * like a person's listing pickup. Orders already placed keep theirs.
  */
-adminStoreRoutes.post('/admin/refurbished/stores/:id/pickup', ...requireAdmin, async (req, res) => {
+adminStoreRoutes.post('/admin/refurbished/stores/:id/pickup', ...can('stores'), async (req, res) => {
   const pickup = deliveryDetails.pick({ phone: true, cityId: true, address: true }).parse(req.body);
   const { id } = await store(req.params.id as string);
   await prisma.store.update({ where: { id }, data: { pickupPhone: pickup.phone, pickupCityId: pickup.cityId, pickupAddress: pickup.address } });
@@ -86,7 +87,7 @@ adminStoreRoutes.post('/admin/refurbished/stores/:id/pickup', ...requireAdmin, a
 });
 
 /** A new key for the brand's own system: shown once, only its hash is kept. */
-adminStoreRoutes.post('/admin/refurbished/stores/:id/keys', ...requireAdmin, async (req, res) => {
+adminStoreRoutes.post('/admin/refurbished/stores/:id/keys', ...can('stores'), async (req, res) => {
   const { label } = z.object({ label: z.string().trim().min(2).max(60) }).parse(req.body);
   const { id: storeId } = await store(req.params.id as string);
   const key = newStoreKey();
@@ -95,7 +96,7 @@ adminStoreRoutes.post('/admin/refurbished/stores/:id/keys', ...requireAdmin, asy
   res.status(201).json({ ...toApiKey(row), key });
 });
 
-adminStoreRoutes.post('/admin/refurbished/stores/:id/keys/:keyId/revoke', ...requireAdmin, async (req, res) => {
+adminStoreRoutes.post('/admin/refurbished/stores/:id/keys/:keyId/revoke', ...can('stores'), async (req, res) => {
   const key = await prisma.storeApiKey.findUnique({ where: { id: req.params.keyId as string } });
   if (!key || key.storeId !== req.params.id) throw new ApiError(404, 'NOT_FOUND', 'No such key');
   if (key.revokedAt) throw new ApiError(422, 'VALIDATION', 'Already revoked');
@@ -105,7 +106,7 @@ adminStoreRoutes.post('/admin/refurbished/stores/:id/keys/:keyId/revoke', ...req
 });
 
 /** The latest imports of one store, from the dashboard, the CLI or the brand's key. */
-adminStoreRoutes.get('/admin/refurbished/stores/:id/imports', ...requireAdmin, async (req, res) => {
+adminStoreRoutes.get('/admin/refurbished/stores/:id/imports', ...can('stores'), async (req, res) => {
   const { id: storeId } = await store(req.params.id as string);
   const imports = await prisma.refurbishedImport.findMany({ where: { storeId }, orderBy: { createdAt: 'desc' }, take: 50 });
   const adminIds = imports.map(i => i.source.match(/^admin:(.+)$/)?.[1]).filter((id): id is string => !!id);
@@ -134,7 +135,7 @@ adminStoreRoutes.get('/admin/refurbished/stores/:id/imports', ...requireAdmin, a
  * The store's sheet as CSV text. dryRun = the preview (nothing saved); then the
  * same call without dryRun publishes. Rows with problems are skipped either way.
  */
-adminStoreRoutes.post('/admin/refurbished/stores/:id/import', ...requireAdmin, async (req, res) => {
+adminStoreRoutes.post('/admin/refurbished/stores/:id/import', ...can('stores'), async (req, res) => {
   const body = z
     .object({
       csv: z.string().min(1).max(5_000_000),

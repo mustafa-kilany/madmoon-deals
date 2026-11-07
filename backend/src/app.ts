@@ -3,6 +3,7 @@ import helmet from 'helmet';
 import { prisma } from './db';
 import { errorHandler, notFound } from './lib/errors';
 import { requestLogger } from './lib/logger';
+import { adminAdminsRoutes } from './modules/admin/admins';
 import { adminAnalyticsRoutes } from './modules/admin/analytics';
 import { adminAuthRoutes } from './modules/admin/auth';
 import { auditRoutes } from './modules/admin/audit';
@@ -63,6 +64,7 @@ v1.get('/health', async (_req, res) => {
 
 v1.use(authRoutes);
 v1.use(adminAuthRoutes);
+v1.use(adminAdminsRoutes);
 v1.use(auditRoutes);
 v1.use(statsRoutes);
 v1.use(adminAnalyticsRoutes);

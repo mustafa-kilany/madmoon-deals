@@ -133,7 +133,7 @@ test('delivered: the buyer and the seller', async () => {
   assert.equal(second.status, 409);
 
   // B15.5: the driver hears about the job, the buyer when it's on the way.
-  const adminUser = await prisma.user.create({ data: { name: 'Admin', email: ADMIN_EMAIL, role: 'admin' } });
+  const adminUser = await prisma.user.create({ data: { name: 'Admin', email: ADMIN_EMAIL, role: 'admin', adminRole: 'owner' } });
   const admin = await adminToken(adminUser.id);
   assert.equal((await call('POST', `/admin/orders/${order.id}/assign`, { token: admin }, { courierId: courier().id })).status, 200);
   assert.deepEqual(await sent(), [['courier', 'Clock', `New delivery: order ${order.id}.`, { type: 'delivery', id: order.id }]]);
