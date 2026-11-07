@@ -45,6 +45,22 @@ if (env.TRUST_PROXY) app.set('trust proxy', env.TRUST_PROXY);
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(requestLogger);
 
+// S0.8: only the dashboard's own website may call the admin API from a browser. The
+// phone app needs no CORS; any other origin gets no Access-Control headers at all.
+app.use('/v1/admin', (req, res, next) => {
+  const origin = req.get('origin');
+  if (!origin || origin !== env.ADMIN_ORIGIN) return next();
+  res.set({
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE',
+    'Access-Control-Max-Age': '600',
+    Vary: 'Origin',
+  });
+  if (req.method === 'OPTIONS') return void res.status(204).end();
+  next();
+});
+
 // Files this server hosts (moves to a CDN with photo storage, BACKEND_PLAN B3).
 app.use('/static/categories', express.static(categoryImageDir, { maxAge: '7d' }));
 // Uploaded photos (development; production: cloud storage, D1). Names are random.

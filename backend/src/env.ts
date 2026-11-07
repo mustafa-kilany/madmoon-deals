@@ -20,6 +20,9 @@ const schema = z
     LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'silent']).optional(),
     // Production: the public address, e.g. https://api.sahla.jo (for file URLs).
     PUBLIC_URL: optional,
+    // S0.8: the dashboard's address in production (e.g. https://admin.sahla.jo): the only website allowed
+    // to call /v1/admin/* from a browser (CORS). Development uses Vite's proxy and needs none.
+    ADMIN_ORIGIN: z.url().optional(),
     // Signs the log-in tokens (JWT). Long and random; changing it signs everyone out.
     JWT_SECRET: z.string().min(32, 'at least 32 characters (npm run secret makes one)'),
     // How long a log-in lasts. docs/API.md: 30–90 days, no refresh tokens.
@@ -80,6 +83,11 @@ const schema = z
     // Optional until those features are switched on (backend/docs/); blank = off.
     GOOGLE_VISION_API_KEY: optional, // certificate OCR
     ANTHROPIC_API_KEY: optional, // AI reviewer for the risk queue
+  })
+  // S0.4: without it, file URLs would be built from the request's Host header, which a client controls.
+  .refine(e => !(e.NODE_ENV === 'production' && !e.PUBLIC_URL?.startsWith('https://')), {
+    message: 'PUBLIC_URL (https://…) is required in production',
+    path: ['PUBLIC_URL'],
   })
   .refine(e => !(e.NODE_ENV === 'production' && e.DEV_EMAIL_CODE), {
     message: 'DEV_EMAIL_CODE must not be set in production',

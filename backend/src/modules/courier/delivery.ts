@@ -12,8 +12,8 @@ export const PIN_TRIES = 5;
 
 export async function confirmDelivery(courierId: string, orderId: string, pin: string) {
   const order = await prisma.order.findUnique({ where: { id: orderId } });
-  // Assigned to another courier: not theirs to see (assigning comes with B14.6).
-  if (!order || (order.courierId && order.courierId !== courierId))
+  // S2.2: only the courier the order is assigned to (an unassigned order isn't anyone's to confirm).
+  if (!order || order.courierId !== courierId)
     throw new ApiError(404, 'NOT_FOUND', `No order ${orderId}`);
   if (order.status !== 'escrow_held') throw new ApiError(422, 'VALIDATION', `This order is ${order.status}, not waiting for delivery`);
   if (order.courierStatus === 'failed') throw new ApiError(422, 'VALIDATION', 'Marked as failed: Sahla’s team decides what happens next');

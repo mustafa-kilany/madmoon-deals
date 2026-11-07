@@ -90,6 +90,7 @@ test('orders: find by number, email or status; the whole order but never the PIN
 test('payouts: delivered orders wait to be paid; marking one paid is logged on the order', async () => {
   const [order] = (await call('GET', '/admin/orders?q=support.buyer&status=escrow_held', admin())).body;
   const { pin } = await prisma.order.findUniqueOrThrow({ where: { id: order.id } });
+  await prisma.order.update({ where: { id: order.id }, data: { courierId: courier().id, courierStatus: 'picked_up' } });
   assert.equal((await call('POST', '/courier/confirm-delivery', courier(), { orderId: order.id, pin })).status, 200);
 
   const pending = (await call('GET', '/admin/payouts', admin())).body;

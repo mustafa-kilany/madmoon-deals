@@ -25,10 +25,12 @@ const call = async (method: string, path: string, who: { token: string }, body?:
   return { status: r.status, body: r.status === 204 ? undefined : await r.json() };
 };
 const delivery = { name: 'Sara', phone: '0771234567', cityId: 'irbid', address: 'University St, building 7' };
-/** A paid order: escrow_held, with the buyer's PIN. */
+/** A paid order: escrow_held, with the buyer's PIN, assigned to the courier (S2.2: only they confirm it). */
 const paidOrder = async (listingId: string) => {
   const order = (await call('POST', '/orders', buyer(), { listingId, delivery })).body;
-  return (await call('POST', `/orders/${order.id}/pay`, buyer(), { cardToken: 'mock_visa_4242' })).body;
+  const paid = (await call('POST', `/orders/${order.id}/pay`, buyer(), { cardToken: 'mock_visa_4242' })).body;
+  await prisma.order.update({ where: { id: order.id }, data: { courierId: courier().id, courierStatus: 'picked_up' } });
+  return paid;
 };
 const confirm = (orderId: string, pin: string, who = courier()) => call('POST', '/courier/confirm-delivery', who, { orderId, pin });
 const wrong = (pin: string) => String((Number(pin) + 1) % 10_000).padStart(4, '0');
@@ -105,6 +107,9 @@ test('couriers only; another courier’s delivery is not found', async () => {
   const order = await prisma.order.findFirstOrThrow({ where: { listingId: LISTINGS[1] } });
   const asBuyer = await confirm(order.id, order.pin!, buyer());
   assert.deepEqual([asBuyer.status, asBuyer.body.error.code], [403, 'FORBIDDEN']);
+  // S2.2: an order assigned to nobody can't be confirmed by any courier, even with the right PIN.
+  await prisma.order.update({ where: { id: order.id }, data: { courierId: null, pinAttempts: 0 } });
+  assert.equal((await confirm(order.id, order.pin!)).status, 404);
   await prisma.order.update({ where: { id: order.id }, data: { courierId: courier2().id, pinAttempts: 0 } });
   assert.equal((await confirm(order.id, order.pin!)).status, 404);
   assert.equal((await confirm('SA-000000', '1234')).status, 404);
