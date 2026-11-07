@@ -5,6 +5,7 @@ import { ApiError } from '../../lib/errors';
 import { currentUser, requireCustomer } from '../auth/requireUser';
 import { checkImage } from '../uploads/images';
 import { checkCertificate, toCertificateCheck } from './service';
+import { LIMITS } from '../../lib/rateLimit';
 
 export const certificateRoutes = Router();
 
@@ -18,7 +19,7 @@ const device = z.object({
 });
 
 /** A shop's test report: read, checked, saved. A failed check is still 201 (status "failed"). */
-certificateRoutes.post('/test-certificates', ...requireCustomer, photo, async (req, res) => {
+certificateRoutes.post('/test-certificates', ...requireCustomer, ...LIMITS.certificate, photo, async (req, res) => {
   if (!req.file) throw new ApiError(422, 'VALIDATION', 'Missing file field "photo"');
   await checkImage(req.file.buffer, 'photo');
   const check = await checkCertificate(currentUser(res.locals).id, req.file.buffer, device.parse(req.body));

@@ -33,6 +33,8 @@ const schema = z
     POSTMARK_SERVER_TOKEN: optional,
     // The sender: an address at a domain verified in Postmark.
     MAIL_FROM: z.string().min(3).default('Sahla <no-reply@sahla.jo>'),
+    // Tests only: multiplies the per-user rate limits (src/lib/rateLimit.ts). Always 1 in production.
+    RATE_LIMIT_MULTIPLIER: z.coerce.number().int().min(1).max(1000).default(1),
     // B15.6: where people can write to Sahla's support team (shown in the app next to the support chat).
     SUPPORT_EMAIL: z.email().default('support@sahla.jo'),
     // The dashboard's second log-in step, the authenticator app code (BACKEND_PLAN B8.1).
@@ -86,6 +88,10 @@ const schema = z
   .refine(e => !(e.NODE_ENV === 'production' && e.ADMIN_2FA === 'off'), {
     message: 'ADMIN_2FA=off must not be used in production: admins need the authenticator code',
     path: ['ADMIN_2FA'],
+  })
+  .refine(e => !(e.NODE_ENV === 'production' && e.RATE_LIMIT_MULTIPLIER !== 1), {
+    message: 'RATE_LIMIT_MULTIPLIER is for tests only',
+    path: ['RATE_LIMIT_MULTIPLIER'],
   })
   .refine(e => !(e.NODE_ENV === 'production' && e.SANAD_MODE === 'fake'), {
     message: 'SANAD_MODE=fake must not be used in production',

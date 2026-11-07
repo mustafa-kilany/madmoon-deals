@@ -21,6 +21,8 @@ const env = {
   PUSH_MODE: 'fake',
   MAIL_MODE: 'console', // never real emails from the tests
   ADMIN_2FA: 'on', // the tests turn it off themselves where needed, whatever .env says
+  // The flows pay and upload more than a person would; limits.e2e.ts checks the real budgets.
+  RATE_LIMIT_MULTIPLIER: '50',
 };
 const run = (command: string) => execSync(command, { stdio: 'inherit', env });
 

@@ -39,8 +39,8 @@ courier or seller, someone who steals a phone or an admin's laptop, a leaked key
 
 | # | Sev | Finding | Fix | How to check it's fixed |
 |---|---|---|---|---|
-| S0.1 | 🔴 | **No rate limit on paying and saving cards** (`POST /orders/:id/pay`, `POST /me/payment-card`). A bot can test stolen card numbers through us ("card testing"): the provider then fines or closes the merchant account. | Per-user and per-IP limit (e.g. 5 card attempts / hour / user, 20 / day), `429 RATE_LIMITED`; risk flag after N declines. | e2e: the 6th attempt in an hour → 429. |
-| S0.2 | 🔴 | **No rate limit on endpoints that cost money or spam people**: `POST /test-certificates` (Google Vision, paid per page), `POST /uploads/listing-photo`, `POST /me/avatar`, `POST /chats/:id/messages`, `POST /listings/:id/offers`, `POST /listings/:id/bids`, `POST /reports`, `POST /listings`, `POST /orders`. Only log-in/sign-up, the dashboard log-in and `/geocode/reverse` have limits today. | One shared limiter helper with a budget per endpoint (e.g. certificates 10/day, uploads 60/hour, messages 30/min, reports 20/day). | e2e per endpoint: over the budget → 429. |
+| S0.1 | ✅ | **No rate limit on paying and saving cards** (`POST /orders/:id/pay`, `POST /me/payment-card`). A bot can test stolen card numbers through us ("card testing"): the provider then fines or closes the merchant account. | Per-user and per-IP limit (e.g. 5 card attempts / hour / user, 20 / day), `429 RATE_LIMITED`; risk flag after N declines. | e2e: the 6th attempt in an hour → 429. |
+| S0.2 | ✅ | **No rate limit on endpoints that cost money or spam people**: `POST /test-certificates` (Google Vision, paid per page), `POST /uploads/listing-photo`, `POST /me/avatar`, `POST /chats/:id/messages`, `POST /listings/:id/offers`, `POST /listings/:id/bids`, `POST /reports`, `POST /listings`, `POST /orders`. Only log-in/sign-up, the dashboard log-in and `/geocode/reverse` have limits today. | One shared limiter helper with a budget per endpoint (e.g. certificates 10/day, uploads 60/hour, messages 30/min, reports 20/day). | e2e per endpoint: over the budget → 429. |
 | S0.3 | 🔴 | **Android release is signed with the debug keystore** (`frontend/android/app/build.gradle`, `release { signingConfig signingConfigs.debug }`). Anyone has that key. | Make an upload keystore, keep it and its passwords **outside git** (password manager + an offline copy), sign release with it, turn on **Play App Signing**, add its SHA-1/256 to Firebase (Google sign-in breaks without it). | `keytool -list -printcert -jarfile app-release.aab` shows our certificate, not "Android Debug". |
 | S0.4 | 🔴 | **`PUBLIC_URL` is optional in production**: file URLs are then built from the request's `Host` header (`backend/src/lib/publicUrl.ts`), so a forged header puts an attacker's domain into photo URLs that get cached. | `env.ts`: refuse to start in production without `PUBLIC_URL` (same style as the other `.refine` rules). | Start with `NODE_ENV=production` and no `PUBLIC_URL` → refuses. |
 | S0.5 | 🔴 | **Photos are on the API server's disk** (`lib/storage.ts`, D1 not built). On Railway/Render-style hosting the disk is wiped on deploy, and private certificate originals sit next to the app. | Build the R2/S3 storage behind the same interface: a **public** bucket for listing photos (random names), a **private** bucket for certificate originals (dashboard reads via short-lived signed URLs or the existing proxy). | Upload, redeploy, photo still there; a certificate original's URL without a signature → 403. |
@@ -100,7 +100,7 @@ refunds admin-only and logged · ✅ cards tokenised by the provider (`User.card
 
 | # | Check | How |
 |---|---|---|
-| 🔴 S3.1 | Card-testing limit (= S0.1). | See S0.1. |
+| ✅ S3.1 | Card-testing limit (= S0.1). | See S0.1. |
 | ⬜ S3.2 | **Card numbers never reach our server.** With the real provider (D2) use its hosted page or SDK card field, so we stay in PCI **SAQ A**. Today the app has a typed card field → `tokenizeCard`; check where that number goes. | Read `frontend/src/services/payments`; with D2, network capture: no PAN in any request to `api.sahla.jo`. |
 | ⬜ S3.3 | The real provider's callback / webhook is **signed** and the signature is checked; amounts and currency compared to the order. | Code review at B7.9; e2e with a forged callback → ignored. |
 | ⬜ S3.4 | Idempotency: pay twice, refund twice, mark payout sent twice, confirm delivery twice → one effect. | e2e double calls in parallel (`Promise.all`). |
@@ -240,4 +240,13 @@ without query strings, headers or bodies · ✅ `.env` refuses dangerous product
 | Android upload keystore + passwords | release builds | password manager + offline copy | owner | Play Console upload-key reset |
 
 ## Log
+Newest first. Each entry: what was done, the commit, how it was checked.
+- 2026-11-07: **S0.1 + S0.2 done.** One limiter helper (`backend/src/lib/rateLimit.ts` → `perUser`, per user and
+  per IP) with the budgets in one table (`LIMITS`): card payments and saving a card 5/hour per person (20 per IP),
+  certificate checks 10/day, listing photos 60/hour, avatars 10/hour, chat messages 60/10 min, offers 20/hour,
+  bids 60/hour, reports 20/day, new listings 20/day (only successful ones count), checkouts 30/hour, support
+  messages 30/10 min. All answer `429 RATE_LIMITED` (the app already shows a message). The e2e runner multiplies
+  the budgets by 50 (`RATE_LIMIT_MULTIPLIER`, refused in production); `src/lib/limits.e2e.ts` checks the real ones
+  (6th card try → 429, 11th certificate → 429, 61st chat message → 429, 31st support message → 429, refused
+  listings don't count). 141 e2e pass.
 - 2026-11-07: plan written from an audit of `5a8e2d3`; S0 lists the findings.

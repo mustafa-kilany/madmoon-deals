@@ -8,6 +8,7 @@ import { createOrder, getOrder, listMyOrders, listMySales } from './orders';
 import { payOrder } from './pay';
 import { cancelInput, cancelOrder, itemIssueInput, reportItemIssue } from './problems';
 import { toApiOrder, toApiSale } from './shapes';
+import { LIMITS } from '../../lib/rateLimit';
 
 // docs/API.md → Phase 6: Checkout, Orders & Escrow (BACKEND_PLAN B7).
 
@@ -19,14 +20,14 @@ const newOrder = z.object({
   delivery: deliveryDetails,
 });
 
-orderRoutes.post('/orders', ...requireCustomer, async (req, res) => {
+orderRoutes.post('/orders', ...requireCustomer, ...LIMITS.order, async (req, res) => {
   const order = await createOrder(currentUser(res.locals).id, newOrder.parse(req.body));
   res.status(201).json(toApiOrder(order, req));
 });
 
 // cardToken: the payment provider's token from the app's card field, or "saved"
 // for the account's saved card (POST /me/payment-card).
-orderRoutes.post('/orders/:id/pay', ...requireCustomer, async (req, res) => {
+orderRoutes.post('/orders/:id/pay', ...requireCustomer, ...LIMITS.pay, async (req, res) => {
   const { cardToken } = z.object({ cardToken: z.string().min(1).max(500) }).parse(req.body);
   const me = currentUser(res.locals);
   const token = cardToken === 'saved' ? me.cardToken : cardToken;

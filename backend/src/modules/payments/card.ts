@@ -4,6 +4,7 @@ import { prisma } from '../../db';
 import { toApiUser } from '../auth/apiUser';
 import { currentUser, requireCustomer } from '../auth/requireUser';
 import { provider } from '../orders/pay';
+import { LIMITS } from '../../lib/rateLimit';
 
 // The saved card (BACKEND_PLAN B7.8), docs/API.md → POST/DELETE /me/payment-card.
 // The app's provider SDK turns the card into a one-time token; the provider swaps
@@ -12,7 +13,7 @@ import { provider } from '../orders/pay';
 
 export const cardRoutes = Router();
 
-cardRoutes.post('/me/payment-card', ...requireCustomer, async (req, res) => {
+cardRoutes.post('/me/payment-card', ...requireCustomer, ...LIMITS.card, async (req, res) => {
   const { cardToken } = z.object({ cardToken: z.string().min(1).max(500) }).parse(req.body);
   const me = currentUser(res.locals);
   const card = await provider().saveCard(cardToken);

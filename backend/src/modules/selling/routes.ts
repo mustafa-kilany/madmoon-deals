@@ -4,12 +4,13 @@ import { currentUser, requireCustomer } from '../auth/requireUser';
 import { queueRiskCheck } from '../risk/triggers';
 import { listingPatch, newListing } from './rules';
 import { createListing, updateListing, withdrawListing } from './service';
+import { LIMITS } from '../../lib/rateLimit';
 
 // docs/API.md → Phase 4: Selling (BACKEND_PLAN B4.1, B4.2).
 
 export const sellingRoutes = Router();
 
-sellingRoutes.post('/listings', ...requireCustomer, async (req, res) => {
+sellingRoutes.post('/listings', ...requireCustomer, ...LIMITS.listing, async (req, res) => {
   const listing = await createListing(currentUser(res.locals), newListing.parse(req.body));
   queueRiskCheck(listing.sellerUserId);
   res.status(201).json(toApiItem(listing, req));

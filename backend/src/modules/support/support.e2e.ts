@@ -110,9 +110,4 @@ test('closing takes it off the open list until the person writes again; drivers 
   assert.equal((await call('GET', `/admin/support/${rider().id}`, support())).body.user.role, 'courier');
   assert.equal((await call('GET', '/admin/support/nobody', support())).status, 404);
 });
-
-test('too many messages in a row: 429', async () => {
-  let last = 0;
-  for (let i = 0; i < 31; i++) last = (await call('POST', '/support/messages', rider(), { text: `spam ${i}` })).status;
-  assert.equal(last, 429);
-});
+// The 30-messages limit is checked in src/lib/limits.e2e.ts (without the tests' multiplier).

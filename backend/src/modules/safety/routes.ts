@@ -4,6 +4,7 @@ import { prisma } from '../../db';
 import { ApiError } from '../../lib/errors';
 import { currentUser, requireCustomer } from '../auth/requireUser';
 import { queueRiskCheck } from '../risk/triggers';
+import { LIMITS } from '../../lib/rateLimit';
 
 // docs/API.md → Safety: report and block (BACKEND_PLAN B5.1, B5.2). Required by
 // the App Store for apps with listings and chat.
@@ -20,7 +21,7 @@ const report = z.object({
   details: z.string().trim().max(500).optional(),
 });
 
-safetyRoutes.post('/reports', ...requireCustomer, async (req, res) => {
+safetyRoutes.post('/reports', ...requireCustomer, ...LIMITS.report, async (req, res) => {
   const input = report.parse(req.body);
   const reporterId = currentUser(res.locals).id;
   const exists =

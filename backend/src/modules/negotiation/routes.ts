@@ -5,6 +5,7 @@ import { listBids, placeBid } from './bids';
 import { listChats, listMessages, MESSAGE_MAX, sendMessage } from './chats';
 import { getOffer, makeOffer, respondToOffer } from './offers';
 import { toApiBid, toApiMessage, toApiOffer, toApiThread } from './shapes';
+import { LIMITS } from '../../lib/rateLimit';
 
 // docs/API.md → Phase 5: Negotiation, Chat & Auction Bids (BACKEND_PLAN B6).
 
@@ -26,12 +27,12 @@ negotiationRoutes.get('/chats/:id/messages', ...requireCustomer, async (req, res
   res.json(messages.map(m => toApiMessage(m, req)));
 });
 
-negotiationRoutes.post('/chats/:id/messages', ...requireCustomer, async (req, res) => {
+negotiationRoutes.post('/chats/:id/messages', ...requireCustomer, ...LIMITS.chatMessage, async (req, res) => {
   const { text } = z.object({ text: z.string().trim().min(1).max(MESSAGE_MAX) }).parse(req.body);
   res.status(201).json(toApiMessage(await sendMessage(currentUser(res.locals).id, id(req.params.id), text), req));
 });
 
-negotiationRoutes.post('/listings/:id/offers', ...requireCustomer, async (req, res) => {
+negotiationRoutes.post('/listings/:id/offers', ...requireCustomer, ...LIMITS.offer, async (req, res) => {
   const { amountFils } = z.object({ amountFils: fils }).parse(req.body);
   const { offer, chatId } = await makeOffer(currentUser(res.locals).id, id(req.params.id), amountFils);
   res.status(201).json({ offer: toApiOffer(offer, req), chatId });
@@ -48,7 +49,7 @@ negotiationRoutes.post('/offers/:id/respond', ...requireCustomer, async (req, re
   res.json(toApiOffer(await respondToOffer(currentUser(res.locals).id, id(req.params.id), answer), req));
 });
 
-negotiationRoutes.post('/listings/:id/bids', ...requireCustomer, async (req, res) => {
+negotiationRoutes.post('/listings/:id/bids', ...requireCustomer, ...LIMITS.bid, async (req, res) => {
   const { amountFils } = z.object({ amountFils: fils }).parse(req.body);
   res.status(201).json(toApiBid(await placeBid(currentUser(res.locals).id, id(req.params.id), amountFils)));
 });

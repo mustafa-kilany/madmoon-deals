@@ -11,6 +11,7 @@ import { toApiUser } from '../auth/apiUser';
 import { currentUser, requireCustomer } from '../auth/requireUser';
 import { checkImage, fullSize, square } from './images';
 import { can } from '../admin/permissions';
+import { LIMITS } from '../../lib/rateLimit';
 
 // docs/API.md: POST /uploads/listing-photo, POST /me/avatar; admin category pictures
 // (BACKEND_PLAN B3.8). One photo per request, up to 10 MB, kept in memory only
@@ -28,7 +29,7 @@ const fileOf = (req: Request, field: string) => {
 export const uploadRoutes = Router();
 
 /** A listing photo: 1600 px + a 400 × 400 thumbnail. Used by POST /listings (B4). */
-uploadRoutes.post('/uploads/listing-photo', ...requireCustomer, one('photo'), async (req, res) => {
+uploadRoutes.post('/uploads/listing-photo', ...requireCustomer, ...LIMITS.listingPhoto, one('photo'), async (req, res) => {
   const data = fileOf(req, 'photo');
   await checkImage(data, 'photo');
   const name = `listings/${randomUUID()}`;
@@ -42,7 +43,7 @@ uploadRoutes.post('/uploads/listing-photo', ...requireCustomer, one('photo'), as
 });
 
 /** The profile picture: 512 × 512. Replaces the old one. */
-uploadRoutes.post('/me/avatar', ...requireCustomer, one('avatar'), async (req, res) => {
+uploadRoutes.post('/me/avatar', ...requireCustomer, ...LIMITS.avatar, one('avatar'), async (req, res) => {
   const data = fileOf(req, 'avatar');
   await checkImage(data, 'avatar');
   const user = currentUser(res.locals);
