@@ -6,6 +6,7 @@ import { adminDid } from '../admin/audit';
 import { requireAdmin } from '../auth/requireUser';
 import { pushAssigned } from '../notifications/notify';
 import { provider } from './pay';
+import { resolveInput, resolveProblem } from './problems';
 import { orderInclude, toApiOrder } from './shapes';
 
 // Support's order tools (BACKEND_PLAN B7.7), for the admin dashboard (B8.5).
@@ -73,4 +74,19 @@ adminOrderRoutes.post('/admin/orders/:id/assign', ...requireAdmin, async (req, r
   pushAssigned(order.id);
   await adminDid(req, res, 'order.assign', { type: 'order', id: order.id }, { before: order.courierId, after: courierId });
   res.json(toApiOrder(updated, req));
+});
+
+/**
+ * B15.4: a failed delivery or the buyer's report at the door. Retry (same or another
+ * driver, from where it stopped) or refund (relist: false when the item was the problem).
+ */
+adminOrderRoutes.post('/admin/orders/:id/resolve-problem', ...requireAdmin, async (req, res) => {
+  const input = resolveInput.parse(req.body);
+  const { before, after } = await resolveProblem((req.params.id as string).toUpperCase(), input);
+  await adminDid(req, res, `order.problem_${input.action}`, { type: 'order', id: after.id }, {
+    failed: before.failedReason && { stage: before.failedStage, reason: before.failedReason, note: before.failedNote },
+    itemIssue: before.itemIssueReason && { reason: before.itemIssueReason, note: before.itemIssueNote },
+    ...input,
+  });
+  res.json(toApiOrder(after, req));
 });

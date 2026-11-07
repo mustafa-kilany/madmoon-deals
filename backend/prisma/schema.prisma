@@ -462,12 +462,14 @@ enum OrderStatus {
   escrow_held // paid; the money waits until the courier confirms delivery
   completed // delivered: released to the seller (a Payout row)
   refunded // by an admin: money back to the buyer, listing on sale again
+  cancelled // by the buyer before pickup (B15.3): money back, listing on sale again
 }
 
 enum CourierStatus {
   to_pickup
   picked_up
   delivered
+  failed // the driver couldn't finish (B15.4): failedStage + failedReason, waiting for an admin
 }
 
 // API `Order`. The server prices it (the app never sends amounts); delivery
@@ -513,6 +515,23 @@ model Order {
   courierStatus CourierStatus?
   assignedAt    DateTime?
   pickedUpAt    DateTime?
+
+  // B15.3: the buyer cancelled before pickup (reasons in frontend/src/lib/deliveryProblems.ts).
+  cancelReason String?
+  cancelNote   String?
+  cancelledAt  DateTime?
+  // B15.4: the buyer reported a problem with the item at the door instead of giving the PIN.
+  itemIssueReason String?
+  itemIssueNote   String?
+  itemIssueAt     DateTime?
+  // B15.4: the driver couldn't finish (courierStatus failed): where and why.
+  failedStage  String? // pickup | dropoff
+  failedReason String?
+  failedNote   String?
+  failedAt     DateTime?
+  // B15.4: what an admin decided about the last problem: retry | refund.
+  problemResolution String?
+  problemResolvedAt DateTime?
 
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt

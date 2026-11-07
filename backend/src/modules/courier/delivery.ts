@@ -16,6 +16,7 @@ export async function confirmDelivery(courierId: string, orderId: string, pin: s
   if (!order || (order.courierId && order.courierId !== courierId))
     throw new ApiError(404, 'NOT_FOUND', `No order ${orderId}`);
   if (order.status !== 'escrow_held') throw new ApiError(422, 'VALIDATION', `This order is ${order.status}, not waiting for delivery`);
+  if (order.courierStatus === 'failed') throw new ApiError(422, 'VALIDATION', 'Marked as failed: Sahla’s team decides what happens next');
 
   // The try is counted before the PIN is compared, so many guesses sent at once
   // still get only PIN_TRIES chances.

@@ -4,6 +4,16 @@ This document defines the REST API contract expected by the **Sahla** mobile app
 
 The app's HTTP service layer (`frontend/src/services/*/http.ts`) and API client (`frontend/src/services/api/client.ts`) are fully implemented and integrated. Connecting to a real API server requires only a configuration update in `frontend/src/config.ts`. The API itself is in `backend/`.
 
+## Changes on 2026-11-07 (B15)
+
+**Delivery problems and cancelling** (BACKEND_PLAN B15.3–B15.4). `Order.status` can be `cancelled` (the buyer
+cancelled). `Order` has `courierStatus`, `cancel`, `itemIssue`, `deliveryFailed`, `refundedAt`; `Delivery.status`
+can be `failed` and has `buyerIssue` / `failed`. New: `POST /orders/:id/cancel`, `POST /orders/:id/problem`,
+`POST /courier/deliveries/:orderId/failed`, `POST /admin/orders/:id/resolve-problem`,
+`GET /admin/orders?problems=true`. Reason lists: `frontend/src/lib/deliveryProblems.ts` (shared by app and server).
+New pushes: sold (seller), assigned (driver, `type: "delivery"`), picked up (buyer), cancelled, delivery failed,
+problem resolved.
+
 ## Changes on 2026-10-30 (backend: please read)
 
 **ID verification is Sanad only (breaking).** `POST /me/id-verification` (ID photo) is gone: no photos,
@@ -702,14 +712,21 @@ type Order = {
   buyerProtectionFils: number; // 3% of item price, min 1000
   deliveryFils: number;  // 2000 flat
   totalFils: number;
-  status: 'awaiting_payment' | 'escrow_held' | 'completed' | 'refunded';
+  status: 'awaiting_payment' | 'escrow_held' | 'completed' | 'refunded' | 'cancelled';
   pin?: string;          // 4 digits, buyer only, once escrow_held
   offerId?: string;
   delivery: DeliveryDetails;
   paymentUrl?: string;   // the bank's card-check page, while awaiting_payment (see below)
   createdAt: string;     // ISO-8601
   deliveredAt?: string;  // ISO-8601, once the courier confirms
+  // B15.3–B15.4 (buyer and seller both see these):
+  courierStatus?: 'to_pickup' | 'picked_up' | 'delivered' | 'failed'; // once a driver is assigned
+  cancel?: { reason: CancelReason; note?: string; at: string };            // the buyer cancelled
+  itemIssue?: { reason: ItemIssueReason; note?: string; at: string };      // the buyer's report at the door
+  deliveryFailed?: { stage: 'pickup' | 'dropoff'; reason: FailReason; note?: string; at: string };
+  refundedAt?: string;
 };
+// Reason ids and their Arabic / English labels: frontend/src/lib/deliveryProblems.ts.
 
 type DeliveryDetails = {
   name: string;    // recipient, 2+ characters
@@ -779,6 +796,15 @@ building and floor, and can change anything. The order is unchanged: it carries 
     more); then `RATE_LIMITED` (429) until Sahla support unlocks it, even for the right PIN. `orderId` is
     case-insensitive. An order assigned to another courier is `NOT_FOUND`. The seller's payout is the item
     price (Sahla takes no seller fee; the buyer pays protection and delivery).
+* **`POST /orders/:id/cancel` *(the order's buyer)*** → Body: `{ "reason": CancelReason, "note"?: string }` → `Order`
+  (`cancelled`, with `cancel`). B15.3: allowed while unpaid, or paid until the driver has picked the item up:
+  the money goes back at once, the listing is on sale again, the seller (and the assigned driver) get a push.
+  `reason: "other"` needs a `note` (3–500 characters). Picked up or later: `VALIDATION` (422): report a problem
+  at the door instead. Not the buyer: `NOT_FOUND`.
+* **`POST /orders/:id/problem` *(the order's buyer)*** → Body: `{ "reason": ItemIssueReason, "note"?: string }` → `Order`
+  (with `itemIssue`). B15.4: only while the driver has the item (`courierStatus: "picked_up"`): the buyer
+  doesn't give the PIN and says why; the driver gets a push and sees it on the delivery; admins see it in the
+  problems queue.
 * **Refunds:** if the item never arrives, support/admin moves the order to `refunded`, the escrow is returned to the buyer and the listing goes back to `active` (no app endpoint).
   * **`POST /admin/orders/:id/refund`** *(admin)* → `Order` (`refunded`). Only `escrow_held` orders (after delivery
     the money has gone to the seller): otherwise `VALIDATION`.
@@ -798,7 +824,7 @@ orders, saved items) answers `FORBIDDEN` (403) for a courier.
 ```ts
 type Delivery = {
   orderId: string;                  // "SA-123456"
-  status: 'to_pickup' | 'picked_up' | 'delivered';
+  status: 'to_pickup' | 'picked_up' | 'delivered' | 'failed';
   itemTitle: Localized;
   itemImageUrl: string;
   pickup: DeliveryDetails;          // from the order: the seller's name, the listing's area, and the phone,
@@ -807,6 +833,8 @@ type Delivery = {
   assignedAt: string;               // ISO-8601
   pickedUpAt?: string;
   deliveredAt?: string;
+  buyerIssue?: { reason: ItemIssueReason; note?: string; at: string }; // the buyer's report at the door
+  failed?: { stage: 'pickup' | 'dropoff'; reason: FailReason; note?: string; at: string };
 };
 ```
 
@@ -817,6 +845,19 @@ type Delivery = {
   it isn't assigned to me; `VALIDATION` if it isn't `to_pickup`.
 * **`POST /courier/confirm-delivery`** *(above)*: the buyer tells the courier the 4-digit PIN at the door;
   a correct PIN completes the order (`delivered`), a wrong one is `INVALID_PIN`, five wrong ones lock it.
+  Not while the delivery is `failed` (`VALIDATION`).
+* **`POST /courier/deliveries/:orderId/failed`** *(courier)* → Body: `{ "reason": FailReason, "note"?: string }` →
+  `Delivery` (`failed`). B15.4: the driver can't finish. Before pickup the reason comes from the pickup list
+  (seller not there, refused, not as listed, damaged, wrong pickup address, other), after pickup from the drop-off
+  list (buyer not there, refused: defect / not as described / wrong item, changed mind, wrong address, other);
+  a reason from the other list is `VALIDATION`; `other` needs a note. The buyer and seller get a push with the
+  reason; the order waits in the admins' problems queue. Today's failed ones stay on the driver's list.
+* **Problems queue (admin):** `GET /admin/orders?problems=true` (each order has `problem: true`; the order page
+  shows `cancel`, `itemIssue`, `deliveryFailed`, `problemResolution`).
+  **`POST /admin/orders/:id/resolve-problem`** → Body: `{ "action": "retry", "courierId"?: "..." }` (back to
+  where it stopped: at the seller → `to_pickup`, with the driver → `picked_up`; optionally another driver) or
+  `{ "action": "refund", "relist"?: boolean }` (money back; `relist: false` keeps a faulty item off sale) →
+  `Order`. Logged in the audit log with the reasons. No open problem: `VALIDATION`.
 * **Nobody types an address after the sale.** An admin picks the paid order and the driver in the dashboard (the
   Orders list or the order page); the driver's screen then shows the **pickup** and the **drop-off** from the order:
   the drop-off is the buyer's `DeliveryDetails` from checkout, the pickup was copied from the listing's `pickup`

@@ -33,6 +33,8 @@ const CUSTOMER_ONLY: [string, string][] = [
   ['POST', '/listings/any-id/bids'],
   ['POST', '/orders'],
   ['POST', '/orders/any-id/pay'],
+  ['POST', '/orders/any-id/cancel'],
+  ['POST', '/orders/any-id/problem'],
   ['GET', '/me/orders'],
   ['GET', '/me/sales'],
   ['GET', '/orders/any-id'],
@@ -49,6 +51,7 @@ const CUSTOMER_ONLY: [string, string][] = [
 const COURIER_ONLY: [string, string][] = [
   ['GET', '/courier/deliveries'],
   ['POST', '/courier/deliveries/any-id/picked-up'],
+  ['POST', '/courier/deliveries/any-id/failed'],
   ['POST', '/courier/confirm-delivery'],
 ];
 

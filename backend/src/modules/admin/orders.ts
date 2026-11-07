@@ -6,6 +6,7 @@ import { ApiError } from '../../lib/errors';
 import { requireAdmin } from '../auth/requireUser';
 import { coverUrl } from '../catalog/apiItem';
 import { PIN_TRIES } from '../courier/delivery';
+import { problemWhere } from '../orders/problems';
 import { adminDid } from './audit';
 
 // Orders and payouts in the dashboard (BACKEND_PLAN B8.5). Support sees the
@@ -38,6 +39,8 @@ const toAdminOrderSummary = (o: AdminOrderRow, req: Request) => ({
   buyer: who(o.buyer),
   seller: o.store ? { id: o.store.id, name: o.store.nameEn, email: '' } : who(o.sellerUser),
   courier: o.courier,
+  // B15.4: a failed delivery or the buyer's report at the door, waiting for an admin.
+  problem: o.status === 'escrow_held' && (o.courierStatus === 'failed' || !!o.itemIssueAt),
   createdAt: o.createdAt.toISOString(),
 });
 
@@ -58,12 +61,20 @@ const toAdminOrder = (o: AdminOrderRow, req: Request) => ({
   pickedUpAt: iso(o.pickedUpAt),
   deliveredAt: iso(o.deliveredAt),
   refundedAt: iso(o.refundedAt),
+  cancel: o.cancelReason ? { reason: o.cancelReason, note: o.cancelNote, at: iso(o.cancelledAt) } : null,
+  itemIssue: o.itemIssueReason ? { reason: o.itemIssueReason, note: o.itemIssueNote, at: iso(o.itemIssueAt) } : null,
+  deliveryFailed: o.failedReason
+    ? { stage: o.failedStage, reason: o.failedReason, note: o.failedNote, at: iso(o.failedAt) }
+    : null,
+  problemResolution: o.problemResolution ? { action: o.problemResolution, at: iso(o.problemResolvedAt) } : null,
   payments: o.payments.map(p => ({ ...p, createdAt: p.createdAt.toISOString() })),
   payout: o.payout && { id: o.payout.id, status: o.payout.status, amountFils: o.payout.amountFils, paidAt: iso(o.payout.paidAt) },
 });
 
 const listQuery = z.object({
-  status: z.enum(['awaiting_payment', 'escrow_held', 'completed', 'refunded']).optional(),
+  status: z.enum(['awaiting_payment', 'escrow_held', 'completed', 'refunded', 'cancelled']).optional(),
+  /** B15.4: orders with an open delivery problem. */
+  problems: z.enum(['true', 'false']).optional(),
   /** Paid orders still waiting for a courier. */
   unassigned: z.enum(['true', 'false']).optional(),
   /** An order id (SA-123456), or part of the buyer's / seller's email or name. */
@@ -81,6 +92,7 @@ adminOrdersRoutes.get('/admin/orders', ...requireAdmin, async (req, res) => {
   const where: Prisma.OrderWhereInput = {
     ...(q.status && { status: q.status }),
     ...(q.unassigned === 'true' && { status: 'escrow_held', courierId: null }),
+    ...(q.problems === 'true' && problemWhere),
     ...(q.before && { createdAt: { lt: new Date(q.before) } }),
     ...(q.q &&
       (/^sa-\d+$/i.test(q.q)

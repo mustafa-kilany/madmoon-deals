@@ -1,3 +1,4 @@
+import { reasonLabel } from '@/lib/deliveryProblems';
 import { formatJOD } from '@/lib/money';
 import type { Lang } from '@/lib/types';
 import { prisma } from '../../db';
@@ -216,6 +217,118 @@ export function pushPickedUp(orderId: string) {
             : `Your order ${order.id} is on the way. Have your delivery PIN ready.`,
       }),
       { type: 'order', id: orderId },
+    );
+  });
+}
+
+const orderWithTitle = (orderId: string) =>
+  prisma.order.findUnique({ where: { id: orderId }, include: { listing: { select: { titleAr: true, titleEn: true } } } });
+
+/** B15.3: the buyer cancelled before pickup: the seller (item on sale again) and the driver, if one was assigned. */
+export function pushCancelled(orderId: string, courierId: string | null) {
+  later(`push:cancelled:${orderId}`, async () => {
+    const order = await orderWithTitle(orderId);
+    if (!order || order.status !== 'cancelled') return;
+    await sendTo(
+      order.sellerUserId,
+      lang => ({
+        title: titleOf(order.listing, lang),
+        body:
+          lang === 'ar'
+            ? `ألغى المشتري الطلب ${order.id} قبل الاستلام. إعلانك معروض للبيع من جديد.`
+            : `The buyer cancelled order ${order.id} before pickup. Your listing is on sale again.`,
+      }),
+      { type: 'sale', id: orderId },
+    );
+    await sendTo(
+      courierId,
+      lang => ({
+        title: titleOf(order.listing, lang),
+        body: lang === 'ar' ? `أُلغي الطلب ${order.id}: لا تذهب للاستلام.` : `Order ${order.id} was cancelled: don’t go to pick it up.`,
+      }),
+      { type: 'delivery', id: orderId },
+    );
+  });
+}
+
+/** B15.4: the buyer reported a problem with the item at the door: the driver sees it at once. */
+export function pushItemIssue(orderId: string) {
+  later(`push:issue:${orderId}`, async () => {
+    const order = await orderWithTitle(orderId);
+    if (!order?.itemIssueReason) return;
+    const reason = reasonLabel(order.itemIssueReason);
+    await sendTo(
+      order.courierId,
+      lang => ({
+        title: titleOf(order.listing, lang),
+        body: lang === 'ar' ? `أبلغ المشتري عن مشكلة: ${reason.ar}` : `The buyer reported a problem: ${reason.en}`,
+      }),
+      { type: 'delivery', id: orderId },
+    );
+  });
+}
+
+/** B15.4: the driver couldn't finish: the buyer and the seller, with the reason. */
+export function pushDeliveryFailed(orderId: string) {
+  later(`push:failed:${orderId}`, async () => {
+    const order = await orderWithTitle(orderId);
+    if (!order?.failedReason || order.courierStatus !== 'failed') return;
+    const reason = reasonLabel(order.failedReason);
+    const atSeller = order.failedStage === 'pickup';
+    const text = (lang: Lang) => ({
+      title: titleOf(order.listing, lang),
+      body:
+        lang === 'ar'
+          ? `${atSeller ? 'لم يتم استلام' : 'لم يتم توصيل'} الطلب ${order.id}: ${reason.ar}. سيتواصل معك فريق سهلة.`
+          : `Order ${order.id} wasn’t ${atSeller ? 'picked up' : 'delivered'}: ${reason.en}. Sahla’s team will follow up.`,
+    });
+    await sendTo(order.buyerId, text, { type: 'order', id: orderId });
+    await sendTo(order.sellerUserId, text, { type: 'sale', id: orderId });
+  });
+}
+
+/** B15.4: an admin decided: try the delivery again, or refund the buyer. */
+export function pushProblemResolved(orderId: string, action: 'retry' | 'refund') {
+  later(`push:resolved:${orderId}:${action}`, async () => {
+    const order = await orderWithTitle(orderId);
+    if (!order) return;
+    if (action === 'refund') {
+      await sendTo(
+        order.buyerId,
+        lang => ({
+          title: titleOf(order.listing, lang),
+          body:
+            lang === 'ar'
+              ? `أُعيد إليك مبلغ الطلب ${order.id} (${formatJOD(order.totalFils, lang)}).`
+              : `Order ${order.id} was refunded (${formatJOD(order.totalFils, lang)}).`,
+        }),
+        { type: 'order', id: orderId },
+      );
+      await sendTo(
+        order.sellerUserId,
+        lang => ({
+          title: titleOf(order.listing, lang),
+          body: lang === 'ar' ? `أُلغي الطلب ${order.id} وأُعيد المبلغ للمشتري.` : `Order ${order.id} was cancelled and the buyer refunded.`,
+        }),
+        { type: 'sale', id: orderId },
+      );
+      return;
+    }
+    await sendTo(
+      order.buyerId,
+      lang => ({
+        title: titleOf(order.listing, lang),
+        body: lang === 'ar' ? `سنحاول توصيل الطلب ${order.id} مرة أخرى.` : `We’ll try delivering order ${order.id} again.`,
+      }),
+      { type: 'order', id: orderId },
+    );
+    await sendTo(
+      order.courierId,
+      lang => ({
+        title: titleOf(order.listing, lang),
+        body: lang === 'ar' ? `أعيد إليك الطلب ${order.id} لمحاولة جديدة.` : `Order ${order.id} is back on your list to try again.`,
+      }),
+      { type: 'delivery', id: orderId },
     );
   });
 }

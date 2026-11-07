@@ -6,6 +6,7 @@ import { currentUser, requireCustomer } from '../auth/requireUser';
 import { deliveryDetails } from './delivery';
 import { createOrder, getOrder, listMyOrders, listMySales } from './orders';
 import { payOrder } from './pay';
+import { cancelInput, cancelOrder, itemIssueInput, reportItemIssue } from './problems';
 import { toApiOrder, toApiSale } from './shapes';
 
 // docs/API.md → Phase 6: Checkout, Orders & Escrow (BACKEND_PLAN B7).
@@ -47,4 +48,16 @@ orderRoutes.get('/me/sales', ...requireCustomer, async (req, res) => {
 orderRoutes.get('/orders/:id', ...requireCustomer, async (req, res) => {
   const { order, role } = await getOrder(currentUser(res.locals).id, req.params.id as string);
   res.json(role === 'buyer' ? toApiOrder(order, req) : toApiSale(order, req));
+});
+
+// B15.3: the buyer cancels until the driver has picked it up (money back at once).
+orderRoutes.post('/orders/:id/cancel', ...requireCustomer, async (req, res) => {
+  const input = cancelInput.parse(req.body);
+  res.json(toApiOrder(await cancelOrder(currentUser(res.locals).id, req.params.id as string, input), req));
+});
+
+// B15.4: at the door, a problem with the item instead of the PIN.
+orderRoutes.post('/orders/:id/problem', ...requireCustomer, async (req, res) => {
+  const input = itemIssueInput.parse(req.body);
+  res.json(toApiOrder(await reportItemIssue(currentUser(res.locals).id, req.params.id as string, input), req));
 });

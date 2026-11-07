@@ -29,11 +29,15 @@ export const listDeliveries = (courierId: string) =>
       OR: [
         { courierStatus: { in: ['to_pickup', 'picked_up'] }, status: 'escrow_held' },
         { courierStatus: 'delivered', deliveredAt: { gte: startOfJordanDay() } },
+        // B15.4: today's failed ones stay on the list (with the reason) until an admin decides.
+        { courierStatus: 'failed', failedAt: { gte: startOfJordanDay() } },
       ],
     },
     include: deliveryInclude,
     orderBy: { assignedAt: 'asc' },
   });
+
+export const deliveryById = (orderId: string) => prisma.order.findUniqueOrThrow({ where: { id: orderId }, include: deliveryInclude });
 
 /** POST /courier/deliveries/:orderId/picked-up. */
 export async function markPickedUp(courierId: string, orderId: string) {
@@ -77,4 +81,11 @@ export const toApiDelivery = (order: DeliveryRow, req: Request) => ({
   assignedAt: (order.assignedAt ?? order.paidAt ?? order.createdAt).toISOString(),
   ...(order.pickedUpAt && { pickedUpAt: order.pickedUpAt.toISOString() }),
   ...(order.deliveredAt && { deliveredAt: order.deliveredAt.toISOString() }),
+  // B15.4: the buyer's report at the door, and why this driver couldn't finish.
+  ...(order.itemIssueReason && {
+    buyerIssue: { reason: order.itemIssueReason, ...(order.itemIssueNote && { note: order.itemIssueNote }), at: order.itemIssueAt!.toISOString() },
+  }),
+  ...(order.failedReason && {
+    failed: { stage: order.failedStage, reason: order.failedReason, ...(order.failedNote && { note: order.failedNote }), at: order.failedAt!.toISOString() },
+  }),
 });

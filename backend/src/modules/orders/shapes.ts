@@ -11,6 +11,28 @@ export const orderInclude = {
 } satisfies Prisma.OrderInclude;
 export type OrderRow = Prisma.OrderGetPayload<{ include: typeof orderInclude }>;
 
+const iso = (d: Date | null) => d?.toISOString();
+
+/** B15.3–B15.4: the driver's progress and why an order didn't arrive (docs/API.md `Order`). */
+const problems = (order: OrderRow) => ({
+  ...(order.courierStatus && { courierStatus: order.courierStatus }),
+  ...(order.cancelReason && {
+    cancel: { reason: order.cancelReason, ...(order.cancelNote && { note: order.cancelNote }), at: iso(order.cancelledAt) },
+  }),
+  ...(order.itemIssueReason && {
+    itemIssue: { reason: order.itemIssueReason, ...(order.itemIssueNote && { note: order.itemIssueNote }), at: iso(order.itemIssueAt) },
+  }),
+  ...(order.failedReason && {
+    deliveryFailed: {
+      stage: order.failedStage,
+      reason: order.failedReason,
+      ...(order.failedNote && { note: order.failedNote }),
+      at: iso(order.failedAt),
+    },
+  }),
+  ...(order.refundedAt && { refundedAt: iso(order.refundedAt) }),
+});
+
 const common = (order: OrderRow, req: Request) => ({
   id: order.id,
   itemId: order.listingId,
@@ -24,6 +46,7 @@ const common = (order: OrderRow, req: Request) => ({
   ...(order.offerId && { offerId: order.offerId }),
   createdAt: order.createdAt.toISOString(),
   ...(order.deliveredAt && { deliveredAt: order.deliveredAt.toISOString() }),
+  ...problems(order),
 });
 
 /** The buyer's view: everything, with the PIN once paid. */

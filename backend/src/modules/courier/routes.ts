@@ -1,8 +1,9 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { currentUser, requireCourier } from '../auth/requireUser';
+import { markDeliveryFailed } from '../orders/problems';
 import { toApiOrder } from '../orders/shapes';
-import { listDeliveries, markPickedUp, toApiDelivery } from './deliveries';
+import { deliveryById, listDeliveries, markPickedUp, toApiDelivery } from './deliveries';
 import { confirmDelivery } from './delivery';
 
 // docs/API.md → Couriers (BACKEND_PLAN B7.6, B14). Courier accounts only.
@@ -23,4 +24,11 @@ courierRoutes.get('/courier/deliveries', ...requireCourier, async (req, res) => 
 courierRoutes.post('/courier/deliveries/:orderId/picked-up', ...requireCourier, async (req, res) => {
   const orderId = (req.params.orderId as string).toUpperCase();
   res.json(toApiDelivery(await markPickedUp(currentUser(res.locals).id, orderId), req));
+});
+
+// B15.4: the driver can't finish: a reason from the list for where it stopped.
+courierRoutes.post('/courier/deliveries/:orderId/failed', ...requireCourier, async (req, res) => {
+  const orderId = (req.params.orderId as string).toUpperCase();
+  await markDeliveryFailed(currentUser(res.locals).id, orderId, req.body);
+  res.json(toApiDelivery(await deliveryById(orderId), req));
 });
