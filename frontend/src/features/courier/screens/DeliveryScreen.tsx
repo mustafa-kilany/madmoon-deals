@@ -219,6 +219,19 @@ export function DeliveryScreen({
             </View>
           )}
 
+          {delivery.status !== 'delivered' && (
+            <Button
+              size="sm"
+              variant="secondary"
+              icon="Mail"
+              testID="delivery-support"
+              label={t('support.contact')}
+              onPress={() =>
+                navigation.navigate('Support', { orderId: delivery.orderId })
+              }
+            />
+          )}
+
           {delivery.status === 'delivered' && (
             <View className="items-center gap-3 py-4">
               <View className="h-16 w-16 items-center justify-center rounded-full bg-brand-success">

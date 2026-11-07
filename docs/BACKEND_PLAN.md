@@ -317,7 +317,7 @@ item, logged in `SECURITY_PLAN.md`.
   another driver) or refund (item back to the seller). Pushes to buyer and seller.
 - ✅ **B15.5** Pushes for drivers and buyers: the driver when an order is assigned to them, the buyer when the item
   is picked up ("on the way").
-- ⬜ **B15.6** **Support:** a support email (setting `SUPPORT_EMAIL`, shown in the app) and an in-app **chat with
+- ✅ **B15.6** **Support:** a support email (setting `SUPPORT_EMAIL`, shown in the app) and an in-app **chat with
   the support team** for customers and drivers (one conversation per person); the dashboard gets a Support inbox; a
   reply is pushed. No support phone number for now.
 - ✅ **B15.7** **Admin types:** `owner` (everything, the only one who manages admins), `operations` (orders, drivers,

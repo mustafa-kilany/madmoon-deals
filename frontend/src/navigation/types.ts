@@ -35,6 +35,8 @@ export type RootStackParamList = {
   EditListing: { itemId: string };
   /** B15.9: what I sold and where each delivery stands. */
   MySales: undefined;
+  /** B15.6: the support email and chat; orderId = started from that order or delivery. */
+  Support: { orderId?: string } | undefined;
   Saved: undefined;
   OrderTracking: undefined;
   /** Courier mode (role 'courier'): the assigned deliveries, and one of them. */

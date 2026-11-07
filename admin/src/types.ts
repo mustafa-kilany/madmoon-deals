@@ -41,7 +41,7 @@ export type Stats = {
     completedLast30Days: Money;
   };
   payouts: { pending: { count: number; amountFils: number } };
-  queues: { hiddenByReports: number; reportedListings: number; reportedUsers: number; riskFlags: number; certificates: number };
+  queues: { hiddenByReports: number; reportedListings: number; reportedUsers: number; riskFlags: number; certificates: number; supportWaiting: number };
   couriers: { active: number };
 };
 
@@ -253,3 +253,16 @@ export type Analytics = {
   listingsByCategory: { category: string; count: number }[];
   listingsByArea: { areaId: string; count: number }[];
 };
+
+/** B15.6: the support chat. */
+export type SupportMessage = { id: string; fromSupport: boolean; text: string; orderId?: string; senderName?: string; createdAt: string };
+export type SupportPerson = { id: string; name: string; email: string; role: 'courier' | 'admin' | null };
+export type SupportThreadRow = {
+  userId: string;
+  user: SupportPerson;
+  open: boolean;
+  lastMessage: SupportMessage | null;
+  waiting: boolean;
+  lastMessageAt: string;
+};
+export type SupportThread = { user: SupportPerson; open: boolean; messages: SupportMessage[] };

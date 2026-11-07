@@ -22,6 +22,8 @@ export function routeForPush(
       return { name: 'OrderTracking' };
     case 'delivery':
       return id ? { name: 'Delivery', params: { orderId: id } } : null;
+    case 'support':
+      return { name: 'Support' };
     case 'sale':
       return { name: 'MySales' };
     default:

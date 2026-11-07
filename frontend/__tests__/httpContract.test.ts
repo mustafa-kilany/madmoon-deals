@@ -9,6 +9,7 @@ import { httpCourierService } from '@/services/courier/http';
 import { httpNegotiationService } from '@/services/negotiation/http';
 import { httpOrdersService } from '@/services/orders/http';
 import { emptyFilters } from '@/lib/browsing';
+import { supportService } from '@/services/support';
 
 jest.mock('@/config', () => ({
   config: {
@@ -432,6 +433,20 @@ const rows: Row[] = [
     reply: order,
     url: '/orders/SA-1/problem',
     body: { reason: 'defect' },
+  },
+  // Support (B15.6)
+  {
+    endpoint: 'GET /support',
+    call: () => supportService.getChat(),
+    reply: { email: 'support@sahla.jo', messages: [] },
+    url: '/support',
+  },
+  {
+    endpoint: 'POST /support/messages',
+    call: () => supportService.send('Hi', 'SA-1'),
+    reply: { id: 'm1', fromSupport: false, text: 'Hi', createdAt: T },
+    url: '/support/messages',
+    body: { text: 'Hi', orderId: 'SA-1' },
   },
   // Courier mode
   {

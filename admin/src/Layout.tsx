@@ -14,6 +14,7 @@ const pages: ({ section: string } | { to: string; label: string; needs: Permissi
   { to: '/payouts', label: 'Payouts', needs: 'payouts' },
   { to: '/users', label: 'Users', needs: 'orders' },
   { section: 'Review' },
+  { to: '/support', label: 'Support chat', needs: 'support' },
   { to: '/reports', label: 'Reports', needs: 'reports' },
   { to: '/risk', label: 'Suspicious accounts', needs: 'risk' },
   { to: '/certificates', label: 'Test certificates', needs: 'certificates' },

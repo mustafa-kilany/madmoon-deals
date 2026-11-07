@@ -79,6 +79,8 @@ model User {
   payouts          Payout[]
   devices          Device[]
   adminActions     AdminAction[]
+  supportThread    SupportThread?
+  supportMessages  SupportMessage[]
 }
 
 enum SessionScope {
@@ -715,4 +717,35 @@ model AdminAction {
 
   @@index([createdAt])
   @@index([targetType, targetId])
+}
+
+// B15.6: the in-app chat with Sahla's support team. One conversation per person
+// (customers and drivers); admins with the support permission answer from the dashboard.
+model SupportThread {
+  id             String           @id @default(cuid())
+  userId         String           @unique
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  open           Boolean          @default(true) // closed by support; the person writing again reopens it
+  lastMessageAt  DateTime         @default(now())
+  userReadAt     DateTime? // the person last opened the chat
+  supportReadAt  DateTime? // support last opened it
+  createdAt      DateTime         @default(now())
+  messages       SupportMessage[]
+
+  @@index([open, lastMessageAt])
+}
+
+model SupportMessage {
+  id          String        @id @default(cuid())
+  threadId    String
+  thread      SupportThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  // The person, or the admin who answered (fromSupport). Null once that admin is gone.
+  senderId    String?
+  sender      User?         @relation(fields: [senderId], references: [id], onDelete: SetNull)
+  fromSupport Boolean       @default(false)
+  text        String // max 2000
+  orderId     String? // the order it is about, if the person started from one
+  createdAt   DateTime      @default(now())
+
+  @@index([threadId, createdAt])
 }

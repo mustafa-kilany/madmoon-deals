@@ -1210,6 +1210,33 @@ now; iPhones once an Apple push key is added to Firebase.
 Later, a WebSocket (or Server-Sent Events) channel can replace the timers for chat and live
 bidding; the screens won't change.
 
+### Support (BACKEND_PLAN B15.6)
+
+Sahla's support team: an email address and one chat per person (customers **and** drivers), answered from the
+dashboard by admins with the `support` permission. No phone number for now.
+
+```ts
+type SupportMessage = {
+  id: string;
+  fromSupport: boolean; // true = Sahla support (the app never shows which admin)
+  text: string;         // 1–2000 characters
+  orderId?: string;     // "SA-123456" when the person wrote about an order
+  createdAt: string;    // ISO-8601
+};
+```
+
+* **`GET /support`** *(Authenticated, customers and couriers)* → `{ "email": "support@sahla.jo", "messages": SupportMessage[] }`
+  (oldest first, the latest 200). Opening it marks support's answers read. `email` is the server's `SUPPORT_EMAIL`.
+* **`POST /support/messages`** *(Authenticated)* → Body: `{ "text": "...", "orderId"?: "SA-123456" }` → 201 `SupportMessage`.
+  `orderId` must be one of the person's orders (as buyer, seller or driver), else `VALIDATION`. Writing reopens a
+  closed conversation. 30 messages per 10 minutes per person: `RATE_LIMITED` (429).
+* An answer from support is pushed: `{ "type": "support", "id": userId }` ("The support team answered you", never the text).
+* **Dashboard** *(admin, `support` permission)*: `GET /admin/support?open=true|false` → `{ userId, user, open, lastMessage,
+  waiting, lastMessageAt }[]` (open first, newest first; `waiting` = they wrote since support last looked);
+  `GET /admin/support/:userId` → `{ user, open, messages }` (messages carry `senderName` for admins);
+  `POST /admin/support/:userId/messages` `{ text }`; `POST /admin/support/:userId/close` → 204 (logged).
+  The overview counts conversations waiting for an answer (`queues.supportWaiting`).
+
 ---
 
 ## Testing the API Locally

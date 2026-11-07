@@ -265,6 +265,17 @@ function OrderCard({ order }: { order: Order }) {
         </View>
       )}
 
+      {(order.status === 'escrow_held' || order.status === 'refunded') && (
+        <Button
+          size="sm"
+          variant="secondary"
+          icon="Mail"
+          testID="order-support"
+          label={t('support.contact')}
+          onPress={() => navigation.navigate('Support', { orderId: order.id })}
+        />
+      )}
+
       {canCancel && (
         <View className="gap-2">
           {order.status === 'escrow_held' && (

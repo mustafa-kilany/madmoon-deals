@@ -41,6 +41,7 @@ const links: {
     | 'sidebar.profileSettings'
     | 'sidebar.myPurchases'
     | 'sidebar.mySales'
+    | 'sidebar.support'
     | 'sidebar.refurbished'
     | 'sidebar.myListings'
     | 'sidebar.savedItems'
@@ -62,6 +63,7 @@ const links: {
   { icon: 'Tag', label: 'sidebar.myListings', route: profile },
   { icon: 'Heart', label: 'sidebar.savedItems', route: { name: 'Saved' } },
   { icon: 'Settings', label: 'sidebar.settings', route: profile },
+  { icon: 'Mail', label: 'sidebar.support', route: { name: 'Support' } },
 ];
 
 export function SidebarMenu() {
@@ -161,11 +163,20 @@ export function SidebarMenu() {
 
         <ScrollView contentContainerClassName="gap-2 p-4">
           {courier ? (
-            <MenuRow
-              icon="Settings"
-              label={t('language.toggleLabel')}
-              onPress={then(() => changeLanguage(lang === 'ar' ? 'en' : 'ar'))}
-            />
+            <>
+              <MenuRow
+                icon="Settings"
+                label={t('language.toggleLabel')}
+                onPress={then(() =>
+                  changeLanguage(lang === 'ar' ? 'en' : 'ar'),
+                )}
+              />
+              <MenuRow
+                icon="Mail"
+                label={t('sidebar.support')}
+                onPress={then(() => go({ name: 'Support' }))}
+              />
+            </>
           ) : (
             links.map(link => (
               <MenuRow

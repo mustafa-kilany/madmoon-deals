@@ -33,6 +33,7 @@ statsRoutes.get('/admin/stats', ...can('orders'), async (_req, res) => {
     couriers,
     reportedListings,
     reportedUsers,
+    supportWaiting,
   ] = await Promise.all([
     prisma.user.count({ where: { role: null } }),
     prisma.user.count({ where: { role: null, createdAt: { gte: weekAgo } } }),
@@ -60,6 +61,10 @@ statsRoutes.get('/admin/stats', ...can('orders'), async (_req, res) => {
     // Open reports (B8.3): listings and accounts someone reported that no admin handled yet.
     prisma.report.groupBy({ by: ['targetId'], where: { targetType: 'listing', resolvedAt: null } }).then(g => g.length),
     prisma.report.groupBy({ by: ['targetId'], where: { targetType: 'user', resolvedAt: null } }).then(g => g.length),
+    // B15.6: open support chats with a message support hasn't read yet.
+    prisma.supportThread.count({
+      where: { open: true, OR: [{ supportReadAt: null }, { supportReadAt: { lt: prisma.supportThread.fields.lastMessageAt } }] },
+    }),
   ]);
   res.json({
     users: { total: users, newThisWeek: newUsers },
@@ -73,7 +78,7 @@ statsRoutes.get('/admin/stats', ...can('orders'), async (_req, res) => {
       completedLast30Days: { count: completed._count, totalFils: completed._sum.totalFils ?? 0 },
     },
     payouts: { pending: { count: pendingPayouts._count, amountFils: pendingPayouts._sum.amountFils ?? 0 } },
-    queues: { hiddenByReports, reportedListings, reportedUsers, riskFlags: openFlags, certificates },
+    queues: { hiddenByReports, reportedListings, reportedUsers, riskFlags: openFlags, certificates, supportWaiting },
     couriers: { active: couriers },
   });
 });

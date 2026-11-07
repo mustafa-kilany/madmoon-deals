@@ -95,6 +95,9 @@ test('each push type opens its screen', () => {
     name: 'Delivery',
     params: { orderId: 'SA-123456' },
   });
+  expect(routeForPush({ type: 'support', id: 'u1' })).toEqual({
+    name: 'Support',
+  });
   expect(routeForPush({ type: 'something_new', id: 'x' })).toBeNull();
   expect(routeForPush(undefined)).toBeNull();
 });

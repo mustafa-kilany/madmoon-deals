@@ -52,7 +52,8 @@
     "logOut": "Log Out",
     "close": "Close menu",
     "refurbished": "Certified Refurbished",
-    "mySales": "My Sales"
+    "mySales": "My Sales",
+    "support": "Help & Support"
   },
   "screens": {
     "auctions": "Auctions",
@@ -506,7 +507,7 @@
     "statusDelivered": "Delivered",
     "pickup": "Pick up from (seller)",
     "dropoff": "Deliver to (buyer)",
-    "noPickupYet": "The seller hasn't added the pickup address yet. Call Sahla support before going.",
+    "noPickupYet": "The seller hasn’t added the pickup address yet. Contact Sahla support before going.",
     "call": "Call",
     "maps": "Open in Maps",
     "pickedUp": "I Picked It Up",
@@ -515,7 +516,7 @@
     "pin": "Delivery PIN",
     "confirm": "Confirm Delivery",
     "confirmed": "Delivery confirmed. Payment released to the seller.",
-    "pinLocked": "Locked after 5 wrong PINs. Call Sahla support to unlock it.",
+    "pinLocked": "Locked after 5 wrong PINs. Contact Sahla support to unlock it.",
     "gone": "This delivery is no longer assigned to you.",
     "statusFailed": "Failed",
     "failed": "Delivery failed",
@@ -602,5 +603,13 @@
     "cancelledWhy": "The buyer cancelled before pickup: {{reason}}. Your listing is on sale again.",
     "payoutPending": "Your money is on its way: Sahla sends it to your bank.",
     "payoutSent": "Your money was sent to your bank."
+  },
+  "support": {
+    "title": "Help & support",
+    "intro": "Write to Sahla’s support team here and we’ll answer in this chat (you get a notification). You can also email us:",
+    "placeholder": "Write your message…",
+    "team": "Sahla support",
+    "contact": "Contact Sahla support",
+    "aboutOrder": "About order {{id}}: "
   }
 }

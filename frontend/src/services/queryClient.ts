@@ -35,4 +35,5 @@ export const queryKeys = {
   blocked: ['me', 'blocked'],
   orders: ['me', 'orders'],
   deliveries: ['courier', 'deliveries'],
+  support: ['support'],
 } as const;

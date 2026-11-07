@@ -359,3 +359,17 @@ export function pushListingRemoved(listingId: string, why: 'reports' | 'certific
     );
   });
 }
+
+/** B15.6: Sahla's support team answered (never the text: it shows on the lock screen). */
+export function pushSupportReply(userId: string) {
+  later('push:support:' + userId, async () => {
+    await sendTo(
+      userId,
+      lang => ({
+        title: lang === 'ar' ? 'دعم سهلة' : 'Sahla support',
+        body: lang === 'ar' ? 'وصلك رد من فريق الدعم.' : 'The support team answered you.',
+      }),
+      { type: 'support', id: userId },
+    );
+  });
+}

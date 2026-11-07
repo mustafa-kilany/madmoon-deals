@@ -13,6 +13,7 @@ import { OrdersPage } from './OrdersPage';
 import { OverviewPage } from './OverviewPage';
 import { PayoutsPage } from './PayoutsPage';
 import { RefurbishedPage, StorePage } from './RefurbishedPage';
+import { SupportPage } from './SupportPage';
 import { ReportsPage } from './ReportsPage';
 import { RiskFlagsPage } from './RiskFlagsPage';
 import { SessionProvider, useSession } from './session';
@@ -45,6 +46,8 @@ function Pages() {
         <Route path="refurbished/:id" element={<StorePage />} />
         <Route path="couriers" element={<CouriersPage />} />
         <Route path="admins" element={<AdminsPage />} />
+        <Route path="support" element={<SupportPage />} />
+        <Route path="support/:userId" element={<SupportPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

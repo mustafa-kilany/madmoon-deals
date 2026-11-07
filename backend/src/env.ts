@@ -33,6 +33,8 @@ const schema = z
     POSTMARK_SERVER_TOKEN: optional,
     // The sender: an address at a domain verified in Postmark.
     MAIL_FROM: z.string().min(3).default('Sahla <no-reply@sahla.jo>'),
+    // B15.6: where people can write to Sahla's support team (shown in the app next to the support chat).
+    SUPPORT_EMAIL: z.email().default('support@sahla.jo'),
     // The dashboard's second log-in step, the authenticator app code (BACKEND_PLAN B8.1).
     // off = email + password only: local development until the dashboard is hosted (B8.6).
     // Never off in production (the server refuses to start).
