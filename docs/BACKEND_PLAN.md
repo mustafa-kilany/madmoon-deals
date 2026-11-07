@@ -294,10 +294,51 @@ buying, chats or offers.
   **Call** and **Open in Maps**, **Picked up**, then the **PIN** → **Confirm delivery**. Five wrong PINs:
   "call Sahla support". The menu has only language and log out. Replaces the old "Confirm a delivery" screen.
 
+## B15 — Ready for testing with fake items 🔨 (owner's decisions 2026-11-07; audit in `LAUNCH_READINESS.md`)
+
+**Not going live yet:** everything runs on the seed's fake items with `PAYMENT_MODE=fake`; the goal is that every
+journey works in the app **against this backend** (no in-app demo data). Security work runs alongside, item by
+item, logged in `SECURITY_PLAN.md`.
+
+- ⬜ **B15.1** The seller is told **the moment the item is paid** (push "Sold!", a tap opens My sales). The listing is
+  already off browsing from that moment (`reserved` in the same transaction as the payment): a test proves nobody else
+  can open checkout for it.
+- ⬜ **B15.2** Edit a listing: title, description, price, condition, photos, pickup. Not once paid for or sold; an
+  auction's price and end only before the first bid; the certificate's type / brand / model can't change. App: Edit on
+  My listings (and Withdraw).
+- ⬜ **B15.3** **The buyer cancels a paid order until it is picked up** (`POST /orders/:id/cancel` with a reason from
+  a list): money back at once, the listing on sale again, push to the seller (and the driver if one was assigned).
+- ⬜ **B15.4** **Delivery problems.** The driver can't finish → **"Delivery failed"** with a reason from a list
+  (at pickup: seller not there, seller refused, item not as listed, item damaged, wrong pickup address, other; at
+  drop-off: buyer not there, buyer refused: defect, not as described, wrong item, changed mind, wrong address, other)
+  plus a note. The buyer, at the door, can **report a problem with the item** instead of giving the PIN (defect, not
+  as described, wrong item, missing parts, damaged in delivery, other + note): the driver's screen shows it. The
+  buyer and seller see why the delivery didn't happen. Admins get a **Delivery problems** queue: try again (same or
+  another driver) or refund (item back to the seller). Pushes to buyer and seller.
+- ⬜ **B15.5** Pushes for drivers and buyers: the driver when an order is assigned to them, the buyer when the item
+  is picked up ("on the way").
+- ⬜ **B15.6** **Support:** a support email (setting `SUPPORT_EMAIL`, shown in the app) and an in-app **chat with
+  the support team** for customers and drivers (one conversation per person); the dashboard gets a Support inbox; a
+  reply is pushed. No support phone number for now.
+- ⬜ **B15.7** **Admin types:** `owner` (everything, the only one who manages admins), `operations` (orders, drivers,
+  delivery problems, stores, categories), `support` (support chat, reports, users, certificates, orders read-only),
+  `finance` (refunds, payouts, analytics, orders read-only). The dashboard shows each admin only their pages; the
+  server checks every endpoint. Owner's Admins page: add, change type, disable.
+- ⬜ **B15.8** **Privacy policy, terms and consent:** pages in the app (Arabic + English) and on the API
+  (`/legal/privacy`, `/legal/terms`, for the Play Store); sign-up (email, Google, Apple) records which version was
+  accepted; a Sanad consent screen records consent before any lookup (MoDEE's pledge). Text is a draft for a lawyer.
+- ⬜ **B15.9** App: **My sales** (`GET /me/sales`): what sold, the order's status, delivery problems, payout status.
+- ⬜ **B15.10** **The app off the demo data:** `mock.catalog`, `mock.negotiation`, `mock.orders` = false; every
+  journey run on the emulator against this backend and the seed; the Maestro flows run against it too.
+- Apple sign-in button stays (the owner will finish Apple sign-in before production).
+
 ---
 
 ## Log
 Short notes on what changed, newest first.
+- 2026-11-07: owner's decisions → B15 (delivery problems with reason lists, buyer cancels before pickup, support
+  email + chat, admin types with an owner, edit listings, push to the seller when paid, legal pages). Not going live:
+  testing on fake items. Security plan executed item by item (`SECURITY_PLAN.md`).
 - 2026-11-02: D3 = Postmark: B9.1 built (`MAIL_MODE=postmark`, bilingual code emails, `EMAIL_UNAVAILABLE`);
   goes live once Sahla has a domain (`backend/docs/EMAIL.md`).
 - 2026-11-02: D6 = Google: `GEOCODER=google` added (street + neighbourhood in Arabic or English); the key's
