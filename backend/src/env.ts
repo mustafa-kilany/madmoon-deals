@@ -8,6 +8,10 @@ const optional = z
   .optional()
   .transform(value => value?.trim() || undefined);
 
+/** Long, varied, and not a placeholder someone forgot to replace. */
+const strongSecret = (value: string) =>
+  value.length >= 32 && new Set(value).size >= 16 && !/secret|change|example|password|sahla|test/i.test(value);
+
 const schema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -83,6 +87,17 @@ const schema = z
     // Optional until those features are switched on (backend/docs/); blank = off.
     GOOGLE_VISION_API_KEY: optional, // certificate OCR
     ANTHROPIC_API_KEY: optional, // AI reviewer for the risk queue
+  })
+  // S1.1: a secret an attacker could guess signs anyone's log-in. npm run secret makes good ones.
+  .refine(e => e.NODE_ENV !== 'production' || strongSecret(e.JWT_SECRET), {
+    message: 'JWT_SECRET looks made up: use npm run secret',
+    path: ['JWT_SECRET'],
+  })
+  // S1.1: without it national IDs, serial numbers and IBANs would depend on JWT_SECRET, which a
+  // leak forces you to change (and this one must never change).
+  .refine(e => e.NODE_ENV !== 'production' || (!!e.ID_HASH_SECRET && strongSecret(e.ID_HASH_SECRET) && e.ID_HASH_SECRET !== e.JWT_SECRET), {
+    message: 'ID_HASH_SECRET is required in production, different from JWT_SECRET (npm run secret); back it up: it never changes',
+    path: ['ID_HASH_SECRET'],
   })
   // S0.4: without it, file URLs would be built from the request's Host header, which a client controls.
   .refine(e => !(e.NODE_ENV === 'production' && !e.PUBLIC_URL?.startsWith('https://')), {

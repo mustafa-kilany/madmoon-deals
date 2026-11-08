@@ -399,9 +399,9 @@ function routes(store) {
       const body = await readJson(req);
       validateSignUp(body);
       const email = body.email.trim().toLowerCase();
+      checkCode(body.code);
       if (findByEmail(store, email))
         throw new HttpError(409, 'EMAIL_TAKEN', 'Email already registered');
-      checkCode(body.code);
       const account = addAccount(store, {
         name: body.name.trim(),
         email,
@@ -452,8 +452,7 @@ function routes(store) {
       const { email } = await readJson(req);
       if (typeof email !== 'string' || !EMAIL.test(email.trim()))
         throw new HttpError(422, 'VALIDATION', 'email: invalid');
-      if (findByEmail(store, email.trim().toLowerCase()))
-        throw new HttpError(409, 'EMAIL_TAKEN', 'Email already registered');
+      // The same answer whether or not the email has an account (S1.3).
       return [204];
     },
 

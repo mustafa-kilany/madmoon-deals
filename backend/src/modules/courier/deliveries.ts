@@ -56,8 +56,13 @@ export async function markPickedUp(courierId: string, orderId: string) {
  * docs/API.md `Delivery`: pickup and drop-off both come from the order (the
  * pickup was copied from the listing or the store when the order was placed,
  * B14.5). Older orders without one show the seller's name and the listing's area.
+ *
+ * S2.3: phones and addresses are for the job. Once it is delivered or failed the driver
+ * keeps only names and areas (an admin's retry brings the rest back).
  */
-export const toApiDelivery = (order: DeliveryRow, req: Request) => ({
+export const toApiDelivery = (order: DeliveryRow, req: Request) => {
+  const working = order.courierStatus !== 'delivered' && order.courierStatus !== 'failed';
+  return {
   orderId: order.id,
   status: order.courierStatus ?? 'to_pickup',
   itemTitle: { ar: order.listing.titleAr, en: order.listing.titleEn },
@@ -65,18 +70,18 @@ export const toApiDelivery = (order: DeliveryRow, req: Request) => ({
   pickup: order.pickupName
     ? {
         name: order.pickupName,
-        phone: order.pickupPhone ?? '',
+        phone: working ? (order.pickupPhone ?? '') : '',
         cityId: order.pickupCityId ?? order.listing.locationId,
-        address: order.pickupAddress ?? '',
-        ...(order.pickupNotes && { notes: order.pickupNotes }),
+        address: working ? (order.pickupAddress ?? '') : '',
+        ...(working && order.pickupNotes && { notes: order.pickupNotes }),
       }
     : { name: order.sellerUser?.name ?? order.store?.nameEn ?? '', phone: '', cityId: order.listing.locationId, address: '' },
   dropoff: {
     name: order.deliveryName,
-    phone: order.deliveryPhone,
+    phone: working ? order.deliveryPhone : '',
     cityId: order.deliveryCityId,
-    address: order.deliveryAddress,
-    ...(order.deliveryNotes && { notes: order.deliveryNotes }),
+    address: working ? order.deliveryAddress : '',
+    ...(working && order.deliveryNotes && { notes: order.deliveryNotes }),
   },
   assignedAt: (order.assignedAt ?? order.paidAt ?? order.createdAt).toISOString(),
   ...(order.pickedUpAt && { pickedUpAt: order.pickedUpAt.toISOString() }),
@@ -88,4 +93,5 @@ export const toApiDelivery = (order: DeliveryRow, req: Request) => ({
   ...(order.failedReason && {
     failed: { stage: order.failedStage, reason: order.failedReason, ...(order.failedNote && { note: order.failedNote }), at: order.failedAt!.toISOString() },
   }),
-});
+  };
+};

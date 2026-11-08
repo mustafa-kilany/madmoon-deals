@@ -57,6 +57,8 @@ export const LIMITS = {
   bid: perUser('bid', { limit: 60, minutes: HOUR, message: 'Too many bids: try again later' }),
   report: perUser('report', { limit: 20, minutes: DAY, message: 'Too many reports today' }),
   listing: perUser('listing', { limit: 20, minutes: DAY, onlySuccessful: true, message: 'Too many new listings today' }),
+  // S8.4: a copy of the person's data is a heavy query, and rarely needed.
+  dataExport: perUser('data-export', { limit: 5, minutes: DAY, message: 'Too many copies today: try again tomorrow' }),
   // S3.7: guessing the password through the bank account form.
   payoutAccount: perUser('payout-account', { limit: 5, minutes: HOUR, message: 'Too many tries: try again in an hour' }),
   order: perUser('order', { limit: 30, minutes: HOUR, message: 'Too many checkouts: try again later' }),

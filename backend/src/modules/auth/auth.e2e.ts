@@ -114,7 +114,8 @@ test('sign-up needs the emailed code; send-otp refuses a taken email', async () 
     [422, 'INVALID_CODE'],
   );
   assert.equal((await call('POST', '/auth/send-otp', { email: 'rami@example.com' })).status, 204);
-  assert.deepEqual(code(await call('POST', '/auth/send-otp', { email: 'lina@example.com' })), [409, 'EMAIL_TAKEN']);
+  // S1.3: no different for an email that has an account (enumeration.e2e.ts).
+  assert.equal((await call('POST', '/auth/send-otp', { email: 'lina@example.com' })).status, 204);
 });
 
 test('password reset: the new password works, the old one and old sessions do not', async () => {

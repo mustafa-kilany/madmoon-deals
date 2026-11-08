@@ -199,8 +199,8 @@ test('sign-up needs the emailed code; send-otp refuses a taken email', async () 
   );
   expect([wrong.code, wrong.status]).toEqual(['INVALID_CODE', 422]);
   await api.sendOtp({ email: 'rami@sahla.jo' });
-  const taken = await failure(api.sendOtp({ email: 'ahmad@sahla.jo' }));
-  expect(taken.code).toBe('EMAIL_TAKEN');
+  // S1.3: the same answer for an email that has an account.
+  await api.sendOtp({ email: 'ahmad@sahla.jo' });
 });
 
 test('password reset: code + new password signs in and ends old sessions', async () => {

@@ -9,6 +9,7 @@ import type { Server } from 'node:http';
 import { after, before, test } from 'node:test';
 
 process.env.RATE_LIMIT_MULTIPLIER = '1'; // before the app reads its settings
+process.env.TRUST_PROXY = '1'; // so the tests can come from many addresses
 let base = '';
 let server: Server;
 let prisma: typeof import('../db').prisma;
@@ -72,4 +73,32 @@ test('S0.2 chat and support spam', async () => {
 test('S0.2 new listings: refused ones don’t use up the day’s 20', async () => {
   const statuses = await tries(25, '/listings', { category: 'furniture' });
   assert.ok(statuses.every(s => s === 422));
+});
+
+const forgot = (email: string, ip: string) =>
+  fetch(`${base}/auth/forgot-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': ip },
+    body: JSON.stringify({ email }),
+  }).then(r => r.status);
+
+test('A2 one email attacked from many addresses still hits a limit (5 × the per-address budget)', async () => {
+  const email = 'limits.target@example.com';
+  const statuses: number[] = [];
+  for (let i = 0; i < 26; i++) statuses.push(await forgot(email, `198.51.100.${i + 1}`));
+  assert.deepEqual(statuses.slice(0, 25), Array(25).fill(204));
+  assert.equal(statuses[25], 429);
+});
+
+test('A2 one address trying many accounts hits a limit', async () => {
+  const statuses: number[] = [];
+  for (let i = 0; i < 301; i++) statuses.push(await forgot(`limits.spray${i}@example.com`, '203.0.113.200'));
+  assert.deepEqual(statuses.slice(0, 300), Array(300).fill(204));
+  assert.equal(statuses[300], 429);
+});
+
+test('A2 the pair limit: one address on one email gets the tight budget', async () => {
+  const statuses: number[] = [];
+  for (let i = 0; i < 6; i++) statuses.push(await forgot('limits.pair@example.com', '203.0.113.77'));
+  assert.deepEqual(statuses, [204, 204, 204, 204, 204, 429]);
 });

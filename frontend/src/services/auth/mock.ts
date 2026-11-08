@@ -75,9 +75,9 @@ export const mockAuthService: AuthService = {
   signUpWithEmail: async ({ name, email, password, code }) => {
     await mockLatency();
     const address = normalizeEmail(email);
+    checkCode(code);
     if (Object.values(users()).some(u => u.email === address))
       throw new ApiError('EMAIL_TAKEN', 'Email already registered', 409);
-    checkCode(code);
     const account: MockAccount = {
       id: `user-${newId()}`,
       name: name.trim(),
@@ -150,11 +150,10 @@ export const mockAuthService: AuthService = {
     return openSession(account);
   },
 
-  sendOtp: async ({ email }) => {
+  sendOtp: async () => {
     await mockLatency();
-    if (Object.values(users()).some(u => u.email === normalizeEmail(email)))
-      throw new ApiError('EMAIL_TAKEN', 'Email already registered', 409);
-    // Mock: nothing is sent; the code is always MOCK_CODE.
+    // Mock: nothing is sent; the code is always MOCK_CODE. The answer is the same
+    // whether the email has an account or not (S1.3, docs/API.md).
   },
 
   forgotPassword: async () => {

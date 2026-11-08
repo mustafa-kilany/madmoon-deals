@@ -3,7 +3,7 @@ import { prisma } from '../../db';
 import { env } from '../../env';
 import { ApiError } from '../../lib/errors';
 import { logger } from '../../lib/logger';
-import { codeEmail, mailer, MailerUnavailable } from './mailer';
+import { accountExistsEmail, codeEmail, mailer, MailerUnavailable } from './mailer';
 
 // 6-digit emailed codes (sign-up, password reset), docs/API.md → POST /auth/send-otp:
 // valid 10 minutes, 5 wrong tries, at most one new code a minute per email.
@@ -18,13 +18,19 @@ const MAX_TRIES = 5;
 const hmac = (email: string, purpose: Purpose, code: string) =>
   createHmac('sha256', env.JWT_SECRET).update(`${purpose}:${email}:${code}`).digest();
 
-export async function sendCode(email: string, purpose: Purpose) {
+/**
+ * `accountExists` (sign-up with an email that has an account): the same steps and
+ * the same time, but the email says so instead, and the stored code is random and
+ * never shown, so nothing can sign up with it (S1.3).
+ */
+export async function sendCode(email: string, purpose: Purpose, { accountExists = false } = {}) {
   const recent = await prisma.emailCode.findFirst({
     where: { email, purpose, createdAt: { gt: new Date(Date.now() - RESEND_MS) } },
   });
   if (recent) return; // the code sent under a minute ago still works
 
   const code = env.DEV_EMAIL_CODE ?? String(randomInt(0, 1_000_000)).padStart(6, '0');
+  // A real-looking row for an existing account: a code nobody is ever told.
   const row = await prisma.emailCode.create({
     data: {
       email,
@@ -35,7 +41,7 @@ export async function sendCode(email: string, purpose: Purpose) {
   });
   if (env.DEV_EMAIL_CODE) return; // local testing: nothing is sent
   try {
-    await mailer.send({ to: email, ...codeEmail(purpose, code) });
+    await mailer.send({ to: email, ...(accountExists ? accountExistsEmail() : codeEmail(purpose, code)) });
   } catch (error) {
     if (!(error instanceof MailerUnavailable)) throw error;
     // Not sent: forget the code so "send again" works at once, not after the minute.

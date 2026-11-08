@@ -40,17 +40,17 @@ No item is ✅ until its own test exists. Each phase must then pass gates 1–3;
 
 | # | Item | Status |
 |---|---|---|
-| A1 | No account enumeration at sign-up or reset (S1.3) | ⬜ |
-| A2 | Reset signs out everywhere; limits per IP and per email, not only the pair (S1.5) | ⬜ |
-| A3 | Production secrets: not the example value, ID hash key required and different (S1.1) | ⬜ |
-| A4 | **Account deletion really removes personal data**, files included; refused while money is owed, in live auctions, or for staff (S1.9) | ⬜ |
-| A5 | Two-user test for every endpoint with an id (S2.1) | ⬜ |
-| A6 | Buyer's address: seller never, courier only while assigned (S2.3) | ⬜ |
-| A7 | Store keys only touch their own store (S2.5) | ⬜ |
-| A8 | No secret field in any answer, checked by a walker over real responses (S2.6) | ⬜ |
-| A9 | Data retention rules + clean-up job (S8.3), matching the privacy policy | ⬜ |
-| A10 | Download my data: `GET /me/export`, a button in the app (S8.4) | ⬜ |
-| A11 | Sanad consent enforced (S8.2), breach plan (S8.5), secrets register (S7.3) | ⬜ |
+| A1 | No account enumeration at sign-up or reset (S1.3) | ✅ |
+| A2 | Reset signs out everywhere; limits per IP and per email, not only the pair (S1.5) | ✅ |
+| A3 | Production secrets: not the example value, ID hash key required and different (S1.1) | ✅ |
+| A4 | **Account deletion really removes personal data**, files included; refused while money is owed, in live auctions, or for staff (S1.9) | ✅ |
+| A5 | Two-user test for every endpoint with an id (S2.1) | ✅ |
+| A6 | Buyer's address: seller never, courier only while assigned (S2.3) | ✅ |
+| A7 | Store keys only touch their own store (S2.5) | ✅ |
+| A8 | No secret field in any answer, checked by a walker over real responses (S2.6) | ✅ |
+| A9 | Data retention rules + clean-up job (S8.3), matching the privacy policy | ✅ |
+| A10 | Download my data: `GET /me/export`, a button in the app (S8.4) | 🔨 |
+| A11 | Sanad consent enforced (S8.2), breach plan (S8.5), secrets register (S7.3) | ✅ |
 
 ## Phase 3 — Server and files
 

@@ -1,12 +1,18 @@
-import { Router, type Request } from 'express';
+import { Router, type Request, type Response } from 'express';
 import { ipKeyGenerator, rateLimit } from 'express-rate-limit';
 import { z } from 'zod';
 import { prisma } from '../../db';
+import { env } from '../../env';
 import { ApiError } from '../../lib/errors';
+import { runSoon } from '../../lib/jobs';
+import { logger } from '../../lib/logger';
 import { cityIds } from '../../reference';
 import { queueRiskCheck } from '../risk/triggers';
 import { isStaffEmail } from '../staff/service';
+import { LIMITS } from '../../lib/rateLimit';
 import { toApiUser } from './apiUser';
+import { deleteAccount } from './deleteAccount';
+import { exportAccount } from './exportAccount';
 import { sendCode, useCode } from './codes';
 import { burnPasswordCheck, hashPassword, passwordMatches } from './password';
 import { currentUser, requireUser } from './requireUser';
@@ -53,21 +59,27 @@ async function session(userId: string, req: Request) {
 
 const emailTaken = () => new ApiError(409, 'EMAIL_TAKEN', 'Email already registered');
 
-// Slow down password guessing and code spamming. Counted per IP + email, so
-// people behind one mobile-carrier IP don't block each other.
-const limited = (limit: number) =>
-  rateLimit({
+// Slow down password guessing and code spamming. Three fences, 15 minutes each:
+// - IP + email, the tight one: people behind one mobile-carrier IP don't block each other;
+// - the email alone: one account attacked from many addresses;
+// - the IP alone: one address trying many accounts (generous: carriers share IPs).
+const emailOf = (req: Request) => String(req.body?.email ?? '').trim().toLowerCase();
+const limited = (limit: number) => {
+  const common = {
     windowMs: 15 * 60_000,
-    limit,
-    standardHeaders: 'draft-8',
+    standardHeaders: 'draft-8' as const,
     legacyHeaders: false,
-    keyGenerator: req =>
-      `${ipKeyGenerator(req.ip ?? '')}|${String(req.body?.email ?? '').trim().toLowerCase()}`,
-    handler: (_req, res) =>
-      res.status(429).json({
+    handler: (_req: Request, res: Response) =>
+      void res.status(429).json({
         error: { code: 'RATE_LIMITED', message: 'Too many attempts, try again in a few minutes' },
       }),
-  });
+  };
+  return [
+    rateLimit({ ...common, limit, keyGenerator: req => `${ipKeyGenerator(req.ip ?? '')}|${emailOf(req as Request)}` }),
+    rateLimit({ ...common, limit: limit * 5 * env.RATE_LIMIT_MULTIPLIER, keyGenerator: req => `email:${emailOf(req as Request)}` }),
+    rateLimit({ ...common, limit: 300 * env.RATE_LIMIT_MULTIPLIER, keyGenerator: req => `ip:${ipKeyGenerator(req.ip ?? '')}` }),
+  ];
+};
 
 export const authRoutes = Router();
 
@@ -77,19 +89,23 @@ const refuseStaff = (email: string) => {
     throw new ApiError(422, 'VALIDATION', 'This email is for Sahla staff: ask an admin for an account');
 };
 
-authRoutes.post('/auth/send-otp', limited(5), async (req, res) => {
+// S1.3: the same answer whether or not the email has an account, so nobody can use
+// sign-up to find out who uses Sahla. The owner of that mailbox gets an email either
+// way: a code, or "you already have an account" (no code that works).
+authRoutes.post('/auth/send-otp', ...limited(5), async (req, res) => {
   const body = emailBody.parse(req.body);
   refuseStaff(body.email);
-  if (await prisma.user.findUnique({ where: { email: body.email } })) throw emailTaken();
-  await sendCode(body.email, 'signup');
+  const exists = await prisma.user.findUnique({ where: { email: body.email }, select: { id: true } });
+  await sendCode(body.email, 'signup', { accountExists: !!exists });
   res.status(204).end();
 });
 
-authRoutes.post('/auth/signup', limited(10), async (req, res) => {
-  const body = signupBody.parse(req.body); // VALIDATION, then EMAIL_TAKEN, then the code
+authRoutes.post('/auth/signup', ...limited(10), async (req, res) => {
+  const body = signupBody.parse(req.body);
   refuseStaff(body.email);
-  if (await prisma.user.findUnique({ where: { email: body.email } })) throw emailTaken();
+  // S1.3: the code comes first: only the mailbox's owner can ever see EMAIL_TAKEN.
   await useCode(body.email, 'signup', body.code);
+  if (await prisma.user.findUnique({ where: { email: body.email } })) throw emailTaken();
   const user = await prisma.user
     .create({
       data: {
@@ -109,10 +125,11 @@ authRoutes.post('/auth/signup', limited(10), async (req, res) => {
   res.status(201).json(await session(user.id, req));
 });
 
-authRoutes.post('/auth/login', limited(10), async (req, res) => {
+authRoutes.post('/auth/login', ...limited(10), async (req, res) => {
   const body = loginBody.parse(req.body);
   const user = await prisma.user.findUnique({ where: { email: body.email } });
-  if (!user) await burnPasswordCheck(body.password);
+  // S1.3: the same time for no account and for a Google / Apple account with no password.
+  if (!user?.passwordHash) await burnPasswordCheck(body.password);
   if (!user || !(await passwordMatches(body.password, user.passwordHash)))
     throw new ApiError(401, 'INVALID_CREDENTIALS', 'Wrong email or password');
   if (user.suspended) throw new ApiError(403, 'FORBIDDEN', 'This account is suspended');
@@ -128,22 +145,27 @@ const socialBody = z.object({
   acceptTerms: z.boolean().optional(),
 });
 for (const provider of ['google', 'apple'] as const)
-  authRoutes.post(`/auth/${provider}`, limited(20), async (req, res) => {
+  authRoutes.post(`/auth/${provider}`, ...limited(20), async (req, res) => {
     const body = socialBody.parse(req.body);
     const user = await accountFor(await verifyIdToken(provider, body.idToken), body.name, body.acceptTerms === true);
     if (user.suspended) throw new ApiError(403, 'FORBIDDEN', 'This account is suspended');
     res.json(await session(user.id, req));
   });
 
-// 204 whether or not the account exists, so it can't be used to find accounts.
-authRoutes.post('/auth/forgot-password', limited(5), async (req, res) => {
+// S1.3: 204 whether or not the account exists, at once: the email goes out after the
+// answer, so neither the answer nor its timing (or an email outage) reveals an account.
+authRoutes.post('/auth/forgot-password', ...limited(5), async (req, res) => {
   const body = emailBody.parse(req.body);
-  if (await prisma.user.findUnique({ where: { email: body.email } }))
-    await sendCode(body.email, 'reset');
+  if (await prisma.user.findUnique({ where: { email: body.email }, select: { id: true } }))
+    runSoon(
+      `mail:reset:${body.email}`,
+      () => sendCode(body.email, 'reset').catch(error => logger.error({ err: error }, 'Reset code not sent')),
+      0,
+    );
   res.status(204).end();
 });
 
-authRoutes.post('/auth/reset-password', limited(10), async (req, res) => {
+authRoutes.post('/auth/reset-password', ...limited(10), async (req, res) => {
   const body = resetBody.parse(req.body);
   await useCode(body.email, 'reset', body.code);
   const user = await prisma.user.findUnique({ where: { email: body.email } });
@@ -188,32 +210,11 @@ authRoutes.patch('/me', requireUser, async (req, res) => {
 });
 
 authRoutes.delete('/me', requireUser, async (_req, res) => {
-  const userId = currentUser(res.locals).id;
-  // Not while money is held for this user as buyer or seller, or a card check
-  // they started in the last hour could still pay.
-  const open = await prisma.order.count({
-    where: {
-      OR: [
-        { status: 'escrow_held', OR: [{ buyerId: userId }, { sellerUserId: userId }] },
-        {
-          status: 'awaiting_payment',
-          buyerId: userId,
-          payments: { some: { status: 'pending', createdAt: { gt: new Date(Date.now() - 3_600_000) } } },
-        },
-      ],
-    },
-  });
-  if (open) throw new ApiError(409, 'OPEN_ORDERS', 'Orders in progress: finish them first');
-  // Listings are taken off sale and keep no link to the user (Listing.sellerUserId → null);
-  // unpaid checkouts go; finished orders stay (payment records) without the buyer's id.
-  // Sessions, codes, certificates, reports and blocks go with the account.
-  await prisma.$transaction([
-    prisma.listing.updateMany({
-      where: { sellerUserId: userId, status: 'active' },
-      data: { status: 'withdrawn' },
-    }),
-    prisma.order.deleteMany({ where: { buyerId: userId, status: 'awaiting_payment' } }),
-    prisma.user.delete({ where: { id: userId } }),
-  ]);
+  await deleteAccount(currentUser(res.locals));
   res.status(204).end();
+});
+
+// S8.4: a copy of everything Sahla holds about the person.
+authRoutes.get('/me/export', requireUser, ...LIMITS.dataExport, async (req, res) => {
+  res.set('Cache-Control', 'no-store').json(await exportAccount(currentUser(res.locals), req));
 });

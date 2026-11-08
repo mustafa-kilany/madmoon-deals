@@ -6,6 +6,11 @@ The app's HTTP service layer (`frontend/src/services/*/http.ts`) and API client 
 
 ## Changes on 2026-11-08 (readiness work: `INTERNAL_READINESS_PLAN.md`)
 
+* **`POST /auth/send-otp`** answers 204 even when the email has an account (it no longer says `EMAIL_TAKEN`): that person gets an email saying so.
+  **`POST /auth/signup`** checks the code first, so only the mailbox's owner can see `EMAIL_TAKEN`. **`POST /auth/forgot-password`** answers at once; an email outage isn't reported.
+* **`DELETE /me`** also refuses (`OPEN_ORDERS`) with money still owed or in a live auction, and staff accounts (`FORBIDDEN`). It removes the files too.
+* **`GET /me/export`:** a copy of the person's data (5 a day).
+* **`GET /courier/deliveries`:** a delivered or failed job keeps names and areas only (no phones, addresses or notes).
 * **Seller's bank account:** `GET` / `PUT /me/payout-account`, `POST /me/payout-account/code` (see Phase 6).
 * **`POST /courier/confirm-delivery`** answers 422 until the order is marked picked up.
 * **`DELETE /listings/:id`:** an auction with bids can be withdrawn 48 hours after it ended, if the winner never paid.
@@ -228,7 +233,7 @@ type User = {
 Creates a new account. The app first calls `POST /auth/send-otp`; the user types the emailed code here, which proves they own the address.
 * **Request Body:** `{ "name": "Ahmad", "email": "ahmad@sahla.jo", "password": "password123", "code": "482913", "acceptTerms": true }`
 * **Rules:** `acceptTerms: true` is required (B15.8: the screen shows the Terms and Privacy Policy with the button;
-  the server stores the current version and time). Name ≥ 2 characters, password ≥ 8 characters, email stored lower-cased. Check `EMAIL_TAKEN` and `VALIDATION` before the code.
+  the server stores the current version and time). Name ≥ 2 characters, password ≥ 8 characters, email stored lower-cased. `VALIDATION` first, then the code, then `EMAIL_TAKEN` (so nobody can test which emails have accounts).
 * **Response (200 or 201):** `Session`
 * **Errors:** `EMAIL_TAKEN` (409), `VALIDATION` (422), `INVALID_CODE` (422)
 

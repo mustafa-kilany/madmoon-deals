@@ -87,6 +87,16 @@ function bilingual(parts: { ar: string[]; en: string[]; code?: string }) {
   return { text, html };
 }
 
+/** S1.3: someone tried to sign up with this email, which already has an account. */
+export const accountExistsEmail = () => ({
+  subject: 'لديك حساب في سهلة | You already have a Sahla account',
+  tag: 'account-exists',
+  ...bilingual({
+    ar: ['طلب أحدهم إنشاء حساب في سهلة بهذا البريد، لكن لديك حساب بالفعل. سجّل الدخول، أو اختر «نسيت كلمة المرور» إن لزم.', 'إذا لم تكن أنت، تجاهل هذه الرسالة؛ حسابك آمن.'],
+    en: ['Someone asked to create a Sahla account with this email, but you already have one. Log in, or choose "Forgot password" if you need to.', "If this wasn't you, ignore this email; your account is safe."],
+  }),
+});
+
 /** S3.7: an alert, not a code: the seller's bank account was set or changed. */
 export const payoutAccountEmail = (last4: string, replaced: boolean) => ({
   subject: 'تم تغيير الحساب البنكي | Your Sahla bank account changed',

@@ -63,15 +63,15 @@ users get 403 · ✅ app tokens can't open `/admin`, dashboard tokens open nothi
 
 | # | Check | How |
 |---|---|---|
-| ⬜ S1.1 | `JWT_SECRET` in production is new, random (≥ 32 bytes), only in the host's secret settings, different from development. | `npm run secret`; never in `.env` committed; compare to dev = different. |
+| ✅ S1.1 | `JWT_SECRET` in production is new, random (≥ 32 bytes), only in the host's secret settings, different from development. | `npm run secret`; never in `.env` committed; compare to dev = different. |
 | ✅ S1.2 | Password rules: minimum length ≥ 8 (prefer 10), max length capped (e.g. 128, scrypt cost), common-password list refused. | Read `password.ts` + sign-up schema; e2e with `password123`. |
-| ⬜ S1.3 | No account enumeration: sign-up, log-in, forgot-password give the same answer and similar timing for "no such email". | Call each with a known and an unknown email; compare body and time. |
+| ✅ S1.3 | No account enumeration: sign-up, log-in, forgot-password give the same answer and similar timing for "no such email". | Call each with a known and an unknown email; compare body and time. |
 | ✅ S1.4 | Email codes: 6 digits, expire (≤ 10 min), one use, ≤ 5 wrong tries then a new code needed. | Read `codes.ts`; e2e: 6th wrong try refused even with the right code. |
-| ⬜ S1.5 | Reset password signs out every other session; changing the email (if allowed) needs the code to the new address. | e2e: two sessions, reset, the old token → 401. |
-| ⬜ S1.6 | Session length: 60 days for the app is long. Decide: keep 60, or 30 + sliding renewal. Admin 12 h ✅. | Decision note here. |
+| ✅ S1.5 | Reset password signs out every other session; changing the email (if allowed) needs the code to the new address. | e2e: two sessions, reset, the old token → 401. |
+| ✅ S1.6 | Session length: **owner's decision 2026-11-07: stays 60 days.** Admin 12 h. Log-out, reset, delete and suspend end a session at once. | Decision noted. |
 | ✅ S1.7 | `alg` is pinned to HS256 when verifying (no `none`, no RS/HS confusion). | Read `tokens.ts` (`jwtVerify(…, { algorithms: ['HS256'] })`); unit test with an `alg: none` token. |
 | ✅ S1.8 | Google sign-in links to an existing account **only when Google says the email is verified** (`email_verified`). | Read `social.ts`; unit test with `email_verified: false`. |
-| ⬜ S1.9 | Account deletion really deletes or anonymises personal data (keeping only what law/accounting needs). | Delete a test account, look at every table for its email/name/phone. |
+| ✅ S1.9 | Account deletion really deletes or anonymises personal data (keeping only what law/accounting needs). | Delete a test account, look at every table for its email/name/phone. |
 
 ## S2 — Who can see and change what (authorization / IDOR)
 
@@ -84,12 +84,12 @@ Already in place: ✅ `requireUser` / `requireCustomer` / `requireCourier` / `re
 
 | # | Check | How |
 |---|---|---|
-| ⬜ S2.1 | **Two-user test for every endpoint with an id**: user B tries user A's order, chat, messages, offer, listing edit/delete, certificate, upload, device token, blocked list. All → 404 (or 403). | One e2e file `authz.e2e.ts` looping a table of endpoints (like `staffOnly.e2e.ts`). Add each new endpoint to it. |
+| ✅ S2.1 | **Two-user test for every endpoint with an id**: user B tries user A's order, chat, messages, offer, listing edit/delete, certificate, upload, device token, blocked list. All → 404 (or 403). | One e2e file `authz.e2e.ts` looping a table of endpoints (like `staffOnly.e2e.ts`). Add each new endpoint to it. |
 | ✅ S2.2 | A courier only sees **their own** assigned deliveries; can't mark picked-up / confirm another courier's order. | e2e with two couriers. |
-| ⬜ S2.3 | A seller sees the buyer's delivery details **only** after payment, and a courier only while assigned. | e2e: before pay → no address; after delivery → decide if it should disappear. |
+| ✅ S2.3 | A seller sees the buyer's delivery details **only** after payment, and a courier only while assigned. | e2e: before pay → no address; after delivery → decide if it should disappear. |
 | ✅ S2.4 | Mass assignment: `PATCH /me` and `PATCH /listings/:id` ignore `role`, `verified`, `suspended`, `status`, `sellerUserId`, prices of others… (zod `.strict()` or picked fields). | e2e: send `{"role":"admin"}` → no change. |
-| ⬜ S2.5 | Store API keys (refurbished import) only touch **their own store**; revoked keys → 401. | e2e with two stores. |
-| ⬜ S2.6 | Responses don't leak fields: no `passwordHash`, `cardToken`, `pin`, `nationalIdHash`, `pickupPhone`, other users' emails in any JSON. | Grep the `toApi*` shape functions; e2e snapshot of each response's keys. |
+| ✅ S2.5 | Store API keys (refurbished import) only touch **their own store**; revoked keys → 401. | e2e with two stores. |
+| ✅ S2.6 | Responses don't leak fields: no `passwordHash`, `cardToken`, `pin`, `nationalIdHash`, `pickupPhone`, other users' emails in any JSON. | Grep the `toApi*` shape functions; e2e snapshot of each response's keys. |
 
 ## S3 — Money: orders, escrow, payments, payouts
 
@@ -181,11 +181,11 @@ without query strings, headers or bodies · ✅ `.env` refuses dangerous product
 
 | # | Check | How |
 |---|---|---|
-| ⬜ S8.1 | Privacy policy + terms in the app and on the site, accepted at sign-up (stored with date/version). | Sign up → acceptance row exists. |
-| ⬜ S8.2 | Sanad: the **consent screen and stored consent record** before every lookup (MoDEE's pledge: 500 JOD per lookup without consent). Only the fields we asked for. National number only as a keyed hash ✅. | e2e: verification without a consent record → refused. |
-| ⬜ S8.3 | Data retention: chats, delivery addresses on completed orders, certificate originals, logs, deleted accounts: how long each is kept, and a job that deletes it. | Table in the privacy policy + cleanup jobs. |
-| ⬜ S8.4 | A way for users to export/delete their data (delete ✅ `DELETE /me`). | Doc + test. |
-| ⬜ S8.5 | A breach plan: who to call, how to revoke all sessions (`JWT_SECRET` rotation signs everyone out), how to tell users. | One page, below. |
+| ✅ S8.1 | Privacy policy + terms in the app and on the site, accepted at sign-up (stored with date/version). | Sign up → acceptance row exists. |
+| ✅ S8.2 | Sanad: the **consent screen and stored consent record** before every lookup (MoDEE's pledge: 500 JOD per lookup without consent). Only the fields we asked for. National number only as a keyed hash ✅. | e2e: verification without a consent record → refused. |
+| ✅ S8.3 | Data retention: chats, delivery addresses on completed orders, certificate originals, logs, deleted accounts: how long each is kept, and a job that deletes it. | Table in the privacy policy + cleanup jobs. |
+| ✅ S8.4 | A way for users to export/delete their data (delete ✅ `DELETE /me`). | Doc + test. |
+| ✅ S8.5 | A breach plan: who to call, how to revoke all sessions (`JWT_SECRET` rotation signs everyone out), how to tell users. | One page, below. |
 
 ## S9 — Test it like an attacker (before launch)
 
@@ -223,13 +223,30 @@ without query strings, headers or bodies · ✅ `.env` refuses dangerous product
 
 ---
 
+## Breach plan (S8.5)
+
+If you think data or a secret leaked. Do these in order; note the time of each step.
+
+1. **Stop the leak.** Which secret? A key in a chat or in git: rotate it now (table below). A server: take it off the network, keep it for study; don't delete logs.
+2. **Sign everyone out if accounts or `JWT_SECRET` may be affected.** Set a new `JWT_SECRET` (`npm run secret`) and restart: every session ends at once and
+   admins set up their authenticator again. **Never change `ID_HASH_SECRET`** unless it leaked; if it did, see its row below first.
+3. **Protect the money.** Tell whoever sends payouts to stop until the money check passes: `npm run money:check`. Read the audit log (`/admin/actions`) for refunds,
+   payouts and changed admins. Look at bank accounts changed recently: each one held payouts for 24 hours.
+4. **See what happened.** Host logs (kept 90 days), error reports, `AdminAction`, the newest backup from before the event (keep it, don't overwrite it).
+5. **Tell people.** Jordan's Personal Data Protection Law No. 24 of 2023: the owner, with the lawyer, tells the regulator and the affected people what the law requires, within
+   the time it requires. Say plainly what leaked, what you did, and what they should do (change their password; watch for scam messages). Have the lawyer confirm the wording and the deadline **before launch**.
+6. **Tell the partners that need it:** the payment provider (card-related), MoDEE (anything touching Sanad), Google/Firebase (their keys).
+7. **Afterwards:** what let it happen, a test that would have caught it, a line in the Log below.
+
+Who: the owner decides; [ask the owner: a second person who can act if the owner can't be reached, and the lawyer's number].
+
 ## Secrets register (fill in as they are created)
 
 | Secret | Used by | Stored in | Who can see | How to rotate |
 |---|---|---|---|---|
 | `JWT_SECRET` | backend | host secrets | owner | change → everyone signs in again |
-| `ID_HASH_SECRET` | backend (Sanad) | host secrets | owner | **never rotate** (breaks one-ID-one-account) — back it up offline |
-| TOTP sealing key | backend (`lib/sealed.ts`) | host secrets | owner | re-seal or reset each admin's 2FA |
+| `ID_HASH_SECRET` | backend (Sanad IDs, certificate serial numbers, sellers' IBANs) | host secrets + an offline copy | owner | **never rotate** (breaks one-ID-one-account, and sellers' IBANs can't be read: they must enter them again). Production refuses to start without it. |
+| Admins' 2FA secrets | backend (`lib/sealed.ts`, key derived from `JWT_SECRET`) | database (encrypted) | nobody | changing `JWT_SECRET` makes each admin scan a new QR code |
 | `DATABASE_URL` | backend | host secrets | owner | new DB password |
 | `POSTMARK_SERVER_TOKEN` | backend | host secrets | owner | Postmark → Servers → API tokens |
 | `GOOGLE_MAPS_API_KEY` | backend | host secrets | owner | Cloud console → regenerate (S0.6) |
@@ -241,6 +258,20 @@ without query strings, headers or bodies · ✅ `.env` refuses dangerous product
 
 ## Log
 Newest first. Each entry: what was done, the commit, how it was checked.
+- 2026-11-08: **Accounts and privacy (`INTERNAL_READINESS_PLAN.md` phase 2).**
+  * **S1.3 enumeration fixed:** `send-otp` and `signup` said `EMAIL_TAKEN` to anyone, and `forgot-password` took longer for real accounts (it waited for the email), and log-in was
+    faster for Google accounts (no scrypt). Now the same answers and timing; the mailbox's owner gets "you already have an account". `auth/privacy.e2e.ts`.
+  * **S1.9 deletion fixed (the biggest privacy gap):** it left pickup and delivery phones and addresses on orders and listings, chats on the person's listings, reports about them,
+    every **photo file and certificate original on disk**, and the saved card at the provider, while the policy promised they were gone. It also let a person leave with money still owed,
+    or as the top bidder, and let a driver or the only owner delete themselves. Now tested by planting marks in every table, deleting, and searching **every table** and the disk.
+    Accepted: the admin audit log keeps the person's id (who at Sahla did what). Known limit: a rejected fake certificate's hash goes with the account, so someone could delete and retry.
+  * **S2.1 + a route walker:** `lib/authz.e2e.ts` reads the server's route table: every non-public route must answer 401 with no token, every admin route must refuse customers and
+    couriers, and a customer route with an id not in the two-user table **fails the test**. No hole found: all passed.
+  * **S2.3 tightened:** a delivered or failed job keeps only names and areas on the driver's phone. **S2.5** passed (two stores, revoked key). **S2.6:** `lib/leaks.e2e.ts` walks real answers from guests,
+    customers, couriers and admins for 14 secret field names, plus emails and pickup details: none found.
+  * **S1.1:** production refuses a guessable `JWT_SECRET` and a missing or identical `ID_HASH_SECRET`. **S1.5:** tested with two sessions and a phone. **A2:** new limits per email (one account from many
+    addresses) and per address (one address on many accounts), tested in `limits.e2e.ts` with 300 real addresses and emails.
+  * **S8.3:** `privacy/retention.ts` + nightly job; the numbers are in the policy (**for the lawyer to confirm**). **S8.4:** `GET /me/export`. **S8.5:** the plan above. LEGAL_VERSION is now `2026-11-08`.
 - 2026-11-08: **Money (`INTERNAL_READINESS_PLAN.md` phase 1).** Every test below was first run on the old code. Four were **real bugs**:
   * **The delivery PIN was in three admin answers** (assign, unlock PIN, retry a problem): an admin plus a courier could have
     released the money with no buyer. "Never shown in the dashboard" was true of the page, not the API. Fixed in `orders/admin.ts`.
