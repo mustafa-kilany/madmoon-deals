@@ -191,8 +191,12 @@ test('S3.2: anything that looks like a card number is refused, and never stored'
   for (const pan of ['4242424242424242', '4242 4242 4242 4242', '4242-4242-4242-4242', '5555555555554444', '378282246310005']) {
     const pay = await call('POST', `/orders/${order.body.id}/pay`, buyer, { cardToken: pan });
     assert.equal(pay.status, 422, pan);
+    // Our own guard must answer, before any provider: the fake one refuses these anyway, a real one might not.
+    assert.match(pay.body.error.message, /never a card number/, pan);
     assert.ok(!JSON.stringify(pay.body).includes(pan.slice(0, 8)), 'the number must not come back in the error');
-    assert.equal((await call('POST', '/me/payment-card', buyer, { cardToken: pan })).status, 422, pan);
+    const save = await call('POST', '/me/payment-card', buyer, { cardToken: pan });
+    assert.equal(save.status, 422, pan);
+    assert.match(save.body.error.message, /never a card number/, pan);
   }
   assert.equal(await prisma.payment.count({ where: { orderId: order.body.id } }), 0);
 });
