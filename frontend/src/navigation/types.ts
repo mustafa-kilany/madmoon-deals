@@ -1,3 +1,4 @@
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 // Typed routes. The prototype's ScreenId values map here as screens are ported;
 // see DEVELOPMENT_GUIDE.md §1 for the full list.
 
@@ -35,6 +36,7 @@ export type RootStackParamList = {
   EditListing: { itemId: string };
   /** B15.9: what I sold and where each delivery stands. */
   MySales: undefined;
+  PayoutAccount: undefined;
   /** B15.6: the support email and chat; orderId = started from that order or delivery. */
   Support: { orderId?: string } | undefined;
   /** B15.8: the privacy policy or the terms. */
@@ -61,6 +63,8 @@ export type RootStackParamList = {
   /** Report a listing or a user (App Store guideline 1.2). */
   Report: ReportTarget;
 };
+
+export type RootNavigation = NativeStackNavigationProp<RootStackParamList>;
 
 export type RootScreenProps<T extends keyof RootStackParamList> =
   NativeStackScreenProps<RootStackParamList, T>;

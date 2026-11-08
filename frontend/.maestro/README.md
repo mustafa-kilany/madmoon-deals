@@ -26,6 +26,14 @@ maestro test .maestro/02-buy-and-deliver.yaml      # one flow
 maestro studio                                     # point-and-click flow builder in the browser
 ```
 
+The auction takes two parts with one step between them (an auction can't end sooner than an hour by itself):
+
+```
+maestro test -e API=http://localhost:4001 .maestro/06-auction-bid.yaml
+npx tsx scripts/e2e-end-auction.ts auction-fashion     # in backend/, with a *_test database
+maestro test -e API=http://localhost:4001 .maestro/07-auction-win-pay.yaml
+```
+
 Each failure leaves screenshots and the screen layout in `%USERPROFILE%\.maestro\tests\<date>`.
 
 ## Notes

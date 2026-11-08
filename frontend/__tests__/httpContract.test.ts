@@ -157,6 +157,33 @@ const rows: Row[] = [
     call: () => httpAuthService.removePaymentCard(),
     url: '/me/payment-card',
   },
+  {
+    endpoint: 'GET /me/payout-account',
+    call: () => httpAuthService.getPayoutAccount(),
+    url: '/me/payout-account',
+  },
+  {
+    endpoint: 'PUT /me/payout-account',
+    call: () => httpAuthService.savePayoutAccount({ holderName: 'A B', iban: 'JO94', password: 'x' }),
+    url: '/me/payout-account',
+    body: { holderName: 'A B', iban: 'JO94', password: 'x' },
+  },
+  {
+    endpoint: 'POST /me/payout-account/code',
+    call: () => httpAuthService.sendPayoutCode(),
+    url: '/me/payout-account/code',
+  },
+  {
+    endpoint: 'GET /me/export',
+    call: () => httpAuthService.exportMyData(),
+    url: '/me/export',
+  },
+  {
+    endpoint: 'GET /me/auctions-won',
+    call: () => httpCatalogService.getAuctionsWon(),
+    url: '/me/auctions-won',
+    reply: [],
+  },
   // Catalog & listings
   {
     endpoint: 'GET /categories',

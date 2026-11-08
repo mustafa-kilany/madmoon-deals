@@ -1,0 +1,99 @@
+# An offer through to payment on the real backend: the buyer offers and writes, the seller
+# (scripts/seller-answers.js) counters and answers, the buyer sees both while the chat
+# refreshes, accepts the counter and pays exactly that price.
+appId: com.sahla
+name: Offer, counter, chat, pay the agreed price
+---
+- runFlow: subflows/launch.yaml
+- runFlow:
+    file: subflows/sign-in.yaml
+    env:
+      EMAIL: ahmad@sahla.jo
+      PASSWORD: sahla1234
+- runFlow: subflows/accept-terms.yaml
+
+- tapOn: "Home"
+- tapOn: "Search for anything..."
+- tapOn: "Search for anything..."
+- inputText: "Dumbbell"
+- pressKey: Enter
+- extendedWaitUntil:
+    visible: "Dumbbell Set"
+    timeout: 10000
+- tapOn:
+    text: "Dumbbell Set"
+    below:
+      text: '\d+ results?'
+- tapOn: "Make an Offer"
+- tapOn: "Your Offer (JOD)"
+- inputText: "50"
+- hideKeyboard
+- tapOn: "Send Offer"
+
+# The chat opens on the list: the conversation is the newest.
+- extendedWaitUntil:
+    visible: "Messages & Offers"
+    timeout: 10000
+- tapOn: "Dumbbell Set"
+- extendedWaitUntil:
+    visible: "Waiting for the seller to answer"
+    timeout: 10000
+- tapOn: "Type a message..."
+- inputText: "Is it still available?"
+- tapOn: "Send"
+- extendedWaitUntil:
+    visible: "Is it still available?"
+    timeout: 10000
+
+- runScript:
+    file: scripts/seller-answers.js
+    env:
+      SELLER: sami@demo.sahla.jo
+      COUNTER: "60000"
+      API: ${API}
+
+# Nobody reloads anything: the chat refreshes itself.
+- extendedWaitUntil:
+    visible: "Yes, and I can do this price"
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      text: 'Accept .*60.*'
+    direction: UP
+- tapOn: 'Accept .*60.*'
+- extendedWaitUntil:
+    visible: "Offer Accepted! Proceed to Checkout"
+    timeout: 10000
+- tapOn: "Proceed to Checkout"
+- runFlow:
+    when:
+      visible: "Deliver to where you are?"
+    commands:
+      - tapOn: "I'll type it myself"
+      - scrollUntilVisible:
+          element:
+            id: "delivery-phone"
+      - tapOn:
+          id: "delivery-phone"
+      - inputText: "0791234567"
+      - hideKeyboard
+      - scrollUntilVisible:
+          element:
+            id: "delivery-address"
+      - tapOn:
+          id: "delivery-address"
+      - inputText: "Mecca St, Building 12, 3rd floor"
+      - hideKeyboard
+- scrollUntilVisible:
+    element:
+      text: 'Pay \d.*'
+- tapOn: 'Pay \d.*'
+- extendedWaitUntil:
+    visible: "Track Order"
+    timeout: 20000
+- runScript:
+    file: scripts/check-order.js
+    env:
+      LISTING: hobbies-2
+      PRICE: "60000"
+      API: ${API}

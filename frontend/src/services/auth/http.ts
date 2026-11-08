@@ -2,7 +2,7 @@
 
 import type { Session, User } from '@/lib/types';
 import { api, photoForm } from '../api/client';
-import type { AuthService, IdVerificationStart } from './types';
+import type { AuthService, IdVerificationStart, PayoutAccount } from './types';
 
 export const httpAuthService: AuthService = {
   // B15.8: the sign-up screens show the terms with the button: pressing it is acceptance.
@@ -28,6 +28,10 @@ export const httpAuthService: AuthService = {
   savePaymentCard: cardToken =>
     api.post<User>('/me/payment-card', { cardToken }),
   removePaymentCard: () => api.delete<User>('/me/payment-card'),
+  getPayoutAccount: () => api.get<PayoutAccount>('/me/payout-account'),
+  savePayoutAccount: input => api.put<PayoutAccount>('/me/payout-account', input),
+  sendPayoutCode: () => api.post<void>('/me/payout-account/code'),
+  exportMyData: () => api.get<unknown>('/me/export'),
   logOut: async () => {
     await api.post('/auth/logout');
   },

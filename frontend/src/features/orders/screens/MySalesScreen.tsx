@@ -3,6 +3,7 @@
 // driver has it → delivered), why a delivery didn't happen or the buyer
 // cancelled, and the seller's money once delivered.
 
+import { useNavigation } from '@react-navigation/native';
 import { FlatList, Image, RefreshControl, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { BackButton } from '@/components/BackButton';
@@ -10,16 +11,19 @@ import { Price } from '@/components/Price';
 import { StatusView } from '@/components/StatusView';
 import {
   Badge,
+  Button,
   Card,
   Heading,
   Screen,
   Text,
   type BadgeTone,
 } from '@/components/ui';
+import { usePayoutAccount } from '@/features/auth/hooks/useAccount';
 import { useMySales } from '@/features/checkout/hooks/useOrders';
 import { useLocalized } from '@/i18n';
 import { reasonLabel } from '@/lib/deliveryProblems';
 import type { Order } from '@/lib/types';
+import type { RootNavigation } from '@/navigation/types';
 import { colors } from '@/theme/colors';
 
 /** Where a sale stands, from the seller's side. */
@@ -73,6 +77,7 @@ export function MySalesScreen() {
         <StatusView status="error" onRetry={refetch} />
       ) : (
         <FlatList
+          ListHeaderComponent={<BankAccountNote />}
           data={sales}
           keyExtractor={o => o.id}
           renderItem={({ item }) => <SaleCard order={item} />}
@@ -95,6 +100,31 @@ export function MySalesScreen() {
         />
       )}
     </Screen>
+  );
+}
+
+/** S3.7: sellers need a bank account to be paid: asked for here, when it matters. */
+function BankAccountNote() {
+  const { t } = useTranslation();
+  const navigation = useNavigation<RootNavigation>();
+  const { data } = usePayoutAccount();
+  if (!data) return null;
+  return data.account ? (
+    <Button
+      variant="secondary"
+      testID="sales-bank-account"
+      label={t('payout.title')}
+      onPress={() => navigation.navigate('PayoutAccount')}
+    />
+  ) : (
+    <Card testID="sales-add-bank" className="gap-3 p-4">
+      <Text className="text-sm">{t('payout.needed')}</Text>
+      <Button
+        testID="sales-add-bank-button"
+        label={t('payout.add')}
+        onPress={() => navigation.navigate('PayoutAccount')}
+      />
+    </Card>
   );
 }
 

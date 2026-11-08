@@ -14,7 +14,8 @@ import {
   demoAccount,
   type MockAccount,
 } from '../mock/users';
-import type { AuthService } from './types';
+import type {
+  PayoutAccount, AuthService } from './types';
 
 const USERS = 'users'; // id → MockAccount
 const SESSIONS = 'sessions'; // token → user id
@@ -70,6 +71,8 @@ const checkCode = (code: string) => {
   if (code.trim() !== MOCK_CODE)
     throw new ApiError('INVALID_CODE', 'Wrong or expired code', 422);
 };
+
+let mockPayout: PayoutAccount['account'] = null;
 
 export const mockAuthService: AuthService = {
   signUpWithEmail: async ({ name, email, password, code }) => {
@@ -222,6 +225,26 @@ export const mockAuthService: AuthService = {
   removePaymentCard: async () => {
     await mockLatency();
     return update({ card: undefined });
+  },
+
+  getPayoutAccount: async () => {
+    await mockLatency();
+    return { confirmWith: 'password', account: mockPayout };
+  },
+
+  savePayoutAccount: async ({ holderName, iban }) => {
+    await mockLatency();
+    mockPayout = { holderName, ibanLast4: iban.slice(-4) };
+    return { confirmWith: 'password', account: mockPayout };
+  },
+
+  sendPayoutCode: async () => {
+    await mockLatency();
+  },
+
+  exportMyData: async () => {
+    await mockLatency();
+    return { profile: currentAccount() && { id: currentAccount().id } };
   },
 
   deleteAccount: async () => {

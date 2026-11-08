@@ -12,6 +12,7 @@ import { StatusView } from '@/components/StatusView';
 import { Badge, Heading, Screen, Text } from '@/components/ui';
 import { useCatalogMeta } from '@/features/catalog/hooks/useCatalog';
 import { useFavoritesStore } from '@/features/favorites/store';
+import { WonAuctions } from '../WonAuctions';
 
 export function AuctionsScreen() {
   const { t } = useTranslation();
@@ -50,6 +51,8 @@ export function AuctionsScreen() {
       ) : isLoading || !categoryFilters ? (
         <StatusView status="loading" />
       ) : (
+        <>
+        <WonAuctions />
         <ListingBrowser
           scope="auctions"
           categories={categories}
@@ -58,6 +61,7 @@ export function AuctionsScreen() {
           searchable
           showCategories
         />
+        </>
       )}
     </Screen>
   );

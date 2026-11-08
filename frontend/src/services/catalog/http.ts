@@ -104,6 +104,8 @@ export const httpCatalogService: CatalogService = {
   },
   getMyListings: async () =>
     (await api.get<ItemDto[]>('/me/listings')).map(toItem),
+  getAuctionsWon: async () =>
+    (await api.get<ItemDto[]>('/me/auctions-won')).map(toItem),
   uploadListingPhoto: async photo =>
     (
       await api.post<{ url: string }>(

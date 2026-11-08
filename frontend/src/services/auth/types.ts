@@ -21,6 +21,19 @@ export type ResetPasswordInput = {
 };
 export type ProfilePatch = Partial<Pick<User, 'name' | 'cityId'>>;
 
+/** S3.7: the seller's bank account as the app sees it: never the whole IBAN. */
+export type PayoutAccount = {
+  /** How a change is confirmed: the password, or an emailed code (Google / Apple accounts). */
+  confirmWith: 'password' | 'code';
+  account: { holderName: string; ibanLast4: string; heldUntil?: string } | null;
+};
+export type PayoutAccountInput = {
+  holderName: string;
+  iban: string;
+  password?: string;
+  code?: string;
+};
+
 export interface AuthService {
   signUpWithEmail(input: EmailSignUp): Promise<Session>;
   logInWithEmail(input: EmailLogIn): Promise<Session>;
@@ -54,6 +67,13 @@ export interface AuthService {
    */
   savePaymentCard(cardToken: string): Promise<User>;
   removePaymentCard(): Promise<User>;
+  /** S3.7: where a seller's money goes. */
+  getPayoutAccount(): Promise<PayoutAccount>;
+  savePayoutAccount(input: PayoutAccountInput): Promise<PayoutAccount>;
+  /** Accounts with no password: email a code to confirm a change. */
+  sendPayoutCode(): Promise<void>;
+  /** S8.4: a copy of everything Sahla holds about this person. */
+  exportMyData(): Promise<unknown>;
   logOut(): Promise<void>;
   /** Delete the account and everything on it (App Store rule 5.1.1(v)). */
   deleteAccount(): Promise<void>;

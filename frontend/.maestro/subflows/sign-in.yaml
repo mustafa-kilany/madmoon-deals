@@ -11,5 +11,5 @@ appId: com.sahla
 - hideKeyboard
 - tapOn: "LOG IN"
 - extendedWaitUntil:
-    visible: "Profile & Settings" # signed in (Log Out may be below the fold)
-    timeout: 15000
+    visible: "(Profile & Settings|I accept)" # signed in; the terms prompt, when new, covers the page
+    timeout: 40000

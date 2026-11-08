@@ -126,6 +126,13 @@ export function useItemsByIds(ids: string[]) {
   return { ...result, items: result.data ?? [] };
 }
 
+export const useAuctionsWon = () =>
+  useQuery({
+    queryKey: ['auctions-won'],
+    queryFn: catalogService.getAuctionsWon,
+    enabled: !!useUser(),
+  });
+
 export const useMyListings = () =>
   useQuery({
     queryKey: queryKeys.myListings,

@@ -197,6 +197,18 @@ test('S3.2: anything that looks like a card number is refused, and never stored'
   assert.equal(await prisma.payment.count({ where: { orderId: order.body.id } }), 0);
 });
 
+test('a winner finds an unpaid win without any push; a paid or withdrawn one leaves the list', async () => {
+  const ended = new Date(Date.now() - 3_600_000);
+  await listing('money-found', { saleType: 'auction', auctionEndsAt: ended, auctionClosedAt: ended, auctionWinnerId: buyer.id, bidCount: 1, incrementFils: 1000 });
+  const ids = async (who: Person) => (await call('GET', '/me/auctions-won', who)).body.map((i: { id: string }) => i.id);
+  assert.ok((await ids(buyer)).includes('money-found'));
+  assert.ok(!(await ids(buyer2)).includes('money-found'));
+  assert.equal((await call('GET', '/listings?q=money-found')).body.items.length, 0, 'it’s gone from browsing, so this list is the only way');
+  const { id } = await paidOrder(api, buyer, 'money-found');
+  assert.ok(id);
+  assert.ok(!(await ids(buyer)).includes('money-found'), 'paid');
+});
+
 test('M10: an auction whose winner never pays can be withdrawn 48 hours after it ends, not before', async () => {
   const ended = new Date(Date.now() - 3_600_000);
   await listing('money-win', { saleType: 'auction', auctionEndsAt: ended, auctionClosedAt: ended, auctionWinnerId: buyer.id, bidCount: 1, incrementFils: 1000 });

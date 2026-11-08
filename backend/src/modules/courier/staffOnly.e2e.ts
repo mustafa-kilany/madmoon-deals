@@ -18,6 +18,7 @@ const tokens = { customer: '', courier: '' };
 /** [method, path]: buying, selling, chats, uploads, safety, account extras. */
 const CUSTOMER_ONLY: [string, string][] = [
   ['GET', '/me/listings'],
+  ['GET', '/me/auctions-won'],
   ['POST', '/listings'],
   ['PATCH', '/listings/any-id'],
   ['DELETE', '/listings/any-id'],

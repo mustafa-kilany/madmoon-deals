@@ -49,7 +49,7 @@ No item is ✅ until its own test exists. Each phase must then pass gates 1–3;
 | A7 | Store keys only touch their own store (S2.5) | ✅ |
 | A8 | No secret field in any answer, checked by a walker over real responses (S2.6) | ✅ |
 | A9 | Data retention rules + clean-up job (S8.3), matching the privacy policy | ✅ |
-| A10 | Download my data: `GET /me/export`, a button in the app (S8.4) | 🔨 |
+| A10 | Download my data: `GET /me/export`, a button in the app (S8.4) | ✅ |
 | A11 | Sanad consent enforced (S8.2), breach plan (S8.5), secrets register (S7.3) | ✅ |
 
 ## Phase 3 — Server and files
@@ -70,12 +70,12 @@ No item is ✅ until its own test exists. Each phase must then pass gates 1–3;
 
 | # | Item | Status |
 |---|---|---|
-| P1 | Release builds strip `console.*`; no test address, mock flag or secret in the bundle (S6.2–S6.4) | ⬜ |
-| P2 | PIN and card screens hidden from screenshots and the app switcher (S6.5) | ⬜ |
-| P3 | Push texts carry no PIN or address (S6.6); a push can't open someone else's order (S6.7) | ⬜ |
-| P4 | Only needed permissions in the merged release manifest (S6.9) | ⬜ |
-| P5 | Arabic app name, splash screen, screen-reader labels on main actions | ⬜ |
-| P6 | Payout account + download-my-data screens | ⬜ |
+| P1 | Release builds strip `console.*`; no test address, mock flag or secret in the bundle (S6.2–S6.4) | 🔨 |
+| P2 | PIN and card screens hidden from screenshots and the app switcher (S6.5) | ✅ |
+| P3 | Push texts carry no PIN or address (S6.6); a push can't open someone else's order (S6.7) | ✅ |
+| P4 | Only needed permissions in the merged release manifest (S6.9) | 🔨 |
+| P5 | Arabic app name, splash screen, screen-reader labels on main actions | ✅ |
+| P6 | Payout account + download-my-data screens | ✅ |
 
 ## Phase 5 — Prove it
 

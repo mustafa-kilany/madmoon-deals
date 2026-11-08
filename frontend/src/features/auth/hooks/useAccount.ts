@@ -1,7 +1,8 @@
 // Account actions as TanStack Query mutations. Screens call these; they talk
 // to authService and keep the session store in sync.
 
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Share } from 'react-native';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { config } from '@/config';
@@ -104,6 +105,31 @@ export const useSavePaymentCard = () =>
   useUserMutation(async (cardNumber: string) =>
     authService.savePaymentCard(await paymentProvider.tokenizeCard(cardNumber)),
   );
+
+const PAYOUT_KEY = ['payout-account'];
+
+/** S3.7: where the seller's money goes. Only for signed-in sellers. */
+export const usePayoutAccount = (enabled = true) =>
+  useQuery({ queryKey: PAYOUT_KEY, queryFn: authService.getPayoutAccount, enabled });
+
+export function useSavePayoutAccount() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: authService.savePayoutAccount,
+    onSuccess: saved => queryClient.setQueryData(PAYOUT_KEY, saved),
+  });
+}
+
+export const useSendPayoutCode = () => useMutation({ mutationFn: authService.sendPayoutCode });
+
+/** S8.4: a copy of the person's data, handed to the phone's share sheet. */
+export const useExportMyData = () =>
+  useMutation({
+    mutationFn: async () => {
+      const data = await authService.exportMyData();
+      await Share.share({ title: 'sahla-my-data.json', message: JSON.stringify(data, null, 2) });
+    },
+  });
 
 export const useRemovePaymentCard = () =>
   useUserMutation<void>(() => authService.removePaymentCard());

@@ -11,6 +11,7 @@ The app's HTTP service layer (`frontend/src/services/*/http.ts`) and API client 
 * **`DELETE /me`** also refuses (`OPEN_ORDERS`) with money still owed or in a live auction, and staff accounts (`FORBIDDEN`). It removes the files too.
 * **`GET /me/export`:** a copy of the person's data (5 a day).
 * **`GET /courier/deliveries`:** a delivered or failed job keeps names and areas only (no phones, addresses or notes).
+* **`GET /me/auctions-won`:** the auctions this person won and hasn't paid for (`Item[]`). Ended auctions leave every list and a push may never arrive.
 * **Seller's bank account:** `GET` / `PUT /me/payout-account`, `POST /me/payout-account/code` (see Phase 6).
 * **`POST /courier/confirm-delivery`** answers 422 until the order is marked picked up.
 * **`DELETE /listings/:id`:** an auction with bids can be withdrawn 48 hours after it ended, if the winner never paid.

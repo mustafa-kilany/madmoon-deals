@@ -14,6 +14,7 @@
     "db:restore-test": "tsx scripts/restore-test.ts",
     "check:attack": "tsx scripts/attack-check.ts",
     "check:secrets": "tsx scripts/secret-scan.ts",
+    "check:mutations": "tsx scripts/mutation-check.ts",
     "load-test": "tsx scripts/load-test.ts",
     "db:studio": "prisma studio",
     "postinstall": "prisma generate",

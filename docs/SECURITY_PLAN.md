@@ -149,14 +149,14 @@ coordinates stored.
 | # | Check | How |
 |---|---|---|
 | 🔴 S6.1 | Release keystore + Play App Signing (= S0.3). | See S0.3. |
-| ⬜ S6.2 | Release build talks only to `https://api.sahla.jo` (no `10.0.2.2`, no contract server, no `mock: true` services). | Decompile the release APK (`jadx`) and search `10.0.2.2`, `mock`; check `config.ts` at build time. |
-| ⬜ S6.3 | No secrets in the app bundle: only public ids (Google web client id, Firebase config). No Maps/Vision/Postmark keys. | `jadx` + grep `AIza`, `sk-`, `postmark` in the APK; only the restricted Firebase key should appear. |
-| ⬜ S6.4 | Logs: no tokens, PINs, emails or card digits in `console.log` in release (strip with babel `transform-remove-console`). | `adb logcat` while signing in / paying on a release build. |
-| ⬜ S6.5 | The delivery PIN and card screens hide from screenshots / the app switcher (`FLAG_SECURE` on those screens). | Take a screenshot on the PIN screen → blocked. |
-| ⬜ S6.6 | Push notifications don't carry private data (no PIN, no address) in the visible text. | Read `notify.ts` texts. |
-| ⬜ S6.7 | Deep links / push taps can't open another user's order (the server check in S2 is what matters). | Tap a crafted `order` push with someone else's id → "not found". |
+| 🔨 S6.2 | (source ✅, built APK to do) Release build talks only to `https://api.sahla.jo` (no `10.0.2.2`, no contract server, no `mock: true` services). | Decompile the release APK (`jadx`) and search `10.0.2.2`, `mock`; check `config.ts` at build time. |
+| 🔨 S6.3 | (source ✅, built APK to do) No secrets in the app bundle: only public ids (Google web client id, Firebase config). No Maps/Vision/Postmark keys. | `jadx` + grep `AIza`, `sk-`, `postmark` in the APK; only the restricted Firebase key should appear. |
+| ✅ S6.4 | Logs: no tokens, PINs, emails or card digits in `console.log` in release (strip with babel `transform-remove-console`). | `adb logcat` while signing in / paying on a release build. |
+| ✅ S6.5 | The delivery PIN and card screens hide from screenshots / the app switcher (`FLAG_SECURE` on those screens). | Take a screenshot on the PIN screen → blocked. |
+| ✅ S6.6 | Push notifications don't carry private data (no PIN, no address) in the visible text. | Read `notify.ts` texts. |
+| ✅ S6.7 | Deep links / push taps can't open another user's order (the server check in S2 is what matters). | Tap a crafted `order` push with someone else's id → "not found". |
 | ⬜ S6.8 | Optional later: certificate pinning, root/jailbreak detection, Play Integrity on sign-up and payment. Decide after launch based on fraud seen. | Decision note. |
-| ⬜ S6.9 | Permissions: only camera, photos, coarse+fine location (checkout), notifications. Nothing unused in the manifest. | Read the merged release manifest. |
+| 🔨 S6.9 | (our manifest ✅, merged release manifest to do) Permissions: only camera, photos, coarse+fine location (checkout), notifications. Nothing unused in the manifest. | Read the merged release manifest. |
 
 ## S7 — Server, database, hosting, secrets
 
@@ -258,6 +258,9 @@ Who: the owner decides; [ask the owner: a second person who can act if the owner
 
 ## Log
 Newest first. Each entry: what was done, the commit, how it was checked.
+- 2026-11-08: **The app (`INTERNAL_READINESS_PLAN.md` phase 4).** **S6.5 checked on the emulator:** `adb screencap` on the bank account screen gives a completely black image while the screen keeps working
+  (`ScreenSecurityModule.kt`; also the order with its PIN, the driver's PIN screen, checkout, and the profile's card field while typing). **S6.4:** release builds strip `console.*`. **S6.2, S6.3, S6.9 + accessibility:** `__tests__/appSecurity.test.ts` reads the source and manifest: release uses only `https://api.sahla.jo/v1`, no service on mock data, no secret key, only 4 permissions in our manifest, all 81 tappable elements are buttons to a screen reader and icon-only ones have labels.
+  **Still to check on a built release APK:** the merged manifest (libraries add permissions), and the bundle's contents. **S6.6:** push texts read: no PIN, address or chat text. **S6.7:** a push only opens a screen; the server's checks decide (S2.1). **Found while testing:** an auction winner had no way to find a win without the push: `GET /me/auctions-won`, shown on the Auctions tab and Profile.
 - 2026-11-08: **Server and files (`INTERNAL_READINESS_PLAN.md` phase 3).**
   * **Found by the new load test, the worst bug of this work:** `placeBid` asked for a second database connection while its transaction held one. **120 bids at once: all 120 answered 500, and the whole
     server stalled for 5 seconds**, for people only browsing too. Any busy auction would have taken Sahla down. Fixed in `negotiation/bids.ts`; `bidsLoad.e2e.ts` proves it (it failed 120/120 on the old code). The

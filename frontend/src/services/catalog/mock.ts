@@ -80,6 +80,10 @@ export const mockCatalogService: CatalogService = {
     const item = findItem(id);
     item.views = (item.views ?? 0) + 1;
   },
+  getAuctionsWon: async () => {
+    await mockLatency();
+    return [];
+  },
   getMyListings: async () => {
     await mockLatency();
     // New objects each time, like a real response: Query compares by

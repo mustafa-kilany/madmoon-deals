@@ -152,7 +152,8 @@
     "deleteConfirmBody": "Your profile, listings, chats and saved card will be deleted. This can't be undone.",
     "deleteConfirm": "Delete",
     "accountDeleted": "Your account was deleted.",
-    "mySales": "My sales"
+    "mySales": "My sales",
+    "exportData": "Download my data"
   },
   "errors": {
     "NETWORK": "No connection. Check your internet and try again.",
@@ -424,7 +425,8 @@
     "bidHistory": "Bid History",
     "noBidsYet": "No bids placed yet. Be the first to bid!",
     "won": "You won this auction! Pay to get it delivered.",
-    "ended": "This auction has ended."
+    "ended": "This auction has ended.",
+    "wonBanner": "You won this auction: pay within 48 hours"
   },
   "chats": {
     "title": "Messages & Offers",
@@ -623,5 +625,24 @@
     "updateTitle": "Our terms and privacy policy",
     "updateBody": "Please read and accept Sahla’s Terms and Conditions and Privacy Policy to keep using Sahla.",
     "accept": "I accept"
+  },
+  "payout": {
+    "title": "Bank account",
+    "why": "Sahla sends your money here by bank transfer after each delivery. Only the staff who send payments can see it.",
+    "needed": "Add your bank account so Sahla can send you the money for your sales.",
+    "add": "Add a bank account",
+    "change": "Change the bank account",
+    "changeWarning": "To protect you, nothing is sent to a new account for 24 hours.",
+    "holder": "Account holder’s name",
+    "iban": "IBAN",
+    "ibanInvalid": "Check it: a Jordanian IBAN starts with JO and has 30 characters",
+    "password": "Your password",
+    "wrongPassword": "Wrong password",
+    "sendCode": "Email me a code",
+    "codeSent": "Code sent: send another",
+    "code": "The code from your email",
+    "save": "Save",
+    "saved": "Bank account saved",
+    "held": "The account just changed: payments wait until {{date}}."
   }
 }

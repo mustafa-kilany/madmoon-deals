@@ -57,6 +57,18 @@ listingRoutes.post('/listings/:id/views', async (req, res) => {
   res.status(204).end();
 });
 
+// Auctions this person won and hasn't paid for. Ended auctions leave every list, and a push
+// may never arrive (notifications off), so this is how a winner finds their item in time.
+listingRoutes.get('/me/auctions-won', ...requireCustomer, async (req, res) => {
+  const rows = await prisma.listing.findMany({
+    where: { auctionWinnerId: currentUser(res.locals).id, status: 'active' },
+    orderBy: { auctionClosedAt: 'desc' },
+    include: itemInclude,
+    take: 50,
+  });
+  res.json(rows.map(row => toApiItem(row, req)));
+});
+
 // The seller's own listings, every status but deleted, newest first.
 listingRoutes.get('/me/listings', ...requireCustomer, async (req, res) => {
   const rows = await prisma.listing.findMany({

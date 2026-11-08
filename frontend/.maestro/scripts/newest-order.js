@@ -1,6 +1,6 @@
 // The buyer's newest paid order and its delivery PIN, as the buyer's app shows
 // them (GET /me/orders as ahmad@sahla.jo). Sets output.orderId and output.pin.
-const base = 'http://localhost:4000/v1';
+const base = (typeof API !== 'undefined' ? API : 'http://localhost:4000') + '/v1';
 const login = http.post(base + '/auth/login', {
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ email: 'ahmad@sahla.jo', password: 'sahla1234' }),

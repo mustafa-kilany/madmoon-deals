@@ -1,3 +1,7 @@
+import { useNavigation } from '@react-navigation/native';
+import { WonAuctions } from '@/features/auctions/WonAuctions';
+import { useSecureScreen } from '@/lib/secureScreen';
+import type { RootNavigation } from '@/navigation/types';
 // Profile & Settings tab (prototype Profile): avatar, verification status,
 // city, payment card, own listings, blocked users, log out, delete account.
 // Guests see a sign-in prompt.
@@ -34,6 +38,7 @@ import { colors } from '@/theme/colors';
 import {
   useChangeAvatar,
   useDeleteAccount,
+  useExportMyData,
   useLogOut,
   useRemovePaymentCard,
   useSavePaymentCard,
@@ -88,9 +93,13 @@ function SignedInProfile({ user }: { user: User }) {
   const removeCard = useRemovePaymentCard();
   const logOut = useLogOut();
   const deleteAccount = useDeleteAccount();
+  const exportData = useExportMyData();
   const { data: blockedUsers = [] } = useBlockedUsers();
   const unblock = useUnblockUser();
   const [cardNumber, setCardNumber] = useState('');
+  const navigation = useNavigation<RootNavigation>();
+  // S6.5: a card number being typed stays out of screenshots and the app switcher.
+  useSecureScreen(cardNumber.length > 0);
 
   const onError = (error: unknown) => toast.info(t(errorMessageKey(error)));
   const changePhoto = async () => {
@@ -130,6 +139,7 @@ function SignedInProfile({ user }: { user: User }) {
         contentContainerClassName="gap-6 p-5"
         keyboardShouldPersistTaps="handled"
       >
+        <WonAuctions />
         <View className="items-center gap-3">
           <View>
             <View className="h-24 w-24 overflow-hidden rounded-full border-4 border-brand-surface bg-brand-muted shadow-md">
@@ -316,6 +326,19 @@ function SignedInProfile({ user }: { user: User }) {
           )}
         </View>
 
+        <Button
+          variant="secondary"
+          testID="profile-bank-account"
+          label={t('payout.title')}
+          onPress={() => navigation.navigate('PayoutAccount')}
+        />
+        <Button
+          variant="secondary"
+          testID="profile-export"
+          label={t('profile.exportData')}
+          loading={exportData.isPending}
+          onPress={() => exportData.mutate(undefined, { onError })}
+        />
         <Button
           variant="secondary"
           label={t('profile.logOut')}

@@ -7,6 +7,8 @@ export type {
   AuthService,
   EmailLogIn,
   EmailSignUp,
+  PayoutAccount,
+  PayoutAccountInput,
   ProfilePatch,
 } from './types';
 

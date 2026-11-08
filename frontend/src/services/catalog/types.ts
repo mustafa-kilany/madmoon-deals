@@ -87,6 +87,8 @@ export interface CatalogService {
   recordView(id: string): Promise<void>;
   /** The signed-in user's own listings (Profile → My Listings). */
   getMyListings(): Promise<Item[]>;
+  /** Auctions the signed-in person won and hasn't paid for (a push may never arrive). */
+  getAuctionsWon(): Promise<Item[]>;
   /** Upload one listing photo to storage; returns its public URL. */
   uploadListingPhoto(photo: LocalPhoto): Promise<string>;
   /**

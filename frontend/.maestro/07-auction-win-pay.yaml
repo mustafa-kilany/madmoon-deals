@@ -1,0 +1,57 @@
+# Part 2: the auction ended and Ahmad led. No push is needed: the win is on the Auctions tab and on
+# Profile, and he pays the winning price.
+appId: com.sahla
+name: The winner finds the win and pays
+---
+- runFlow: subflows/launch.yaml
+- runFlow:
+    file: subflows/sign-in.yaml
+    env:
+      EMAIL: ahmad@sahla.jo
+      PASSWORD: sahla1234
+- runFlow: subflows/accept-terms.yaml
+
+# Signed in on the Profile tab: the win is at the top.
+- extendedWaitUntil:
+    visible:
+      id: "won-auction-fashion"
+    timeout: 15000
+- assertVisible: "You won this auction: pay within 48 hours"
+- tapOn:
+    id: "won-auction-fashion"
+- extendedWaitUntil:
+    visible: "You won this auction! Pay to get it delivered."
+    timeout: 10000
+- tapOn: "Pay Now"
+- runFlow:
+    when:
+      visible: "Deliver to where you are?"
+    commands:
+      - tapOn: "I'll type it myself"
+      - scrollUntilVisible:
+          element:
+            id: "delivery-phone"
+      - tapOn:
+          id: "delivery-phone"
+      - inputText: "0791234567"
+      - hideKeyboard
+      - scrollUntilVisible:
+          element:
+            id: "delivery-address"
+      - tapOn:
+          id: "delivery-address"
+      - inputText: "Mecca St, Building 12, 3rd floor"
+      - hideKeyboard
+- scrollUntilVisible:
+    element:
+      text: 'Pay \d.*'
+- tapOn: 'Pay \d.*'
+- extendedWaitUntil:
+    visible: "Track Order"
+    timeout: 20000
+- runScript:
+    file: scripts/check-order.js
+    env:
+      LISTING: auction-fashion
+      PRICE: "325000"
+      API: ${API}

@@ -2,7 +2,7 @@
 // driver. Runs on this PC against the local backend; needs ADMIN_2FA=off in
 // backend/.env (local development only). Input: output.orderId, or none = the
 // newest paid order of ahmad@sahla.jo without a driver (the dashboard's list).
-const base = 'http://localhost:4000/v1';
+const base = (typeof API !== 'undefined' ? API : 'http://localhost:4000') + '/v1';
 const jsonHeaders = { 'Content-Type': 'application/json' };
 const login = http.post(base + '/admin/auth/login', {
   headers: jsonHeaders,
