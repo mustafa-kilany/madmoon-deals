@@ -137,7 +137,7 @@ export function ResetPasswordScreen({
               </Pressable>
               {__DEV__ && (
                 <Text className="text-center text-xs text-brand-warmgray">
-                  {t('auth.demoCode')}
+                  Demo code: 123456
                 </Text>
               )}
             </>

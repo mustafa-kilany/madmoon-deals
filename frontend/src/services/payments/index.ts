@@ -13,6 +13,7 @@ const brandOf = (digits: string) =>
 export const paymentProvider = {
   /** Mock token "mock_<brand>_<last4>". */
   tokenizeCard: async (cardNumber: string): Promise<string> => {
+    if (!__DEV__) throw new Error('Card payments aren’t connected yet');
     const digits = cardNumber.replace(/\D/g, '');
     if (digits.length < 12) throw new Error('Card number too short');
     return `mock_${brandOf(digits)}_${digits.slice(-4)}`;

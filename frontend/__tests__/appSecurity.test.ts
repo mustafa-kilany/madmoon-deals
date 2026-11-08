@@ -37,6 +37,19 @@ test('S6.2 release builds use only the real API over https, and no service is on
     if (file !== 'src/config.ts') expect([file, /10\.0\.2\.2|localhost:\d/.test(text)]).toEqual([file, false]);
 });
 
+test('demo services can only load in a debug build', () => {
+  for (const name of ['auth', 'catalog', 'courier', 'negotiation', 'orders']) {
+    const index = readFileSync(`src/services/${name}/index.ts`, 'utf8');
+    expect([name, /import \{[^}]*\} from '\.\/mock'/.test(index)]).toEqual([name, false]);
+    expect([name, /__DEV__ && config\.mock\./.test(index)]).toEqual([name, true]);
+  }
+  // No screen or real service reaches into them either (reference data in services/mock is fine).
+  for (const { file, text } of files) {
+    if (file.includes('/mock') || file.endsWith('/index.ts')) continue;
+    expect([file, /from '[^']*\/(mock|marketplace|users)'/.test(text) && /services\//.test(file) === false]).toEqual([file, false]);
+  }
+});
+
 test('S6.4 release builds strip console.*; the app logs nothing outside __DEV__', () => {
   expect(readFileSync('babel.config.js', 'utf8')).toContain('transform-remove-console');
   for (const { file, text } of files)

@@ -314,14 +314,15 @@ export function EmailAuthScreen({ route }: RootScreenProps<'EmailAuth'>) {
                 }
               />
               {isSignUp && <TermsNote />}
-              {step === 'credentials' && !isSignUp && config.mock.auth && (
+              {/* Debug builds only, so these words aren't in a release at all. */}
+              {__DEV__ && step === 'credentials' && !isSignUp && config.mock.auth && (
                 <Text className="text-center text-xs text-brand-warmgray">
-                  {t('auth.demoHint')}
+                  Demo account: ahmad@sahla.jo / sahla1234
                 </Text>
               )}
-              {step === 'otp' && __DEV__ && (
+              {__DEV__ && step === 'otp' && (
                 <Text className="text-center text-xs text-brand-warmgray">
-                  {t('auth.demoCode')}
+                  Demo code: 123456
                 </Text>
               )}
             </View>

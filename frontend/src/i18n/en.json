@@ -96,7 +96,6 @@
     "otpCode": "Verification Code",
     "verifyAndSignIn": "VERIFY & SIGN IN",
     "resendOtp": "Resend Code",
-    "demoHint": "Demo account: ahmad@sahla.jo / sahla1234",
     "socialFailed": "{{provider}} sign-in didn’t work. Please try again.",
     "welcome": "Welcome, {{name}}!",
     "forgotPassword": "Forgot password?",
@@ -104,8 +103,7 @@
     "sendCode": "SEND CODE",
     "resetCodeSent": "If {{email}} has a Sahla account, a code is on its way.",
     "newPassword": "New password",
-    "resetAndSignIn": "SAVE & LOG IN",
-    "demoCode": "Demo code: 123456"
+    "resetAndSignIn": "SAVE & LOG IN"
   },
   "validation": {
     "nameRequired": "Enter your name.",

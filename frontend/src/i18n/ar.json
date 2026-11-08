@@ -96,7 +96,6 @@
     "otpCode": "رمز التحقق",
     "verifyAndSignIn": "التحقق وتسجيل الدخول",
     "resendOtp": "إعادة إرسال الرمز",
-    "demoHint": "حساب تجريبي: ahmad@sahla.jo / sahla1234",
     "socialFailed": "لم ينجح تسجيل الدخول عبر {{provider}}. حاول مجدداً.",
     "welcome": "أهلاً بك، {{name}}!",
     "forgotPassword": "نسيت كلمة المرور؟",
@@ -104,8 +103,7 @@
     "sendCode": "أرسل الرمز",
     "resetCodeSent": "إذا كان لـ {{email}} حساب في سهلة، فالرمز في طريقه إليك.",
     "newPassword": "كلمة المرور الجديدة",
-    "resetAndSignIn": "احفظ وسجّل الدخول",
-    "demoCode": "رمز التجربة: 123456"
+    "resetAndSignIn": "احفظ وسجّل الدخول"
   },
   "validation": {
     "nameRequired": "أدخل اسمك.",

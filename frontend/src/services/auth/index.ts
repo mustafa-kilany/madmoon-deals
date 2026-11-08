@@ -1,6 +1,5 @@
 import { config } from '@/config';
 import { httpAuthService } from './http';
-import { mockAuthService } from './mock';
 import type { AuthService } from './types';
 
 export type {
@@ -12,6 +11,9 @@ export type {
   ProfilePatch,
 } from './types';
 
-export const authService: AuthService = config.mock.auth
-  ? mockAuthService
-  : httpAuthService;
+// Debug builds only: in release __DEV__ is false, so the mock and its demo data aren't even bundled.
+export const authService: AuthService =
+  __DEV__ && config.mock.auth
+    ? // eslint-disable-next-line @typescript-eslint/no-require-imports
+      require('./mock').mockAuthService
+    : httpAuthService;
