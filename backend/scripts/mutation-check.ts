@@ -19,7 +19,7 @@ const MUTATIONS: Mutation[] = [
   const { count } = await prisma.order.updateMany({
     where: { id: orderId, courierStatus: 'to_pickup', status: 'escrow_held' },`, test: 'authz' },
   { name: 'an endpoint loses its log-in check', file: 'src/modules/orders/routes.ts', find: `orderRoutes.get('/me/orders', ...requireCustomer, async`, replace: `orderRoutes.get('/me/orders', async`, test: 'authz' },
-  { name: 'a customer token opens the dashboard', file: 'src/modules/auth/requireUser.ts', find: `const session = token ? await sessionForToken(token, 'admin') : undefined;`, replace: `const session = token ? ((await sessionForToken(token, 'admin')) ?? (await sessionForToken(token))) : undefined;`, test: 'authz' },
+  { name: 'an admin’s app token opens the dashboard (no second step)', file: 'src/modules/auth/requireUser.ts', find: `const session = token ? await sessionForToken(token, 'admin') : undefined;`, replace: `const session = token ? ((await sessionForToken(token, 'admin')) ?? (await sessionForToken(token))) : undefined;`, test: 'authz' },
   { name: 'a store key reaches other stores', file: 'src/modules/refurbished/service.ts', find: `if (caller.storeId !== req.storeId)`, replace: `if (false)`, test: 'authz' },
   { name: 'admin answers carry the PIN', file: 'src/modules/orders/admin.ts', find: `const { pin: _pin, ...rest } = toApiOrder(order, req) as ReturnType<typeof toApiOrder> & { pin?: string };
   return rest;`, replace: `return toApiOrder(order, req);`, test: 'money' },

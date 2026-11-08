@@ -10,7 +10,7 @@ import { after, before, test } from 'node:test';
 import { app } from '../app';
 import { prisma } from '../db';
 import { privateStorage } from './storage';
-import { cleanUp, DELIVERY, newListing, newPerson, paidOrder, startApi, type Person } from './testkit';
+import { cleanUp, DELIVERY, newListing, newPerson, paidOrder, PASSWORD, startApi, type Person } from './testkit';
 import { hashKey } from '../modules/refurbished/storeKeys';
 
 const api = startApi();
@@ -104,6 +104,12 @@ test('a forged, expired or wrong-kind token is the same as none', async () => {
   // A dashboard token opens nothing in the app, and an app token nothing in the dashboard.
   assert.equal((await call('GET', '/me', admin)).status, 401);
   assert.equal((await call('GET', '/admin/me', a)).status, 403);
+  // An admin's password alone (the app's log-in) gives an app token: it must not skip the dashboard's second step.
+  const appLogin = await call('POST', '/auth/login', null, { email: admin.email, password: PASSWORD });
+  assert.equal(appLogin.status, 200);
+  const adminAppToken = { token: appLogin.body.token as string };
+  assert.equal((await call('GET', '/admin/me', adminAppToken)).status, 403, 'an admin’s app token opened the dashboard');
+  assert.equal((await call('GET', '/admin/orders', adminAppToken)).status, 403);
   // Expired in the database, even with a valid signature.
   const session = await prisma.session.findFirstOrThrow({ where: { userId: b.id } });
   await prisma.session.update({ where: { id: session.id }, data: { expiresAt: new Date(Date.now() - 1000) } });
