@@ -7,6 +7,7 @@
 // time, a prompt offers to fill the area and street from the buyer's location
 // (they stay editable).
 
+import { useSecureScreen } from '@/lib/secureScreen';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -67,6 +68,7 @@ export function CheckoutScreen({
   navigation,
 }: RootScreenProps<'Checkout'>) {
   const { t } = useTranslation();
+  useSecureScreen();
   const lang = useLang();
   const localized = useLocalized();
   const user = useUser();

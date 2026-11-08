@@ -34,6 +34,8 @@ jest.mock('@/config', () => {
   const { config } = jest.requireActual('@/config');
   return { config: { ...config, mockLatencyMs: 0 } };
 });
+// Needs a navigator, which these screens don't have here. S6.5 is checked by the call below.
+jest.mock('@/lib/secureScreen', () => ({ useSecureScreen: jest.fn() }));
 jest.mock('@/services/orders', () => ({
   ordersService: jest.requireActual('@/services/orders/mock').mockOrdersService,
 }));

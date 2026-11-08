@@ -5,6 +5,7 @@
 // after five the order locks until Sahla support unlocks it. Can't finish →
 // "Delivery failed" with a reason (B15.4); the buyer's report at the door shows here.
 
+import { useSecureScreen } from '@/lib/secureScreen';
 import { useState } from 'react';
 import {
   Image,
@@ -54,6 +55,7 @@ export function DeliveryScreen({
 }: RootScreenProps<'Delivery'>) {
   const { orderId } = route.params;
   const { t } = useTranslation();
+  useSecureScreen();
   const localized = useLocalized();
   const { data: delivery, isLoading, isError, refetch } = useDelivery(orderId);
   const pickedUp = useMarkPickedUp();

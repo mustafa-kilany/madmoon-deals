@@ -1,11 +1,17 @@
 package com.sahla
 
+import android.os.Bundle
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
 import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint.fabricEnabled
 import com.facebook.react.defaults.DefaultReactActivityDelegate
 
 class MainActivity : ReactActivity() {
+
+  override fun onCreate(savedInstanceState: Bundle?) {
+    setTheme(R.style.AppTheme) // the splash is over: the normal theme (no logo behind the keyboard)
+    super.onCreate(savedInstanceState)
+  }
 
   /**
    * Returns the name of the main component registered from JavaScript. This is used to schedule

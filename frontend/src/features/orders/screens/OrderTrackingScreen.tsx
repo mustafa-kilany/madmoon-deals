@@ -5,6 +5,7 @@
 // picks it up the buyer can cancel; at the door they can report a problem with
 // the item instead of giving the PIN; a failed delivery shows why (B15.3–B15.4).
 
+import { useSecureScreen } from '@/lib/secureScreen';
 import { FlatList, Image, Linking, RefreshControl, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
@@ -47,6 +48,7 @@ const stepsDone = (order: Order) =>
 
 export function OrderTrackingScreen() {
   const { t } = useTranslation();
+  useSecureScreen();
   const {
     data: orders,
     isLoading,
