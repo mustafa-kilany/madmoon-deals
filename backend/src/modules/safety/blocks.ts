@@ -13,8 +13,12 @@ export async function blockedWith(userId: string) {
   return [...new Set(rows.map(r => (r.blockerId === userId ? r.blockedId : r.blockerId)))];
 }
 
-export async function isBlockedBetween(a: string, b: string) {
-  const block = await prisma.block.findFirst({
+/**
+ * `db`: inside a transaction, pass it. A second connection asked for while holding one is how
+ * many requests at once deadlock the connection pool (found by the load test).
+ */
+export async function isBlockedBetween(a: string, b: string, db: Prisma.TransactionClient = prisma) {
+  const block = await db.block.findFirst({
     where: { OR: [{ blockerId: a, blockedId: b }, { blockerId: b, blockedId: a }] },
     select: { blockerId: true },
   });
@@ -22,9 +26,9 @@ export async function isBlockedBetween(a: string, b: string) {
 }
 
 /** A suspended seller's listings are off sale (BACKEND_PLAN B8.5): no orders, offers or bids. */
-export async function sellerSuspended(sellerUserId: string | null) {
+export async function sellerSuspended(sellerUserId: string | null, db: Prisma.TransactionClient = prisma) {
   if (!sellerUserId) return false; // a brand store
-  const seller = await prisma.user.findUnique({ where: { id: sellerUserId }, select: { suspended: true } });
+  const seller = await db.user.findUnique({ where: { id: sellerUserId }, select: { suspended: true } });
   return seller?.suspended ?? false;
 }
 

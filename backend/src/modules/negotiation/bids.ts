@@ -1,5 +1,6 @@
 import { prisma } from '../../db';
 import { ApiError } from '../../lib/errors';
+import { logger } from '../../lib/logger';
 import { pushAuctionWon, pushOutbid } from '../notifications/notify';
 import { isBlockedBetween, sellerSuspended } from '../safety/blocks';
 import { bidInclude } from './shapes';
@@ -32,8 +33,8 @@ export async function placeBid(bidderId: string, listingId: string, amountFils: 
     if (
       listing.status !== 'active' ||
       listing.reportHidden ||
-      (await sellerSuspended(listing.sellerUserId)) ||
-      (listing.sellerUserId && (await isBlockedBetween(bidderId, listing.sellerUserId)))
+      (await sellerSuspended(listing.sellerUserId, tx)) ||
+      (listing.sellerUserId && (await isBlockedBetween(bidderId, listing.sellerUserId, tx)))
     )
       throw new ApiError(409, 'ITEM_UNAVAILABLE', 'This auction isn’t taking bids');
     const minimum = listing.priceFils + (listing.incrementFils ?? 0);
@@ -43,7 +44,8 @@ export async function placeBid(bidderId: string, listingId: string, amountFils: 
     await tx.listing.update({ where: { id: listingId }, data: { priceFils: amountFils, bidCount: { increment: 1 } } });
     const bid = await tx.bid.create({ data: { listingId, bidderId, amountFils }, include: bidInclude });
     return { bid, outbid: leader && leader.bidderId !== bidderId ? leader.bidderId : undefined };
-  });
+    // A popular auction queues on its row lock: wait in line rather than fail.
+  }, { maxWait: 10_000, timeout: 15_000 });
   if (outbid) pushOutbid(listingId, outbid);
   return bid;
 }
@@ -84,6 +86,6 @@ export async function closeEndedAuctions(now = new Date()) {
 /** Every minute while the server is up. Safe on several servers: each auction is closed once. */
 export function scheduleAuctionClosing() {
   setInterval(() => {
-    closeEndedAuctions().catch(error => console.error('Closing auctions failed', error));
+    closeEndedAuctions().catch(error => logger.error({ err: error }, 'Closing auctions failed'));
   }, 60_000);
 }
