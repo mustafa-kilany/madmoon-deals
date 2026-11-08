@@ -26,12 +26,14 @@ maestro test .maestro/02-buy-and-deliver.yaml      # one flow
 maestro studio                                     # point-and-click flow builder in the browser
 ```
 
+**Against the real backend, all of it in one go:** `npm run e2e:backend` (stop any other backend on port 4000 first; it uses its own `sahla_e2e_test` database). 05–08 cover offers and chat, an auction from bid to win, and the bank account. On a PC short of memory, close other programs: the emulator alone takes about 4 GB.
+
 The auction takes two parts with one step between them (an auction can't end sooner than an hour by itself):
 
 ```
-maestro test -e API=http://localhost:4001 .maestro/06-auction-bid.yaml
+maestro test -e API=http://localhost:4000 .maestro/06-auction-bid.yaml
 npx tsx scripts/e2e-end-auction.ts auction-fashion     # in backend/, with a *_test database
-maestro test -e API=http://localhost:4001 .maestro/07-auction-win-pay.yaml
+maestro test -e API=http://localhost:4000 .maestro/07-auction-win-pay.yaml
 ```
 
 Each failure leaves screenshots and the screen layout in `%USERPROFILE%\.maestro\tests\<date>`.

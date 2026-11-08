@@ -63,17 +63,17 @@ No item is ✅ until its own test exists. Each phase must then pass gates 1–3;
 | F5 | Error reporter with scrubbing, tested on a local fake Sentry; it stays off until there is a DSN (S0.10) | ✅ |
 | F6 | Clean shutdown, health check, Dockerfile, `migrate deploy` on release (B12.2) | ✅ |
 | F7 | Backup + restore scripts, restore really tested (B12.3, S7.7) | ✅ |
-| F8 | Dashboard security headers, tested in Chrome (S5.3, S5.2, S5.7) | ⬜ |
+| F8 | Dashboard security headers (built, `dist/_headers`; the Chrome test is T3) (S5.3, S5.2, S5.7) | 🔨 |
 | F9 | CI: secret scan, `npm audit`, CodeQL, Docker build (S7.9, S7.10) | ✅ |
 
 ## Phase 4 — The app
 
 | # | Item | Status |
 |---|---|---|
-| P1 | Release builds strip `console.*`; no test address, mock flag or secret in the bundle (S6.2–S6.4) | 🔨 |
+| P1 | Release builds strip `console.*`; no test address, mock flag or secret in the bundle (S6.2–S6.4) | ✅ |
 | P2 | PIN and card screens hidden from screenshots and the app switcher (S6.5) | ✅ |
 | P3 | Push texts carry no PIN or address (S6.6); a push can't open someone else's order (S6.7) | ✅ |
-| P4 | Only needed permissions in the merged release manifest (S6.9) | 🔨 |
+| P4 | Only needed permissions in the merged release manifest (S6.9) | ✅ |
 | P5 | Arabic app name, splash screen, screen-reader labels on main actions | 🔨 |
 | P6 | Payout account + download-my-data screens | 🔨 |
 
@@ -82,10 +82,10 @@ No item is ✅ until its own test exists. Each phase must then pass gates 1–3;
 | # | Item | Status |
 |---|---|---|
 | T1 | Attack script (G4) | ✅ |
-| T2 | Offers, chat, auction + won-auction checkout as Maestro flows (G5) | ⬜ |
-| T3 | Dashboard check of every page by admin type (G6) | ⬜ |
-| T4 | Load test, restore test, release APK inspection (G7) | ⬜ |
-| T5 | Three full runs in a row (G8); record results here and in `SECURITY_PLAN.md` | ⬜ |
+| T2 | Offers, chat, auction + won-auction checkout as Maestro flows (G5): written, 01–03 pass, 04–08 not finished | 🔨 |
+| T3 | Dashboard check of every page by admin type (G6): written, not run | 🔨 |
+| T4 | Load test, restore test, release APK inspection (G7) | ✅ |
+| T5 | Three full runs in a row (G8) of everything without the emulator; record results here and in `SECURITY_PLAN.md` | ✅ |
 
 ## Not in this plan (needs an outside account)
 
@@ -93,5 +93,28 @@ Domain `sahla.jo` · Postmark · payment provider (D2) · hosting (D4) · R2 buc
 MoDEE / Sanad · Play Console · Apple Developer · regenerating the Maps key and restricting the Firebase key.
 **The owner still has to:** create the upload key, give the real support email, and have a lawyer read the legal text.
 
-## Results
-_Filled in as phases finish._
+## Results (2026-11-08)
+
+### Passed
+
+| Gate | Result |
+|---|---|
+| G1 + G2, **three runs in a row** (G8) | Each time: backend 36 unit + 204 end-to-end (1 skipped: the SIGTERM test needs Linux), app 215, types clean, lint 0 errors, dashboard builds |
+| G3, tests that fail without the fix | The new bug tests were run on the old code first. `npm run check:mutations`: **39 protections broken on purpose, all caught.** The first pass missed 2, both real gaps in the tests, both fixed. |
+| G4, attack on a production-mode server | 17 615 checks, 8 460 junk requests across 119 routes, 109 reached past their guards: **0 problems** |
+| G7, load | 60 people on 2 000 listings: 520 requests a second, every p95 under 400 ms, 0 errors |
+| G7, backup drill | Encrypted, wrong key refused, 28 tables and 247 rows identical |
+| G7, release APK (`npm run check:apk`) | No keys, test addresses or demo code; not debuggable; no plain http; no unused dangerous permissions |
+| `check:secrets`, `npm audit` | 105 commits, no keys. Backend and dashboard 0 vulnerabilities; the app's are as in S7.9 |
+| Emulator | Flows 01, 02, 03 passed on the real backend. Screenshot protection confirmed (a black capture). |
+
+### Not finished: what hasn't been shown to work yet
+
+| What | Why | To finish |
+|---|---|---|
+| **Maestro 04–08** (T2): cancel and problems, offers and chat, auction bid and win, bank account | The PC ran out of memory during the run and the system stopped it. 08 got as far as saving the account; 05, 06, 07 have **never run**, so they may still need fixes. | `npm run e2e:backend` |
+| **Dashboard check** (T3, F8's proof): every page by admin type, the QR code under the security headers | Needs the same test backend. `check-pages.mjs` is written but **has never run**. | In `admin/`: `npm run build`, `npm run preview`, `npm run check:pages` |
+| Splash screen and Arabic app name (P5) | Built and in the APK, not yet looked at on a screen | Look, in the next emulator run |
+| Linux-only and CI: the SIGTERM test, gitleaks, CodeQL, Docker image build | Need the branch on GitHub; Docker isn't on this PC | Push the branch |
+| Real S3 bucket | Downloading MinIO was refused by this PC's permissions; a real bucket is an outside account anyway | `npm run check:storage` when R2 exists |
+

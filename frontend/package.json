@@ -10,6 +10,7 @@
     "test": "jest",
     "typecheck": "tsc --noEmit",
     "check:apk": "node scripts/check-release-apk.cjs",
+    "e2e:backend": "node .maestro/run-all.cjs",
     "contract-server": "node tools/contract-server/server.js",
     "e2e": "maestro test .maestro"
   },

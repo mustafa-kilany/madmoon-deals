@@ -7,6 +7,5 @@ export type { NegotiationService } from './types';
 // Debug builds only: in release __DEV__ is false, so the mock and its demo data aren't even bundled.
 export const negotiationService: NegotiationService =
   __DEV__ && config.mock.negotiation
-    ? // eslint-disable-next-line @typescript-eslint/no-require-imports
-      require('./mock').mockNegotiationService
+    ? require('./mock').mockNegotiationService
     : httpNegotiationService;
