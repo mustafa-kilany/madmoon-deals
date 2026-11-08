@@ -10,6 +10,7 @@ import { z } from 'zod';
 import { prisma } from '../../db';
 import type { Order, Prisma } from '../../generated/prisma/client';
 import { ApiError } from '../../lib/errors';
+import { logger } from '../../lib/logger';
 import {
   pushCancelled,
   pushDeliveryFailed,
@@ -41,38 +42,53 @@ export const itemIssueInput = withNote(ITEM_ISSUE_REASONS);
 const notFound = (id: string) => new ApiError(404, 'NOT_FOUND', `No order ${id}`);
 const reload = (id: string) => prisma.order.findUniqueOrThrow({ where: { id }, include: orderInclude });
 
-/** Money back through the provider (first, so a refusal changes nothing here). */
-async function refundPayment(orderId: string) {
-  const payment = await prisma.payment.findFirst({ where: { orderId, status: 'succeeded' } });
-  if (!payment) throw new ApiError(422, 'VALIDATION', 'This order has no payment to give back');
-  await provider().refund(payment.providerRef, payment.amountFils);
-  return payment;
-}
-
 /**
  * Ends a paid order with the money back: status refunded / cancelled, the
  * payment refunded, the listing on sale again (or withdrawn when the item
- * itself was the problem). `still` re-checks the order inside the transaction.
+ * itself was the problem). `still` re-checks the order under the lock.
+ *
+ * S3.4: the order's row stays locked while the provider is asked, so a second
+ * refund, a cancel or the courier's confirm-delivery at the same moment waits
+ * here and then finds the order already closed: the bank is asked once, and an
+ * order never ends both refunded and paid out. If the provider refuses, the
+ * transaction rolls back and nothing changes.
  */
 export async function giveMoneyBack(
-  order: Order,
+  order: Pick<Order, 'id'>,
   status: 'refunded' | 'cancelled',
   data: Partial<Order>,
-  { relist = true, still = {} as Record<string, unknown> } = {},
+  { relist = true, still = {} as Prisma.OrderWhereInput } = {},
 ) {
-  const payment = await refundPayment(order.id);
-  await prisma.$transaction(async tx => {
-    const { count } = await tx.order.updateMany({
-      where: { id: order.id, status: 'escrow_held', ...still },
-      data: { ...data, status, refundedAt: new Date() },
-    });
-    if (!count) throw new ApiError(422, 'VALIDATION', 'This order just changed');
-    await tx.payment.update({ where: { id: payment.id }, data: { status: 'refunded' } });
-    await tx.listing.updateMany({
-      where: { id: order.listingId, status: 'reserved' },
-      data: { status: relist ? 'active' : 'withdrawn' },
-    });
-  });
+  let asked: string | undefined;
+  try {
+    await prisma.$transaction(
+      async tx => {
+        await tx.$queryRaw`SELECT 1 FROM "Order" WHERE "id" = ${order.id} FOR UPDATE`;
+        const current = await tx.order.findFirst({
+          where: { id: order.id, status: 'escrow_held', ...still },
+          select: { listingId: true },
+        });
+        if (!current) throw new ApiError(422, 'VALIDATION', 'This order just changed');
+        const payment = await tx.payment.findFirst({ where: { orderId: order.id, status: 'succeeded' } });
+        if (!payment) throw new ApiError(422, 'VALIDATION', 'This order has no payment to give back');
+
+        await provider().refund(payment.providerRef, payment.amountFils);
+        asked = payment.providerRef;
+
+        await tx.order.update({ where: { id: order.id }, data: { ...data, status, refundedAt: new Date() } });
+        await tx.payment.update({ where: { id: payment.id }, data: { status: 'refunded' } });
+        await tx.listing.updateMany({
+          where: { id: current.listingId, status: 'reserved' },
+          data: { status: relist ? 'active' : 'withdrawn' },
+        });
+      },
+      { maxWait: 10_000, timeout: 30_000 },
+    );
+  } catch (error) {
+    // The money went back but the database couldn't record it: a person must look.
+    if (asked) logger.error({ orderId: order.id, providerRef: asked }, 'Refund sent but not recorded');
+    throw error;
+  }
 }
 
 /** POST /orders/:id/cancel (buyer): until the driver has picked it up. */

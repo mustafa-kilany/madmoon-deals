@@ -18,6 +18,9 @@ export async function confirmDelivery(courierId: string, orderId: string, pin: s
   if (order.status !== 'escrow_held') throw new ApiError(422, 'VALIDATION', `This order is ${order.status}, not waiting for delivery`);
   if (order.courierStatus === 'failed') throw new ApiError(422, 'VALIDATION', 'Marked as failed: Sahla’s team decides what happens next');
 
+  // The driver must have the item: a PIN alone (given early, or guessed) can't release the money.
+  if (order.courierStatus !== 'picked_up') throw new ApiError(422, 'VALIDATION', 'Mark it as picked up first');
+
   // The try is counted before the PIN is compared, so many guesses sent at once
   // still get only PIN_TRIES chances.
   const { count } = await prisma.order.updateMany({

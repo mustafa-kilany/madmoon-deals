@@ -1,19 +1,24 @@
-import { Router } from 'express';
+import { Router, type Request } from 'express';
 import { z } from 'zod';
 import { prisma } from '../../db';
 import { ApiError } from '../../lib/errors';
 import { adminDid } from '../admin/audit';
 import { currentUser, requireAdmin } from '../auth/requireUser';
 import { pushAssigned } from '../notifications/notify';
-import { provider } from './pay';
-import { resolveInput, resolveProblem } from './problems';
-import { orderInclude, toApiOrder } from './shapes';
+import { giveMoneyBack, resolveInput, resolveProblem } from './problems';
+import { orderInclude, toApiOrder, type OrderRow } from './shapes';
 import { allowed, can } from '../admin/permissions';
 
 // Support's order tools (BACKEND_PLAN B7.7), for the admin dashboard (B8.5).
 // No app endpoint: the buyer asks support when an item never arrives.
 
 export const adminOrderRoutes = Router();
+
+/** The order for the dashboard: never the delivery PIN (only the buyer sees it). */
+const forAdmin = (order: OrderRow, req: Request) => {
+  const { pin: _pin, ...rest } = toApiOrder(order, req) as ReturnType<typeof toApiOrder> & { pin?: string };
+  return rest;
+};
 
 const findOrder = async (id: string) => {
   const order = await prisma.order.findUnique({ where: { id }, include: { payments: { where: { status: 'succeeded' } } } });
@@ -28,22 +33,14 @@ const findOrder = async (id: string) => {
 export async function refundOrder(orderId: string) {
   const order = await findOrder(orderId);
   if (order.status !== 'escrow_held') throw new ApiError(422, 'VALIDATION', `Only paid, undelivered orders (this one is ${order.status})`);
-  const [payment] = order.payments;
-  // The provider first: if it refuses, nothing changes here and support can try again.
-  await provider().refund(payment.providerRef, payment.amountFils);
-  await prisma.$transaction(async tx => {
-    const { count } = await tx.order.updateMany({ where: { id: orderId, status: 'escrow_held' }, data: { status: 'refunded', refundedAt: new Date() } });
-    if (!count) throw new ApiError(422, 'VALIDATION', 'This order just changed');
-    await tx.payment.update({ where: { id: payment.id }, data: { status: 'refunded' } });
-    await tx.listing.updateMany({ where: { id: order.listingId, status: 'reserved' }, data: { status: 'active' } });
-  });
+  await giveMoneyBack(order, 'refunded', {});
   return prisma.order.findUniqueOrThrow({ where: { id: orderId }, include: orderInclude });
 }
 
 adminOrderRoutes.post('/admin/orders/:id/refund', ...can('refund'), async (req, res) => {
   const order = await refundOrder(req.params.id as string);
   await adminDid(req, res, 'order.refund', { type: 'order', id: order.id }, { totalFils: order.totalFils });
-  res.json(toApiOrder(order, req));
+  res.json(forAdmin(order, req));
 });
 
 /** After 5 wrong delivery PINs (the buyer confirmed it's really the courier at the door). */
@@ -52,7 +49,7 @@ adminOrderRoutes.post('/admin/orders/:id/unlock-pin', ...can('dispatch'), async 
   if (order.status !== 'escrow_held') throw new ApiError(422, 'VALIDATION', `This order is ${order.status}`);
   await prisma.order.update({ where: { id: order.id }, data: { pinAttempts: 0 } });
   await adminDid(req, res, 'order.unlock_pin', { type: 'order', id: order.id }, { pinAttempts: order.pinAttempts });
-  res.json(toApiOrder(await prisma.order.findUniqueOrThrow({ where: { id: order.id }, include: orderInclude }), req));
+  res.json(forAdmin(await prisma.order.findUniqueOrThrow({ where: { id: order.id }, include: orderInclude }), req));
 });
 
 /**
@@ -74,7 +71,7 @@ adminOrderRoutes.post('/admin/orders/:id/assign', ...can('dispatch'), async (req
   });
   pushAssigned(order.id);
   await adminDid(req, res, 'order.assign', { type: 'order', id: order.id }, { before: order.courierId, after: courierId });
-  res.json(toApiOrder(updated, req));
+  res.json(forAdmin(updated, req));
 });
 
 /**
@@ -92,5 +89,5 @@ adminOrderRoutes.post('/admin/orders/:id/resolve-problem', ...requireAdmin, asyn
     itemIssue: before.itemIssueReason && { reason: before.itemIssueReason, note: before.itemIssueNote },
     ...input,
   });
-  res.json(toApiOrder(after, req));
+  res.json(forAdmin(after, req));
 });

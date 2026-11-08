@@ -163,10 +163,17 @@ export async function updateListing(
   });
 }
 
-/** DELETE /listings/:id: withdrawn, never shown again (B4.2). Not once paid for, nor an auction with bids. */
+/** How long an auction's winner has to pay before the seller may take the item back. */
+export const UNPAID_WIN_MS = 48 * 3_600_000;
+
+/**
+ * DELETE /listings/:id: withdrawn, never shown again (B4.2). Not once paid for, nor an
+ * auction with bids, unless it ended over 48 hours ago and the winner never paid.
+ */
 export async function withdrawListing(sellerId: string, id: string) {
   const listing = await ownActiveListing(sellerId, id);
-  if (listing.saleType === 'auction' && listing.bidCount > 0)
-    throw invalid('An auction with bids can’t be withdrawn');
+  const unpaidWin = listing.auctionClosedAt && Date.now() - listing.auctionClosedAt.getTime() >= UNPAID_WIN_MS;
+  if (listing.saleType === 'auction' && listing.bidCount > 0 && !unpaidWin)
+    throw invalid(listing.auctionClosedAt ? 'The winner has 48 hours to pay: withdraw it after that' : 'An auction with bids can’t be withdrawn');
   await prisma.listing.update({ where: { id }, data: { status: 'withdrawn' } });
 }
