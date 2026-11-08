@@ -70,6 +70,38 @@ jobs:
       - run: npm run test:api
         working-directory: backend
 
+  # SECURITY_PLAN S7.9–S7.10: no secret in the code or its history, no known hole in what we ship.
+  security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # the whole history: a key deleted later is still leaked
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      # What runs on the server and in the browser must be clean. The app's list has
+      # known findings in build tools (S7.9): reported, not blocking.
+      - run: npm audit --omit=dev --audit-level=high
+        working-directory: backend
+      - run: npm audit --omit=dev --audit-level=high
+        working-directory: admin
+      - run: npm audit --omit=dev --audit-level=high
+        working-directory: frontend
+        continue-on-error: true
+
+  # The server's image builds (backend/docs/DEPLOY.md).
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -f backend/Dockerfile -t sahla-api .
+
   # The admin dashboard in admin/: type check and production build.
   admin:
     runs-on: ubuntu-latest

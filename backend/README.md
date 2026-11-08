@@ -37,6 +37,12 @@ Express 5 + TypeScript, PostgreSQL through Prisma. What's next: [`docs/BACKEND_P
 | `npm run db:migrate -- --name <change>` | After editing `prisma/schema.prisma`: update the database |
 | `npm run db:studio` | Browse and edit the data in your browser |
 | `npm run typecheck` | Check the TypeScript |
+| `npm run check:attack` | Attack a production-mode copy of the server (`SECURITY_PLAN` S9): forged tokens, injection, junk at every route |
+| `npm run load-test` | 60 people on 2 000 listings: speed and errors (`LOAD_USERS`, `LOAD_SECONDS`) |
+| `npm run check:secrets` | Look for keys in the code and the whole git history |
+| `npm run money:check` | Do our own money records add up? (After `db:seed`, old demo orders show as mismatches: only the seed does that) |
+| `npm run db:restore-test` | The backup drill (`docs/BACKUPS.md`) |
+| `npm run check:storage` | Real S3 / R2 bucket check (`docs/STORAGE.md`) |
 | `npm test` | Run the backend unit tests (`src/**/*.test.ts`) |
 | `npm run test:api` | End-to-end tests over HTTP (`src/**/*.e2e.ts`) on a separate `sahla_test` database |
 | `npm run db:seed` | Add the demo accounts (development only) |
