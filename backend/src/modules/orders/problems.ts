@@ -9,6 +9,7 @@ import {
 import { z } from 'zod';
 import { prisma } from '../../db';
 import type { Order, Prisma } from '../../generated/prisma/client';
+import { reportError } from '../../lib/errorReporter';
 import { ApiError } from '../../lib/errors';
 import { logger } from '../../lib/logger';
 import {
@@ -86,7 +87,10 @@ export async function giveMoneyBack(
     );
   } catch (error) {
     // The money went back but the database couldn't record it: a person must look.
-    if (asked) logger.error({ orderId: order.id, providerRef: asked }, 'Refund sent but not recorded');
+    if (asked) {
+      logger.error({ err: error, orderId: order.id, providerRef: asked }, 'Refund sent but not recorded');
+      void reportError(error, 'refund not recorded');
+    }
     throw error;
   }
 }

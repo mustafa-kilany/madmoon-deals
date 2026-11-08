@@ -33,7 +33,7 @@ const GOOD_2 = 'Zq9Xw2Ev7Rt4Yu1Io6Pa3Sd8Fg5Hj0Kl';
 /** Starts the settings check alone with these variables; its exit code and output. */
 function startWith(vars: Record<string, string>) {
   const r = spawnSync(process.execPath, ['--import', 'tsx', '-e', "import('./src/env.ts').then(() => console.log('started'))"], {
-    env: { ...process.env, NODE_ENV: 'production', JWT_SECRET: GOOD_1, ID_HASH_SECRET: GOOD_2, PUBLIC_URL: 'https://api.sahla.jo', RATE_LIMIT_MULTIPLIER: '1', DEV_EMAIL_CODE: '', MAIL_MODE: 'postmark', POSTMARK_SERVER_TOKEN: 'x', SANAD_MODE: 'off', PAYMENT_MODE: 'off', GEOCODER: 'off', ADMIN_2FA: 'on', ...vars },
+    env: { ...process.env, NODE_ENV: 'production', JWT_SECRET: GOOD_1, ID_HASH_SECRET: GOOD_2, PUBLIC_URL: 'https://api.sahla.jo', STORAGE: 's3', S3_ENDPOINT: 'https://s3.example.com', S3_ACCESS_KEY_ID: 'k', S3_SECRET_ACCESS_KEY: 's', S3_PUBLIC_BUCKET: 'pub', S3_PRIVATE_BUCKET: 'priv', FILES_PUBLIC_URL: 'https://files.sahla.jo', RATE_LIMIT_MULTIPLIER: '1', DEV_EMAIL_CODE: '', MAIL_MODE: 'postmark', POSTMARK_SERVER_TOKEN: 'x', SANAD_MODE: 'off', PAYMENT_MODE: 'off', GEOCODER: 'off', ADMIN_2FA: 'on', ...vars },
     encoding: 'utf8',
   });
   return { code: r.status, out: `${r.stdout}${r.stderr}` };
@@ -61,6 +61,30 @@ test('S1.1 production refuses weak or missing secrets', () => {
     assert.match(r.out, new RegExp(setting));
   }
   assert.match(startWith({}).out, /started/);
+});
+
+test('a blank line in the host’s settings means “not set”', () => {
+  assert.match(startWith({ SENTRY_DSN: '', ADMIN_ORIGIN: '' }).out, /started/);
+});
+
+test('S0.5 production needs cloud storage with a separate private bucket', () => {
+  assert.match(startWith({ STORAGE: 'local' }).out, /STORAGE=s3 is required/);
+  assert.match(startWith({ S3_SECRET_ACCESS_KEY: '' }).out, /S3_ENDPOINT/);
+  assert.match(startWith({ S3_PRIVATE_BUCKET: 'pub' }).out, /own private bucket/);
+  assert.match(startWith({ FILES_PUBLIC_URL: 'http://files.sahla.jo' }).out, /must be https/);
+});
+
+test('S5.2 the demo seed refuses to run in production', () => {
+  const r = spawnSync(process.execPath, ['--import', 'tsx', 'scripts/seed.ts'], {
+    env: {
+      ...process.env, NODE_ENV: 'production', JWT_SECRET: GOOD_1, ID_HASH_SECRET: GOOD_2, PUBLIC_URL: 'https://api.sahla.jo', STORAGE: 's3', S3_ENDPOINT: 'https://s3.example.com',
+      S3_ACCESS_KEY_ID: 'k', S3_SECRET_ACCESS_KEY: 's', S3_PUBLIC_BUCKET: 'pub', S3_PRIVATE_BUCKET: 'priv', FILES_PUBLIC_URL: 'https://files.sahla.jo', RATE_LIMIT_MULTIPLIER: '1', DEV_EMAIL_CODE: '',
+      MAIL_MODE: 'postmark', POSTMARK_SERVER_TOKEN: 'x', SANAD_MODE: 'off', PAYMENT_MODE: 'off', GEOCODER: 'off', ADMIN_2FA: 'on',
+    },
+    encoding: 'utf8',
+  });
+  assert.equal(r.status, 1);
+  assert.match(`${r.stdout}${r.stderr}`, /Refusing/);
 });
 
 test('S0.8 CORS: only the dashboard origin, only on /v1/admin', async () => {

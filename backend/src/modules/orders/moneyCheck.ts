@@ -1,4 +1,5 @@
 import { prisma } from '../../db';
+import { reportError } from '../../lib/errorReporter';
 import { daily } from '../../lib/jobs';
 import { logger } from '../../lib/logger';
 
@@ -68,7 +69,10 @@ export async function moneyTotals() {
 export function scheduleMoneyCheck() {
   daily('money-check', 6, async () => {
     const problems = await findMoneyProblems();
-    if (problems.length) logger.error({ problems: problems.slice(0, 50), count: problems.length }, 'Money check: records don’t add up');
+    if (problems.length) {
+      logger.error({ problems: problems.slice(0, 50), count: problems.length }, 'Money check: records don’t add up');
+      void reportError(new Error(`Money check: ${problems.length} problems (${[...new Set(problems.map(p => p.kind))].join(', ')})`), 'job money-check');
+    }
     else logger.info('Money check: all records add up');
   });
 }

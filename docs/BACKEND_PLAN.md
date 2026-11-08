@@ -239,14 +239,14 @@ Tasks:
   app screen and database are ready since B3.5); register the callback URL with MoDEE; set `ID_HASH_SECRET`.
 
 ## B12 — Production and launch ⬜ (D4)
-- 🔨 **B12.1** Production settings: ✅ `TRUST_PROXY`, security headers (`helmet`), request size limits,
+- ✅ **B12.1** Production settings: `TRUST_PROXY`, security headers (`helmet`), request size limits,
   structured logs (`pino`: method, path, status, time; never query strings, headers or bodies, so no
-  tokens, passwords or coordinates); ⬜ error tracking (Sentry, needs an account).
-- ⬜ **B12.2** Deploy: API + managed PostgreSQL, `prisma migrate deploy` on release, `api.sahla.jo` over HTTPS.
-- ⬜ **B12.3** Daily database backups + a tested restore.
+  tokens, passwords or coordinates; errors scrubbed); error reports (`lib/errorReporter.ts`, on with a `SENTRY_DSN`).
+- 🔨 **B12.2** Deploy: API + managed PostgreSQL, `prisma migrate deploy` on release, `api.sahla.jo` over HTTPS. ✅ `backend/Dockerfile`, `docs/DEPLOY.md`, clean shutdown, health check. ⏸ the host (D4).
+- 🔨 **B12.3** Daily database backups + a tested restore. ✅ `npm run db:backup`, `db:restore`, `db:restore-test`, `docs/BACKUPS.md`; the drill passed. ⏸ the host's daily schedule.
 - ⬜ **B12.4** Monitoring: uptime check on `/v1/health`, alerts on errors and slow requests.
-- ⬜ **B12.5** Load test (search, auction polling) before launch.
-- ⬜ **B12.6** Privacy policy + data deletion rules (ID photos, coordinates, deleted accounts).
+- ✅ **B12.5** Load test: `npm run load-test` (60 people, 2 000 listings, browse + search + auctions + bids): 393 requests a second, every p95 under 500 ms. It found the pool deadlock in bidding, now fixed.
+- ✅ **B12.6** Privacy policy + data deletion rules: `privacy/retention.ts`, `auth/deleteAccount.ts`, `GET /me/export`.
 - ⬜ **B12.7** App release builds use `https://api.sahla.jo/v1`; contract server kept for app tests only.
 
 ## B13 — Imported refurbished stock (Sahla as the seller) ⬜ (D8; see `REFURBISHED_SOURCING.md`)
@@ -336,6 +336,7 @@ item, logged in `SECURITY_PLAN.md`.
 
 ## Log
 Short notes on what changed, newest first.
+- 2026-11-08: everything that needs no third-party account, in `INTERNAL_READINESS_PLAN.md`: money and account fixes, seller's bank account, storage, deploy, backups, tests.
 - 2026-11-07: owner's decisions → B15 (delivery problems with reason lists, buyer cancels before pickup, support
   email + chat, admin types with an owner, edit listings, push to the seller when paid, legal pages). Not going live:
   testing on fake items. Security plan executed item by item (`SECURITY_PLAN.md`).

@@ -1,6 +1,7 @@
 import { prisma } from '../../db';
 import { Prisma, type User } from '../../generated/prisma/client';
 import { ApiError } from '../../lib/errors';
+import { storedPath } from '../../lib/publicUrl';
 import { findType } from '../../reference';
 import { itemInclude } from '../catalog/apiItem';
 import { searchTextFor } from '../catalog/searchText';
@@ -15,7 +16,7 @@ const invalid = (message: string) => new ApiError(422, 'VALIDATION', message);
  * listing uses yet.
  */
 async function ownPhotos(userId: string, urls: string[]) {
-  const paths = urls.map(url => new URL(url).pathname);
+  const paths = urls.map(storedPath);
   if (new Set(paths).size !== paths.length) throw invalid('imageUrls: the same photo twice');
   const uploads = await prisma.upload.findMany({
     where: { url: { in: paths }, userId, kind: 'listing', usedAt: null },
@@ -106,7 +107,7 @@ async function ownActiveListing(sellerId: string, id: string) {
 }
 
 /** Paths of the photos in a request (stored as /files/…, sent back as full URLs). */
-const pathsOf = (urls: string[]) => urls.map(url => new URL(url).pathname);
+const pathsOf = (urls: string[]) => urls.map(storedPath);
 
 /**
  * B15.2: the edited photo list. Photos already on the listing stay; new ones must be

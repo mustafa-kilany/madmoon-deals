@@ -1,5 +1,6 @@
 import type { ErrorRequestHandler, RequestHandler } from 'express';
 import { ZodError } from 'zod';
+import { reportError, routeOf } from './errorReporter';
 import { logger } from './logger';
 
 // Error codes the app understands (docs/API.md → Error Codes Standard).
@@ -35,7 +36,35 @@ export const notFound: RequestHandler = req => {
   throw new ApiError(404, 'NOT_FOUND', `No endpoint ${req.method} ${req.path}`);
 };
 
-export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
+/**
+ * F3: text with a NUL byte can't be stored by PostgreSQL. Refused here, for the JSON
+ * body, the query string and the path, instead of surfacing as a 500 in every route.
+ */
+function hasNul(body: unknown) {
+  // A loop, not recursion: a body of 30 000 nested brackets must not overflow the stack.
+  const waiting = [body];
+  while (waiting.length) {
+    const value = waiting.pop();
+    if (typeof value === 'string') {
+      if (value.includes('\u0000')) return true;
+    } else if (Array.isArray(value)) {
+      waiting.push(...value);
+    } else if (value && typeof value === 'object') {
+      for (const [key, child] of Object.entries(value)) {
+        if (key.includes('\u0000')) return true;
+        waiting.push(child);
+      }
+    }
+  }
+  return false;
+}
+
+export const refuseNulBytes: RequestHandler = (req, _res, next) => {
+  if (/%00/.test(req.originalUrl) || hasNul(req.body)) throw new ApiError(422, 'VALIDATION', 'The text has characters that aren’t allowed');
+  next();
+};
+
+export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
   let error: ApiError;
   if (err instanceof ApiError) {
     error = err;
@@ -48,8 +77,12 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   } else if (err?.name === 'MulterError') {
     // Uploads: too big, a second file, or an unexpected field name.
     error = new ApiError(err.code === 'LIMIT_FILE_SIZE' ? 413 : 422, 'VALIDATION', `Upload: ${err.message}`);
+  } else if (err instanceof URIError || (typeof err?.status === 'number' && err.status >= 400 && err.status < 500)) {
+    // A broken address (%E0%A4) or body the libraries refused: the caller's mistake, not ours.
+    error = new ApiError(err?.status === 413 ? 413 : 400, 'VALIDATION', 'Bad request');
   } else {
     logger.error({ err }, 'Unhandled error');
+    void reportError(err, routeOf(req));
     error = new ApiError(500, 'INTERNAL', 'Something went wrong');
   }
   res.status(error.status).json({ error: { code: error.code, message: error.message } });

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { logger } from '../../lib/logger';
 import { rateLimit } from 'express-rate-limit';
 import { z } from 'zod';
 import { currentUser, requireCustomer } from '../auth/requireUser';
@@ -34,7 +35,7 @@ geocodeRoutes.get('/geocode/reverse', ...requireCustomer, perUser, async (req, r
       address = await maps.street({ lat, lng }, lang);
     } catch (error) {
       // Never the coordinates in the log. The buyer still gets the area.
-      console.warn('Reverse geocoding failed:', error instanceof Error ? error.message : error);
+      logger.warn({ err: error }, 'Reverse geocoding failed');
     }
   }
   res.set('Cache-Control', 'private, no-store').json({ address });

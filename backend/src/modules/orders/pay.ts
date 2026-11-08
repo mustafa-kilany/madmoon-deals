@@ -1,7 +1,9 @@
 import { randomInt } from 'node:crypto';
 import { prisma } from '../../db';
 import type { Payment } from '../../generated/prisma/client';
+import { reportError } from '../../lib/errorReporter';
 import { ApiError } from '../../lib/errors';
+import { logger } from '../../lib/logger';
 import { paymentProvider, type ChargeResult, type PaymentProvider } from '../payments/provider';
 import { pushSold } from '../notifications/notify';
 import { orderInclude } from './shapes';
@@ -50,7 +52,8 @@ async function settle(payment: Payment, result: ChargeResult): Promise<Outcome> 
     await tx.listing.update({ where: { id: order.listingId }, data: { status: 'reserved' } });
     await tx.payment.update({ where: { id: payment.id }, data: { status: 'succeeded', paymentUrl: null, providerData: result.data } });
     return 'paid' as const;
-  });
+    // The money is already taken: this must wait its turn, never give up.
+  }, { maxWait: 15_000, timeout: 20_000 });
   if (outcome === 'paid') pushSold(payment.orderId);
   if (outcome === 'settled_paid') return 'paid';
   if (outcome === 'settled_refunded') return 'sold';
@@ -59,7 +62,8 @@ async function settle(payment: Payment, result: ChargeResult): Promise<Outcome> 
       await provider().refund(payment.providerRef, payment.amountFils);
     } catch (error) {
       // Marked refunded but the money is still taken: an admin refunds it by hand.
-      console.error(`Refund failed for payment ${payment.providerRef} (order ${payment.orderId})`, error);
+      logger.error({ err: error, orderId: payment.orderId, providerRef: payment.providerRef }, 'Refund failed: an admin must refund this by hand');
+      void reportError(error, 'late payment refund');
       throw error;
     }
   }

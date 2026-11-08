@@ -4,13 +4,18 @@
 // same PostgreSQL such as pg-boss, behind these same functions.
 
 import { env } from '../env';
+import { reportError } from './errorReporter';
+import { logger } from './logger';
 
 const waiting = new Map<string, { timer?: ReturnType<typeof setTimeout>; run: () => Promise<unknown> }>();
 const running = new Set<Promise<unknown>>();
 
 function start(key: string, job: () => Promise<unknown>) {
   const run = job()
-    .catch(error => console.error(`Job ${key} failed`, error))
+    .catch(error => {
+      logger.error({ err: error, job: key.split(':')[0] }, 'Job failed');
+      void reportError(error, `job ${key.split(':')[0]}`);
+    })
     .finally(() => running.delete(run));
   running.add(run);
 }

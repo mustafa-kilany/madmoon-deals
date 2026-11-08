@@ -82,6 +82,11 @@ export function validateImportRow(
   const fail = (field: ImportRowError['field'], message: string) =>
     errors.push({ row: index + 1, sku: row.sku || undefined, field, message });
 
+  // S4.5: a cell starting like a formula could run when someone opens an export in Excel.
+  for (const field of ['sku', 'titleEn', 'titleAr', 'brand', 'model', 'description'] as const)
+    if (typeof row[field] === 'string' && /^[=+\-@\t\r]/.test(row[field] as string))
+      fail(field, 'Can’t start with = + - @ (that would be a spreadsheet formula)');
+
   if (!text(row.sku, 64)) fail('sku', 'Required, up to 64 characters');
   if (!text(row.titleEn, 120))
     fail('titleEn', 'Required, up to 120 characters');

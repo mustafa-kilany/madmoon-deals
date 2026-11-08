@@ -35,10 +35,10 @@ export function googleVision(apiKey: string): OcrProvider {
     name: 'google-vision',
     async read(image) {
       const response = await fetch(
-        `https://vision.googleapis.com/v1/images:annotate?key=${encodeURIComponent(apiKey)}`,
+        'https://vision.googleapis.com/v1/images:annotate',
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': apiKey },
           body: JSON.stringify({
             requests: [
               {

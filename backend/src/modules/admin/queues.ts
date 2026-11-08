@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { prisma } from '../../db';
 import { ApiError } from '../../lib/errors';
 import { publicUrl } from '../../lib/publicUrl';
-import { privateFilePath } from '../../lib/storage';
+import { privateStorage } from '../../lib/storage';
 import { currentUser } from '../auth/requireUser';
 import { coverUrl } from '../catalog/apiItem';
 import { ADMIN_REJECTED } from '../certificates/service';
@@ -261,12 +261,9 @@ adminQueueRoutes.get('/admin/certificates', ...can('certificates'), async (req, 
 /** The original photo (IMEI / serial readable): admins only, never cached by the browser. */
 adminQueueRoutes.get('/admin/certificates/:id/photo', ...can('certificates'), async (req, res) => {
   const certificate = await prisma.testCertificate.findUnique({ where: { id: req.params.id as string }, select: { photoUrl: true } });
-  const file = certificate && privateFilePath(certificate.photoUrl);
-  if (!file) throw new ApiError(404, 'NOT_FOUND', 'No such certificate photo');
-  res.set('Cache-Control', 'private, no-store');
-  res.sendFile(file, error => {
-    if (error && !res.headersSent) res.status(404).json({ error: { code: 'NOT_FOUND', message: 'The photo file is missing' } });
-  });
+  const photo = certificate?.photoUrl ? await privateStorage.read(certificate.photoUrl) : undefined;
+  if (!photo) throw new ApiError(404, 'NOT_FOUND', 'No such certificate photo');
+  res.set('Cache-Control', 'private, no-store').type('jpeg').send(photo);
 });
 
 async function uncheckedCertificate(id: string) {

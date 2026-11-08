@@ -1,7 +1,8 @@
 import express from 'express';
+import { ipKeyGenerator, rateLimit } from 'express-rate-limit';
 import helmet from 'helmet';
 import { prisma } from './db';
-import { errorHandler, notFound } from './lib/errors';
+import { errorHandler, notFound, refuseNulBytes } from './lib/errors';
 import { requestLogger } from './lib/logger';
 import { adminAdminsRoutes } from './modules/admin/admins';
 import { adminAnalyticsRoutes } from './modules/admin/analytics';
@@ -64,14 +65,28 @@ app.use('/v1/admin', (req, res, next) => {
 
 // Files this server hosts (moves to a CDN with photo storage, BACKEND_PLAN B3).
 app.use('/static/categories', express.static(categoryImageDir, { maxAge: '7d' }));
-// Uploaded photos (development; production: cloud storage, D1). Names are random.
-app.use('/files', express.static(uploadDir, { maxAge: '30d', immutable: true }));
+// Uploaded photos, when they are on this server's disk (development). Names are random. Production: the public bucket.
+if (env.STORAGE === 'local') app.use('/files', express.static(uploadDir, { maxAge: '30d', immutable: true }));
 if (env.NODE_ENV !== 'production')
   app.use('/static/certificates', express.static(demoCertificateDir, { maxAge: '7d' }));
 
 // Imports send up to 1000 rows; every other endpoint gets small JSON bodies.
 app.use('/v1/admin/refurbished', express.json({ limit: '5mb' }));
 app.use(express.json({ limit: '64kb' }));
+app.use(refuseNulBytes);
+// F3: a fence for floods, far above any person (a shared mobile-carrier address carries many people).
+app.use(
+  '/v1',
+  rateLimit({
+    windowMs: 60_000,
+    limit: 3000 * env.RATE_LIMIT_MULTIPLIER,
+    standardHeaders: false,
+    legacyHeaders: false,
+    skip: req => req.path === '/health',
+    keyGenerator: req => ipKeyGenerator(req.ip ?? ''),
+    handler: (_req, res) => void res.status(429).json({ error: { code: 'RATE_LIMITED', message: 'Too many requests: wait a minute' } }),
+  }),
+);
 
 const v1 = express.Router();
 

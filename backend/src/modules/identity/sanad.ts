@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { prisma } from '../../db';
+import { logger } from '../../lib/logger';
 import { ApiError } from '../../lib/errors';
 import { keyedHash } from '../../lib/hash';
 import { idProvider } from './provider';
@@ -57,7 +58,7 @@ export async function finishSanad(
   try {
     identity = await provider.exchange(answer.code, callbackUrl);
   } catch (error) {
-    console.error('Sanad exchange failed', error);
+    logger.error({ err: error }, 'Sanad exchange failed');
     return reject('failed');
   }
   const idHash = nationalIdHash(identity.nationalId);

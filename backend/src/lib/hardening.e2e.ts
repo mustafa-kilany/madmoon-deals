@@ -81,3 +81,28 @@ test('S4.3 an SVG named .jpg is not an image we take', async () => {
   const r = await upload(svg, 'cat.jpg', 'image/jpeg');
   assert.equal(r.status, 422);
 });
+
+test('F3 broken input is a 4xx, never a 500', async () => {
+  const send = (path: string, init?: RequestInit) => fetch(base + path, init);
+  const json = (method: string, body: unknown) => ({ method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  for (const [path, init] of [
+    ['/listings/%00', undefined],
+    ['/listings/%E0%A4%A', undefined],
+    ['/listings?q=%00', undefined],
+    ['/auth/login', json('POST', { email: 'a@b.co', password: 'pass\u0000word' })],
+    ['/auth/login', json('POST', { 'em\u0000ail': 'x' })],
+    ['/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{not json' }],
+    ['/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: `${'['.repeat(30_000)}${']'.repeat(30_000)}` }],
+    ['/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: `${'{"a":'.repeat(10_000)}1${'}'.repeat(10_000)}` }],
+    ['/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'x'.repeat(100_000) }) }],
+  ] as [string, RequestInit | undefined][]) {
+    const r = await send(path, init);
+    assert.ok(r.status >= 400 && r.status < 500, `${path} → ${r.status}`);
+    assert.ok(!(await r.text()).includes('stack'), path);
+  }
+});
+
+test('a broken query string is harmless', async () => {
+  const r = await fetch(`${base}/listings?q=%E0%A4%A`);
+  assert.ok(r.status < 500, String(r.status));
+});

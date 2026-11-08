@@ -56,15 +56,15 @@ No item is ✅ until its own test exists. Each phase must then pass gates 1–3;
 
 | # | Item | Status |
 |---|---|---|
-| F1 | S3-compatible storage (R2 / S3) with public + private buckets, tested on a real local S3 server (S0.5) | ⬜ |
-| F2 | Photo headers (S4.4), CSV formula injection (S4.5) | ⬜ |
-| F3 | Overall limit per IP; null bytes and broken URLs are 4xx, never 500 (fuzz) | ⬜ |
-| F4 | Errors: no stack or SQL to clients, no personal data in logs (S7.6, S7.8); outgoing calls have timeouts (S7.5) | ⬜ |
-| F5 | Error reporter with scrubbing, tested on a local fake Sentry; it stays off until there is a DSN (S0.10) | ⬜ |
-| F6 | Clean shutdown, health check, Dockerfile, `migrate deploy` on release (B12.2) | ⬜ |
-| F7 | Backup + restore scripts, restore really tested (B12.3, S7.7) | ⬜ |
+| F1 | S3-compatible storage (R2 / S3) with public + private buckets, tested with an independent signature check; `npm run check:storage` for the real bucket (S0.5) | ✅ |
+| F2 | Photo headers (S4.4), CSV formula injection (S4.5) | ✅ |
+| F3 | Overall limit per IP; null bytes and broken URLs are 4xx, never 500 (fuzz) | ✅ |
+| F4 | Errors: no stack or SQL to clients, no personal data in logs (S7.6, S7.8); outgoing calls have timeouts (S7.5) | ✅ |
+| F5 | Error reporter with scrubbing, tested on a local fake Sentry; it stays off until there is a DSN (S0.10) | ✅ |
+| F6 | Clean shutdown, health check, Dockerfile, `migrate deploy` on release (B12.2) | ✅ |
+| F7 | Backup + restore scripts, restore really tested (B12.3, S7.7) | ✅ |
 | F8 | Dashboard security headers, tested in Chrome (S5.3, S5.2, S5.7) | ⬜ |
-| F9 | CI: secret scan, `npm audit`, CodeQL, Docker build (S7.9, S7.10) | ⬜ |
+| F9 | CI: secret scan, `npm audit`, CodeQL, Docker build (S7.9, S7.10) | ✅ |
 
 ## Phase 4 — The app
 
@@ -81,7 +81,7 @@ No item is ✅ until its own test exists. Each phase must then pass gates 1–3;
 
 | # | Item | Status |
 |---|---|---|
-| T1 | Attack script (G4) | ⬜ |
+| T1 | Attack script (G4) | ✅ |
 | T2 | Offers, chat, auction + won-auction checkout as Maestro flows (G5) | ⬜ |
 | T3 | Dashboard check of every page by admin type (G6) | ⬜ |
 | T4 | Load test, restore test, release APK inspection (G7) | ⬜ |

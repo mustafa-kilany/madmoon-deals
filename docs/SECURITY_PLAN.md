@@ -43,12 +43,12 @@ courier or seller, someone who steals a phone or an admin's laptop, a leaked key
 | S0.2 | ✅ | **No rate limit on endpoints that cost money or spam people**: `POST /test-certificates` (Google Vision, paid per page), `POST /uploads/listing-photo`, `POST /me/avatar`, `POST /chats/:id/messages`, `POST /listings/:id/offers`, `POST /listings/:id/bids`, `POST /reports`, `POST /listings`, `POST /orders`. Only log-in/sign-up, the dashboard log-in and `/geocode/reverse` have limits today. | One shared limiter helper with a budget per endpoint (e.g. certificates 10/day, uploads 60/hour, messages 30/min, reports 20/day). | e2e per endpoint: over the budget → 429. |
 | S0.3 | 🔨 code ✅, key ⏸ owner | **Android release is signed with the debug keystore** (`frontend/android/app/build.gradle`, `release { signingConfig signingConfigs.debug }`). Anyone has that key. | Make an upload keystore, keep it and its passwords **outside git** (password manager + an offline copy), sign release with it, turn on **Play App Signing**, add its SHA-1/256 to Firebase (Google sign-in breaks without it). | `keytool -list -printcert -jarfile app-release.aab` shows our certificate, not "Android Debug". |
 | S0.4 | ✅ | **`PUBLIC_URL` is optional in production**: file URLs are then built from the request's `Host` header (`backend/src/lib/publicUrl.ts`), so a forged header puts an attacker's domain into photo URLs that get cached. | `env.ts`: refuse to start in production without `PUBLIC_URL` (same style as the other `.refine` rules). | Start with `NODE_ENV=production` and no `PUBLIC_URL` → refuses. |
-| S0.5 | 🔴 | **Photos are on the API server's disk** (`lib/storage.ts`, D1 not built). On Railway/Render-style hosting the disk is wiped on deploy, and private certificate originals sit next to the app. | Build the R2/S3 storage behind the same interface: a **public** bucket for listing photos (random names), a **private** bucket for certificate originals (dashboard reads via short-lived signed URLs or the existing proxy). | Upload, redeploy, photo still there; a certificate original's URL without a signature → 403. |
+| S0.5 | 🔨 code ✅, bucket ⏸ | **Photos are on the API server's disk** (`lib/storage.ts`, D1 not built). On Railway/Render-style hosting the disk is wiped on deploy, and private certificate originals sit next to the app. | Build the R2/S3 storage behind the same interface: a **public** bucket for listing photos (random names), a **private** bucket for certificate originals (dashboard reads via short-lived signed URLs or the existing proxy). | Upload, redeploy, photo still there; a certificate original's URL without a signature → 403. |
 | S0.6 | 🔴 | **Google Maps key was pasted in a chat** (2026-11-02). | Regenerate it in Google Cloud, restrict it to the Geocoding API (+ the server's outgoing IP once hosted), set a daily quota and a budget alert. | Old key → `REQUEST_DENIED`; Cloud console shows the restrictions. |
 | S0.7 | 🟠 | **Firebase API key is in git** (`frontend/android/app/google-services.json`). This is normal for Firebase (it is a client id, not a secret) **only if** it is restricted. | In Google Cloud → Credentials: restrict that key to Android apps (`package name` + release SHA-1) and to the Firebase APIs it needs. Check whether the GitHub repo is private. | Key's page shows "Android apps" restriction. |
 | S0.8 | ✅ | **No CORS rule yet**, needed when the dashboard moves to `admin.sahla.jo` (B8.6). The risk is the opposite fix: `origin: *`. | Allow exactly `https://admin.sahla.jo` (and `http://localhost:5174` only outside production), on `/v1/admin/*` only. The phone app needs no CORS. | `curl -H "Origin: https://evil.example" …/v1/admin/me -I` → no `Access-Control-Allow-Origin`. |
 | S0.9 | 🟠 | **Rate limits are kept in memory**: they reset on restart and don't add up across 2+ servers. | Fine with one server. With 2+ (B12), use a shared store (PostgreSQL table or Redis) for `express-rate-limit`. | Note the server count in B12.2; revisit if > 1. |
-| S0.10 | 🟠 | **No error tracking or alerts** (Sentry pending, B12.1/B12.4). Attacks show up as error spikes nobody sees. | Sentry on backend + app + dashboard (scrub tokens, passwords, PINs, card data, coordinates); uptime check; alert on 5xx rate and on 401/429 spikes. | A thrown test error appears in Sentry with no secrets in it. |
+| S0.10 | 🔨 API ✅, app + dashboard + project ⏸ | **No error tracking or alerts** (Sentry pending, B12.1/B12.4). Attacks show up as error spikes nobody sees. | Sentry on backend + app + dashboard (scrub tokens, passwords, PINs, card data, coordinates); uptime check; alert on 5xx rate and on 401/429 spikes. | A thrown test error appears in Sentry with no secrets in it. |
 | S0.11 | ⏸ owner | **The Apple button on Android sends no token** (`AuthScreen.tsx` → `logInApple.mutate(undefined)`): it always fails. Not a hole, but a broken auth path is where people add quick hacks. | ~~Hide the button~~ **Owner's decision 2026-11-07: keep it; Apple sign-in is finished before production** (Apple Developer account; on Android it needs Sign in with Apple JS / a Services ID). | Apple sign-in works on each platform where the button shows. |
 
 ---
@@ -117,11 +117,11 @@ for buyers · ✅ private paths can't leave their folder · ✅ JSON body limit 
 
 | # | Check | How |
 |---|---|---|
-| 🔴 S4.1 | Cloud storage with a private bucket (= S0.5). | See S0.5. |
+| 🔨 S4.1 | Cloud storage with a private bucket (= S0.5). | See S0.5. |
 | ✅ S4.2 | Upload size limit and pixel limit (decompression bomb: a tiny PNG that expands to 50 000 × 50 000). `sharp({ limitInputPixels })`. | Upload a bomb image → 4xx, server memory stays flat. |
 | ✅ S4.3 | SVG, HTML, PDF uploads refused (only JPEG/PNG/WebP/HEIC). | e2e upload of an `.svg` renamed `.jpg` → refused. |
-| ⬜ S4.4 | Photos served with `X-Content-Type-Options: nosniff` and the right `Content-Type` (from the CDN too). | `curl -I` a photo URL. |
-| ⬜ S4.5 | CSV import: formula injection (`=HYPERLINK(…)` in a cell) can't reach an admin's Excel when exported; 1000-row cap ✅. | Import a row starting with `=`; check it's stored/escaped. |
+| ✅ S4.4 | Photos served with `X-Content-Type-Options: nosniff` and the right `Content-Type` (from the CDN too). | `curl -I` a photo URL. |
+| ✅ S4.5 | CSV import: formula injection (`=HYPERLINK(…)` in a cell) can't reach an admin's Excel when exported; 1000-row cap ✅. | Import a row starting with `=`; check it's stored/escaped. |
 
 ## S5 — Dashboard (admin) and staff
 
@@ -132,11 +132,11 @@ Already in place: ✅ password → 5-minute ticket → TOTP code (secret AES-GCM
 | # | Check | How |
 |---|---|---|
 | ⬜ S5.1 | **Turn 2FA back on** before hosting (remove `ADMIN_2FA=off`), each admin scans a new QR. | Production start refuses `off` ✅; log in once to confirm. |
-| ⬜ S5.2 | Change the seeded `admin@sahla.jo / sahla1234`: **the seed must never run in production**. Create real admins with `npm run staff`. | `db:seed` refuses when `NODE_ENV=production`; no `sahla1234` account in production. |
+| ✅ S5.2 | Change the seeded `admin@sahla.jo / sahla1234`: **the seed must never run in production**. Create real admins with `npm run staff`. | `db:seed` refuses when `NODE_ENV=production`; no `sahla1234` account in production. |
 | ⬜ S5.3 | Dashboard hosting headers: strict **Content-Security-Policy** (no inline scripts), `frame-ancestors 'none'`, HSTS, `Referrer-Policy: no-referrer`. A CSP is what protects the `sessionStorage` token from XSS. | securityheaders.com on `admin.sahla.jo` → A. |
 | ✅ S5.4 | XSS: user text (listing titles, chat, report reasons, names) shown in the dashboard is escaped (React does this; check no `dangerouslySetInnerHTML`). | `grep -r dangerouslySetInnerHTML admin/src`; create a listing titled `<img src=x onerror=alert(1)>` and open it in the dashboard. |
 | ⬜ S5.5 | Optional: allow `/v1/admin/*` only from the office IP or a VPN / Cloudflare Access. Decide at B12. | Decision note. |
-| ⬜ S5.6 | Least privilege: decide if all admins need refunds + payouts, or split roles (support vs finance). | Decision note; roles later if needed. |
+| ✅ S5.6 | Least privilege (built: B15.7 admin types): decide if all admins need refunds + payouts, or split roles (support vs finance). | Decision note; roles later if needed. |
 | ⬜ S5.7 | Staff leaving: disable courier/admin account → their sessions die at once. | e2e: disable → old token 401/403 ✅ check. |
 | ⬜ S5.8 | `reset-2fa` and `staff` commands run only on the server by the owner; nobody else has production shell/DB access. | Host access list. |
 
@@ -168,14 +168,14 @@ without query strings, headers or bodies · ✅ `.env` refuses dangerous product
 |---|---|---|
 | ⬜ S7.1 | HTTPS only (`api.sahla.jo`, `admin.sahla.jo`), HSTS, TLS 1.2+. | ssllabs.com → A. |
 | ⬜ S7.2 | Database not reachable from the internet (private network / IP allow list), its own strong password, TLS, the app's DB user is not a superuser. | `psql` from home → refused. |
-| ⬜ S7.3 | Every secret only in the host's secret store: `JWT_SECRET`, `ID_HASH_SECRET`, `DATABASE_URL`, Postmark, Maps, Vision, Firebase service account, Anthropic, payment keys, the TOTP sealing key. Listed with who can see it and how to rotate it. | Table at the end of this file; `git log -p` + `gitleaks detect` → nothing. |
+| ✅ S7.3 | Every secret only in the host's secret store: `JWT_SECRET`, `ID_HASH_SECRET`, `DATABASE_URL`, Postmark, Maps, Vision, Firebase service account, Anthropic, payment keys, the TOTP sealing key. Listed with who can see it and how to rotate it. | Table at the end of this file; `git log -p` + `gitleaks detect` → nothing. |
 | ✅ S7.4 | Raw SQL (`$queryRaw`) only with tagged templates, never string-built (`$queryRawUnsafe`). | `grep -rn "queryRawUnsafe\|executeRawUnsafe" backend/src` → none, or each reviewed. |
-| ⬜ S7.5 | Outgoing calls (geocoder, Google, Firebase, Vision) have timeouts and never fetch a URL a user typed (SSRF). | Read each `fetch(`; grep for user-controlled URLs. |
-| ⬜ S7.6 | Error answers in production show no stack traces or SQL. | Force a 500 in staging; body is the standard error only. |
-| ⬜ S7.7 | Backups: daily, encrypted, kept 30 days, **a restore tested** (B12.3). | Restore into a fresh DB and run the e2e smoke. |
-| ⬜ S7.8 | Logs kept e.g. 30–90 days; contain no personal data beyond IP/user id (S0.10 scrubbing). | Read a day of production logs. |
+| ✅ S7.5 | Outgoing calls (geocoder, Google, Firebase, Vision) have timeouts and never fetch a URL a user typed (SSRF). | Read each `fetch(`; grep for user-controlled URLs. |
+| ✅ S7.6 | Error answers in production show no stack traces or SQL. | Force a 500 in staging; body is the standard error only. |
+| 🔨 S7.7 | Backups (tools and drill ✅, the host's schedule ⏸): daily, encrypted, kept 30 days, **a restore tested** (B12.3). | Restore into a fresh DB and run the e2e smoke. |
+| 🔨 S7.8 | Logs kept (contents ✅, the 90 days is a host setting ⏸) e.g. 30–90 days; contain no personal data beyond IP/user id (S0.10 scrubbing). | Read a day of production logs. |
 | 🟠 S7.9 | Dependencies: `npm audit` clean (or each finding noted), Dependabot / Renovate on, lockfiles committed, no `latest` versions. **2026-11-07:** backend 0, admin 0, frontend 13 (8 high): `@grpc/grpc-js` / `firebase` JS SDK pulled in by `@react-native-firebase` (Node/web code, not the Android native path; npm's "fix" is a downgrade to v20, don't), `body-parser`, `joi`, `postcss-selector-parser`, `deepmerge` (Metro / RN CLI build tools, not in the app). Re-check when `@react-native-firebase` updates. | `npm audit --omit=dev` in backend, frontend, admin. |
-| ⬜ S7.10 | CI checks: add `gitleaks` (secrets), `npm audit --audit-level=high`, and CodeQL (free on GitHub) to `.github/workflows`. | A PR with a fake key fails CI. |
+| 🔨 S7.10 | CI checks (written, first run needs a push): add `gitleaks` (secrets), `npm audit --audit-level=high`, and CodeQL (free on GitHub) to `.github/workflows`. | A PR with a fake key fails CI. |
 
 ## S8 — Privacy, ID data and legal
 
@@ -258,6 +258,22 @@ Who: the owner decides; [ask the owner: a second person who can act if the owner
 
 ## Log
 Newest first. Each entry: what was done, the commit, how it was checked.
+- 2026-11-08: **Server and files (`INTERNAL_READINESS_PLAN.md` phase 3).**
+  * **Found by the new load test, the worst bug of this work:** `placeBid` asked for a second database connection while its transaction held one. **120 bids at once: all 120 answered 500, and the whole
+    server stalled for 5 seconds**, for people only browsing too. Any busy auction would have taken Sahla down. Fixed in `negotiation/bids.ts`; `bidsLoad.e2e.ts` proves it (it failed 120/120 on the old code). The
+    load test went from 83 to 393 requests a second, p95 under 500 ms. It was the only place with this mistake (searched every `$transaction`). `DB_POOL_SIZE` is now a setting.
+  * **S0.5 built:** `lib/storage.ts` speaks S3 (R2, S3, MinIO) with a public and a private bucket; production refuses `local`. `storage.e2e.ts` runs the whole flow against a small S3 server that **recomputes AWS's Signature V4
+    itself** and refuses a wrong one. **Not yet run against a real bucket** (downloading MinIO was refused by this PC's permissions): `npm run check:storage` does it, in the R2 steps of `backend/docs/STORAGE.md`.
+  * **S7.6, S7.8, S0.10:** Prisma's error messages quote the query's values: a real password hash was seen in one. `lib/scrub.ts` keeps only the kind of database error; emails, phones, card numbers, IBANs, tokens and keys are
+    removed from all others; push tokens are out of logged paths. Error reports: `lib/errorReporter.ts` (no SDK, so we decide what leaves: the scrubbed error and the route's pattern only), tested on a stand-in Sentry; off until there is a DSN. **The app and dashboard have no error reports yet** (needs the Sentry project + a native SDK).
+  * **S7.5:** every outgoing call has a timeout (read each `fetch`); none takes a URL a user typed. The Vision key moved from the URL to a header.
+  * **F3:** an overall limit per address; a NUL byte or broken address is a 4xx. **S4.5:** imported cells can't start like a formula. **S4.4:** `nosniff` on API files (checked by the attack script) and sent to storage; on `files.sahla.jo` it needs the Cloudflare rule in `STORAGE.md`.
+  * **G4, the attack script (`npm run check:attack`):** a real server in production mode; checks headers, that fake and dev routes are gone, traversal, 6 kinds of forged token, CORS, 10 injections on 15 filters (with timing), floods, huge and deep bodies, prototype pollution, mass assignment, then **8 408 junk requests across all 118 routes as nobody, customer, courier and admin** (108 routes reached their code; only 8 stopped by a limit, so the fuzzing was real).
+    First run: **1 problem**, a deep-JSON stack overflow in my own new NUL check, fixed. Now: **17 511 checks, 0 problems**.
+  * **S7.3, S7.10:** `npm run check:secrets` over all 97 commits and 554 files: **none found** (the Maps key from the 2026-11-02 chat never reached git). The script checks its own patterns first. CI gets gitleaks, `npm audit`, CodeQL and Dependabot: **these run only once the branch is on GitHub, so they haven't run yet.**
+  * **B12.2:** `backend/Dockerfile` + `docs/DEPLOY.md`, clean shutdown. **Docker isn't on this PC, so the image hasn't been built here:** every Dockerfile step was run by hand in an empty folder (`npm ci --omit=dev`, `migrate deploy`, production start with no `.env`, 10 endpoints right); CI builds the real image. The SIGTERM test runs on Linux only, so **CI will be its first run**.
+  * **B12.3 / S7.7:** `npm run db:backup`, `db:restore` (refuses a database with tables), `db:restore-test`. The drill passed on the dev database: encrypted file, wrong key refused, **28 tables, 247 rows identical**. It reported 5 listing mismatches in the dev data: `db:seed` puts demo listings back on sale under old orders. That is the seed only (the import refuses paid and sold rows; no production path does this).
+  * **S1.1:** a blank line in the host's settings no longer stops the server. **S5.2:** the seed refuses production, tested.
 - 2026-11-08: **Accounts and privacy (`INTERNAL_READINESS_PLAN.md` phase 2).**
   * **S1.3 enumeration fixed:** `send-otp` and `signup` said `EMAIL_TAKEN` to anyone, and `forgot-password` took longer for real accounts (it waited for the email), and log-in was
     faster for Google accounts (no scrypt). Now the same answers and timing; the mailbox's owner gets "you already have an account". `auth/privacy.e2e.ts`.

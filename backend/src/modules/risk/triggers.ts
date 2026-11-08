@@ -1,5 +1,6 @@
 import { prisma } from '../../db';
 import { daily, runSoon } from '../../lib/jobs';
+import { logger } from '../../lib/logger';
 import { checkAccount } from './checker';
 
 // When the suspicious-account checker runs (BACKEND_PLAN B5.3, docs/ACCOUNT-RISK.md):
@@ -44,5 +45,5 @@ export async function checkRecentAccounts(now = new Date()) {
 }
 
 export function scheduleNightlyRiskCheck() {
-  daily('nightly risk check', 3, async () => console.log('Nightly risk check:', await checkRecentAccounts()));
+  daily('nightly risk check', 3, async () => logger.info({ result: await checkRecentAccounts() }, 'Nightly risk check'));
 }

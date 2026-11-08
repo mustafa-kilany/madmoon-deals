@@ -1,4 +1,5 @@
 import { prisma } from '../../db';
+import { logger } from '../../lib/logger';
 import { storage } from '../../lib/storage';
 
 // BACKEND_PLAN B3.6. The Sell form uploads each photo as soon as it's picked,
@@ -25,8 +26,8 @@ export async function deleteUnusedUploads(olderThanMs = DAY_MS) {
 export function scheduleUploadCleanup() {
   const run = () =>
     deleteUnusedUploads()
-      .then(count => count > 0 && console.log(`Deleted ${count} unused listing photos`))
-      .catch(error => console.error('Upload clean-up failed', error));
+      .then(count => count > 0 && logger.info({ count }, 'Deleted unused listing photos'))
+      .catch(error => logger.error({ err: error }, 'Upload clean-up failed'));
   setTimeout(run, 60_000);
   setInterval(run, 60 * 60_000);
 }

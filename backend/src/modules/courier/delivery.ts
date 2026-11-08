@@ -46,7 +46,7 @@ export async function confirmDelivery(courierId: string, orderId: string, pin: s
       data: { orderId, sellerUserId: order.sellerUserId, storeId: order.storeId, amountFils: order.itemPriceFils },
     });
     return tx.order.findUniqueOrThrow({ where: { id: orderId }, include: orderInclude });
-  });
+  }, { maxWait: 10_000, timeout: 15_000 });
   pushDelivered(orderId);
   return delivered;
 }
