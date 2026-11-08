@@ -96,6 +96,8 @@ export type Payout = {
   orderId: string;
   itemTitle: string;
   seller: Person | null;
+  /** Where to send it. Null: the seller hasn't given one (brand stores: their contract). */
+  account: { holderName: string; iban: string; heldUntil?: string } | null;
   amountFils: number;
   status: 'pending' | 'paid' | 'failed';
   createdAt: string;

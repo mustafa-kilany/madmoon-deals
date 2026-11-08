@@ -7,6 +7,7 @@ import type { AddressInfo } from 'node:net';
 import { after, before, test } from 'node:test';
 import { app } from '../../app';
 import { prisma } from '../../db';
+import { dataSeal } from '../../lib/sealed';
 import { hashPassword } from '../auth/password';
 import { adminToken } from './testing';
 
@@ -93,6 +94,8 @@ test('payouts: delivered orders wait to be paid; marking one paid is logged on t
   await prisma.order.update({ where: { id: order.id }, data: { courierId: courier().id, courierStatus: 'picked_up' } });
   assert.equal((await call('POST', '/courier/confirm-delivery', courier(), { orderId: order.id, pin })).status, 200);
 
+  // S3.7: the seller's bank account, needed before it can be marked sent (payouts.e2e.ts has the rules).
+  await prisma.user.update({ where: { email: EMAILS[0] }, data: { payoutHolder: 'Test Seller', payoutIban: dataSeal('JO94CBJO0010000000000131000302'), payoutIbanLast4: '0302' } });
   const pending = (await call('GET', '/admin/payouts', admin())).body;
   const payout = pending.find((p: { orderId: string }) => p.orderId === order.id);
   assert.deepEqual([payout.amountFils, payout.status, payout.seller.email], [50_000, 'pending', EMAILS[0]]);
@@ -104,7 +107,7 @@ test('payouts: delivered orders wait to be paid; marking one paid is logged on t
   assert.ok((await call('GET', '/admin/payouts?status=paid', admin())).body.some((p: { id: string }) => p.id === payout.id));
 
   const history = (await call('GET', `/admin/actions?targetType=order&targetId=${order.id}`, admin())).body;
-  assert.deepEqual(history[0].details, { payoutId: payout.id, amountFils: 50_000, reference: 'TRF-2026-0042' });
+  assert.deepEqual(history[0].details, { payoutId: payout.id, amountFils: 50_000, reference: 'TRF-2026-0042', ibanLast4: '0302' });
 });
 
 test('users: look up; suspending signs them out and takes their listings off sale; unsuspend brings them back', async () => {

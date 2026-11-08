@@ -1,13 +1,22 @@
 import { createCipheriv, createDecipheriv, hkdfSync, randomBytes } from 'node:crypto';
 import { env } from '../env';
 
-// Secrets the server must read back, so they can't be hashed: admins' 2FA
-// secrets. AES-256-GCM with a key derived from JWT_SECRET; changing that secret
-// means admins set up 2FA again (it signs everyone out anyway).
+// Secrets the server must read back, so they can't be hashed. AES-256-GCM.
+// - seal / unseal: admins' 2FA secrets, key from JWT_SECRET: changing that secret means
+//   admins set up 2FA again (it signs everyone out anyway).
+// - dataSeal / dataUnseal: people's data that must survive changing JWT_SECRET after a
+//   leak (sellers' IBANs), key from ID_HASH_SECRET, which never changes.
 
-const key = Buffer.from(hkdfSync('sha256', env.JWT_SECRET, '', 'sahla-sealed-v1', 32));
+const keyFrom = (secret: string, label: string) => Buffer.from(hkdfSync('sha256', secret, '', label, 32));
+const key = keyFrom(env.JWT_SECRET, 'sahla-sealed-v1');
+const dataKey = keyFrom(env.ID_HASH_SECRET ?? env.JWT_SECRET, 'sahla-data-v1');
 
-export function seal(text: string) {
+export const seal = (text: string) => sealWith(key, text);
+export const unseal = (sealed: string) => unsealWith(key, sealed);
+export const dataSeal = (text: string) => sealWith(dataKey, text);
+export const dataUnseal = (sealed: string) => unsealWith(dataKey, sealed);
+
+function sealWith(key: Buffer, text: string) {
   const iv = randomBytes(12);
   const cipher = createCipheriv('aes-256-gcm', key, iv);
   const data = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]);
@@ -15,7 +24,7 @@ export function seal(text: string) {
 }
 
 /** The text, or undefined when it was sealed with another key or changed. */
-export function unseal(sealed: string) {
+function unsealWith(key: Buffer, sealed: string) {
   const [version, iv, tag, data] = sealed.split('.');
   if (version !== 'v1' || !iv || !tag || data === undefined) return undefined;
   try {

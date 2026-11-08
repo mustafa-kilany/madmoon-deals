@@ -69,7 +69,7 @@ export const mailer: Mailer =
 const escape = (s: string) => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
 /** One email in both languages: Arabic first (right to left), then English. */
-function bilingual(parts: { ar: string[]; en: string[]; code: string }) {
+function bilingual(parts: { ar: string[]; en: string[]; code?: string }) {
   const text = [...parts.ar, '', ...parts.en].join('\n');
   const block = (lines: string[], dir: 'rtl' | 'ltr', lang: string) =>
     `<div dir="${dir}" lang="${lang}" style="text-align:${dir === 'rtl' ? 'right' : 'left'}">` +
@@ -79,7 +79,7 @@ function bilingual(parts: { ar: string[]; en: string[]; code: string }) {
     '<!doctype html><html><body style="margin:0;background:#f4f4f0">' +
     '<div style="max-width:480px;margin:0 auto;padding:32px 24px;font-family:Tahoma,Arial,sans-serif;font-size:16px;line-height:1.5;color:#1d1d1b;background:#ffffff">' +
     '<p style="margin:0 0 24px;font-size:22px;font-weight:bold;color:#66824f">سهلة · Sahla</p>' +
-    `<p dir="ltr" style="margin:0 0 24px;font-size:32px;font-weight:bold;letter-spacing:8px;text-align:center">${escape(parts.code)}</p>` +
+    (parts.code ? `<p dir="ltr" style="margin:0 0 24px;font-size:32px;font-weight:bold;letter-spacing:8px;text-align:center">${escape(parts.code)}</p>` : '') +
     block(parts.ar, 'rtl', 'ar') +
     '<hr style="border:0;border-top:1px solid #e2e2dc;margin:20px 0">' +
     block(parts.en, 'ltr', 'en') +
@@ -87,8 +87,36 @@ function bilingual(parts: { ar: string[]; en: string[]; code: string }) {
   return { text, html };
 }
 
-export const codeEmail = (purpose: 'signup' | 'reset', code: string) =>
-  purpose === 'signup'
+/** S3.7: an alert, not a code: the seller's bank account was set or changed. */
+export const payoutAccountEmail = (last4: string, replaced: boolean) => ({
+  subject: 'تم تغيير الحساب البنكي | Your Sahla bank account changed',
+  tag: 'payout-account',
+  ...bilingual({
+    ar: [
+      `تم ${replaced ? 'تغيير' : 'إضافة'} الحساب البنكي لاستلام أموالك في سهلة، وينتهي بـ ${last4}.`,
+      ...(replaced ? ['لحمايتك، لن نرسل أي دفعات إلى الحساب الجديد قبل مرور 24 ساعة.'] : []),
+      'إذا لم تكن أنت، تواصل مع دعم سهلة فوراً وغيّر كلمة المرور.',
+    ],
+    en: [
+      `The bank account for your Sahla money was ${replaced ? 'changed' : 'added'}. It ends in ${last4}.`,
+      ...(replaced ? ['To protect you, nothing is sent to the new account for 24 hours.'] : []),
+      "If this wasn't you, contact Sahla support right away and change your password.",
+    ],
+  }),
+});
+
+export const codeEmail = (purpose: 'signup' | 'reset' | 'payout', code: string) =>
+  purpose === 'payout'
+    ? {
+        subject: `تأكيد الحساب البنكي: ${code} | Confirm your Sahla bank account`,
+        tag: 'payout-code',
+        ...bilingual({
+          code,
+          ar: [`رمز تأكيد الحساب البنكي: ${code}`, 'صالح لمدة 10 دقائق. إذا لم تطلبه، تواصل مع دعم سهلة فوراً.'],
+          en: [`Your code to confirm the bank account: ${code}`, "Valid for 10 minutes. If you didn't ask for it, contact Sahla support right away."],
+        }),
+      }
+    : purpose === 'signup'
     ? {
         subject: `رمز التحقق من سهلة: ${code} | Your Sahla code`,
         tag: 'signup-code',

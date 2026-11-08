@@ -48,6 +48,7 @@ export function PayoutsPage() {
             <thead>
               <tr>
                 <th>Seller</th>
+                <th>Bank account</th>
                 <th>Order</th>
                 <th>Item</th>
                 <th className="num">Amount</th>
@@ -61,6 +62,23 @@ export function PayoutsPage() {
                   <td className="clip">
                     {p.seller?.email ? <Link to={`/users/${p.seller.id}`}>{p.seller.name}</Link> : (p.seller?.name ?? <span className="muted">deleted account</span>)}
                   </td>
+                  <td className="small">
+                    {p.account ? (
+                      <>
+                        {p.account.holderName}
+                        <br />
+                        <code dir="ltr">{p.account.iban}</code>
+                        {p.account.heldUntil && (
+                          <>
+                            <br />
+                            <span className="badge amber">Account changed: wait until {when(p.account.heldUntil)}</span>
+                          </>
+                        )}
+                      </>
+                    ) : (
+                      <span className="muted">{p.seller?.email ? 'Not given yet' : 'By the store’s contract'}</span>
+                    )}
+                  </td>
                   <td>
                     <Link to={`/orders/${p.orderId}`}>{p.orderId}</Link>
                   </td>
@@ -69,7 +87,7 @@ export function PayoutsPage() {
                   <td className="small">{when(status === 'pending' ? p.createdAt : p.paidAt)}</td>
                   {status === 'pending' && (
                     <td>
-                      <button className="secondary" onClick={() => setPaying(p)}>
+                      <button className="secondary" disabled={!!p.seller?.email && (!p.account || !!p.account.heldUntil)} onClick={() => setPaying(p)}>
                         Mark sent
                       </button>
                     </td>

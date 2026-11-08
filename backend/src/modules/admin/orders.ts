@@ -7,6 +7,7 @@ import { ApiError } from '../../lib/errors';
 import { coverUrl } from '../catalog/apiItem';
 import { PIN_TRIES } from '../courier/delivery';
 import { problemWhere } from '../orders/problems';
+import { payoutAccountOf } from '../payouts/account';
 import { adminDid } from './audit';
 import { can } from './permissions';
 
@@ -124,7 +125,7 @@ const payoutQuery = z.object({
 
 const payoutInclude = {
   order: { select: { id: true, listing: { select: { titleEn: true } } } },
-  sellerUser: person,
+  sellerUser: { select: { id: true, name: true, email: true, payoutHolder: true, payoutIban: true, payoutChangedAt: true } },
   store: { select: { id: true, nameEn: true } },
 } satisfies Prisma.PayoutInclude;
 
@@ -133,6 +134,8 @@ const toAdminPayout = (p: Prisma.PayoutGetPayload<{ include: typeof payoutInclud
   orderId: p.order.id,
   itemTitle: p.order.listing.titleEn,
   seller: p.store ? { id: p.store.id, name: p.store.nameEn, email: '' } : who(p.sellerUser),
+  // S3.7: where to send it (brand stores are paid by their own contract, outside this page).
+  account: p.sellerUser ? (payoutAccountOf(p.sellerUser) ?? null) : null,
   amountFils: p.amountFils,
   status: p.status,
   createdAt: p.createdAt.toISOString(),
@@ -156,10 +159,21 @@ adminOrdersRoutes.get('/admin/payouts', ...can('payouts'), async (req, res) => {
 adminOrdersRoutes.post('/admin/payouts/:id/paid', ...can('payouts'), async (req, res) => {
   const { reference } = z.object({ reference: z.string().trim().min(1).max(100) }).parse(req.body);
   const id = req.params.id as string;
-  const { count } = await prisma.payout.updateMany({ where: { id, status: { not: 'paid' } }, data: { status: 'paid', paidAt: new Date() } });
   const payout = await prisma.payout.findUnique({ where: { id }, include: payoutInclude });
   if (!payout) throw new ApiError(404, 'NOT_FOUND', `No payout ${id}`);
+  // S3.7: a person's money needs an account, and waits 24 hours after that account changed.
+  const account = payout.sellerUser && payoutAccountOf(payout.sellerUser);
+  if (!payout.storeId) {
+    if (!account) throw new ApiError(422, 'VALIDATION', 'This seller hasn’t given a bank account yet');
+    if (account.heldUntil) throw new ApiError(422, 'VALIDATION', `The bank account just changed: this waits until ${account.heldUntil}`);
+  }
+  const { count } = await prisma.payout.updateMany({ where: { id, status: { not: 'paid' } }, data: { status: 'paid', paidAt: new Date() } });
   if (!count) throw new ApiError(422, 'VALIDATION', 'This payout is already marked paid');
-  await adminDid(req, res, 'payout.paid', { type: 'order', id: payout.order.id }, { payoutId: id, amountFils: payout.amountFils, reference });
-  res.json(toAdminPayout(payout));
+  await adminDid(req, res, 'payout.paid', { type: 'order', id: payout.order.id }, {
+    payoutId: id,
+    amountFils: payout.amountFils,
+    reference,
+    ...(account && { ibanLast4: account.iban.slice(-4) }),
+  });
+  res.json(toAdminPayout({ ...payout, status: 'paid', paidAt: new Date() }));
 });

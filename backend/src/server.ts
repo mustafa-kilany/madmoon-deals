@@ -2,6 +2,7 @@ import { app } from './app';
 import { env } from './env';
 import { logger } from './lib/logger';
 import { scheduleAuctionClosing } from './modules/negotiation/bids';
+import { scheduleMoneyCheck } from './modules/orders/moneyCheck';
 import { scheduleNightlyRiskCheck } from './modules/risk/triggers';
 import { scheduleUploadCleanup } from './modules/uploads/cleanup';
 
@@ -11,6 +12,7 @@ import { scheduleUploadCleanup } from './modules/uploads/cleanup';
 scheduleUploadCleanup();
 scheduleAuctionClosing();
 scheduleNightlyRiskCheck();
+scheduleMoneyCheck();
 
 app.listen(env.PORT, () => {
   logger.info(`Sahla backend on http://localhost:${env.PORT}/v1`);

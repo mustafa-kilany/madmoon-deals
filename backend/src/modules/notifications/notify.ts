@@ -360,6 +360,23 @@ export function pushListingRemoved(listingId: string, why: 'reports' | 'certific
   });
 }
 
+/** S3.7: the bank account for the person's money was set or changed: if it wasn't them, they must act now. */
+export function pushPayoutAccountChanged(userId: string, last4: string) {
+  later(`push:payout-account:${userId}`, async () => {
+    await sendTo(
+      userId,
+      lang => ({
+        title: lang === 'ar' ? 'الحساب البنكي' : 'Bank account',
+        body:
+          lang === 'ar'
+            ? `تم تحديث حسابك البنكي (ينتهي بـ ${last4}). إذا لم تكن أنت، تواصل مع الدعم فوراً.`
+            : `Your bank account was updated (ends in ${last4}). If this wasn’t you, contact support right away.`,
+      }),
+      { type: 'sale', id: userId },
+    );
+  });
+}
+
 /** B15.6: Sahla's support team answered (never the text: it shows on the lock screen). */
 export function pushSupportReply(userId: string) {
   later('push:support:' + userId, async () => {

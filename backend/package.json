@@ -18,6 +18,7 @@
     "postdb:migrate": "prisma generate",
     "load-check": "tsx scripts/load-check.ts",
     "staff": "tsx scripts/staff.ts",
+    "money:check": "tsx scripts/money-check.ts",
     "push:test": "tsx scripts/push-test.ts"
   },
   "type": "module",

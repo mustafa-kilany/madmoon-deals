@@ -4,6 +4,15 @@ This document defines the REST API contract expected by the **Sahla** mobile app
 
 The app's HTTP service layer (`frontend/src/services/*/http.ts`) and API client (`frontend/src/services/api/client.ts`) are fully implemented and integrated. Connecting to a real API server requires only a configuration update in `frontend/src/config.ts`. The API itself is in `backend/`.
 
+## Changes on 2026-11-08 (readiness work: `INTERNAL_READINESS_PLAN.md`)
+
+* **Seller's bank account:** `GET` / `PUT /me/payout-account`, `POST /me/payout-account/code` (see Phase 6).
+* **`POST /courier/confirm-delivery`** answers 422 until the order is marked picked up.
+* **`DELETE /listings/:id`:** an auction with bids can be withdrawn 48 hours after it ended, if the winner never paid.
+* **`cardToken`** (`POST /orders/:id/pay`, `POST /me/payment-card`) that looks like a card number → 422.
+* **Admin order answers** never include `pin`. **`POST /admin/payouts/:id/paid`** → 422 with no bank account, or within 24 hours of a change.
+  `GET /admin/payouts` rows get `account: { holderName, iban, heldUntil? } | null`.
+
 ## Changes on 2026-11-07 (B15)
 
 **Delivery problems and cancelling** (BACKEND_PLAN B15.3–B15.4). `Order.status` can be `cancelled` (the buyer
@@ -829,6 +838,17 @@ building and floor, and can change anything. The order is unchanged: it carries 
   * **`POST /admin/orders/:id/unlock-pin`** *(admin)* → `Order`: the courier gets 5 new PIN tries.
 * **`User.role`**: optional, `"courier"` for courier accounts. Couriers see only the courier screens
   (below), never browsing, selling or buying.
+
+#### The seller's bank account *(SECURITY_PLAN S3.7)*
+
+Where a seller's money goes after delivery (an admin sends a bank transfer, `POST /admin/payouts/:id/paid`). Customers only.
+
+* **`GET /me/payout-account`** → `{ confirmWith: "password" | "code", account: { holderName, ibanLast4, heldUntil? } | null }`. Never the whole IBAN.
+* **`PUT /me/payout-account`** → Body: `{ holderName, iban, password? , code? }` → the same shape. A valid Jordanian IBAN (spaces, dashes and
+  Arabic digits are fine). `confirmWith: "password"` needs `password`; `"code"` (Google / Apple accounts) needs `code` from the call below.
+  Replacing an account sets `heldUntil` (24 hours: nothing is sent until then). The person always gets a push and an email.
+  **Errors:** `VALIDATION` (422), `INVALID_CREDENTIALS` (422: not 401, the app must not sign out), `INVALID_CODE` (422), `RATE_LIMITED` (429, 5 an hour).
+* **`POST /me/payout-account/code`** → 204: emails a code (`confirmWith: "code"` accounts only; others get 422).
 
 ### Couriers (drivers) *(backend: BACKEND_PLAN B14.3–B14.6; the app's courier mode: B14.7)*
 

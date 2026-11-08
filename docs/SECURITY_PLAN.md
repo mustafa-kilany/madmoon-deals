@@ -101,13 +101,13 @@ refunds admin-only and logged · ✅ cards tokenised by the provider (`User.card
 | # | Check | How |
 |---|---|---|
 | ✅ S3.1 | Card-testing limit (= S0.1). | See S0.1. |
-| ⬜ S3.2 | **Card numbers never reach our server.** With the real provider (D2) use its hosted page or SDK card field, so we stay in PCI **SAQ A**. Today the app has a typed card field → `tokenizeCard`; check where that number goes. | Read `frontend/src/services/payments`; with D2, network capture: no PAN in any request to `api.sahla.jo`. |
+| 🔨 S3.2 | **Card numbers never reach our server.** With the real provider (D2) use its hosted page or SDK card field, so we stay in PCI **SAQ A**. Today the app has a typed card field → `tokenizeCard`; check where that number goes. | Read `frontend/src/services/payments`; with D2, network capture: no PAN in any request to `api.sahla.jo`. |
 | ⬜ S3.3 | The real provider's callback / webhook is **signed** and the signature is checked; amounts and currency compared to the order. | Code review at B7.9; e2e with a forged callback → ignored. |
-| ⬜ S3.4 | Idempotency: pay twice, refund twice, mark payout sent twice, confirm delivery twice → one effect. | e2e double calls in parallel (`Promise.all`). |
-| ⬜ S3.5 | Amounts in integer fils everywhere; no negative or zero prices, offers or bids; max price cap. | zod schemas; e2e with `-1`, `0`, `1e15`. |
-| ⬜ S3.6 | The PIN: 4 digits = 10 000 options; 5 tries before lock ✅. Check it's random (`crypto.randomInt`), not logged, only shown to the buyer. | Read `pay.ts`; grep logs for the PIN. |
-| ⬜ S3.7 | Payout bank details: who can change them, and does a change need re-login / a code? A changed IBAN before payout is the classic fraud. | Design decision when payouts are built for real. |
-| ⬜ S3.8 | Money reconciliation once a day: provider's settled total = our `Payment` succeeded − refunds. Alert on a difference. | Script/job at B7.9. |
+| ✅ S3.4 | Idempotency: pay twice, refund twice, mark payout sent twice, confirm delivery twice → one effect. | e2e double calls in parallel (`Promise.all`). |
+| ✅ S3.5 | Amounts in integer fils everywhere; no negative or zero prices, offers or bids; max price cap. | zod schemas; e2e with `-1`, `0`, `1e15`. |
+| ✅ S3.6 | The PIN: 4 digits = 10 000 options; 5 tries before lock ✅. Check it's random (`crypto.randomInt`), not logged, only shown to the buyer. | Read `pay.ts`; grep logs for the PIN. |
+| ✅ S3.7 | Payout bank details: who can change them, and does a change need re-login / a code? A changed IBAN before payout is the classic fraud. | Design decision when payouts are built for real. |
+| 🔨 S3.8 | Money reconciliation once a day: provider's settled total = our `Payment` succeeded − refunds. Alert on a difference. | Script/job at B7.9. |
 
 ## S4 — Uploads and files
 
@@ -241,6 +241,25 @@ without query strings, headers or bodies · ✅ `.env` refuses dangerous product
 
 ## Log
 Newest first. Each entry: what was done, the commit, how it was checked.
+- 2026-11-08: **Money (`INTERNAL_READINESS_PLAN.md` phase 1).** Every test below was first run on the old code. Four were **real bugs**:
+  * **The delivery PIN was in three admin answers** (assign, unlock PIN, retry a problem): an admin plus a courier could have
+    released the money with no buyer. "Never shown in the dashboard" was true of the page, not the API. Fixed in `orders/admin.ts`.
+  * **S3.4: three refunds at once all reached the bank**, and a refund racing the courier's PIN could end with the money
+    back *and* a payout. `giveMoneyBack` now holds the order's row lock around the provider call; refund, cancel and
+    confirm-delivery all pass through it. When adding the real provider (B7.9) pass it an idempotency key as well.
+  * **A PIN could complete a delivery the driver never picked up.** Now 422, and an early try uses none of the 5.
+  * **An auction whose winner never paid was stuck forever** (the seller could not withdraw it). Now withdrawable after 48 hours.
+  * Already right, now tested: S3.5 every money field refuses `-1, 0, 1.5, 1e15, "100", null`; S3.6 the PIN is `randomInt` and only
+    the buyer gets it; paying twice, two buyers on one listing, confirming twice, a payout marked twice all have one effect.
+  * **S3.2:** the app's `tokenizeCard` sends only a token (read `services/payments`), and now the server also refuses anything
+    shaped like a card number, without repeating it. The app's plain card field is still a mock: **it must become the provider's
+    SDK field at D2**, that part stays open.
+  * **S3.7 built (a gap, not a bug):** sellers had **nowhere to give a bank account**. `PUT /me/payout-account`: password or emailed code
+    each time, IBAN validated and encrypted (key from `ID_HASH_SECRET`, survives a JWT rotation), push + email, 24-hour hold after a
+    change, finance sees the IBAN and support doesn't, the audit log records which account was paid.
+  * **S3.8 built, our half:** `npm run money:check` + a daily job compare our own records (8 rules). Comparing with the provider's
+    report waits for D2.
+  * Checked by `orders/money.e2e.ts` (9) and `payouts/payouts.e2e.ts` (6). 161 e2e pass.
 - 2026-11-07: **Code checks S1.2, S1.4, S1.7, S1.8, S2.4, S4.2, S4.3, S5.4, S7.4.**
   * S1.7 ✅ already: `jwtVerify` pins `algorithms: ['HS256']`, issuer and audience (`auth/tokens.ts`).
   * S1.8 ✅ already: Google / Apple link an existing account only when the token says `email_verified` (`auth/social.ts`), tested in `social.e2e.ts`.

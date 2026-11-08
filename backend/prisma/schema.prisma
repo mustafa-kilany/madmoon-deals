@@ -46,6 +46,12 @@ model User {
   cardBrand     String?
   cardLast4     String?
   cardToken     String?
+  // S3.7: where the seller's money goes (a bank transfer). The IBAN is encrypted (lib/sealed.ts, dataSeal);
+  // a change holds payouts for 24 hours and tells the person.
+  payoutHolder    String?
+  payoutIban      String?
+  payoutIbanLast4 String?
+  payoutChangedAt DateTime?
   role          Role?
   adminRole     AdminRole? // role admin only (B15.7)
   // B15.8: the terms + privacy policy version accepted (frontend/src/legal LEGAL_VERSION), and when.
@@ -110,6 +116,7 @@ model Session {
 }
 
 enum EmailCodePurpose {
+  payout // S3.7: changing the bank account (accounts with no password)
   signup
   reset
 }

@@ -9,7 +9,7 @@ import { codeEmail, mailer, MailerUnavailable } from './mailer';
 // valid 10 minutes, 5 wrong tries, at most one new code a minute per email.
 // Stored as an HMAC, so a leaked database doesn't reveal live codes.
 
-type Purpose = 'signup' | 'reset';
+type Purpose = 'signup' | 'reset' | 'payout';
 
 const VALID_MS = 10 * 60_000;
 const RESEND_MS = 60_000;
