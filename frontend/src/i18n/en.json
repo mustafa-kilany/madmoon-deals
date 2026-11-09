@@ -425,7 +425,8 @@
     "won": "You won this auction! Pay to get it delivered.",
     "ended": "This auction has ended.",
     "wonBanner": "You won this auction: pay within 48 hours",
-    "reconnecting": "Reconnecting… the price and bids may be out of date."
+    "reconnecting": "Reconnecting… the price and bids may be out of date.",
+    "extensionNote": "A bid in the last 45 seconds adds 45 seconds, up to 5 minutes in total."
   },
   "chats": {
     "title": "Messages & Offers",

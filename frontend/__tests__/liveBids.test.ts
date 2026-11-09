@@ -121,6 +121,47 @@ describe('applyLiveBid', () => {
   });
 });
 
+describe('a late bid moves the end', () => {
+  let client: QueryClient;
+  beforeEach(() => {
+    client = new QueryClient();
+  });
+  afterEach(() => client.clear());
+  const endsAtNow = () => client.getQueryData<Item>(itemKey)!.auction?.endsAt;
+
+  test('the new end reaches the screen with the bid', async () => {
+    const before = item(1000);
+    client.setQueryData(itemKey, before);
+    const later = before.auction!.endsAt + 45_000;
+    await applyLiveBid(client, bid(2000), later);
+    expect(endsAtNow()).toBe(later);
+    expect(client.getQueryData<Item>(itemKey)!.priceFils).toBe(2000);
+  });
+
+  test('it never moves earlier, whatever arrives', async () => {
+    const before = item(1000);
+    client.setQueryData(itemKey, before);
+    await applyLiveBid(client, bid(2000), before.auction!.endsAt - 45_000);
+    expect(endsAtNow()).toBe(before.auction!.endsAt);
+  });
+
+  test('a poll already brought the price: the end is still taken, the count isn’t raised', async () => {
+    const before = item(2000, 3);
+    client.setQueryData(itemKey, before);
+    const later = before.auction!.endsAt + 45_000;
+    await applyLiveBid(client, bid(2000), later);
+    expect(endsAtNow()).toBe(later);
+    expect(client.getQueryData<Item>(itemKey)!.auction?.bidCount).toBe(3);
+  });
+
+  test('no end in the message: it stays as it is', async () => {
+    const before = item(1000);
+    client.setQueryData(itemKey, before);
+    await applyLiveBid(client, bid(2000));
+    expect(endsAtNow()).toBe(before.auction!.endsAt);
+  });
+});
+
 describe('connectLiveBids', () => {
   class FakeSocket {
     static all: FakeSocket[] = [];
@@ -170,10 +211,10 @@ describe('connectLiveBids', () => {
         bid: { ...bid(2000), createdAt: '2026-11-08T12:00:00.000Z' },
       }),
     });
-    expect(h.onBid).toHaveBeenCalledWith({
-      ...bid(2000),
-      createdAt: Date.parse('2026-11-08T12:00:00.000Z'),
-    });
+    expect(h.onBid).toHaveBeenCalledWith(
+      { ...bid(2000), createdAt: Date.parse('2026-11-08T12:00:00.000Z') },
+      undefined,
+    );
     // Each one wrong in exactly one way, so each check has to do its own work.
     const good = { ...bid(2000), createdAt: '2026-11-08T12:00:00.000Z' };
     for (const data of [
@@ -191,6 +232,25 @@ describe('connectLiveBids', () => {
     ])
       latest().onmessage?.({ data });
     expect(h.onBid).toHaveBeenCalledTimes(1);
+    stop();
+  });
+
+  test('passes on the end time, and ignores a broken one', () => {
+    const h = handlers();
+    const stop = connectLiveBids('ws://x', h);
+    const good = { ...bid(2000), createdAt: '2026-11-08T12:00:00.000Z' };
+    latest().onmessage?.({
+      data: JSON.stringify({ type: 'bid', bid: good, auctionEndsAt: '2026-11-08T12:00:45.000Z' }),
+    });
+    expect(h.onBid.mock.calls[0][1]).toBe(Date.parse('2026-11-08T12:00:45.000Z'));
+    latest().onmessage?.({
+      data: JSON.stringify({ type: 'bid', bid: good, auctionEndsAt: 'not a date' }),
+    });
+    expect(h.onBid.mock.calls[1][1]).toBeUndefined();
+    latest().onmessage?.({
+      data: JSON.stringify({ type: 'bid', bid: good, auctionEndsAt: 123 }),
+    });
+    expect(h.onBid.mock.calls[2][1]).toBeUndefined();
     stop();
   });
 

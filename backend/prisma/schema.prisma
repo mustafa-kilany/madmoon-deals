@@ -176,6 +176,8 @@ model Listing {
   locationId     String // area id from GET /cities
   saleType       SaleType      @default(fixed)
   auctionEndsAt  DateTime?
+  // The end the seller set, kept once a late bid has moved auctionEndsAt: the limit is counted from it.
+  auctionOriginalEndsAt DateTime?
   incrementFils  Int?
   bidCount       Int           @default(0) // kept up to date by bids (B6); sort=most_bids
   views          Int           @default(0)

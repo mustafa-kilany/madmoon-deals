@@ -17,8 +17,8 @@ import type { toApiBid } from './shapes';
 // every server hears it. The app keeps a slow poll too, and polls quickly whenever a connection is
 // down: if this breaks, things show more slowly but never wrongly.
 //
-// GET /v1/listings/:id/live: an auction's new bids, as they're saved. Everything sent is what the
-// public GET /listings/:id/bids already shows, so no log-in is needed.
+// GET /v1/listings/:id/live: an auction's new bids and its end time, as they're saved. Everything sent
+// is what the public GET /listings/:id and /bids already show, so no log-in is needed.
 //
 // GET /v1/me/live: signed in. Only says WHAT changed for this person ("chat X"), never the content:
 // the app fetches that through the normal API, so private messages stay behind its checks and never
@@ -33,8 +33,8 @@ const SEND_BUFFER_MAX = 1024 * 1024;
 const RETRY_MAX_MS = 30_000;
 
 /** Inside the bid's transaction: a bid that doesn't save is never announced. */
-export async function announceBid(tx: Prisma.TransactionClient, bid: ReturnType<typeof toApiBid>) {
-  const payload = JSON.stringify({ type: 'bid', bid });
+export async function announceBid(tx: Prisma.TransactionClient, bid: ReturnType<typeof toApiBid>, auctionEndsAt: Date) {
+  const payload = JSON.stringify({ type: 'bid', bid, auctionEndsAt: auctionEndsAt.toISOString() });
   if (Buffer.byteLength(payload) > NOTIFY_MAX_BYTES) return; // can't happen with today's names; the poll would still show it
   await tx.$executeRaw`SELECT pg_notify(${BIDS_CHANNEL}::text, ${payload}::text)`;
 }

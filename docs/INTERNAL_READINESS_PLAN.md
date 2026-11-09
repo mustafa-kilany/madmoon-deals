@@ -106,6 +106,8 @@ MoDEE / Sanad · Play Console · Apple Developer · regenerating the Maps key an
 | G1 + G2, three runs in a row | Backend 36 unit + 245 end-to-end (1 skipped, Linux only), app 262, types clean, lint 0 errors |
 | G4 and G7 | `check:attack` 17 615 checks, 0 problems (Express routes only: the WebSockets have their own tests). Release APK, secrets, backup drill, audits: clean. |
 
+**Auctions extend:** a bid in the last 45 seconds adds 45 seconds, up to 5 minutes after the end the seller set. Maestro 10 and 11 show it on a watching person's screen, and that Place Bid stays in reach without scrolling (the first version of the explanatory note pushed it off the screen; only the phone run caught that).
+
 **Found on the way, not fixed:** the error toast on the auction screen sits over the Quick Add row until it goes, so tapping +25 then dismisses the toast instead.
 
 ## Results (2026-11-08)

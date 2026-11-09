@@ -23,8 +23,8 @@ export function useLiveAuction(itemId: string | undefined, isFocused: boolean) {
     const start = () => {
       setTrying(true);
       disconnect ??= connectLiveBids(liveUrl(itemId), {
-        onBid: bid => {
-          applyLiveBid(queryClient, bid).catch(() => {}); // the next poll has it anyway
+        onBid: (bid, endsAt) => {
+          applyLiveBid(queryClient, bid, endsAt).catch(() => {}); // the next poll has it anyway
         },
         onUp: () => {
           setConnected(true);

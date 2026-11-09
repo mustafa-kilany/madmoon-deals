@@ -275,6 +275,13 @@ export function AuctionBiddingScreen({
           </View>
         )}
 
+        {/* Below the button: anything above it pushes Place Bid off the screen. */}
+        {!ended && (
+          <Text className="text-center font-sans-medium text-xs text-brand-warmgray">
+            {t('auctionBidding.extensionNote')}
+          </Text>
+        )}
+
         {/* Bid History List */}
         <View className="gap-3 pt-2">
           <Heading className="text-lg">

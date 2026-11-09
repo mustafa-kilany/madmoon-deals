@@ -7,6 +7,7 @@ The app's HTTP service layer (`frontend/src/services/*/http.ts`) and API client 
 ## Changes on 2026-11-08 (readiness work: `INTERNAL_READINESS_PLAN.md`)
 
 * **`GET /listings/:id/live`:** a WebSocket that delivers each new bid as it's saved. **`GET /me/live`:** a signed-in WebSocket that says when a chat or the support conversation changed. See "Live Updates & Notifications".
+* **Auctions extend:** a bid in the last 45 seconds adds 45 seconds to `auction.endsAt`, up to 5 minutes after the end the seller set. The `bid` message on `GET /listings/:id/live` carries `auctionEndsAt`.
 * **`ChatThread`** has `unreadCount`; **`POST /chats/:id/read`** marks a chat read.
 * **`POST /auth/send-otp`** answers 204 even when the email has an account (it no longer says `EMAIL_TAKEN`): that person gets an email saying so.
   **`POST /auth/signup`** checks the code first, so only the mailbox's owner can see `EMAIL_TAKEN`. **`POST /auth/forgot-password`** answers at once; an email outage isn't reported.
@@ -1228,7 +1229,7 @@ log-in: it carries only what the public `GET /listings/:id/bids` shows. It goes 
 connection (1008).
 
 ```jsonc
-{ "type": "bid", "bid": { /* one entry of GET /listings/:id/bids */ } } // the price is now bid.amountFils
+{ "type": "bid", "bid": { /* one entry of GET /listings/:id/bids */ }, "auctionEndsAt": "..." } // the price is now bid.amountFils; a late bid moves the end
 { "type": "alive" }                                                      // every 25 s: no message for 60 s means the connection is dead
 ```
 

@@ -32,21 +32,30 @@ async function update<T>(
   );
 }
 
-/** Puts a new bid on the screen: the price and the top of the list. */
-export async function applyLiveBid(client: QueryClient, bid: Bid) {
+/** Puts a new bid on the screen: the price, the top of the list, and the end time if a late bid moved it. */
+export async function applyLiveBid(
+  client: QueryClient,
+  bid: Bid,
+  endsAt?: number,
+) {
   await Promise.all([
-    update<Item>(client, ['items', bid.itemId], item =>
-      bid.amountFils <= item.priceFils
-        ? item
-        : {
-            ...item,
-            priceFils: bid.amountFils,
-            auction: item.auction && {
-              ...item.auction,
-              bidCount: item.auction.bidCount + 1,
-            },
-          },
-    ),
+    update<Item>(client, ['items', bid.itemId], item => {
+      const higher = bid.amountFils > item.priceFils;
+      const later =
+        endsAt !== undefined &&
+        !!item.auction &&
+        endsAt > item.auction.endsAt;
+      if (!higher && !later) return item;
+      return {
+        ...item,
+        priceFils: higher ? bid.amountFils : item.priceFils,
+        auction: item.auction && {
+          ...item.auction,
+          bidCount: item.auction.bidCount + (higher ? 1 : 0),
+          endsAt: later ? endsAt : item.auction.endsAt,
+        },
+      };
+    }),
     update<Bid[]>(client, ['bids', bid.itemId], bids =>
       bids.some(known => known.id === bid.id)
         ? bids
@@ -70,7 +79,7 @@ export function applyAccountEvent(client: QueryClient, event: AccountEvent) {
   client.invalidateQueries({ queryKey: ['offers'] });
 }
 
-function parseBid(data: unknown): Bid | undefined {
+function parseBid(data: unknown): { bid: Bid; endsAt?: number } | undefined {
   try {
     const message = JSON.parse(String(data));
     const bid = message?.type === 'bid' ? message.bid : undefined;
@@ -83,7 +92,14 @@ function parseBid(data: unknown): Bid | undefined {
       typeof bid.createdAt !== 'string'
     )
       return undefined;
-    return { ...bid, createdAt: fromIso(bid.createdAt) };
+    const endsAt =
+      typeof message.auctionEndsAt === 'string'
+        ? fromIso(message.auctionEndsAt)
+        : undefined;
+    return {
+      bid: { ...bid, createdAt: fromIso(bid.createdAt) },
+      endsAt: Number.isNaN(endsAt) ? undefined : endsAt,
+    };
   } catch {
     return undefined;
   }
@@ -166,13 +182,16 @@ function connect(
 /** One auction's new bids. Public: no log-in. */
 export function connectLiveBids(
   url: string,
-  { onBid, ...handlers }: ConnectionHandlers & { onBid: (bid: Bid) => void },
+  {
+    onBid,
+    ...handlers
+  }: ConnectionHandlers & { onBid: (bid: Bid, endsAt?: number) => void },
 ) {
   return connect(
     () => new WebSocket(url),
     data => {
-      const bid = parseBid(data);
-      if (bid) onBid(bid);
+      const parsed = parseBid(data);
+      if (parsed) onBid(parsed.bid, parsed.endsAt);
     },
     handlers,
   );

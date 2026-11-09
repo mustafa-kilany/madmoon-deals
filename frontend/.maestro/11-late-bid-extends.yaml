@@ -1,0 +1,19 @@
+# A late bid adds time, part 2: with under 30 seconds left, a rival bids, and within seconds this screen
+# shows over a minute left. The app hears it over the live connection.
+appId: com.sahla
+name: A late bid adds 45 seconds, on the screen of someone watching
+---
+# The new, nearer end arrives with the next backup check (a real end never gets nearer).
+- extendedWaitUntil:
+    visible: '.*0m [12]?[0-9]s left.*'
+    timeout: 30000
+- runScript:
+    file: scripts/rival-bids.js
+    env:
+      LISTING: auction-hobbies
+      AMOUNT: "500000"
+      API: ${API}
+- extendedWaitUntil:
+    visible: '.*1m [0-9]+s left.*'
+    timeout: 5000
+- assertVisible: 'Minimum required bid.*'

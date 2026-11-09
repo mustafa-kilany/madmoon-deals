@@ -45,7 +45,7 @@ const stop = () => {
   }
 };
 
-const FLOWS = ['01-browse-as-guest', '02-buy-and-deliver', '03-sell-an-item', '04-cancel-problems-support', '05-offer-counter-chat', '06-auction-bid', 'END', '07-auction-win-pay', '08-bank-account-and-data', '09-live-chat-unread'];
+const FLOWS = ['01-browse-as-guest', '02-buy-and-deliver', '03-sell-an-item', '04-cancel-problems-support', '05-offer-counter-chat', '06-auction-bid', 'END', '07-auction-win-pay', '08-bank-account-and-data', '09-live-chat-unread', '10-late-bid-open', 'SOON', '11-late-bid-extends'];
 const flows = process.argv.length > 2 ? process.argv.slice(2) : FLOWS;
 const maestroPath = `${process.env.PATH}${path.delimiter}${path.join(os.homedir(), 'maestro/bin')}`;
 
@@ -56,6 +56,10 @@ const maestroPath = `${process.env.PATH}${path.delimiter}${path.join(os.homedir(
   }
   const results = [];
   for (const flow of flows) {
+    if (flow === 'SOON') {
+      console.log(inBackend(['tsx', 'scripts/e2e-end-auction.ts', 'auction-hobbies', '44']).trim().split('\n').pop());
+      continue;
+    }
     if (flow === 'END') {
       console.log(inBackend(['tsx', 'scripts/e2e-end-auction.ts', 'auction-fashion']).trim().split('\n').pop());
       continue;

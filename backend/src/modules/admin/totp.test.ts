@@ -39,6 +39,7 @@ test('sealed secrets open again, and not once changed', () => {
   assert.notEqual(sealed, seal('JBSWY3DPEHPK3PXP')); // a new IV each time
   assert.equal(unseal(sealed), 'JBSWY3DPEHPK3PXP');
   const [v, iv, tag, data] = sealed.split('.');
-  assert.equal(unseal([v, iv, tag, data.slice(0, -2) + (data.endsWith('A') ? 'B' : 'A') + data.slice(-1)].join('.')), undefined);
+  // Looks at the very letter it replaces, so the change is always a real one.
+  assert.equal(unseal([v, iv, tag, data.slice(0, -2) + (data.at(-2) === 'A' ? 'B' : 'A') + data.slice(-1)].join('.')), undefined);
   assert.equal(unseal('nonsense'), undefined);
 });

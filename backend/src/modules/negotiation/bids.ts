@@ -10,12 +10,19 @@ import { bidInclude, toApiBid } from './shapes';
 // (the starting bid until someone bids); the next bid is at least that plus the
 // increment.
 
+// A bid in the last 45 seconds adds 45 seconds, so a rival has time to answer: nobody wins by bidding
+// at the last instant. Never past 5 minutes after the end the seller set.
+export const EXTEND_WITHIN_MS = 45_000;
+export const EXTEND_BY_MS = 45_000;
+export const EXTEND_LIMIT_MS = 5 * 60_000;
+
 type LockedListing = {
   status: string;
   saleType: string;
   priceFils: number;
   incrementFils: number | null;
   auctionEndsAt: Date | null;
+  auctionOriginalEndsAt: Date | null;
   sellerUserId: string | null;
   reportHidden: boolean;
 };
@@ -24,7 +31,7 @@ type LockedListing = {
 export async function placeBid(bidderId: string, listingId: string, amountFils: number) {
   const { bid, outbid } = await prisma.$transaction(async tx => {
     const [listing] = await tx.$queryRaw<LockedListing[]>`
-      SELECT "status", "saleType", "priceFils", "incrementFils", "auctionEndsAt", "sellerUserId", "reportHidden"
+      SELECT "status", "saleType", "priceFils", "incrementFils", "auctionEndsAt", "auctionOriginalEndsAt", "sellerUserId", "reportHidden"
       FROM "Listing" WHERE "id" = ${listingId} FOR UPDATE`;
     if (!listing || listing.status === 'withdrawn') throw new ApiError(404, 'NOT_FOUND', `No listing ${listingId}`);
     if (listing.saleType !== 'auction') throw new ApiError(422, 'VALIDATION', 'Not an auction');
@@ -42,9 +49,21 @@ export async function placeBid(bidderId: string, listingId: string, amountFils: 
     if (amountFils < minimum) throw new ApiError(422, 'VALIDATION', `Bid at least ${minimum} fils`);
 
     const leader = await tx.bid.findFirst({ where: { listingId }, orderBy: [{ amountFils: 'desc' }, { createdAt: 'asc' }] });
-    await tx.listing.update({ where: { id: listingId }, data: { priceFils: amountFils, bidCount: { increment: 1 } } });
+    const original = listing.auctionOriginalEndsAt ?? listing.auctionEndsAt;
+    const late = listing.auctionEndsAt.getTime() - Date.now() <= EXTEND_WITHIN_MS;
+    const endsAt = late
+      ? new Date(Math.max(listing.auctionEndsAt.getTime(), Math.min(listing.auctionEndsAt.getTime() + EXTEND_BY_MS, original.getTime() + EXTEND_LIMIT_MS)))
+      : listing.auctionEndsAt;
+    await tx.listing.update({
+      where: { id: listingId },
+      data: {
+        priceFils: amountFils,
+        bidCount: { increment: 1 },
+        ...(endsAt.getTime() !== listing.auctionEndsAt.getTime() && { auctionEndsAt: endsAt, auctionOriginalEndsAt: original }),
+      },
+    });
     const bid = await tx.bid.create({ data: { listingId, bidderId, amountFils }, include: bidInclude });
-    await announceBid(tx, toApiBid(bid));
+    await announceBid(tx, toApiBid(bid), endsAt);
     return { bid, outbid: leader && leader.bidderId !== bidderId ? leader.bidderId : undefined };
     // A popular auction queues on its row lock: wait in line rather than fail.
   }, { maxWait: 10_000, timeout: 15_000 });

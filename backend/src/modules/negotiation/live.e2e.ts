@@ -124,12 +124,13 @@ test('a bid reaches everyone watching that auction, well within a second, and no
   for (const s of [one, two, elsewhere]) s.ws.close();
 });
 
-test('it says exactly what the public bid list says, nothing more', async () => {
+test('it says exactly what the public bid list and listing say, nothing more', async () => {
   const watcher = await open(liveUrl(AUCTION));
   await bid(b);
   await until('the bid', () => watcher.bids.length === 1);
   const list = await api.call('GET', `/listings/${AUCTION}/bids`);
-  assert.deepEqual(watcher.bids[0], { type: 'bid', bid: list.body[0] });
+  const listing = await api.call('GET', `/listings/${AUCTION}`);
+  assert.deepEqual(watcher.bids[0], { type: 'bid', bid: list.body[0], auctionEndsAt: listing.body.auction.endsAt });
   assert.ok(!JSON.stringify(watcher.bids[0]).includes(b.email));
   watcher.ws.close();
 });

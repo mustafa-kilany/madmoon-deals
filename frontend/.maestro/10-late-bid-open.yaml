@@ -1,0 +1,31 @@
+# A late bid adds time, part 1: open a live auction. Then run-all.cjs moves its end to 44 seconds away
+# (SOON), and 11 carries on from this same screen.
+appId: com.sahla
+name: Open an auction that's about to end
+---
+- runFlow: subflows/launch.yaml
+- runFlow:
+    file: subflows/sign-in.yaml
+    env:
+      EMAIL: ahmad@sahla.jo
+      PASSWORD: sahla1234
+- runFlow: subflows/accept-terms.yaml
+
+- tapOn: "Home"
+- tapOn: "Search for anything..."
+- tapOn: "Search for anything..."
+- inputText: "Acoustic Guitar"
+- pressKey: Enter
+- extendedWaitUntil:
+    visible: "Acoustic Guitar"
+    timeout: 10000
+- tapOn:
+    text: "Acoustic Guitar"
+    below:
+      text: '\d+ results?'
+- extendedWaitUntil:
+    visible: "Current Highest Bid"
+    timeout: 10000
+
+# The button is in reach without scrolling: nothing may push it off the screen.
+- assertVisible: "Place Bid"

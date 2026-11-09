@@ -10,7 +10,7 @@
 import type { Localized } from '@/lib/types';
 
 /** The version people accept at sign-up (stored with the account). */
-export const LEGAL_VERSION = '2026-11-08';
+export const LEGAL_VERSION = '2026-11-09';
 /** The Sanad consent people give before each ID check (stored with the check). */
 export const SANAD_CONSENT_VERSION = '2026-11-07';
 
@@ -101,8 +101,8 @@ export const termsOfUse: LegalDoc = {
     s(
       'Offers and auctions',
       'العروض والمزادات',
-      'An accepted offer or a winning bid is a commitment to buy at that price. Sellers can’t withdraw an auction or change what was bid on once it has bids. The winner has 48 hours after the auction ends to pay; after that the seller may withdraw the item.',
-      'العرض المقبول أو المزايدة الفائزة التزام بالشراء بذلك السعر. لا يمكن للبائع سحب مزاد أو تغيير ما زايد عليه الناس بعد وجود مزايدات. أمام الفائز 48 ساعة بعد انتهاء المزاد ليدفع؛ بعدها يحق للبائع سحب المنتج.',
+      'An accepted offer or a winning bid is a commitment to buy at that price. Sellers can’t withdraw an auction or change what was bid on once it has bids. A bid in the last 45 seconds adds 45 seconds to the auction, up to 5 minutes after the end the seller set. The winner has 48 hours after the auction ends to pay; after that the seller may withdraw the item.',
+      'العرض المقبول أو المزايدة الفائزة التزام بالشراء بذلك السعر. لا يمكن للبائع سحب مزاد أو تغيير ما زايد عليه الناس بعد وجود مزايدات. المزايدة في آخر 45 ثانية تضيف 45 ثانية إلى المزاد، وبحد أقصى 5 دقائق بعد موعد الانتهاء الذي حدده البائع. أمام الفائز 48 ساعة بعد انتهاء المزاد ليدفع؛ بعدها يحق للبائع سحب المنتج.',
     ),
     s(
       'Paying and escrow',
