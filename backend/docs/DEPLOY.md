@@ -47,6 +47,18 @@ npm run staff -- admin "Your Name" you@sahla.jo owner
 ```
 Set the password with the emailed code, then the dashboard's first log-in shows the QR code. `npm run db:seed` refuses to run in production.
 
+## Live auctions
+
+The app holds a WebSocket open on each auction screen (`GET /v1/listings/:id/live`). Two things to check on the host:
+
+* **The load balancer must pass WebSockets**, with an idle timeout above 25 seconds (the server sends something every 25). Every host named above does this by default.
+* **The server listens to the database with `LISTEN`,** which doesn't work through a connection pooler in transaction mode (PgBouncer, a host's "pooled" address). If `DATABASE_URL` is one of those, set `LIVE_DATABASE_URL` to the direct address. This one connection comes on top of `DB_POOL_SIZE`.
+* **Memory:** each open connection takes about 220 KB (measured: 1 000 added about 220 MB). `LIVE_MAX_CONNECTIONS` (default 2 000, so about 450 MB) is the most one server takes; beyond it phones ask every 3 seconds instead. Set it to fit the host's memory.
+
+If either is wrong nothing breaks: the server notices it can't hear itself (`Live: the database stopped delivering bids` in the log), and the app falls back to asking every 3 seconds. Bids then show within about 3 seconds rather than at once.
+
+**After the first deploy,** check it through the real load balancer: open the same auction on two phones, bid on one, and the other should change at once.
+
 ## One server for now
 
-Rate limits and background jobs live in the server's memory (`lib/rateLimit.ts`, `lib/jobs.ts`). Run **one instance**. Before running more: a shared store for the limits (S0.9) and a job queue (`lib/jobs.ts` says how). The jobs tolerate a restart.
+Rate limits and background jobs live in the server's memory (`lib/rateLimit.ts`, `lib/jobs.ts`). Run **one instance**. (Live bids already work across several: they go through the database.) Before running more: a shared store for the limits (S0.9) and a job queue (`lib/jobs.ts` says how). The jobs tolerate a restart.

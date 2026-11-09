@@ -4,6 +4,7 @@ import { env } from './env';
 import { reportError } from './lib/errorReporter';
 import { logger } from './lib/logger';
 import { scheduleAuctionClosing } from './modules/negotiation/bids';
+import { attachLive } from './modules/negotiation/live';
 import { scheduleMoneyCheck } from './modules/orders/moneyCheck';
 import { scheduleRetention } from './modules/privacy/retention';
 import { scheduleNightlyRiskCheck } from './modules/risk/triggers';
@@ -22,6 +23,8 @@ const server = app.listen(env.PORT, () => {
   logger.info(`Sahla backend on http://localhost:${env.PORT}/v1`);
 });
 
+const live = attachLive(server, app);
+
 // B12.2: on a deploy the host sends SIGTERM. Requests in progress (a payment!) finish,
 // then the database connections close. Anything still open after 20 seconds is cut.
 let stopping = false;
@@ -31,6 +34,7 @@ function shutdown(signal: string) {
   logger.info({ signal }, 'Shutting down');
   const cut = setTimeout(() => process.exit(1), 20_000) as unknown as { unref(): void };
   cut.unref();
+  live.close(); // open sockets would otherwise keep the server from closing
   server.close(() => {
     prisma.$disconnect().finally(() => process.exit(0));
   });

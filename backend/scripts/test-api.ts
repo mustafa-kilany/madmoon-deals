@@ -30,4 +30,5 @@ run('npx prisma migrate deploy'); // creates sahla_test on first run, then appli
 run('npx tsx scripts/empty-db.ts');
 // One file at a time: they share the test database.
 const only = process.argv[2]?.replace(/[^\w-]/g, '') ?? '';
-run(`node --import tsx --test --test-concurrency=1 "src/**/${only}*.e2e.ts"`);
+// A stuck test fails instead of waiting forever.
+run(`node --import tsx --test --test-concurrency=1 --test-timeout=120000 "src/**/${only}*.e2e.ts"`);

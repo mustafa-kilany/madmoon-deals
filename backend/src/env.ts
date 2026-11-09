@@ -21,6 +21,10 @@ const schema = z
     DATABASE_URL: z.string().startsWith('postgresql://'),
     PORT: z.coerce.number().int().positive().default(4000),
     DB_POOL_SIZE: z.coerce.number().int().min(2).max(200).default(20),
+    // Only if DATABASE_URL goes through a connection pooler: a direct address for hearing live bids (LISTEN).
+    LIVE_DATABASE_URL: optional.pipe(z.string().startsWith('postgresql://').optional()),
+    // Open live-auction connections per server: each takes about 220 KB of memory.
+    LIVE_MAX_CONNECTIONS: z.coerce.number().int().min(1).default(2000),
     // Behind a load balancer / proxy in production: how many (usually 1), so the user's IP
     // (rate limits, sessions) comes from X-Forwarded-For. 0 = straight to this server.
     TRUST_PROXY: z.coerce.number().int().min(0).max(5).default(0),

@@ -45,12 +45,12 @@ export const useRespondToOffer = () =>
     },
   });
 
-export const useBids = (itemId: string) =>
+export const useBids = (itemId: string, pollMs: number | false) =>
   useQuery({
     queryKey: ['bids', itemId],
     queryFn: () => negotiationService.getBids(itemId),
     enabled: !!itemId,
-    refetchInterval: config.pollMs.auction,
+    refetchInterval: pollMs,
   });
 
 export const usePlaceBid = () =>

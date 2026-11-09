@@ -424,7 +424,8 @@
     "noBidsYet": "No bids placed yet. Be the first to bid!",
     "won": "You won this auction! Pay to get it delivered.",
     "ended": "This auction has ended.",
-    "wonBanner": "You won this auction: pay within 48 hours"
+    "wonBanner": "You won this auction: pay within 48 hours",
+    "reconnecting": "Reconnecting… the price and bids may be out of date."
   },
   "chats": {
     "title": "Messages & Offers",

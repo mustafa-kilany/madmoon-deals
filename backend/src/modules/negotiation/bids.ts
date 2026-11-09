@@ -3,7 +3,8 @@ import { ApiError } from '../../lib/errors';
 import { logger } from '../../lib/logger';
 import { pushAuctionWon, pushOutbid } from '../notifications/notify';
 import { isBlockedBetween, sellerSuspended } from '../safety/blocks';
-import { bidInclude } from './shapes';
+import { announceBid } from './live';
+import { bidInclude, toApiBid } from './shapes';
 
 // Auctions (BACKEND_PLAN B6.3, B6.4). The listing's priceFils is the current bid
 // (the starting bid until someone bids); the next bid is at least that plus the
@@ -43,6 +44,7 @@ export async function placeBid(bidderId: string, listingId: string, amountFils: 
     const leader = await tx.bid.findFirst({ where: { listingId }, orderBy: [{ amountFils: 'desc' }, { createdAt: 'asc' }] });
     await tx.listing.update({ where: { id: listingId }, data: { priceFils: amountFils, bidCount: { increment: 1 } } });
     const bid = await tx.bid.create({ data: { listingId, bidderId, amountFils }, include: bidInclude });
+    await announceBid(tx, toApiBid(bid));
     return { bid, outbid: leader && leader.bidderId !== bidderId ? leader.bidderId : undefined };
     // A popular auction queues on its row lock: wait in line rather than fail.
   }, { maxWait: 10_000, timeout: 15_000 });

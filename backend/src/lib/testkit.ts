@@ -42,7 +42,7 @@ export function startApi() {
     }
     return { status: r.status, headers: r.headers, body: parsed };
   };
-  return { ready, raw, call, url: () => base, close: () => server.close() };
+  return { server, ready, raw, call, url: () => base, close: () => server.close() };
 }
 export type Api = ReturnType<typeof startApi>;
 

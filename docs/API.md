@@ -6,6 +6,7 @@ The app's HTTP service layer (`frontend/src/services/*/http.ts`) and API client 
 
 ## Changes on 2026-11-08 (readiness work: `INTERNAL_READINESS_PLAN.md`)
 
+* **`GET /listings/:id/live`:** a WebSocket that delivers each new bid as it's saved. See "Live Updates & Notifications".
 * **`POST /auth/send-otp`** answers 204 even when the email has an account (it no longer says `EMAIL_TAKEN`): that person gets an email saying so.
   **`POST /auth/signup`** checks the code first, so only the mailbox's owner can see `EMAIL_TAKEN`. **`POST /auth/forgot-password`** answers at once; an email outage isn't reported.
 * **`DELETE /me`** also refuses (`OPEN_ORDERS`) with money still owed or in a live auction, and staff accounts (`FORBIDDEN`). It removes the files too.
@@ -135,7 +136,7 @@ export const config = {
 
   requestTimeoutMs: 15_000,
   uploadTimeoutMs: 60_000,
-  pollMs: { auction: 3_000, chat: 5_000, orders: 15_000 }, // see "Live updates"
+  pollMs: { auction: 3_000, auctionLive: 15_000, chat: 5_000, orders: 15_000 }, // see "Live updates"
 } as const;
 ```
 
@@ -1212,11 +1213,26 @@ while they're on screen and the app is in the foreground (`config.pollMs`):
 
 | Screen | Requests | Every |
 |---|---|---|
-| Auction bidding | `GET /listings/:id`, `GET /listings/:id/bids` | 3 s |
+| Auction bidding | `GET /listings/:id`, `GET /listings/:id/bids` | 15 s with the live connection below, 3 s without it |
 | Chats / open conversation | `GET /chats`, `GET /chats/:id/messages` | 5 s |
 | Order tracking | `GET /me/orders` | 15 s |
 
 These endpoints must therefore be cheap. Optional: support `ETag` / `If-None-Match` → `304`.
+
+**Live auctions: `GET /v1/listings/:id/live` (WebSocket; `wss://` in production).** Each new bid arrives as it's saved. No
+log-in: it carries only what the public `GET /listings/:id/bids` shows. It goes one way: anything sent to the server closes the
+connection (1008).
+
+```jsonc
+{ "type": "bid", "bid": { /* one entry of GET /listings/:id/bids */ } } // the price is now bid.amountFils
+{ "type": "alive" }                                                      // every 25 s: no message for 60 s means the connection is dead
+```
+
+* **Refused with:** 404 (not a live auction's address, a withdrawn listing, a fixed-price listing), 403 (a browser page from another
+  website), 429 (600 connections a minute from one address), 503 (1 000 open from one address, `LIVE_MAX_CONNECTIONS` on the server, 2 000 by default, or the server
+  isn't hearing the database right now).
+* **Closed with:** 1013 (the server lost the database: reconnect), 1001 (the server is restarting: reconnect), 1008 / 1009 (the client sent something).
+* **The app** keeps polling behind it, and after every (re)connection fetches both `GET`s once: bids can be missed while disconnected.
 
 **Push notifications** (Firebase Cloud Messaging; backend B9.2–B9.3, `backend/docs/PUSH.md`). Android
 now; iPhones once an Apple push key is added to Firebase.

@@ -39,11 +39,12 @@ export const config = {
   uploadTimeoutMs: 60_000,
   /**
    * Live screens re-ask the server this often while they're open (and stop
-   * when the app is in the background). A WebSocket / push can replace this
-   * later without touching the screens.
+   * when the app is in the background). Auctions get each bid at once over a
+   * live connection; these polls are the safety net behind it.
    */
   pollMs: {
-    auction: 3_000, // current bid + bid list
+    auction: 3_000, // current bid + bid list, when the live connection is down
+    auctionLive: 15_000, // the same, with the live connection up
     chat: 5_000, // threads and open conversation
     orders: 15_000, // order status (courier delivered → completed)
     deliveries: 30_000, // the courier's list (newly assigned orders)

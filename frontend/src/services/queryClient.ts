@@ -5,7 +5,7 @@ import { focusManager, QueryClient } from '@tanstack/react-query';
 import { AppState } from 'react-native';
 
 // React Native has no window focus: tell Query when the app is in front, so
-// live polling (auction 3 s, chats 5 s, orders 15 s) stops in the background
+// live polling (auction, chats 5 s, orders 15 s) stops in the background
 // and stale screens refresh as soon as the app comes back.
 focusManager.setEventListener(onFocus => {
   const sub = AppState.addEventListener('change', state =>

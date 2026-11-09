@@ -8,7 +8,6 @@ import {
   useMutation,
   useQuery,
 } from '@tanstack/react-query';
-import { config } from '@/config';
 import { emptyFilters, validPriceRange } from '@/lib/browsing';
 import type { Item, ListingQuery, LocalPhoto } from '@/lib/types';
 import { useUser } from '@/features/auth/sessionStore';
@@ -95,16 +94,16 @@ export function useListingTotal(query: ListingQuery) {
   return validPriceRange(query.filters) ? data : 0;
 }
 
-/** `live`: keep refreshing while open (auction price changes with each bid). */
+/** `pollMs`: keep refreshing while open, this often. */
 export const useItem = (
   id: string | undefined,
-  { live = false }: { live?: boolean } = {},
+  { pollMs }: { pollMs?: (item: Item | undefined) => number | false } = {},
 ) =>
   useQuery({
     queryKey: queryKeys.item(id ?? ''),
     queryFn: () => catalogService.getItem(id!),
     enabled: !!id,
-    refetchInterval: live ? config.pollMs.auction : false,
+    refetchInterval: pollMs ? query => pollMs(query.state.data) : false,
   });
 
 /** Specific listings in the given order (Saved, recently viewed). */

@@ -4,6 +4,7 @@
 // most viewed first). Sellers can't bid on their own
 // auction; once it ends, the winner (auction.winnerId) pays like a buyer.
 
+import { useIsFocused } from '@react-navigation/native';
 import { useState } from 'react';
 import { Image, ScrollView, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -24,6 +25,8 @@ import {
   TextField,
 } from '@/components/ui';
 import { TimeLeft } from '@/components/TimeLeft';
+import { config } from '@/config';
+import { useLiveAuction } from '@/features/auctions/hooks/useLiveAuction';
 import { useRequireAuth } from '@/features/auth/hooks/useRequireAuth';
 import { useUser } from '@/features/auth/sessionStore';
 import { useItem } from '@/features/catalog/hooks/useCatalog';
@@ -46,10 +49,29 @@ export function AuctionBiddingScreen({
   const localized = useLocalized();
   const itemId = route.params?.itemId;
 
+  // New bids arrive over the live connection; the polls catch whatever it can't carry. Once the
+  // auction has ended the winner comes from the server's closing job, so ask quickly again.
+  // Under another screen (checkout) neither runs; coming back reconnects and catches up.
+  const isFocused = useIsFocused();
+  const { connected, reconnecting } = useLiveAuction(itemId, isFocused);
   const { data: item, isLoading: isItemLoading } = useItem(itemId, {
-    live: true,
+    pollMs: current => {
+      if (!isFocused) return false;
+      return connected &&
+        current?.auction &&
+        Date.now() < current.auction.endsAt
+        ? config.pollMs.auctionLive
+        : config.pollMs.auction;
+    },
   });
-  const { data: bids = [], isLoading: isBidsLoading } = useBids(itemId);
+  const { data: bids = [], isLoading: isBidsLoading } = useBids(
+    itemId,
+    !isFocused
+      ? false
+      : connected
+        ? config.pollMs.auctionLive
+        : config.pollMs.auction,
+  );
   const placeBid = usePlaceBid();
   const user = useUser();
   const requireAuth = useRequireAuth();
@@ -124,6 +146,20 @@ export function AuctionBiddingScreen({
         </>
       }
     >
+      {/* Above the scrolling part: it must stay in sight wherever the person has scrolled to. */}
+      {reconnecting && !ended && (
+        <View
+          testID="auction-reconnecting"
+          accessibilityRole="alert"
+          accessibilityLiveRegion="polite"
+          className="flex-row items-center gap-2 bg-brand-warning-soft px-5 py-3"
+        >
+          <Icon name="AlertCircle" size={16} color={colors.warningText} />
+          <Text className="flex-1 font-sans-bold text-xs text-brand-warning-text">
+            {t('auctionBidding.reconnecting')}
+          </Text>
+        </View>
+      )}
       <ScrollView
         contentContainerClassName="gap-6 p-5 pb-10"
         keyboardShouldPersistTaps="handled"
