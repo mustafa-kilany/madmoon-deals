@@ -52,10 +52,10 @@ name: Offer, counter, chat, pay the agreed price
       COUNTER: "60000"
       API: ${API}
 
-# Nobody reloads anything: the chat refreshes itself.
+# Nobody reloads anything: it arrives over the live connection (its backup poll is 30 s).
 - extendedWaitUntil:
     visible: "Yes, and I can do this price"
-    timeout: 20000
+    timeout: 5000
 - scrollUntilVisible:
     element:
       text: 'Accept .*60.*'

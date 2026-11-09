@@ -28,20 +28,36 @@ name: Bid, get outbid, bid again
     visible: "Current Highest Bid"
     timeout: 10000
 
-# Too low is refused here, with the minimum.
+# Too low is refused here, with the minimum: the message is the same words as the note on the page, so
+# the second copy is the toast. It sits over the Quick Add row, so it's tapped away before that's used.
 - tapOn: "Your Bid (JOD)"
 - inputText: "1"
 - hideKeyboard
 - tapOn: "Place Bid"
 - extendedWaitUntil:
-    visible: 'Minimum required bid.*'
+    visible:
+      text: 'Minimum required bid.*'
+      index: 1
+    timeout: 5000
+- tapOn:
+    text: 'Minimum required bid.*'
+    index: 1
+- extendedWaitUntil:
+    notVisible:
+      text: 'Minimum required bid.*'
+      index: 1
     timeout: 5000
 
+# 210 + 25 = 235, and this auction goes up in tens.
 - tapOn: "+25 JOD"
 - tapOn: "Place Bid"
 - extendedWaitUntil:
-    visible: "Ahmad"
+    visible: "Your bid was placed successfully!"
     timeout: 10000
+- tapOn: "Your bid was placed successfully!"
+- extendedWaitUntil:
+    visible: 'Minimum required bid.*245.*'
+    timeout: 5000
 
 - runScript:
     file: scripts/rival-bids.js
@@ -49,13 +65,22 @@ name: Bid, get outbid, bid again
       LISTING: auction-fashion
       AMOUNT: "300000"
       API: ${API}
-# The page polls: the rival's bid and new price arrive on their own.
+# The rival's bid and new price arrive on their own, over the live connection (its backup poll is 15 s).
 - extendedWaitUntil:
-    visible: 'Minimum required bid.*301.*'
-    timeout: 15000
+    visible: 'Minimum required bid.*310.*'
+    timeout: 5000
 
 - tapOn: "+25 JOD"
 - tapOn: "Place Bid"
 - extendedWaitUntil:
-    visible: 'Minimum required bid.*32[0-9].*'
-    timeout: 15000
+    visible: "Your bid was placed successfully!"
+    timeout: 10000
+- tapOn: "Your bid was placed successfully!"
+- extendedWaitUntil:
+    visible: 'Minimum required bid.*335.*'
+    timeout: 5000
+
+# Both people are in the history, further down the page.
+- scrollUntilVisible:
+    element: "Ahmad.*"
+- assertVisible: "Sami.*"

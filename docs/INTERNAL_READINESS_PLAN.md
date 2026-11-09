@@ -49,7 +49,7 @@ No item is ✅ until its own test exists. Each phase must then pass gates 1–3;
 | A7 | Store keys only touch their own store (S2.5) | ✅ |
 | A8 | No secret field in any answer, checked by a walker over real responses (S2.6) | ✅ |
 | A9 | Data retention rules + clean-up job (S8.3), matching the privacy policy | ✅ |
-| A10 | Download my data: `GET /me/export`, a button in the app (S8.4) | 🔨 |
+| A10 | Download my data: `GET /me/export`, a button in the app (S8.4) | ✅ |
 | A11 | Sanad consent enforced (S8.2), breach plan (S8.5), secrets register (S7.3) | ✅ |
 
 ## Phase 3 — Server and files
@@ -63,7 +63,7 @@ No item is ✅ until its own test exists. Each phase must then pass gates 1–3;
 | F5 | Error reporter with scrubbing, tested on a local fake Sentry; it stays off until there is a DSN (S0.10) | ✅ |
 | F6 | Clean shutdown, health check, Dockerfile, `migrate deploy` on release (B12.2) | ✅ |
 | F7 | Backup + restore scripts, restore really tested (B12.3, S7.7) | ✅ |
-| F8 | Dashboard security headers (built, `dist/_headers`; the Chrome test is T3) (S5.3, S5.2, S5.7) | 🔨 |
+| F8 | Dashboard security headers, tested in Chrome (S5.3, S5.2, S5.7) | ✅ |
 | F9 | CI: secret scan, `npm audit`, CodeQL, Docker build (S7.9, S7.10) | ✅ |
 
 ## Phase 4 — The app
@@ -74,16 +74,16 @@ No item is ✅ until its own test exists. Each phase must then pass gates 1–3;
 | P2 | PIN and card screens hidden from screenshots and the app switcher (S6.5) | ✅ |
 | P3 | Push texts carry no PIN or address (S6.6); a push can't open someone else's order (S6.7) | ✅ |
 | P4 | Only needed permissions in the merged release manifest (S6.9) | ✅ |
-| P5 | Arabic app name, splash screen, screen-reader labels on main actions | 🔨 |
-| P6 | Payout account + download-my-data screens | 🔨 |
+| P5 | Arabic app name (in the APK), splash screen (seen), screen-reader labels on main actions | ✅ |
+| P6 | Payout account + download-my-data screens | ✅ |
 
 ## Phase 5 — Prove it
 
 | # | Item | Status |
 |---|---|---|
 | T1 | Attack script (G4) | ✅ |
-| T2 | Offers, chat, auction + won-auction checkout as Maestro flows (G5): written, 01–03 pass, 04–08 not finished | 🔨 |
-| T3 | Dashboard check of every page by admin type (G6): written, not run | 🔨 |
+| T2 | Offers, chat, auction + won-auction checkout, live chat and unread as Maestro flows (G5): 01–09 pass | ✅ |
+| T3 | Dashboard check of every page by admin type (G6): 38 pages clean | ✅ |
 | T4 | Load test, restore test, release APK inspection (G7) | ✅ |
 | T5 | Three full runs in a row (G8) of everything without the emulator; record results here and in `SECURITY_PLAN.md` | ✅ |
 
@@ -92,6 +92,21 @@ No item is ✅ until its own test exists. Each phase must then pass gates 1–3;
 Domain `sahla.jo` · Postmark · payment provider (D2) · hosting (D4) · R2 bucket · Google Vision · Sentry project ·
 MoDEE / Sanad · Play Console · Apple Developer · regenerating the Maps key and restricting the Firebase key.
 **The owner still has to:** create the upload key, give the real support email, and have a lawyer read the legal text.
+
+## Results (2026-11-09): live bids and chat, and the runs that were missing
+
+| Gate | Result |
+|---|---|
+| **A bid on another person's screen** (emulator, debug build, no graphics card; 15 each, from sending to the screen updating) | Bid: average **396 ms**, slowest 531 ms (was 1 550 and 3 050). Message: average **248 ms**, slowest 309 ms (was about 2 500 and 5 000 by calculation). |
+| Same, without a phone, by the number of people | Bids to 1 000 watchers: average 84 ms, slowest 180. Chat among 250 pairs: average 54 ms, slowest 550. Simulated slow mobile network: slowest 638 ms. Live connection down: bids within 3 s, messages within 5 s. |
+| G5, Maestro on the real backend | **9 of 9 flows.** 06 failed on its first run because of the flow itself, fixed. |
+| G6, dashboard in Chrome under its real headers | 38 pages clean by admin type, each sees only their own, injected scripts blocked, QR code shows. |
+| G3, `check:mutations` | 70 protections on the server, 43 in the app (a one-off script for the app's side): all caught, after closing the gaps that found. |
+| G7, load | About 510 requests a second with live connections on. **On/off comparison: no difference**, measured while another program had halved the PC's speed. |
+| G1 + G2, three runs in a row | Backend 36 unit + 245 end-to-end (1 skipped, Linux only), app 262, types clean, lint 0 errors |
+| G4 and G7 | `check:attack` 17 615 checks, 0 problems (Express routes only: the WebSockets have their own tests). Release APK, secrets, backup drill, audits: clean. |
+
+**Found on the way, not fixed:** the error toast on the auction screen sits over the Quick Add row until it goes, so tapping +25 then dismisses the toast instead.
 
 ## Results (2026-11-08)
 
@@ -112,9 +127,6 @@ MoDEE / Sanad · Play Console · Apple Developer · regenerating the Maps key an
 
 | What | Why | To finish |
 |---|---|---|
-| **Maestro 04–08** (T2): cancel and problems, offers and chat, auction bid and win, bank account | The PC ran out of memory during the run and the system stopped it. 08 got as far as saving the account; 05, 06, 07 have **never run**, so they may still need fixes. | `npm run e2e:backend` |
-| **Dashboard check** (T3, F8's proof): every page by admin type, the QR code under the security headers | Needs the same test backend. `check-pages.mjs` is written but **has never run**. | In `admin/`: `npm run build`, `npm run preview`, `npm run check:pages` |
-| Splash screen and Arabic app name (P5) | Built and in the APK, not yet looked at on a screen | Look, in the next emulator run |
 | Linux-only and CI: the SIGTERM test, gitleaks, CodeQL, Docker image build | Need the branch on GitHub; Docker isn't on this PC | Push the branch |
 | Real S3 bucket | Downloading MinIO was refused by this PC's permissions; a real bucket is an outside account anyway | `npm run check:storage` when R2 exists |
 

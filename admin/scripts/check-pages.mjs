@@ -207,7 +207,8 @@ async function checkPages() {
       await open(ADMIN + page);
       const text = await evaluate('document.body.innerText');
       if (text.length < 40) issues.push(`nearly empty page: "${text}"`);
-      if (/Something went wrong|Couldn.t load|Try again/i.test(text)) issues.push(`shows an error: ${text.slice(0, 160).replace(/\s+/g, ' ')}`);
+      // The error view's own words, capitals and all: "delivery problems (try again)" describes an admin type.
+      if (/Something went wrong|Couldn.t load|Try again\b/.test(text)) issues.push(`shows an error: ${text.slice(0, 160).replace(/\s+/g, ' ')}`);
       if (await evaluate(`document.body.innerHTML.includes('"pin"')`)) issues.push('a PIN field in the page');
       if (issues.length) for (const issue of issues) fail(`${type} ${page}: ${issue}`);
       else loaded++;
