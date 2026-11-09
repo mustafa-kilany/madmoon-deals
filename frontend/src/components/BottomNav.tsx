@@ -8,7 +8,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Icon, type IconName } from '@/components/icons';
 import { Text } from '@/components/ui';
+import { UnreadBadge } from '@/components/UnreadBadge';
+import { config } from '@/config';
 import { useRequireAuth } from '@/features/auth/hooks/useRequireAuth';
+import { useUser } from '@/features/auth/sessionStore';
+import {
+  totalUnread,
+  useChatThreads,
+} from '@/features/offers/hooks/useNegotiation';
 import type { TabParamList } from '@/navigation/types';
 import { colors } from '@/theme/colors';
 import { iconSize } from '@/theme/spacing';
@@ -29,6 +36,13 @@ export function BottomNav({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const requireAuth = useRequireAuth();
   const activeRoute = state.routes[state.index].name;
+  // The number on the Chats tab, wherever the person is. Guests have no chats.
+  const user = useUser();
+  const { data: threads } = useChatThreads({
+    pollMs: config.pollMs.chatLive,
+    enabled: !!user && user.role !== 'courier',
+  });
+  const unread = totalUnread(threads);
 
   const renderTab = ({ route, icon, label }: (typeof tabs)[number]) => {
     const active = activeRoute === route;
@@ -38,14 +52,25 @@ export function BottomNav({ state, navigation }: BottomTabBarProps) {
         onPress={() => navigation.navigate(route)}
         accessibilityRole="tab"
         accessibilityState={{ selected: active }}
-        accessibilityLabel={t(label)}
+        accessibilityLabel={
+          route === 'Chats' && unread > 0
+            ? `${t(label)}, ${t('chats.unread', { count: unread })}`
+            : t(label)
+        }
         className="min-h-11 min-w-12 items-center gap-1"
       >
-        <Icon
-          name={icon}
-          size={iconSize.nav}
-          color={active ? colors.primary : colors.warmgray}
-        />
+        <View>
+          <Icon
+            name={icon}
+            size={iconSize.nav}
+            color={active ? colors.primary : colors.warmgray}
+          />
+          {route === 'Chats' && (
+            <View className="absolute -end-3 -top-1">
+              <UnreadBadge count={unread} testID="tab-unread" />
+            </View>
+          )}
+        </View>
         <Text
           className={`font-sans-bold text-xs ${
             active ? 'text-brand-primary' : 'text-brand-warmgray'

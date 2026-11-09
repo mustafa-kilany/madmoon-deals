@@ -1,8 +1,7 @@
 // Negotiation, bidding, chat and safety (report, block) as TanStack Query hooks.
 
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { config } from '@/config';
-import type { OfferStatus } from '@/lib/types';
+import type { ChatThread, OfferStatus } from '@/lib/types';
 import { negotiationService } from '@/services/negotiation';
 import type {
   MakeOfferInput,
@@ -62,19 +61,44 @@ export const usePlaceBid = () =>
     },
   });
 
-export const useChatThreads = () =>
+export const useChatThreads = ({
+  pollMs,
+  enabled = true,
+}: {
+  pollMs: number | false;
+  enabled?: boolean;
+}) =>
   useQuery({
     queryKey: queryKeys.chats,
     queryFn: negotiationService.getChatThreads,
-    refetchInterval: config.pollMs.chat,
+    enabled,
+    refetchInterval: pollMs,
   });
 
-export const useChatMessages = (chatId: string) =>
+/** Every chat's unread messages together: the number on the Chats tab. */
+export const totalUnread = (threads: ChatThread[] = []) =>
+  threads.reduce((sum, thread) => sum + thread.unreadCount, 0);
+
+export const useChatMessages = (chatId: string, pollMs: number | false) =>
   useQuery({
     queryKey: queryKeys.chatMessages(chatId),
     queryFn: () => negotiationService.getChatMessages(chatId),
     enabled: !!chatId,
-    refetchInterval: config.pollMs.chat,
+    refetchInterval: pollMs,
+  });
+
+/** Read up to this message. The count clears at once; the server tells this person's other phones. */
+export const useMarkChatRead = () =>
+  useMutation({
+    mutationFn: ({ chatId, messageId }: { chatId: string; messageId: string }) =>
+      negotiationService.markChatRead(chatId, messageId),
+    onSuccess: (_, { chatId }) => {
+      queryClient.setQueryData<ChatThread[]>(queryKeys.chats, threads =>
+        threads?.map(thread =>
+          thread.id === chatId ? { ...thread, unreadCount: 0 } : thread,
+        ),
+      );
+    },
   });
 
 export const useSendMessage = () =>

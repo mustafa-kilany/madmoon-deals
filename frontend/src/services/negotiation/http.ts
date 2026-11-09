@@ -84,6 +84,12 @@ export const httpNegotiationService: NegotiationService = {
       ),
     ),
 
+  markChatRead: async (chatId, messageId) => {
+    await api.post<void>(`/chats/${encodeURIComponent(chatId)}/read`, {
+      messageId,
+    });
+  },
+
   report: async ({ target, reason, details }) => {
     await api.post('/reports', {
       targetType: target.type,

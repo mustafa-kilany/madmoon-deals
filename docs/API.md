@@ -6,7 +6,8 @@ The app's HTTP service layer (`frontend/src/services/*/http.ts`) and API client 
 
 ## Changes on 2026-11-08 (readiness work: `INTERNAL_READINESS_PLAN.md`)
 
-* **`GET /listings/:id/live`:** a WebSocket that delivers each new bid as it's saved. See "Live Updates & Notifications".
+* **`GET /listings/:id/live`:** a WebSocket that delivers each new bid as it's saved. **`GET /me/live`:** a signed-in WebSocket that says when a chat or the support conversation changed. See "Live Updates & Notifications".
+* **`ChatThread`** has `unreadCount`; **`POST /chats/:id/read`** marks a chat read.
 * **`POST /auth/send-otp`** answers 204 even when the email has an account (it no longer says `EMAIL_TAKEN`): that person gets an email saying so.
   **`POST /auth/signup`** checks the code first, so only the mailbox's owner can see `EMAIL_TAKEN`. **`POST /auth/forgot-password`** answers at once; an email outage isn't reported.
 * **`DELETE /me`** also refuses (`OPEN_ORDERS`) with money still owed or in a live auction, and staff accounts (`FORBIDDEN`). It removes the files too.
@@ -699,6 +700,7 @@ type ChatThread = {
   otherPartyName: string; // the seller for the buyer, and the buyer for the seller
   lastMessage: string;
   updatedAt: string;
+  unreadCount: number;    // messages from the other person this person hasn't read
 };
 
 type ChatMessage = {
@@ -725,6 +727,7 @@ Anyone else answering, or answering out of turn: `FORBIDDEN` (403). Answering a 
 * **`GET /chats` *(Authenticated)*** → `ChatThread[]`
 * **`GET /chats/:id/messages` *(Authenticated)*** → `ChatMessage[]`, the latest 50 (oldest first). Older ones: `?before=<messageId>&limit=50` (the app doesn't page back yet).
 * **`POST /chats/:id/messages` *(Authenticated)*** → Body: `{ "text": "Is this still available?" }` → `ChatMessage`
+* **`POST /chats/:id/read` *(Authenticated: either side of the chat)*** → Body: `{ "messageId": "..." }` → 204. This person has read up to that message, and it never moves backward. Only they can see the result: the other side isn't told (no read receipts). A message of another chat: `VALIDATION`.
 * **`POST /listings/:id/offers` *(Authenticated)*** → Body: `{ "amountFils": 450000 }` → `{ "offer": Offer, "chatId": "..." }`. Fixed-price `active` listings only (`ITEM_UNAVAILABLE` otherwise, also for brand-store listings and between people who blocked each other); not your own (`FORBIDDEN`). One open offer at a time: while the last one is `pending` or `countered`, a new one is `VALIDATION`.
 * **`POST /offers/:id/respond` *(Authenticated: the seller for a `pending` offer, the buyer for a `countered` one)*** → Body: `{ "status": "accepted" | "countered" | "rejected", "counterAmountFils"?: 480000 }` → `Offer` (only the seller may send `countered`)
 * **`POST /listings/:id/bids` *(Authenticated)*** → Body: `{ "amountFils": 530000 }` → `Bid` (the item's `priceFils` and `bidCount` update; refetch the item)
@@ -1214,7 +1217,8 @@ while they're on screen and the app is in the foreground (`config.pollMs`):
 | Screen | Requests | Every |
 |---|---|---|
 | Auction bidding | `GET /listings/:id`, `GET /listings/:id/bids` | 15 s with the live connection below, 3 s without it |
-| Chats / open conversation | `GET /chats`, `GET /chats/:id/messages` | 5 s |
+| Chats / open conversation, support | `GET /chats`, `GET /chats/:id/messages`, `GET /support` | 30 s with the live connection below, 5 s without it |
+| The unread number on the Chats tab | `GET /chats` | 30 s |
 | Order tracking | `GET /me/orders` | 15 s |
 
 These endpoints must therefore be cheap. Optional: support `ETag` / `If-None-Match` → `304`.
@@ -1233,6 +1237,17 @@ connection (1008).
   isn't hearing the database right now).
 * **Closed with:** 1013 (the server lost the database: reconnect), 1001 (the server is restarting: reconnect), 1008 / 1009 (the client sent something).
 * **The app** keeps polling behind it, and after every (re)connection fetches both `GET`s once: bids can be missed while disconnected.
+
+**Chats and support: `GET /v1/me/live` (WebSocket).** One per signed-in phone while the app is in front. The token goes in the `Authorization: Bearer` header, never the address. It only says what changed, never the content; the app then fetches it through the normal endpoints:
+
+```jsonc
+{ "type": "chat", "chatId": "..." } // a new message, an offer step, or this person read it on another phone
+{ "type": "support" }               // a reply, or this person wrote from another phone
+{ "type": "alive" }                 // every 25 s, as above
+```
+
+* **Refused with:** 401 (no valid token), 403 (suspended), and 403 / 429 / 503 as above.
+* **Closed with:** 4401 (the session ended: log-out, password reset, deletion, suspension; noticed within 25 seconds), 4408 (more than 5 connections for one person: the oldest goes), and 1013 / 1001 / 1008 / 1009 as above.
 
 **Push notifications** (Firebase Cloud Messaging; backend B9.2–B9.3, `backend/docs/PUSH.md`). Android
 now; iPhones once an Apple push key is added to Firebase.

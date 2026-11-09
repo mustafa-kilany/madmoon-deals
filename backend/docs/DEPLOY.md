@@ -49,11 +49,11 @@ Set the password with the emailed code, then the dashboard's first log-in shows 
 
 ## Live auctions
 
-The app holds a WebSocket open on each auction screen (`GET /v1/listings/:id/live`). Two things to check on the host:
+The app holds a WebSocket open on each auction screen (`GET /v1/listings/:id/live`), and one for every signed-in phone with the app in front (`GET /v1/me/live`, chats and support). Check on the host:
 
 * **The load balancer must pass WebSockets**, with an idle timeout above 25 seconds (the server sends something every 25). Every host named above does this by default.
 * **The server listens to the database with `LISTEN`,** which doesn't work through a connection pooler in transaction mode (PgBouncer, a host's "pooled" address). If `DATABASE_URL` is one of those, set `LIVE_DATABASE_URL` to the direct address. This one connection comes on top of `DB_POOL_SIZE`.
-* **Memory:** each open connection takes about 220 KB (measured: 1 000 added about 220 MB). `LIVE_MAX_CONNECTIONS` (default 2 000, so about 450 MB) is the most one server takes; beyond it phones ask every 3 seconds instead. Set it to fit the host's memory.
+* **Memory:** each open connection takes about 220 KB (measured: 1 000 added about 220 MB). `LIVE_MAX_CONNECTIONS` (default 2 000, so about 450 MB) is the most one server takes, both kinds together; beyond it auction screens ask every 3 seconds and open chats every 5. Since every signed-in phone in use now holds one, set it to fit the host's memory and how many people use the app at once.
 
 If either is wrong nothing breaks: the server notices it can't hear itself (`Live: the database stopped delivering bids` in the log), and the app falls back to asking every 3 seconds. Bids then show within about 3 seconds rather than at once.
 

@@ -5,11 +5,9 @@
 import { useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 import { config } from '@/config';
+import { useReconnecting } from '@/hooks/useReconnecting';
 import { connectLiveBids, applyLiveBid } from '@/services/negotiation/live';
 import { queryClient, queryKeys } from '@/services/queryClient';
-
-/** Mobile networks blink: shorter gaps aren't worth a banner flickering on and off. */
-export const RECONNECTING_AFTER_MS = 3_000;
 
 const liveUrl = (itemId: string) =>
   `${config.apiBaseUrl.replace(/^http/, 'ws')}/listings/${encodeURIComponent(itemId)}/live`;
@@ -17,7 +15,6 @@ const liveUrl = (itemId: string) =>
 export function useLiveAuction(itemId: string | undefined, isFocused: boolean) {
   const [connected, setConnected] = useState(false);
   const [trying, setTrying] = useState(false);
-  const [downForAWhile, setDownForAWhile] = useState(false);
 
   useEffect(() => {
     if (!itemId || !isFocused || config.mock.negotiation) return;
@@ -55,17 +52,5 @@ export function useLiveAuction(itemId: string | undefined, isFocused: boolean) {
     };
   }, [itemId, isFocused]);
 
-  useEffect(() => {
-    if (connected || !trying) return;
-    const timer = setTimeout(
-      () => setDownForAWhile(true),
-      RECONNECTING_AFTER_MS,
-    );
-    return () => {
-      clearTimeout(timer);
-      setDownForAWhile(false);
-    };
-  }, [connected, trying]);
-
-  return { connected, reconnecting: downForAWhile };
+  return { connected, reconnecting: useReconnecting(connected, trying) };
 }

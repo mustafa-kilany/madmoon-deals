@@ -5,9 +5,16 @@
 // message about an offer carries its buttons. The header menu reports or
 // blocks the other person.
 
-import { useEffect, useMemo, useState } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentRef,
+} from 'react';
 import {
   Alert,
+  AppState,
   Image,
   KeyboardAvoidingView,
   Pressable,
@@ -16,6 +23,7 @@ import {
 } from 'react-native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import {
+  useIsFocused,
   useNavigation,
   useRoute,
   type RouteProp,
@@ -24,6 +32,7 @@ import { useTranslation } from 'react-i18next';
 import { BackButton } from '@/components/BackButton';
 import { Icon } from '@/components/icons';
 import { Price } from '@/components/Price';
+import { ReconnectingBanner } from '@/components/ReconnectingBanner';
 import { StatusView } from '@/components/StatusView';
 import {
   Button,
@@ -33,6 +42,8 @@ import {
   Text,
   TextField,
 } from '@/components/ui';
+import { UnreadBadge } from '@/components/UnreadBadge';
+import { config } from '@/config';
 import { useUser } from '@/features/auth/sessionStore';
 import { useLang, useLocalized } from '@/i18n';
 import { formatJOD, jod } from '@/lib/money';
@@ -41,10 +52,12 @@ import { errorMessageKey } from '@/services/api/errors';
 import { toast } from '@/store/toastStore';
 import type { TabParamList } from '@/navigation/types';
 import { colors } from '@/theme/colors';
+import { useLiveAccountStatus } from '../hooks/useLiveAccount';
 import {
   useBlockUser,
   useChatMessages,
   useChatThreads,
+  useMarkChatRead,
   useRespondToOffer,
   useSendMessage,
 } from '../hooks/useNegotiation';
@@ -52,7 +65,21 @@ import {
 export function ChatsScreen() {
   const { t } = useTranslation();
   const localized = useLocalized();
-  const { data: threads = [], isLoading, isError, refetch } = useChatThreads();
+  // Changes arrive over the live connection; the polls catch whatever it can't carry. A tab stays
+  // mounted when it's left, and the unread badge has its own poll, so a hidden one asks for nothing.
+  const isFocused = useIsFocused();
+  const { connected } = useLiveAccountStatus();
+  const pollMs = !isFocused
+    ? false
+    : connected
+      ? config.pollMs.chatLive
+      : config.pollMs.chat;
+  const {
+    data: threads = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useChatThreads({ pollMs });
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
 
   // A tapped push about a chat or an offer opens that conversation.
@@ -72,6 +99,7 @@ export function ChatsScreen() {
     return (
       <ActiveChatView
         thread={activeThread}
+        pollMs={pollMs}
         onBack={() => setActiveChatId(null)}
       />
     );
@@ -109,12 +137,18 @@ export function ChatsScreen() {
                   <Text className="font-sans-bold text-base">
                     {thread.otherPartyName}
                   </Text>
-                  <Text className="text-[10px] text-brand-warmgray">
-                    {new Date(thread.updatedAt).toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </Text>
+                  <View className="flex-row items-center gap-2">
+                    <Text className="text-[10px] text-brand-warmgray">
+                      {new Date(thread.updatedAt).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </Text>
+                    <UnreadBadge
+                      count={thread.unreadCount}
+                      testID={`chat-unread-${thread.id}`}
+                    />
+                  </View>
                 </View>
                 <Text
                   className="font-sans-medium text-xs text-brand-warmgray"
@@ -123,7 +157,11 @@ export function ChatsScreen() {
                   {localized(thread.itemTitle)}
                 </Text>
                 <Text
-                  className="mt-1 font-sans-bold text-xs text-brand-espresso"
+                  className={`mt-1 text-xs ${
+                    thread.unreadCount > 0
+                      ? 'font-sans-bold text-brand-espresso'
+                      : 'font-sans-medium text-brand-warmgray'
+                  }`}
                   numberOfLines={1}
                 >
                   {thread.lastMessage}
@@ -139,9 +177,11 @@ export function ChatsScreen() {
 
 function ActiveChatView({
   thread,
+  pollMs,
   onBack,
 }: {
   thread: ChatThread;
+  pollMs: number | false;
   onBack: () => void;
 }) {
   const { t } = useTranslation();
@@ -149,9 +189,43 @@ function ActiveChatView({
   const navigation = useNavigation();
   const user = useUser();
   const [text, setText] = useState('');
-  const { data: messages = [], isLoading } = useChatMessages(thread.id);
+  const { data: messages = [], isLoading } = useChatMessages(thread.id, pollMs);
   const sendMessage = useSendMessage();
   const blockUser = useBlockUser();
+  const { reconnecting } = useLiveAccountStatus();
+  const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
+
+  // New messages arrive on their own now: keep the newest in sight.
+  const count = messages.length;
+  useEffect(() => {
+    if (count) setTimeout(() => scroll.current?.scrollToEnd(), 50);
+  }, [count]);
+
+  // Read only when the person can really see it: not with the app in the background, or from
+  // another tab (this view stays mounted under it).
+  const isFocused = useIsFocused();
+  const { mutate: markRead } = useMarkChatRead();
+  const lastMessageId = messages[messages.length - 1]?.id;
+  const markedUpTo = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (
+      !lastMessageId ||
+      !thread.unreadCount ||
+      !isFocused ||
+      AppState.currentState !== 'active' ||
+      markedUpTo.current === lastMessageId
+    )
+      return;
+    markedUpTo.current = lastMessageId;
+    markRead(
+      { chatId: thread.id, messageId: lastMessageId },
+      {
+        onError: () => {
+          markedUpTo.current = undefined; // the next change tries again
+        },
+      },
+    );
+  }, [lastMessageId, thread.id, thread.unreadCount, isFocused, markRead]);
 
   // Only the newest message about each offer shows its buttons.
   const actionable = useMemo(() => {
@@ -237,8 +311,15 @@ function ActiveChatView({
         </>
       }
     >
+      {reconnecting && (
+        <ReconnectingBanner
+          testID="chat-reconnecting"
+          message={t('chats.reconnecting')}
+        />
+      )}
       <KeyboardAvoidingView className="flex-1" behavior="padding">
         <ScrollView
+          ref={scroll}
           contentContainerClassName="gap-4 p-5 pb-8"
           keyboardShouldPersistTaps="handled"
         >

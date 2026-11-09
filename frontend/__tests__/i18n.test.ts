@@ -10,7 +10,23 @@ const keys = (obj: object, prefix = ''): string[] =>
 
 describe('translations', () => {
   test('Arabic and English have exactly the same keys', () => {
-    expect(keys(ar).sort()).toEqual(keys(en).sort());
+    // Plurals excepted: Arabic has six forms of a word (_zero … _other), English two.
+    const words = (all: string[]) => [
+      ...new Set(all.map(k => k.replace(/_(zero|one|two|few|many|other)$/, ''))),
+    ];
+    expect(words(keys(ar)).sort()).toEqual(words(keys(en)).sort());
+  });
+
+  test('every plural has all the forms its language needs', () => {
+    const forms = (all: string[], word: string) =>
+      all
+        .filter(k => k.startsWith(`${word}_`))
+        .map(k => k.slice(word.length + 1))
+        .sort();
+    expect(forms(keys(en), 'chats.unread')).toEqual(['one', 'other']);
+    expect(forms(keys(ar), 'chats.unread')).toEqual(
+      ['few', 'many', 'one', 'other', 'two', 'zero'],
+    );
   });
 
   test('no empty strings', () => {

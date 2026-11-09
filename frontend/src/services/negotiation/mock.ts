@@ -41,6 +41,7 @@ const threads: ChatThread[] = [
     otherPartyName: 'Omar',
     lastMessage: 'Hi! Yes, it is still available.',
     updatedAt: Date.now() - 7200000,
+    unreadCount: 0,
   },
 ];
 /** Messages per chat, oldest first; `offer` points at the live offer. */
@@ -170,6 +171,7 @@ export const mockNegotiationService: NegotiationService = {
         otherPartyName: item.seller.en,
         lastMessage: '',
         updatedAt: Date.now(),
+        unreadCount: 0,
       };
       threads.unshift(thread);
     }
@@ -289,6 +291,10 @@ export const mockNegotiationService: NegotiationService = {
     if (blocked.has(thread.otherPartyId))
       throw new ApiError('FORBIDDEN', 'You blocked this user', 403);
     return publicMessage(post(chatId, me(), text.trim()));
+  },
+
+  markChatRead: async () => {
+    await mockLatency();
   },
 
   report: async input => {

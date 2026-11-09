@@ -15,9 +15,11 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { BackButton } from '@/components/BackButton';
 import { Icon } from '@/components/icons';
+import { ReconnectingBanner } from '@/components/ReconnectingBanner';
 import { StatusView } from '@/components/StatusView';
 import { Button, Heading, Ltr, Screen, Text, TextField } from '@/components/ui';
 import { config } from '@/config';
+import { useLiveAccountStatus } from '@/features/offers/hooks/useLiveAccount';
 import type { RootScreenProps } from '@/navigation/types';
 import { errorMessageKey } from '@/services/api/errors';
 import { queryClient, queryKeys } from '@/services/queryClient';
@@ -30,10 +32,12 @@ export function SupportScreen({ route }: RootScreenProps<'Support'>) {
   const orderId = route.params?.orderId;
   const [text, setText] = useState(orderId ? t('support.aboutOrder', { id: orderId }) : '');
   const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
+  const { connected, reconnecting } = useLiveAccountStatus();
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: queryKeys.support,
     queryFn: supportService.getChat,
-    refetchInterval: config.pollMs.chat,
+    // A reply arrives over the live connection; this is the safety net behind it.
+    refetchInterval: connected ? config.pollMs.chatLive : config.pollMs.chat,
   });
   const send = useMutation({
     mutationFn: (message: string) => supportService.send(message, orderId),
@@ -57,6 +61,12 @@ export function SupportScreen({ route }: RootScreenProps<'Support'>) {
 
   return (
     <Screen header={header}>
+      {reconnecting && (
+        <ReconnectingBanner
+          testID="support-reconnecting"
+          message={t('chats.reconnecting')}
+        />
+      )}
       <KeyboardAvoidingView className="flex-1" behavior="padding">
         <ScrollView
           ref={scroll}

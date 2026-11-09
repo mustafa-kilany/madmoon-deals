@@ -64,6 +64,32 @@ const MUTATIONS: Mutation[] = [
   { name: 'live: phones aren’t told when the database link drops', file: 'src/modules/negotiation/live.ts', find: `    closeAll(1013, 'try again');\n`, replace: ``, test: 'live' },
   { name: 'live: the bid isn’t announced', file: 'src/modules/negotiation/bids.ts', find: `    await announceBid(tx, toApiBid(bid));\n`, replace: ``, test: 'live' },
   { name: 'live: the announcement says more than the public list', file: 'src/modules/negotiation/live.ts', find: `JSON.stringify({ type: 'bid', bid })`, replace: `JSON.stringify({ type: 'bid', bid, extra: 'private' })`, test: 'live' },
+  { name: 'live chat: no token needed', file: 'src/modules/negotiation/live.ts', find: `if (!session) return refuse(socket, 401);
+        if (session.user.suspended) return refuse(socket, 403);
+        sessionId = session.id;
+        room = { map: accounts, key: session.userId };`, replace: `sessionId = session?.id;
+        room = { map: accounts, key: session?.userId ?? 'nobody' };`, test: 'liveChat' },
+  { name: 'live chat: a token in the address works', file: 'src/modules/negotiation/live.ts', find: `const token = /^Bearer (\\S+)$/.exec(req.headers.authorization ?? '')?.[1];`, replace: `const token = /^Bearer (\\S+)$/.exec(req.headers.authorization ?? '')?.[1] ?? new URL(req.url ?? '', 'http://x').searchParams.get('token') ?? undefined;`, test: 'liveChat' },
+  { name: 'live chat: a suspended person connects', file: 'src/modules/negotiation/live.ts', find: `if (session.user.suspended) return refuse(socket, 403);`, replace: ``, test: 'liveChat' },
+  { name: 'live chat: an ended session keeps its connection', file: 'src/modules/negotiation/live.ts', find: `if (!stillValid.has(sessionId)) ws.close(4401, 'signed out');`, replace: `if (false) ws.close(4401, 'signed out');`, test: 'liveChat' },
+  { name: 'live chat: suspending someone leaves them connected', file: 'src/modules/negotiation/live.ts', find: `expiresAt: { gt: new Date() }, user: { suspended: false } },`, replace: `expiresAt: { gt: new Date() } },`, test: 'liveChat' },
+  { name: 'live chat: no limit per person', file: 'src/modules/negotiation/live.ts', find: `if (isAccount && members.size >= MAX_SOCKETS_PER_USER) [...members][0].close(4408, 'too many connections');`, replace: ``, test: 'liveChat' },
+  { name: 'live chat: the signal goes to everyone', file: 'src/modules/negotiation/live.ts', find: `for (const userId of to) sendTo(accounts.get(userId), text);`, replace: `for (const room of accounts.values()) sendTo(room, text);`, test: 'liveChat' },
+  { name: 'live chat: the signal carries the message', file: 'src/modules/negotiation/chats.ts', find: `{ type: 'chat', chatId });
+  return message;`, replace: `{ type: 'chat', chatId, text } as never);
+  return message;`, test: 'liveChat' },
+  { name: 'live chat: the message is announced before it’s saved for sure', file: 'src/modules/negotiation/chats.ts', find: `  await announceToUsers(tx, [chat.buyerId, chat.listing.sellerUserId], { type: 'chat', chatId });`, replace: `  await announceToUsers(prisma, [chat.buyerId, chat.listing.sellerUserId], { type: 'chat', chatId });`, test: 'liveChat' },
+  { name: 'live chat: the seller isn’t told', file: 'src/modules/negotiation/chats.ts', find: `[chat.buyerId, chat.listing.sellerUserId], { type: 'chat', chatId }`, replace: `[chat.buyerId], { type: 'chat', chatId }`, test: 'liveChat' },
+  { name: 'unread: my own messages count', file: 'src/modules/negotiation/chats.ts', find: `      AND m."senderId" <> \${userId}\n`, replace: ``, test: 'liveChat' },
+  { name: 'unread: reading doesn’t lower the count', file: 'src/modules/negotiation/chats.ts', find: `      AND m."createdAt" > COALESCE(CASE WHEN c."buyerId" = \${userId} THEN c."buyerReadAt" ELSE c."sellerReadAt" END, '-infinity'::timestamp)\n`, replace: ``, test: 'liveChat' },
+  { name: 'unread: both sides share a marker', file: 'src/modules/negotiation/chats.ts', find: `const field = chat.buyerId === userId ? 'buyerReadAt' : 'sellerReadAt';`, replace: `const field = 'buyerReadAt';`, test: 'liveChat' },
+  { name: 'unread: reading can move backward', file: 'src/modules/negotiation/chats.ts', find: `where: { id: chatId, OR: [{ [field]: null }, { [field]: { lt: message.createdAt } }] },`, replace: `where: { id: chatId },`, test: 'liveChat' },
+  { name: 'unread: anyone can mark any chat read', file: 'src/modules/negotiation/chats.ts', find: `  const chat = await chatFor(userId, chatId);
+  const message = await prisma.message.findFirst({ where: { id: messageId, chatId }, select: { createdAt: true } });`, replace: `  const chat = (await prisma.chat.findUnique({ where: { id: chatId } }))!;
+  const message = await prisma.message.findFirst({ where: { id: messageId, chatId }, select: { createdAt: true } });`, test: 'liveChat' },
+  { name: 'unread: a message of another chat is accepted', file: 'src/modules/negotiation/chats.ts', find: `findFirst({ where: { id: messageId, chatId }, select: { createdAt: true } })`, replace: `findFirst({ where: { id: messageId }, select: { createdAt: true } })`, test: 'liveChat' },
+  { name: 'unread: the other person learns I read it', file: 'src/modules/negotiation/chats.ts', find: `if (count) await announceAfterSaving([userId], { type: 'chat', chatId });`, replace: `if (count) await announceAfterSaving([chat.buyerId, chat.listing.sellerUserId], { type: 'chat', chatId });`, test: 'liveChat' },
+  { name: 'live support: another person hears of the reply', file: 'src/modules/support/routes.ts', find: `await announceAfterSaving([thread.userId], { type: 'support' });`, replace: `await announceAfterSaving([currentUser(res.locals).id], { type: 'support' });`, test: 'liveChat' },
   { name: 'local disk allowed in production', file: 'src/env.ts', find: `.refine(e => !(e.NODE_ENV === 'production' && e.STORAGE !== 's3'), {`, replace: `.refine(() => true, {`, test: 'settings' },
   { name: 'a guessable JWT secret allowed', file: 'src/env.ts', find: `.refine(e => e.NODE_ENV !== 'production' || strongSecret(e.JWT_SECRET), {`, replace: `.refine(() => true, {`, test: 'settings' },
   { name: 'the seed runs in production', file: 'scripts/seed.ts', find: `if (env.NODE_ENV === 'production') {`, replace: `if (false) {`, test: 'settings' },

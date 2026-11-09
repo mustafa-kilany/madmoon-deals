@@ -47,6 +47,8 @@ export interface NegotiationService {
   getChatThreads(): Promise<ChatThread[]>;
   getChatMessages(chatId: string): Promise<ChatMessage[]>;
   sendMessage(input: SendMessageInput): Promise<ChatMessage>;
+  /** This person has read the chat up to this message. */
+  markChatRead(chatId: string, messageId: string): Promise<void>;
   /** Report a listing or a user to the Sahla team. */
   report(input: ReportInput): Promise<void>;
   /** Hide this user's listings and chats; they can't message or offer any more. */

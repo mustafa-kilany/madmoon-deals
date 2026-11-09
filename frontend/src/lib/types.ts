@@ -271,6 +271,8 @@ export type ChatThread = {
   otherPartyName: string;
   lastMessage: string;
   updatedAt: number;
+  /** Messages from the other person this person hasn't read yet. */
+  unreadCount: number;
 };
 
 export type OrderStatus =

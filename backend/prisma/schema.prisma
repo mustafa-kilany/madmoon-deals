@@ -422,6 +422,9 @@ model Chat {
   lastMessage String   @default("") // for the chat list
   createdAt   DateTime @default(now())
   updatedAt   DateTime @default(now()) // last message
+  // Each side has read up to here (unread counts). The other side never sees these.
+  buyerReadAt  DateTime?
+  sellerReadAt DateTime?
 
   messages Message[]
   offers   Offer[]

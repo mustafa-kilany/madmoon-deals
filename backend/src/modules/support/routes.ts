@@ -7,11 +7,12 @@ import { perUser } from '../../lib/rateLimit';
 import { adminDid } from '../admin/audit';
 import { can } from '../admin/permissions';
 import { currentUser, requireUser } from '../auth/requireUser';
+import { announceAfterSaving } from '../negotiation/live';
 import { pushSupportReply } from '../notifications/notify';
 
 // Support (BACKEND_PLAN B15.6): Sahla's support email, and one chat per person
 // with the support team. Customers and drivers write from the app; admins with
-// the support permission answer from the dashboard. Polled like chats.
+// the support permission answer from the dashboard. The app hears of changes on its live connection.
 
 export const supportRoutes = Router();
 
@@ -71,6 +72,7 @@ supportRoutes.post('/support/messages', requireUser, ...sendLimit, async (req, r
   const message = await prisma.supportMessage.create({
     data: { threadId: thread.id, senderId: me.id, text: body.text, orderId: body.orderId },
   });
+  await announceAfterSaving([me.id], { type: 'support' }); // their other phones
   res.status(201).json(toApiMessage(message));
 });
 
@@ -131,6 +133,7 @@ supportRoutes.post('/admin/support/:userId/messages', ...can('support'), async (
     include: { sender: { select: { name: true } } },
   });
   await prisma.supportThread.update({ where: { id: thread.id }, data: { open: true, lastMessageAt: now, supportReadAt: now } });
+  await announceAfterSaving([thread.userId], { type: 'support' });
   pushSupportReply(thread.userId);
   res.status(201).json(toApiMessage(message, true));
 });

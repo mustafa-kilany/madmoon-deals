@@ -36,7 +36,7 @@ export const chatInclude = {
 export type ChatRow = Prisma.ChatGetPayload<{ include: typeof chatInclude }>;
 
 /** The other side: the seller for the buyer, the buyer for the seller. */
-export const toApiThread = (chat: ChatRow, me: string, req: Request) => {
+export const toApiThread = (chat: ChatRow, me: string, req: Request, unreadCount: number) => {
   const iAmBuyer = chat.buyerId === me;
   return {
     id: chat.id,
@@ -47,6 +47,7 @@ export const toApiThread = (chat: ChatRow, me: string, req: Request) => {
     otherPartyName: iAmBuyer ? (chat.listing.sellerUser?.name ?? '') : chat.buyer.name,
     lastMessage: chat.lastMessage,
     updatedAt: chat.updatedAt.toISOString(),
+    unreadCount,
   };
 };
 

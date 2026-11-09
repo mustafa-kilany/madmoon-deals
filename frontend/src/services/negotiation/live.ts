@@ -1,6 +1,7 @@
-// The live auction connection (docs/API.md → Live updates): each new bid arrives as it's saved and
-// goes straight into the screen's cached data, with no request. No React Native imports here, so
-// the speed check (and the tests) run this same code.
+// Live connections (docs/API.md → Live updates). Auctions: each new bid arrives as it's saved and goes
+// straight into the screen's cached data, with no request. Chats and support: a signed-in connection
+// that only says what changed, so the app fetches it through the normal API and private messages
+// never travel on it. No React Native imports here, so the speed check (and the tests) run this same code.
 
 import type { QueryClient } from '@tanstack/react-query';
 import type { Bid, Item } from '@/lib/types';
@@ -56,6 +57,19 @@ export async function applyLiveBid(client: QueryClient, bid: Bid) {
   ]);
 }
 
+export type AccountEvent = { type: 'chat'; chatId: string } | { type: 'support' };
+
+/** Something changed for this person: fetch it now, instead of at the next poll. */
+export function applyAccountEvent(client: QueryClient, event: AccountEvent) {
+  if (event.type === 'support') {
+    client.invalidateQueries({ queryKey: ['support'] });
+    return;
+  }
+  // The list (last message, unread counts) and the conversation; an offer may have moved on too.
+  client.invalidateQueries({ queryKey: ['chats'] });
+  client.invalidateQueries({ queryKey: ['offers'] });
+}
+
 function parseBid(data: unknown): Bid | undefined {
   try {
     const message = JSON.parse(String(data));
@@ -75,18 +89,30 @@ function parseBid(data: unknown): Bid | undefined {
   }
 }
 
-type LiveHandlers = {
-  onBid: (bid: Bid) => void;
-  /** Connected. Bids may have been missed before this: time to catch up. */
+function parseAccountEvent(data: unknown): AccountEvent | undefined {
+  try {
+    const message = JSON.parse(String(data));
+    if (message?.type === 'support') return { type: 'support' };
+    if (message?.type === 'chat' && typeof message.chatId === 'string')
+      return { type: 'chat', chatId: message.chatId };
+  } catch {
+    /* not ours */
+  }
+  return undefined;
+}
+
+type ConnectionHandlers = {
+  /** Connected. Things may have been missed before this: time to catch up. */
   onUp: () => void;
   /** Not connected: the screen goes back to polling quickly. */
   onDown: () => void;
 };
 
 /** Stays connected until stopped, retrying with a growing, random wait so a restart isn't a stampede. */
-export function connectLiveBids(
-  url: string,
-  { onBid, onUp, onDown }: LiveHandlers,
+function connect(
+  createSocket: () => WebSocket,
+  onData: (data: unknown) => void,
+  { onUp, onDown }: ConnectionHandlers,
 ) {
   let socket: WebSocket | undefined;
   let stopped = false;
@@ -110,7 +136,7 @@ export function connectLiveBids(
   };
 
   const open = () => {
-    socket = new WebSocket(url);
+    socket = createSocket();
     socket.onopen = () => {
       tries = 0;
       heardAt = Date.now();
@@ -118,8 +144,7 @@ export function connectLiveBids(
     };
     socket.onmessage = event => {
       heardAt = Date.now();
-      const bid = parseBid(event.data);
-      if (bid) onBid(bid);
+      onData(event.data);
     };
     socket.onerror = () => {}; // onclose follows
     socket.onclose = lost;
@@ -136,4 +161,40 @@ export function connectLiveBids(
     clearInterval(watchdog);
     detach();
   };
+}
+
+/** One auction's new bids. Public: no log-in. */
+export function connectLiveBids(
+  url: string,
+  { onBid, ...handlers }: ConnectionHandlers & { onBid: (bid: Bid) => void },
+) {
+  return connect(
+    () => new WebSocket(url),
+    data => {
+      const bid = parseBid(data);
+      if (bid) onBid(bid);
+    },
+    handlers,
+  );
+}
+
+/**
+ * What changed for the signed-in person. `createSocket` sends the token in a header, never in the
+ * address, where it would end up in logs.
+ */
+export function connectLiveAccount(
+  createSocket: () => WebSocket,
+  {
+    onEvent,
+    ...handlers
+  }: ConnectionHandlers & { onEvent: (event: AccountEvent) => void },
+) {
+  return connect(
+    createSocket,
+    data => {
+      const event = parseAccountEvent(data);
+      if (event) onEvent(event);
+    },
+    handlers,
+  );
 }

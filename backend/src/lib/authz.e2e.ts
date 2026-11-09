@@ -150,6 +150,7 @@ test('S2.1 user B on user A’s things: 403 or 404, and nothing changes', async 
     'POST /orders/:id/problem': () => call('POST', `/orders/${orderId}/problem`, third, { reason: 'defect' }),
     'GET /chats/:id/messages': () => call('GET', `/chats/${chatId}/messages`, third),
     'POST /chats/:id/messages': () => call('POST', `/chats/${chatId}/messages`, third, { text: 'hello' }),
+    'POST /chats/:id/read': () => call('POST', `/chats/${chatId}/read`, third, { messageId: 'any' }),
     'GET /offers/:id': () => call('GET', `/offers/${offerId}`, third),
     'POST /offers/:id/respond': () => call('POST', `/offers/${offerId}/respond`, third, { status: 'accepted' }),
     'PATCH /listings/:id': () => call('PATCH', '/listings/authz-a', third, { priceFils: 1000 }),

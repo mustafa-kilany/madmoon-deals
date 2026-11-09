@@ -19,6 +19,7 @@ import { TermsUpdatePrompt } from '@/features/legal/TermsUpdatePrompt';
 import { Toast } from '@/components/Toast';
 import { useSessionRefresh } from '@/features/auth/hooks/useAccount';
 import { restoreSession, useUser } from '@/features/auth/sessionStore';
+import { useLiveAccount } from '@/features/offers/hooks/useLiveAccount';
 import { navigationRef } from '@/navigation/navigationRef';
 import { RootNavigator } from '@/navigation/RootNavigator';
 import { handlePushTaps, startPush } from '@/services/push';
@@ -60,6 +61,7 @@ function App() {
             >
               <SessionRefresh />
               <PushRegistration />
+              <LiveAccount />
               <RootNavigator />
               <SidebarMenu />
               <TermsUpdatePrompt />
@@ -75,6 +77,12 @@ function App() {
 /** Re-reads the signed-in account from the server once at launch. */
 function SessionRefresh() {
   useSessionRefresh();
+  return null;
+}
+
+/** Signed in, app in front: chats and support hear of changes at once. */
+function LiveAccount() {
+  useLiveAccount();
   return null;
 }
 

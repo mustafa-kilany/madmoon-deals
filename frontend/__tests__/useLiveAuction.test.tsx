@@ -4,10 +4,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { config } from '@/config';
 import '@/i18n';
 import { AuctionBiddingScreen } from '@/features/auctions/screens/AuctionBiddingScreen';
-import {
-  RECONNECTING_AFTER_MS,
-  useLiveAuction,
-} from '@/features/auctions/hooks/useLiveAuction';
+import { useLiveAuction } from '@/features/auctions/hooks/useLiveAuction';
+import { RECONNECTING_AFTER_MS } from '@/hooks/useReconnecting';
 import { useItem } from '@/features/catalog/hooks/useCatalog';
 import { useBids } from '@/features/offers/hooks/useNegotiation';
 import { useIsFocused } from '@react-navigation/native';

@@ -13,6 +13,7 @@ import { ConditionTag } from '@/components/ConditionTag';
 import { Icon } from '@/components/icons';
 import { ItemRail } from '@/components/ItemRail';
 import { Price } from '@/components/Price';
+import { ReconnectingBanner } from '@/components/ReconnectingBanner';
 import { StatusView } from '@/components/StatusView';
 import {
   Badge,
@@ -146,19 +147,11 @@ export function AuctionBiddingScreen({
         </>
       }
     >
-      {/* Above the scrolling part: it must stay in sight wherever the person has scrolled to. */}
       {reconnecting && !ended && (
-        <View
+        <ReconnectingBanner
           testID="auction-reconnecting"
-          accessibilityRole="alert"
-          accessibilityLiveRegion="polite"
-          className="flex-row items-center gap-2 bg-brand-warning-soft px-5 py-3"
-        >
-          <Icon name="AlertCircle" size={16} color={colors.warningText} />
-          <Text className="flex-1 font-sans-bold text-xs text-brand-warning-text">
-            {t('auctionBidding.reconnecting')}
-          </Text>
-        </View>
+          message={t('auctionBidding.reconnecting')}
+        />
       )}
       <ScrollView
         contentContainerClassName="gap-6 p-5 pb-10"

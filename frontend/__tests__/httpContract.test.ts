@@ -373,6 +373,12 @@ const rows: Row[] = [
     url: '/chats/c1/messages',
   },
   {
+    endpoint: 'POST /chats/:id/read',
+    call: () => httpNegotiationService.markChatRead('c1', 'm1'),
+    url: '/chats/c1/read',
+    body: { messageId: 'm1' },
+  },
+  {
     endpoint: 'POST /chats/:id/messages',
     call: () =>
       httpNegotiationService.sendMessage({ chatId: 'c1', text: 'hi' }),

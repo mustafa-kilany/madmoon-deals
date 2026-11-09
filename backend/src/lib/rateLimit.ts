@@ -53,6 +53,7 @@ export const LIMITS = {
   avatar: perUser('avatar', { limit: 10, minutes: HOUR, message: 'Too many profile pictures: try again later' }),
   // S0.2: spam.
   chatMessage: perUser('chat', { limit: 60, minutes: 10, message: 'Too many messages: wait a few minutes' }),
+  chatRead: perUser('chat-read', { limit: 600, minutes: 10, message: 'Too many requests: wait a few minutes' }),
   offer: perUser('offer', { limit: 20, minutes: HOUR, message: 'Too many offers: try again later' }),
   bid: perUser('bid', { limit: 60, minutes: HOUR, message: 'Too many bids: try again later' }),
   report: perUser('report', { limit: 20, minutes: DAY, message: 'Too many reports today' }),

@@ -8,18 +8,26 @@ import { WebSocket, WebSocketServer } from 'ws';
 import { prisma } from '../../db';
 import { env } from '../../env';
 import { logger } from '../../lib/logger';
+import { sessionForToken } from '../auth/tokens';
 import type { Prisma } from '../../generated/prisma/client';
 import type { toApiBid } from './shapes';
 
-// Live auctions: GET /v1/listings/:id/live opens a WebSocket that gets each new bid as it's saved.
-// A bid is announced with Postgres NOTIFY inside its own transaction, so only saved bids go out, in
-// the order they were saved, and every server hears them. Everything sent is what the public
-// GET /listings/:id/bids already shows, so no log-in is needed and nobody can send anything.
-// The app keeps a slow poll too, and polls quickly whenever this connection is down: if this
-// breaks, bids show more slowly but never wrongly.
+// Live connections, both one way: nobody can send anything on them. Things are announced with Postgres
+// NOTIFY inside their own transaction, so only what was saved goes out, in the order it was saved, and
+// every server hears it. The app keeps a slow poll too, and polls quickly whenever a connection is
+// down: if this breaks, things show more slowly but never wrongly.
+//
+// GET /v1/listings/:id/live: an auction's new bids, as they're saved. Everything sent is what the
+// public GET /listings/:id/bids already shows, so no log-in is needed.
+//
+// GET /v1/me/live: signed in. Only says WHAT changed for this person ("chat X"), never the content:
+// the app fetches that through the normal API, so private messages stay behind its checks and never
+// travel through the database's notifications. Ends when the session does.
 
 const BIDS_CHANNEL = 'sahla_bids';
 const PING_CHANNEL = 'sahla_live_ping';
+const ACCOUNT_CHANNEL = 'sahla_account_events';
+const MAX_SOCKETS_PER_USER = 5; // a few phones; more is someone's script
 const NOTIFY_MAX_BYTES = 7900; // Postgres refuses more than 8000, which would fail the bid itself
 const SEND_BUFFER_MAX = 1024 * 1024;
 const RETRY_MAX_MS = 30_000;
@@ -30,6 +38,20 @@ export async function announceBid(tx: Prisma.TransactionClient, bid: ReturnType<
   if (Buffer.byteLength(payload) > NOTIFY_MAX_BYTES) return; // can't happen with today's names; the poll would still show it
   await tx.$executeRaw`SELECT pg_notify(${BIDS_CHANNEL}::text, ${payload}::text)`;
 }
+
+export type AccountEvent = { type: 'chat'; chatId: string } | { type: 'support' };
+
+/** Inside a transaction: only what's saved is announced. Says what changed, never the content. */
+export async function announceToUsers(client: Pick<Prisma.TransactionClient, '$executeRaw'>, userIds: (string | null)[], event: AccountEvent) {
+  const to = [...new Set(userIds)].filter(Boolean);
+  if (!to.length) return;
+  const payload = JSON.stringify({ to, event });
+  await client.$executeRaw`SELECT pg_notify(${ACCOUNT_CHANNEL}::text, ${payload}::text)`;
+}
+
+/** After the thing is saved: the app would see it at its next poll anyway, so this never fails the request. */
+export const announceAfterSaving = (userIds: (string | null)[], event: AccountEvent) =>
+  announceToUsers(prisma, userIds, event).catch(error => logger.warn({ err: error }, 'Live: couldn’t announce'));
 
 export type LiveOptions = {
   maxPerAddress: number;
@@ -48,7 +70,7 @@ const DEFAULTS: LiveOptions = {
   heartbeatMs: 25_000,
 };
 
-const REASONS: Record<number, string> = { 403: 'Forbidden', 404: 'Not Found', 429: 'Too Many Requests', 503: 'Service Unavailable' };
+const REASONS: Record<number, string> = { 401: 'Unauthorized', 403: 'Forbidden', 404: 'Not Found', 429: 'Too Many Requests', 503: 'Service Unavailable' };
 const refuse = (socket: Duplex, status: number) => {
   // Destroyed, not just ended: whoever is on the other side doesn't get to keep it half open.
   socket.end(`HTTP/1.1 ${status} ${REASONS[status]}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`, () => socket.destroy());
@@ -71,6 +93,8 @@ export function attachLive(server: Server, app: Express, options: Partial<LiveOp
   const limits = { ...DEFAULTS, ...options };
   const wss = new WebSocketServer({ noServer: true, maxPayload: 64, perMessageDeflate: false, clientTracking: false });
   const watchers = new Map<string, Set<WebSocket>>();
+  const accounts = new Map<string, Set<WebSocket>>();
+  const sessionOf = new Map<WebSocket, string>();
   const sockets = new Set<WebSocket>();
   const alive = new WeakSet<WebSocket>();
   const perAddress = new Map<string, number>();
@@ -95,23 +119,44 @@ export function attachLive(server: Server, app: Express, options: Partial<LiveOp
     for (const ws of sockets) ws.close(code, reason);
   };
 
-  // ── Hearing the bids ──
+  const sendTo = (room: Set<WebSocket> | undefined, text: string) => {
+    for (const ws of room ?? []) {
+      if (ws.readyState !== WebSocket.OPEN) continue;
+      // A phone that stopped reading must not grow this server's memory.
+      if (ws.bufferedAmount > SEND_BUFFER_MAX) ws.terminate();
+      else ws.send(text);
+    }
+  };
+
+  // ── Hearing what happened ──
   const onNotification = (message: pg.Notification) => {
     if (message.channel === PING_CHANNEL) {
       if (message.payload === pingSent) pingSent = undefined;
       return;
     }
     try {
-      const itemId = (JSON.parse(message.payload ?? '') as { bid: { itemId: string } }).bid.itemId;
-      for (const ws of watchers.get(itemId) ?? []) {
-        if (ws.readyState !== WebSocket.OPEN) continue;
-        // A phone that stopped reading must not grow this server's memory.
-        if (ws.bufferedAmount > SEND_BUFFER_MAX) ws.terminate();
-        else ws.send(message.payload!);
+      if (message.channel === ACCOUNT_CHANNEL) {
+        const { to, event } = JSON.parse(message.payload ?? '') as { to: string[]; event: AccountEvent };
+        const text = JSON.stringify(event);
+        for (const userId of to) sendTo(accounts.get(userId), text);
+        return;
       }
+      const itemId = (JSON.parse(message.payload ?? '') as { bid: { itemId: string } }).bid.itemId;
+      sendTo(watchers.get(itemId), message.payload!);
     } catch (error) {
-      logger.error({ err: error }, 'Live: bad bid announcement');
+      logger.error({ err: error }, 'Live: bad announcement');
     }
+  };
+
+  // Log-out, a password reset, deletion, suspension, expiry: a session that ended takes its connection with it.
+  const closeEndedSessions = async () => {
+    if (!sessionOf.size) return;
+    const valid = await prisma.session.findMany({
+      where: { id: { in: [...new Set(sessionOf.values())] }, expiresAt: { gt: new Date() }, user: { suspended: false } },
+      select: { id: true },
+    });
+    const stillValid = new Set(valid.map(session => session.id));
+    for (const [ws, sessionId] of sessionOf) if (!stillValid.has(sessionId)) ws.close(4401, 'signed out');
   };
 
   // Connections drop: bids announced meanwhile would never come, so the phones go back to
@@ -142,6 +187,7 @@ export function attachLive(server: Server, app: Express, options: Partial<LiveOp
       await client.connect();
       await client.query(`LISTEN ${BIDS_CHANNEL}`);
       await client.query(`LISTEN ${PING_CHANNEL}`);
+      await client.query(`LISTEN ${ACCOUNT_CHANNEL}`);
       if (stopped) return void client.end().catch(() => {});
       listening = true;
     } catch (error) {
@@ -163,6 +209,7 @@ export function attachLive(server: Server, app: Express, options: Partial<LiveOp
       ws.ping();
       ws.send('{"type":"alive"}');
     }
+    closeEndedSessions().catch(error => logger.warn({ err: error }, 'Live: couldn’t check sessions')); // the database is away: next time
     // Old rate-limit windows, so the map can't grow forever.
     const now = Date.now();
     for (const [address, entry] of connects) if (now - entry.windowStart >= 60_000) connects.delete(address);
@@ -186,8 +233,10 @@ export function attachLive(server: Server, app: Express, options: Partial<LiveOp
 
   // ── Letting phones in ──
   const accept = async (req: IncomingMessage, socket: Duplex, head: Buffer) => {
-    const match = /^\/v1\/listings\/([\w-]{1,128})\/live$/.exec(req.url?.split('?')[0] ?? '');
-    if (!match || req.method !== 'GET' || req.headers.upgrade?.toLowerCase() !== 'websocket') return refuse(socket, 404);
+    const path = req.url?.split('?')[0] ?? '';
+    const auction = /^\/v1\/listings\/([\w-]{1,128})\/live$/.exec(path);
+    const isAccount = path === '/v1/me/live';
+    if ((!auction && !isAccount) || req.method !== 'GET' || req.headers.upgrade?.toLowerCase() !== 'websocket') return refuse(socket, 404);
     if (!originAllowed(req)) return refuse(socket, 403);
 
     // What Express does for its own requests, so req.ip follows TRUST_PROXY the same way.
@@ -208,26 +257,43 @@ export function attachLive(server: Server, app: Express, options: Partial<LiveOp
     perAddress.set(address, (perAddress.get(address) ?? 0) + 1);
     let handedOver = false;
     try {
-      const listingId = match[1];
-      const listing = await prisma.listing.findUnique({ where: { id: listingId }, select: { saleType: true, status: true } });
-      if (!listing || listing.status === 'withdrawn' || listing.saleType !== 'auction') return refuse(socket, 404);
+      let room: { map: Map<string, Set<WebSocket>>; key: string };
+      let sessionId: string | undefined;
+      if (isAccount) {
+        // Only in a header: an address ends up in logs.
+        const token = /^Bearer (\S+)$/.exec(req.headers.authorization ?? '')?.[1];
+        const session = token ? await sessionForToken(token) : undefined;
+        if (!session) return refuse(socket, 401);
+        if (session.user.suspended) return refuse(socket, 403);
+        sessionId = session.id;
+        room = { map: accounts, key: session.userId };
+      } else {
+        const listingId = auction![1];
+        const listing = await prisma.listing.findUnique({ where: { id: listingId }, select: { saleType: true, status: true } });
+        if (!listing || listing.status === 'withdrawn' || listing.saleType !== 'auction') return refuse(socket, 404);
+        room = { map: watchers, key: listingId };
+      }
       if (stopped || !listening) return refuse(socket, 503);
 
       handedOver = true;
       let opened = false;
       wss.handleUpgrade(req, socket, head, ws => {
         opened = true;
-        const room = watchers.get(listingId) ?? new Set<WebSocket>();
-        watchers.set(listingId, room);
-        room.add(ws);
+        const members = room.map.get(room.key) ?? new Set<WebSocket>();
+        room.map.set(room.key, members);
+        // The oldest of one person's connections makes way, so a stuck phone can't lock them out.
+        if (isAccount && members.size >= MAX_SOCKETS_PER_USER) [...members][0].close(4408, 'too many connections');
+        members.add(ws);
+        if (sessionId) sessionOf.set(ws, sessionId);
         sockets.add(ws);
         alive.add(ws);
         ws.on('pong', () => alive.add(ws));
         ws.on('message', () => ws.close(1008, 'nothing to send here')); // this connection only goes one way
         ws.on('error', () => ws.terminate());
         ws.on('close', () => {
-          room.delete(ws);
-          if (!room.size && watchers.get(listingId) === room) watchers.delete(listingId);
+          members.delete(ws);
+          if (!members.size && room.map.get(room.key) === members) room.map.delete(room.key);
+          sessionOf.delete(ws);
           sockets.delete(ws);
           release(address);
         });
