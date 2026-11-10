@@ -66,12 +66,19 @@ export async function applyLiveBid(
   ]);
 }
 
-export type AccountEvent = { type: 'chat'; chatId: string } | { type: 'support' };
+export type AccountEvent =
+  | { type: 'chat'; chatId: string }
+  | { type: 'support' }
+  | { type: 'notifications' };
 
 /** Something changed for this person: fetch it now, instead of at the next poll. */
 export function applyAccountEvent(client: QueryClient, event: AccountEvent) {
   if (event.type === 'support') {
     client.invalidateQueries({ queryKey: ['support'] });
+    return;
+  }
+  if (event.type === 'notifications') {
+    client.invalidateQueries({ queryKey: ['notifications'] });
     return;
   }
   // The list (last message, unread counts) and the conversation; an offer may have moved on too.
@@ -109,6 +116,7 @@ function parseAccountEvent(data: unknown): AccountEvent | undefined {
   try {
     const message = JSON.parse(String(data));
     if (message?.type === 'support') return { type: 'support' };
+    if (message?.type === 'notifications') return { type: 'notifications' };
     if (message?.type === 'chat' && typeof message.chatId === 'string')
       return { type: 'chat', chatId: message.chatId };
   } catch {

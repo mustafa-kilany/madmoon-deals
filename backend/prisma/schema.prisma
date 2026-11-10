@@ -87,6 +87,7 @@ model User {
   deliveries       Order[]           @relation("orderCourier")
   payouts          Payout[]
   devices          Device[]
+  notifications    Notification[]
   adminActions     AdminAction[]
   supportThread    SupportThread?
   supportMessages  SupportMessage[]
@@ -702,6 +703,25 @@ model RiskFlag {
 enum Platform {
   android
   ios
+}
+
+// The notification inbox (BACKEND_REVIEW M2): every push is also kept here, in both languages, so
+// someone with notifications off, on a new phone, or whose push never arrived still finds out.
+// Chat messages and support replies aren't copied: their own screens count what's unread.
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String // the push's data.type: "order", "sale", "outbid", "delivery"…
+  refId     String? // the push's data.id: which order or listing
+  titleAr   String
+  bodyAr    String
+  titleEn   String
+  bodyEn    String
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, createdAt])
 }
 
 // A phone that gets push notifications (POST /me/devices). The token is the

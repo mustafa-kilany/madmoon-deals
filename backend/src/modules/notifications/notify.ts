@@ -3,6 +3,7 @@ import { formatJOD } from '@/lib/money';
 import type { Lang } from '@/lib/types';
 import { prisma } from '../../db';
 import { defineJob } from '../../lib/jobs';
+import { announceAfterSaving } from '../negotiation/live';
 import { pushSender, type PushMessage } from './push';
 
 // The pushes Sahla sends (BACKEND_PLAN B9.3; docs/API.md → Live Updates &
@@ -17,10 +18,28 @@ type Build = (lang: Lang) => Text;
 const titleOf = (listing: { titleAr: string; titleEn: string }, lang: Lang) =>
   lang === 'ar' ? listing.titleAr : listing.titleEn;
 
-/** Every registered phone of the user (none for suspended accounts); forgets uninstalled apps. */
+/** M2: chats and support have their own unread counts, so they aren't copied into the inbox. */
+const NOT_IN_INBOX = new Set(['chat', 'support']);
+
+/** The inbox copy, once: a job tried again after a failed send doesn't add it twice. */
+async function keepInInbox(userId: string, build: Build, data: PushMessage['data']) {
+  if (NOT_IN_INBOX.has(data.type)) return;
+  const [ar, en] = [build('ar'), build('en')];
+  const row = { userId, type: data.type, refId: data.id || null, titleAr: ar.title, bodyAr: ar.body, titleEn: en.title, bodyEn: en.body };
+  if (await prisma.notification.findFirst({ where: { ...row, createdAt: { gt: new Date(Date.now() - 15 * 60_000) } }, select: { id: true } })) return;
+  await prisma.notification.create({ data: row });
+  await announceAfterSaving([userId], { type: 'notifications' });
+}
+
+/**
+ * Into the person's inbox (even with pushes off or no phone registered), then to every registered
+ * phone of theirs (none for suspended accounts), forgetting uninstalled apps.
+ */
 async function sendTo(userId: string | null, build: Build, data: PushMessage['data']) {
+  if (!userId) return;
+  await keepInInbox(userId, build, data);
   const sender = pushSender();
-  if (!sender || !userId) return;
+  if (!sender) return;
   const devices = await prisma.device.findMany({
     // Not phones whose sign-in expired (still registered, but nobody is signed in there).
     where: { userId, user: { suspended: false }, OR: [{ sessionId: null }, { session: { expiresAt: { gt: new Date() } } }] },

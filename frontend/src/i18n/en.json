@@ -16,6 +16,13 @@
     "body": "This screen ran into a problem. Try again, or restart the app — your account and saved items are safe.",
     "restart": "Restart app"
   },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "Nothing yet. When something happens to your orders, sales or bids, it shows here too.",
+    "open": "Notifications",
+    "openUnread": "Notifications, {{count}} new",
+    "new": "New"
+  },
   "update": {
     "title": "Time to update Sahla",
     "body": "This version of the app no longer works. Update it from Google Play to keep buying and selling — your account and orders are safe.",

@@ -51,6 +51,8 @@ const MUTATIONS: Mutation[] = [
   { name: 'old app builds are served', file: 'src/app.ts', find: `app.use('/v1', requireAppBuild);\n`, replace: ``, test: 'appBuild' },
   { name: 'a failed job is never tried again', file: 'src/lib/jobs.ts', find: `: { runAt: new Date(Date.now() + RETRY_FIRST_MS * 2 ** (job.attempts - 1)) }),`, replace: `: { failedAt: new Date() }),`, test: 'jobs' },
   { name: 'a deleted account’s jobs stay', file: 'src/modules/auth/deleteAccount.ts', find: 'await tx.$executeRaw`DELETE FROM "Job" WHERE "args"::text LIKE ${`%"${userId}"%`} OR "key" LIKE ${`%${userId}%`}`;', replace: ``, test: 'privacy' },
+  { name: 'the inbox keeps nothing', file: 'src/modules/notifications/notify.ts', find: `  await keepInInbox(userId, build, data);\n`, replace: ``, test: 'inbox' },
+  { name: 'anyone’s inbox is shown', file: 'src/modules/notifications/routes.ts', find: `prisma.notification.findMany({ where: { userId },`, replace: `prisma.notification.findMany({ where: {},`, test: 'inbox' },
   { name: 'every server runs the daily jobs', file: 'src/lib/jobs.ts', find: `  if (!claimed) {`, replace: `  if (false) {`, test: 'jobs' },
   { name: 'bids deadlock the pool again', file: 'src/modules/negotiation/bids.ts', find: `(await sellerSuspended(listing.sellerUserId, tx)) ||
       (listing.sellerUserId && (await isBlockedBetween(bidderId, listing.sellerUserId, tx)))`, replace: `(await sellerSuspended(listing.sellerUserId)) ||

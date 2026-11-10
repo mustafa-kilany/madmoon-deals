@@ -27,6 +27,7 @@ import { OrderTrackingScreen } from '@/features/orders/screens/OrderTrackingScre
 import { ReportScreen } from '@/features/safety/screens/ReportScreen';
 import { SupportScreen } from '@/features/support/SupportScreen';
 import { LegalScreen } from '@/features/legal/LegalScreen';
+import { NotificationsScreen } from '@/features/notifications/NotificationsScreen';
 import { colors } from '@/theme/colors';
 import { TabNavigator } from './TabNavigator';
 import type { RootStackParamList } from './types';
@@ -47,6 +48,7 @@ export function RootNavigator() {
         <Stack.Screen name="OrderProblem" component={OrderProblemScreen} />
         <Stack.Screen name="Support" component={SupportScreen} />
         <Stack.Screen name="Legal" component={LegalScreen} />
+        <Stack.Screen name="Notifications" component={NotificationsScreen} />
       </Stack.Navigator>
     );
 
@@ -69,6 +71,7 @@ export function RootNavigator() {
       <Stack.Screen name="OrderProblem" component={OrderProblemScreen} />
       <Stack.Screen name="Support" component={SupportScreen} />
       <Stack.Screen name="Legal" component={LegalScreen} />
+      <Stack.Screen name="Notifications" component={NotificationsScreen} />
       <Stack.Screen name="Report" component={ReportScreen} />
       {/* Sign-in flow (removed from history once signed in, see authFlow). */}
       <Stack.Screen

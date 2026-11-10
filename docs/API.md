@@ -1219,6 +1219,14 @@ category pictures, review decisions, stores, keys and imports.
 
 ## Live Updates & Notifications
 
+### The notification inbox (2026-11-10, BACKEND_REVIEW M2)
+
+Every push is also kept, in Arabic and English, so nothing is missed with notifications off, on a new phone or when a push is lost. Chat messages and support replies are not copied: those screens have their own unread counts. Kept 90 days.
+
+* `GET /me/notifications?lang=ar|en` (signed in, customers and drivers): `{ unreadCount, items: [{ id, type, refId, title, body, read, createdAt }] }`, newest first, at most 100. `type` and `refId` are the push's `data.type` and `data.id`: a tap opens the same screen.
+* `POST /me/notifications/read` → 204: everything in the inbox is read (the app calls it when the inbox opens).
+* `GET /v1/me/live` also sends `{ "type": "notifications" }` when one arrives or is read on another phone: fetch the inbox again.
+
 **Today (works with any REST backend):** screens that change while open ask again on a timer, only
 while they're on screen and the app is in the foreground (`config.pollMs`):
 

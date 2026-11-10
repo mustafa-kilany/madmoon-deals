@@ -21,6 +21,7 @@ import type { Item } from '@/lib/types';
 import { useUiStore } from '@/store/uiStore';
 import { useUser } from '@/features/auth/sessionStore';
 import { colors } from '@/theme/colors';
+import { NotificationBell } from '@/features/notifications/NotificationBell';
 import { iconSize } from '@/theme/spacing';
 import {
   useCatalogMeta,
@@ -73,6 +74,7 @@ export function HomeScreen() {
         </Heading>
       </View>
       <View className="flex-row items-center gap-1">
+        <NotificationBell />
         <Pressable
           onPress={() => navigation.navigate('Saved')}
           accessibilityRole="button"

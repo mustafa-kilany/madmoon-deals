@@ -36,4 +36,5 @@ export const queryKeys = {
   orders: ['me', 'orders'],
   deliveries: ['courier', 'deliveries'],
   support: ['support'],
+  notifications: (lang: string) => ['notifications', lang],
 } as const;

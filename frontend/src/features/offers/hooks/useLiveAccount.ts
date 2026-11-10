@@ -60,6 +60,7 @@ export function useLiveAccount() {
             // Anything that happened before this connection opened.
             applyAccountEvent(queryClient, { type: 'chat', chatId: '' });
             applyAccountEvent(queryClient, { type: 'support' });
+            applyAccountEvent(queryClient, { type: 'notifications' });
           },
           onDown: () => setConnected(false),
         },

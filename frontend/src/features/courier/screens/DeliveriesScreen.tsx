@@ -5,6 +5,7 @@
 import { FlatList, Image, Pressable, RefreshControl, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '@/components/icons';
+import { NotificationBell } from '@/features/notifications/NotificationBell';
 import { StatusView } from '@/components/StatusView';
 import { Card, Heading, Screen, Text } from '@/components/ui';
 import { useUser } from '@/features/auth/sessionStore';
@@ -60,6 +61,7 @@ export function DeliveriesScreen({
               </Text>
             )}
           </View>
+          <NotificationBell />
         </>
       }
     >

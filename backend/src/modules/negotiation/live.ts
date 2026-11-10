@@ -39,7 +39,7 @@ export async function announceBid(tx: Prisma.TransactionClient, bid: ReturnType<
   await tx.$executeRaw`SELECT pg_notify(${BIDS_CHANNEL}::text, ${payload}::text)`;
 }
 
-export type AccountEvent = { type: 'chat'; chatId: string } | { type: 'support' };
+export type AccountEvent = { type: 'chat'; chatId: string } | { type: 'support' } | { type: 'notifications' };
 
 /** Inside a transaction: only what's saved is announced. Says what changed, never the content. */
 export async function announceToUsers(client: Pick<Prisma.TransactionClient, '$executeRaw'>, userIds: (string | null)[], event: AccountEvent) {

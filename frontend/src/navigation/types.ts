@@ -41,6 +41,8 @@ export type RootStackParamList = {
   Support: { orderId?: string } | undefined;
   /** B15.8: the privacy policy or the terms. */
   Legal: { doc: 'privacy' | 'terms' };
+  /** M2: every push the account was sent. */
+  Notifications: undefined;
   Saved: undefined;
   OrderTracking: undefined;
   /** Courier mode (role 'courier'): the assigned deliveries, and one of them. */
