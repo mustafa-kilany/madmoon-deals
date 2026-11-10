@@ -59,6 +59,22 @@ If either is wrong nothing breaks: the server notices it can't hear itself (`Liv
 
 **After the first deploy,** check it through the real load balancer: open the same auction on two phones, bid on one, and the other should change at once.
 
-## One server for now
+## One server, or several
 
-Rate limits and background jobs live in the server's memory (`lib/rateLimit.ts`, `lib/jobs.ts`). Run **one instance**. (Live bids already work across several: they go through the database.) Before running more: a shared store for the limits (S0.9) and a job queue (`lib/jobs.ts` says how). The jobs tolerate a restart.
+One server is enough to launch: it held 2 000 live connections in the two-server test (`npm run balancer-test`, `docs/INTERNAL_READINESS_PLAN.md`). Several work too, since 2026-11-10:
+
+* **Rate limits** are counted in the database (`RateLimit` table, `lib/rateLimit.ts`), so every server counts together. Only the flood fence (3 000 requests a minute per address) is counted per server.
+* **Daily jobs** (money check, retention, risk check) run on one server only: the first to claim the day in `JobRun` runs it.
+* **Live connection limits** (`LIVE_MAX_CONNECTIONS`, 1 000 per address, 600 new a minute per address) are per server: two servers let one address hold twice as many. That's fine: they guard each server's memory.
+* Pushes waiting to go out (`runSoon`) are still in each server's memory and are lost if that server stops in the 2 seconds before they go (`BACKEND_REVIEW.md` M1).
+
+**Database connections: servers × (`DB_POOL_SIZE` + 1) must stay under the database's connection limit**, leaving room for a migration and an admin's own connection (about 5). The + 1 is the live connection (`LISTEN`). The database's limit is on the host's pricing page, or `SHOW max_connections;`.
+
+| Servers | `DB_POOL_SIZE` | Connections used | Needs a database allowing |
+|---|---|---|---|
+| 1 | 20 (the default) | 21 | 26 or more |
+| 2 | 20 | 42 | 47 or more |
+| 2 | 8 | 18 | 23 or more: fits the usual small managed database (about 25) |
+| 3 | 10 | 33 | 38 or more |
+
+A smaller pool only makes requests wait in line at busy moments; it never loses anything.

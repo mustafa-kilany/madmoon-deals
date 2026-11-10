@@ -93,6 +93,24 @@ Domain `sahla.jo` · Postmark · payment provider (D2) · hosting (D4) · R2 buc
 MoDEE / Sanad · Play Console · Apple Developer · regenerating the Maps key and restricting the Firebase key.
 **The owner still has to:** create the upload key, give the real support email, and have a lawyer read the legal text.
 
+## Results (2026-11-10): two servers behind a balancer (`npm run balancer-test`)
+
+Stage 1 of `LOAD_BALANCER_TEST_PLAN.md`, on this PC: two servers (4201, 4202, `TRUST_PROXY=1`, real limits) on `sahla_load_test`, the small Node balancer from `scripts/balancer.ts` (nginx for Windows couldn't be downloaded here), virtual phones from separate local addresses. **Run three times; the last two back to back, 12 of 12 each.** The first run had 1 failed request out of 2 495 in check 8 (not recorded which; the script now prints it) and never came back. Numbers below are the last run's.
+
+| # | Check | Result |
+|---|---|---|
+| 1 | A bid reaches phones on the other server | 200 phones (100 per server), 50 bids to A then 50 to B: none missed, none out of order, average 14 ms, worst 84 ms |
+| 2 | Chat signals cross servers | 100 pairs, sent on A, heard on B: 100 of 100, nobody heard another's, average 53 ms, worst 94 ms |
+| 3 | Quiet for 3 minutes behind a 60-second idle cut | 0 of 200 dropped |
+| 4 | Server B killed mid-auction | All 100 of B's phones back on A, average 1.0 s, worst 1.5 s; no phone missing a bid |
+| 5 | B comes back | 50 of 100 new phones land on it; 20 bids to both: 300 of 300 phones got all |
+| 6 | Limits see the real person | 1 300 phones from one address: 1 200 let in (600 a minute **per server**); 50 others all let in. With `TRUST_PROXY=0` the 50 others are all refused: everyone looks like the balancer |
+| 7 | 200 → 1 000 → 2 000 → 4 000 phones | All connected and got every bid. Worst delay 27, 52, 84, 153 ms. Servers' memory (Windows working set) 180 to 240 MB each at 2 000 connections, so the 220 KB per connection measured before is a high estimate |
+| 8 | 500 past the limit (4 500) | Exactly 500 refused with 503; they asked every 3 s: 2 493 requests, 0 errors, all saw the last bid; the 4 000 connected missed nothing |
+| 9 | Live connections down for everyone, 1 000 asking every 3 s | 661 requests a second for 60 s: 0 errors, p50 8 ms, p95 30 ms, worst 533 ms; both servers up |
+
+**Found:** the live connection limits (1 000 open and 600 new a minute per address) count per server, so two servers let one address in twice over. Left as it is: they protect each server's memory (`DEPLOY.md`). **Fixed with it (LOAD_BALANCER_TEST_PLAN L1 to L3):** daily jobs claim their day in `JobRun` so one server runs them (`jobs.e2e.ts`); every rate-limit budget is counted in the `RateLimit` table (`sharedLimits.e2e.ts`: 5 card tries split across two servers, the 6th refused); only a hash of each key is stored, after `privacy.e2e.ts` S1.9 caught emails and user ids left in it; `DEPLOY.md` has the connection sum. The run above had both fixes in. `npm run load-test` with the shared counts: 540 requests a second, 0 errors (was 510 to 520): no slower. Backend 36 unit + 263 end-to-end (1 skipped, Linux only).
+
 ## Results (2026-11-09): live bids and chat, and the runs that were missing
 
 | Gate | Result |

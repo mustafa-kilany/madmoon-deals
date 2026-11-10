@@ -16,6 +16,7 @@
     "check:secrets": "tsx scripts/secret-scan.ts",
     "check:mutations": "tsx scripts/mutation-check.ts",
     "load-test": "tsx scripts/load-test.ts",
+    "balancer-test": "tsx scripts/balancer-test.ts",
     "db:studio": "prisma studio",
     "postinstall": "prisma generate",
     "test": "node --import tsx --test \"src/**/*.test.ts\"",

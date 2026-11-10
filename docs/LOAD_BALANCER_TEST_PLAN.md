@@ -1,6 +1,6 @@
 # Load balancer test plan
 
-Written 2026-11-10 from the 2026-11-09 session. Nothing in this plan has been built or run yet.
+Written 2026-11-10 from the 2026-11-09 session. **Stage 1 built and passed on 2026-11-10** (`npm run balancer-test`, results in `INTERNAL_READINESS_PLAN.md`), with the Node balancer: nginx for Windows couldn't be downloaded on this PC. **L1 to L3 done the same day.** Stage 2 waits for the host (`NEXT_STEPS.md` B5, C3); the script refuses `BALANCER_URL` until then, because it can't make test accounts on a hosted copy yet.
 
 ## Where things stand
 
@@ -32,13 +32,13 @@ Read, not run: `live.ts`, `server.ts`, `app.ts`, `lib/rateLimit.ts`, `lib/jobs.t
 
 | # | Gap | What happens with 2 servers | Fix |
 |---|---|---|---|
-| L1 | Rate limits are counted in each server's memory (`SECURITY_PLAN.md` S0.9) | Every limit is doubled: 10 card tries an hour instead of 5 | A shared store in the same PostgreSQL |
-| L2 | The three daily jobs (money check, retention, risk check) start on every server | Each runs twice at the same moment | One database lock per job, so only one server runs it |
-| L3 | Each server opens `DB_POOL_SIZE` (20) + 1 database connections | Small managed databases allow about 20 to 25 in total: the second server can't connect | Set `DB_POOL_SIZE` so servers × (pool + 1) fits; write it in `DEPLOY.md` |
+| L1 ✅ | Rate limits are counted in each server's memory (`SECURITY_PLAN.md` S0.9) | Every limit is doubled: 10 card tries an hour instead of 5 | A shared store in the same PostgreSQL |
+| L2 ✅ | The three daily jobs (money check, retention, risk check) start on every server | Each runs twice at the same moment | One database lock per job, so only one server runs it |
+| L3 ✅ | Each server opens `DB_POOL_SIZE` (20) + 1 database connections | Small managed databases allow about 20 to 25 in total: the second server can't connect | Set `DB_POOL_SIZE` so servers × (pool + 1) fits; write it in `DEPLOY.md` |
 | L4 | `TRUST_PROXY` is a count of proxies | Some hosts put two in front (their balancer and a CDN). Too low: everyone shares one address and the limits hit everybody. Too high: the address can be faked | Check on the host with two networks; Stage 2 check 6 |
 | L5 | 1 000 live connections per address | A mobile carrier can put many people behind one address | Watch the 503 count in production; raise if real people hit it |
 
-L1 to L3 are Stage 1's follow-up: about half a day together, each with a two-server test.
+L1 to L3 were done on 2026-11-10: the `RateLimit` table (`sharedLimits.e2e.ts`), the `JobRun` claim (`jobs.e2e.ts`), the sum in `backend/docs/DEPLOY.md`.
 
 ## Is there something ready to use instead of building?
 
