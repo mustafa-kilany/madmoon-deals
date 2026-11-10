@@ -89,55 +89,50 @@ below marked "before launch" are closed.**
 
 ## 4. The plan: internal steps, in order
 
-Each step = one branch or a few commits, same rules as `BACKEND_PLAN.md` (one task = one commit, tests pass).
+**Brought up to date 2026-11-10. This list is finished except where marked: the working order from here
+is [`NEXT_STEPS.md`](NEXT_STEPS.md).** Sections 1 to 3 above are the 2026-11-07 audit as it was, kept for the record.
 
 ### Step 1 — Put the app on the real backend (the big one)
-1. ⬜ Flip `mock.catalog`, `mock.negotiation`, `mock.orders` to `false` together in `frontend/src/config.ts`.
-2. ⬜ Backend with `PAYMENT_MODE=fake`, `GEOCODER=google` (or `fake`), `PUSH_MODE=fcm`, seed data.
-3. ⬜ On the emulator, run every customer journey against the backend and fix what breaks:
-   guest browse/search/filter → sign up → sell (photos, certificate, pickup) → second account: offer → counter →
-   accept → checkout → fake bank → paid → admin assigns driver → driver picks up → PIN → both sides see
-   "completed". Then: auction bid → outbid push → auction ends → winner checks out. Then: report, block.
-4. ⬜ Point the Maestro flows (`.maestro/`) at the real backend + seed, so this stays tested.
-5. ⬜ Remove or quarantine the demo-only paths the app no longer needs in release builds.
+1. ✅ `mock.catalog`, `mock.negotiation`, `mock.orders` are `false` (B15.10).
+2. ✅ Backend with `PAYMENT_MODE=fake` and seed data; the phone tests start it themselves (`npm run e2e:backend`).
+3. ✅ Every customer journey on the emulator against the backend: Maestro 01 to 11 (browse, buy and deliver, sell,
+   cancel and problems, offer and counter, auction bid, auction win and pay, bank account, live chat, late bids).
+4. ✅ The Maestro flows run against the real backend and seed (`frontend/.maestro/`, the `phone-tests` skill).
+5. ✅ Demo-only paths out of release builds: `check:apk` found and removed the demo hint, accounts and mock services.
 
 ### Step 2 — Close the customer gaps (§3)
-1. ⬜ **My sales** screen (`GET /me/sales`): sold items, order status, pickup reminder, payout status.
-2. ⬜ **Push to the seller when an item is paid** ("Sold! A driver will pick it up").
-3. ⬜ **Edit / withdraw listing** on My listings (`PATCH` / `DELETE /listings/:id`; the server already refuses when paid or with bids).
-4. ⬜ Hide the Apple button on Android (until B10 on iOS).
-5. ⬜ Verify won-auction checkout end to end (part of Step 1.3).
+1. ✅ **My sales** (B15.9).
+2. ✅ **Push to the seller when an item is paid** (B15.1, `pushSold`).
+3. ✅ **Edit / withdraw listing** (B15.2).
+4. ⏸ The Apple button stays (owner, 2026-11-07); Apple sign-in waits for the Apple account (`NEXT_STEPS.md` B11, S0.11).
+5. ✅ Won-auction checkout end to end (Maestro 07).
 
 ### Step 3 — Close the driver gaps (§2)
-1. ⬜ C1 push to the driver on assignment (new `pushAssigned` in `notify.ts`, a tap opens the delivery).
-2. ⬜ C4 push / status to the buyer on "picked up".
-3. ⬜ C3 Sahla support phone/WhatsApp: one setting (server `GET /config` or app config), a Call button on the
-   driver's screens and in the buyer's order tracking.
-4. ⬜ C2 "Report a problem" for drivers (after §5 Q1 is answered) + a dashboard queue.
-5. ⬜ C5 full driver run on a real phone.
+1. ✅ C1 push to the driver on assignment (B15.5, `pushAssigned`).
+2. ✅ C4 push to the buyer on "picked up" (B15.5, `pushPickedUp`).
+3. ✅ C3 support: an email setting and an in-app support chat, no phone (owner's answer Q3, B15.6).
+4. ✅ C2 "Delivery failed" with a reason, a buyer's "problem with the item", a dashboard queue (B15.4).
+5. ⬜ C5 full driver run on a real phone: `NEXT_STEPS.md` A4.6.
 
 ### Step 4 — Security fixes that need no external account
-From `SECURITY_PLAN.md` S0: S0.1 card-attempt limits, S0.2 limits on costly/spammy endpoints, S0.4
-`PUBLIC_URL` required in production, S0.8 CORS for the dashboard, S0.11 (= Step 2.4), the S2.1
-"two-user" authorization test, S1/S3/S4 checks.
+✅ S0.1, S0.2, S0.4, S0.8, S0.9 (2026-11-10) and the S2.1 two-user test: `SECURITY_PLAN.md` and its Log.
+S0.11 waits with Step 2.4.
 
 ### Step 5 — Legal and trust screens
-1. ⬜ Privacy policy + terms pages (in the app, on the site), accepted at sign-up and stored with the version.
-2. ⬜ Sanad consent screen + consent record (MoDEE's pledge), ready for when B11 starts.
-3. ⬜ Data retention rules and the clean-up jobs (`SECURITY_PLAN.md` S8.3).
+1. ✅ Privacy policy and terms in the app and on the API, accepted at sign-up with the version (B15.8).
+2. ✅ The Sanad consent screen (`IdVerificationScreen.tsx`); the service itself waits for MoDEE (`NEXT_STEPS.md` B2).
+3. ✅ Retention rules and the clean-up job (`privacy/retention.ts`, S8.3).
 
 ### Step 6 — Production code that doesn't need the account yet
-1. ⬜ R2/S3 storage implementation behind `lib/storage.ts` (test locally with MinIO or R2's free tier) — S0.5.
-2. ⬜ Sentry hooks wired (DSN left empty until the account), scrubbing rules — S0.10.
-3. ⬜ Release keystore + signed AAB build script — S0.3.
-4. ⬜ Splash screen, Arabic app name (`values-ar/strings.xml` "سهلة"), TalkBack accessibility pass (DEVELOPMENT_GUIDE Phase 9 / 8).
-5. ⬜ Deployment files ready (Dockerfile or host config, `prisma migrate deploy` on release, health check) so
-   B12.2 is one click once D4 is chosen.
-6. ⬜ Load test (B12.5) on a local production build.
+1. ✅ S3/R2 storage behind `lib/storage.ts` (S0.5); the bucket waits for `NEXT_STEPS.md` B6.
+2. ✅ Sentry on the API with scrubbing (S0.10); the account, app and dashboard sides wait for B8.
+3. 🔨 Release signing script and `RELEASE_SIGNING.md` ✅; the key itself is the owner's step (`NEXT_STEPS.md` A5.2).
+4. ✅ Splash screen and the Arabic app name; ⬜ the TalkBack pass on a real phone (`NEXT_STEPS.md` A4.7).
+5. ✅ Dockerfile, `prisma migrate deploy` on release, health check (`backend/docs/DEPLOY.md`); first build in the pull request's checks.
+6. ✅ Load test (B12.5), and the two-server balancer test (`npm run balancer-test`, 2026-11-10).
 
 ### Step 7 — Merge
-⬜ Open the pull request `feat/backend-b8-admin` → `main` (52+ commits, nothing merged since B1), CI green,
-tag. Long-lived unmerged branches are the biggest risk of lost work.
+⬜ The pull request `feat/backend-b8-admin` → `main`: `NEXT_STEPS.md` A1.
 
 ---
 
@@ -166,5 +161,7 @@ Google Vision key (real OCR) · ⏸ Sentry · ⏸ MoDEE / Sanad (B11) · ⏸ Goo
 listing) · ⏸ Apple Developer account (iOS build, Apple sign-in, APNs).
 
 ## Log
+- 2026-11-10: §4 brought up to date: every internal step done except C5 and the TalkBack pass (real phone),
+  the release key (owner) and the merge. From here the order is `NEXT_STEPS.md`.
 - 2026-11-07: first audit. All tests green; the app's catalog/negotiation/orders still on mock data; driver app
   usable with gaps C1–C5; seller has no "My sales" or edit/withdraw screens.
