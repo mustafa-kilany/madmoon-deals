@@ -15,7 +15,7 @@ New to React Native and Android tooling. Works in the VS Code terminal, which is
 ## Where the plans are
 
 * `docs/NEXT_STEPS.md`: the working order. Tick items there as they finish.
-* `docs/BACKEND_PLAN.md` (features, decisions D1–D9), `docs/SECURITY_PLAN.md` (log each security item in its Log section), `docs/INTERNAL_READINESS_PLAN.md` (test gates and results), `docs/LOAD_BALANCER_TEST_PLAN.md`.
+* `docs/BACKEND_PLAN.md` (features, decisions D1–D9), `docs/SECURITY_PLAN.md` (log each security item in its Log section), `docs/INTERNAL_READINESS_PLAN.md` (test gates and results), `docs/LOAD_BALANCER_TEST_PLAN.md`, `docs/BACKEND_REVIEW.md` (design problems found by reading the code, the payment path above all: read it before touching payments).
 * `backend/docs/`: one file per outside service (DEPLOY, STORAGE, EMAIL, PUSH, PAYMENTS, BACKUPS).
 * `docs/API.md`: the contract between app and API.
 
@@ -54,3 +54,4 @@ Run each in its project's folder.
 * The emulator (`Medium_Phone_API_37.0`) takes about 4 GB. With it running, the system kills other heavy processes: ask before starting a second backend or a long test run.
 * The debug app loads its JavaScript from Metro on port 8081. A stuck Metro shows as a white screen.
 * A game or other heavy program running halves load-test results.
+* A program installed while VS Code is open (`gh` was) is "not recognized" in its terminals until every VS Code window is closed and reopened. Until then use the full path, e.g. `& "C:\Program Files\GitHub CLI\gh.exe"`.

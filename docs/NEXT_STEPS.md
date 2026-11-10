@@ -12,6 +12,7 @@ Written 2026-11-10. The order to work in from here, down to the small things. So
 * Not shown to work yet: two servers behind a balancer, a real phone, the GitHub-only checks (Linux shutdown test, secret scan, CodeQL, Docker build).
 * No outside account exists except Google Maps and Firebase.
 * The load balancer code is right for one server; three things need doing before a second one (`LOAD_BALANCER_TEST_PLAN.md`, L1 to L3).
+* The backend's approach is sound, but the payment code has nine design problems that matter the day real money moves, and there are four more things to do before real users (`BACKEND_REVIEW.md`, read from the code on 2026-11-10, nothing fixed). They are steps A6 and E below.
 
 ## Part A: now, no account needed
 
@@ -21,7 +22,7 @@ Written 2026-11-10. The order to work in from here, down to the small things. So
 |---|---|---|---|
 | A1.1 | `npm run check:secrets` in `backend`: 110 commits, 616 files, no secrets | 🤖 | ✅ 2026-11-10 |
 | A1.2 | Push `feat/backend-b8-admin` | 🤖 | ✅ 2026-11-10 |
-| A1.3 | Sign the new GitHub tool in, once. In the VS Code terminal: `gh auth login` → GitHub.com → HTTPS → "Login with a web browser" → paste the code it shows. Open a **new** terminal first: `gh` was installed today and old terminals don't see it. | 👤 | ⬜ |
+| A1.3 | Sign the new GitHub tool in, once: `gh auth login` → GitHub.com → HTTPS → "Login with a web browser" → paste the code it shows. **"gh is not recognized"** (seen 2026-11-10): VS Code was open when `gh` was installed, and a new terminal inside it isn't enough. Close every VS Code window and open it again, or run `& "C:\Program Files\GitHub CLI\gh.exe" auth login`. | 👤 | ⬜ |
 | A1.4 | Open the pull request `feat/backend-b8-admin` → `main`. Without A1.3: open `https://github.com/mustafa-kilany/Sahla/pull/new/feat/backend-b8-admin` and press "Create pull request". | 🤖 after A1.3, or 👤 by the link | ⬜ |
 | A1.5 | Wait for the checks (15 minutes at most each): app, backend, dashboard, secret scan, CodeQL, Docker build. First run ever, so expect something to fail. | 🤖 | ⬜ |
 | A1.6 | Fix each failure, one commit each, push, repeat until green. Likely places: the Linux-only shutdown test (never run), the Docker build (Docker isn't on this PC), line endings. | 🤖 | ⬜ |
@@ -81,13 +82,27 @@ The emulator has no real radio, camera, GPS or notification tray. Nothing has ev
 | A5.5 | A copy of `backend/.env` somewhere safe that isn't this PC: it isn't in git, and `ID_HASH_SECRET` can never change once real IDs are stored. | 👤 | ⬜ |
 | A5.6 | Rerun Maestro 01 to 11 once on the merged `main` (02 to 05, 08 and 09 last ran before the auction extension). | 🤖 | ⬜ |
 
+### A6. From the backend review, no account needed
+
+Each row is a finding in `BACKEND_REVIEW.md`. Nothing is started: the owner asked for a log only (2026-11-10).
+
+| # | Step | Finding | When | Status |
+|---|---|---|---|---|
+| A6.1 | See whether the server's careful shutdown really runs in the container: the Linux shutdown test and the Docker build in the pull request's checks. If the stop signal doesn't get through `npx`, start the server with `node` directly. | M4 | With A1.5 | ⬜ |
+| A6.2 | A minimum app version: the app sends its version on every request, the server has a `MIN_APP_VERSION` setting and answers "update needed", the app shows an update screen. | M3 | **Before any build reaches a tester**: it can't be added to an installed app | ⬜ |
+| A6.3 | Background work that survives a restart and retries: pushes and risk checks through a queue in PostgreSQL (`pg-boss`), behind the same `runSoon` and `daily`. Also closes L2. | M1, L7 | Before the closed test | ⬜ |
+| A6.4 | A notification inbox: a `Notification` row for every push, `GET /me/notifications`, a screen and an unread dot in the app. | M2 | Before the closed test, with A6.3 | ⬜ |
+| A6.5 | Shared rules out of `frontend/src` into a `shared/` folder both sides import. | M5 | Any quiet day; before the team grows | ⬜ |
+| A6.6 | Payment and payout records never delete with an order (`onDelete: Restrict`), and the two clean-ups keep any order that has a payment row. A migration and two tests. | H3 | Before any real payment; safe to do now | ⬜ |
+| A6.7 | The low notes (L1 to L8): nothing to do now. Read them again before the production copy (Part D). | L1–L8 | Part D | ⬜ |
+
 ## Part B: outside accounts, slowest first
 
 Start B1 to B4 this week: they take days or weeks and nothing in Part A waits for them. Each ends with a check that proves it works.
 
 | # | Account | Steps | Blocks | Wait |
 |---|---|---|---|---|
-| B1 | **Payment provider** (D2) 👤 | 1. Ask two or three (a Jordanian bank's gateway, HyperPay, PayTabs) for: JOD, cards with 3-D Secure, **holding money until delivery then paying the seller**, fees, the papers they need. 2. Choose (D2). 3. Company papers, contract. 4. Test keys → 🤖 builds B7.9 against their test mode. 5. Live keys. | Real money | Longest |
+| B1 | **Payment provider** (D2) 👤 | 1. Ask two or three (a Jordanian bank's gateway, HyperPay, PayTabs) for: JOD, cards with 3-D Secure, **holding money until delivery then paying the seller**, fees, the papers they need. Also the questions in Part E, above all whether **they** hold the money and pay sellers (a "marketplace" or "split payment" product). 2. Choose (D2). 3. Company papers, contract. 4. Test keys → 🤖 builds B7.9 against their test mode. 5. Live keys. | Real money | Longest |
 | B2 | **MoDEE / Sanad** 👤 | Send the packet written 2026-11-04. Then 🤖 builds B11 against their test system. | Identity verification | Long |
 | B3 | **`sahla.jo`** 👤 | Register at dns.jo (available on 2026-11-04; the report has the papers and prices). Then 🤖 lists the DNS records as each service needs them. | Email, staff domain, final addresses | Days |
 | B4 | **Google Play Console** 👤 | Account, the one-time fee, identity check. Then: app entry, Play App Signing, its SHA-1 into Firebase (Google sign-in breaks in release without it), store text and screenshots in Arabic and English, data-safety form, privacy policy address. | Releasing | Days |
@@ -113,6 +128,37 @@ Start B1 to B4 this week: they take days or weeks and nothing in Part A waits fo
 | C7 | The dashboard deployed with `VITE_API_URL`, `ADMIN_ORIGIN` set to its address; sign in with the authenticator code. | 👥 | ⬜ |
 | C8 | `check:attack` against the test copy from outside. | 🤖 | ⬜ |
 | C9 | When B3, B7, B1 are in: `api.sahla.jo` and `admin.sahla.jo`, real email, one real payment in the provider's test mode from pay to payout. | 👥 | ⬜ |
+
+## Part E: real payments (B7.9), designed from the review
+
+Starts when B1 gives test keys. The findings are the design: build them in, don't patch them on.
+
+**Questions for every provider in B1** 👤
+
+1. Do you hold the buyer's money and pay the seller yourselves (marketplace / split payments / payouts to IBANs)? If yes, how long can money be held before release? (H8)
+2. Do you send a server-to-server notification (webhook) for paid, failed, refunded and chargeback? How is it signed? (H2, H7)
+3. Do charges and refunds accept an idempotency key? (H6)
+4. Partial refunds? Fees on a refund? (H9, M7)
+5. Can a card be authorised now and charged later, and for how many days? (M7, H7)
+6. A daily settlement report by file or API? (M9)
+7. Chargebacks: how are we told, how long to answer, what evidence counts (the delivery PIN, the courier's record)? (H7)
+
+**Build order** 🤖, each with a test that fails without it:
+
+| # | Step | Finding | Status |
+|---|---|---|---|
+| E1 | The provider interface grows: idempotency key, webhook parsing, partial refund, and payouts if they offer them | H6, H9, H8 | ⬜ |
+| E2 | A `pending` payment row is written before the card is charged | H1 | ⬜ |
+| E3 | `POST /payments/webhook` with the signature checked, and a job that re-asks about every payment `pending` for more than a few minutes | H2 | ⬜ |
+| E4 | A `Refund` table with an amount and its own states (`pending`, `done`, `failed`); a job retries; the bank is never called inside a database transaction | H4, H5, H9 | ⬜ |
+| E5 | A dashboard queue: refunds that failed, payments charged with no order, for the finance admin | H4, M8 | ⬜ |
+| E6 | A hold after delivery before the payout is owed (the owner decides: 24, 48 or 72 hours), a "problem after delivery" report for the buyer, a dispute state an admin resolves | H7 | ⬜ |
+| E7 | Chargebacks recorded against the order, the payout stopped if not yet paid | H7 | ⬜ |
+| E8 | The daily money check compares with the provider's report | M9 | ⬜ |
+| E9 | The item is held for a few minutes while one buyer is paying | M7 | ⬜ |
+| E10 | The same gates as before on the provider's test mode: double calls, bad amounts, the attack script, deliberate breaks, then one real card for 1 JOD, refunded | all | ⬜ |
+
+**Decisions for the owner before E starts** 👤: the hold after delivery (E6); who pays the delivery fee when a buyer cancels after the driver set out, and when a delivery fails (H9); whether Sahla or the provider holds the money (H8, with the lawyer, B12).
 
 ## Part D: launch
 
