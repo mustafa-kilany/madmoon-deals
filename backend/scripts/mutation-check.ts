@@ -32,11 +32,7 @@ const MUTATIONS: Mutation[] = [
   { name: 'support can see bank accounts', file: 'src/modules/admin/orders.ts', find: `adminOrdersRoutes.get('/admin/payouts', ...can('payouts'), async`, replace: `adminOrdersRoutes.get('/admin/payouts', ...can('orders'), async`, test: 'payouts' },
   { name: 'the money check misses a double payment', file: 'src/modules/orders/moneyCheck.ts', find: `GROUP BY o."id" HAVING COUNT(p."id") <> 1`, replace: `GROUP BY o."id" HAVING COUNT(p."id") < 1`, test: 'payouts' },
   { name: 'sign-up reveals taken emails', file: 'src/modules/auth/routes.ts', find: `  await sendCode(body.email, 'signup', { accountExists: !!exists });`, replace: `  if (exists) throw emailTaken();\n  await sendCode(body.email, 'signup');`, test: 'privacy' },
-  { name: 'forgot-password waits for the email', file: 'src/modules/auth/routes.ts', find: `    runSoon(
-      \`mail:reset:\${body.email}\`,
-      () => sendCode(body.email, 'reset').catch(error => logger.error({ err: error }, 'Reset code not sent')),
-      0,
-    );`, replace: `    await sendCode(body.email, 'reset');`, test: 'privacy' },
+  { name: 'forgot-password waits for the email', file: 'src/modules/auth/routes.ts', find: `    resetEmail.soon({ email: body.email }, \`mail:reset:\${body.email}\`, 0);`, replace: `    await sendCode(body.email, 'reset');`, test: 'privacy' },
   { name: 'a reset leaves old sessions alive', file: 'src/modules/auth/routes.ts', find: `    prisma.session.deleteMany({ where: { userId: user.id } }),\n`, replace: ``, test: 'privacy' },
   { name: 'deletion leaves the delivery address', file: 'src/modules/auth/deleteAccount.ts', find: `data: { deliveryName: '', deliveryPhone: '', deliveryAddress: '', deliveryNotes: null, cancelNote: null, itemIssueNote: null },`, replace: `data: { cancelNote: null },`, test: 'privacy' },
   { name: 'deletion leaves the certificate file', file: 'src/modules/auth/deleteAccount.ts', find: `    ...certificates.map(c => privateStorage.remove(c.photoUrl)),\n`, replace: ``, test: 'privacy' },
@@ -53,6 +49,8 @@ const MUTATIONS: Mutation[] = [
   { name: 'retention deletes an order with a refunded payment', file: 'src/modules/privacy/retention.ts', find: `        payments: { none: {} },`, replace: `        payments: { none: { status: { in: ['pending', 'succeeded'] } } },`, test: 'retention' },
   { name: 'account deletion takes an order with a payment record', file: 'src/modules/auth/deleteAccount.ts', find: `OR: [{ buyerId: userId }, { sellerUserId: userId }], payments: { none: {} } } });`, replace: `OR: [{ buyerId: userId }, { sellerUserId: userId }] } });`, test: 'privacy' },
   { name: 'old app builds are served', file: 'src/app.ts', find: `app.use('/v1', requireAppBuild);\n`, replace: ``, test: 'appBuild' },
+  { name: 'a failed job is never tried again', file: 'src/lib/jobs.ts', find: `: { runAt: new Date(Date.now() + RETRY_FIRST_MS * 2 ** (job.attempts - 1)) }),`, replace: `: { failedAt: new Date() }),`, test: 'jobs' },
+  { name: 'a deleted account’s jobs stay', file: 'src/modules/auth/deleteAccount.ts', find: 'await tx.$executeRaw`DELETE FROM "Job" WHERE "args"::text LIKE ${`%"${userId}"%`} OR "key" LIKE ${`%${userId}%`}`;', replace: ``, test: 'privacy' },
   { name: 'every server runs the daily jobs', file: 'src/lib/jobs.ts', find: `  if (!claimed) {`, replace: `  if (false) {`, test: 'jobs' },
   { name: 'bids deadlock the pool again', file: 'src/modules/negotiation/bids.ts', find: `(await sellerSuspended(listing.sellerUserId, tx)) ||
       (listing.sellerUserId && (await isBlockedBetween(bidderId, listing.sellerUserId, tx)))`, replace: `(await sellerSuspended(listing.sellerUserId)) ||

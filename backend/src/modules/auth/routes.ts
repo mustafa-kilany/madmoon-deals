@@ -4,8 +4,7 @@ import { z } from 'zod';
 import { prisma } from '../../db';
 import { env } from '../../env';
 import { ApiError } from '../../lib/errors';
-import { runSoon } from '../../lib/jobs';
-import { logger } from '../../lib/logger';
+import { defineJob } from '../../lib/jobs';
 import { cityIds } from '../../reference';
 import { queueRiskCheck } from '../risk/triggers';
 import { isStaffEmail } from '../staff/service';
@@ -157,13 +156,11 @@ for (const provider of ['google', 'apple'] as const)
 authRoutes.post('/auth/forgot-password', ...limited('forgot-password', 5), async (req, res) => {
   const body = emailBody.parse(req.body);
   if (await prisma.user.findUnique({ where: { email: body.email }, select: { id: true } }))
-    runSoon(
-      `mail:reset:${body.email}`,
-      () => sendCode(body.email, 'reset').catch(error => logger.error({ err: error }, 'Reset code not sent')),
-      0,
-    );
+    resetEmail.soon({ email: body.email }, `mail:reset:${body.email}`, 0);
   res.status(204).end();
 });
+// A job, so an email outage is tried again rather than lost.
+const resetEmail = defineJob('resetEmail', ({ email }: { email: string }) => sendCode(email, 'reset'));
 
 authRoutes.post('/auth/reset-password', ...limited('reset-password', 10), async (req, res) => {
   const body = resetBody.parse(req.body);

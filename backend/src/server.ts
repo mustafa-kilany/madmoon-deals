@@ -2,6 +2,7 @@ import { app } from './app';
 import { prisma } from './db';
 import { env } from './env';
 import { reportError } from './lib/errorReporter';
+import { startJobWorker } from './lib/jobs';
 import { logger } from './lib/logger';
 import { scheduleAuctionClosing } from './modules/negotiation/bids';
 import { attachLive } from './modules/negotiation/live';
@@ -18,6 +19,7 @@ scheduleAuctionClosing();
 scheduleNightlyRiskCheck();
 scheduleMoneyCheck();
 scheduleRetention();
+const stopJobs = startJobWorker(); // pushes, emails, risk checks waiting in the Job table
 
 const server = app.listen(env.PORT, () => {
   logger.info(`Sahla backend on http://localhost:${env.PORT}/v1`);
@@ -35,6 +37,7 @@ function shutdown(signal: string) {
   const cut = setTimeout(() => process.exit(1), 20_000) as unknown as { unref(): void };
   cut.unref();
   live.close(); // open sockets would otherwise keep the server from closing
+  stopJobs(); // a job running now finishes or, if cut, another server takes it over later
   server.close(() => {
     prisma.$disconnect().finally(() => process.exit(0));
   });

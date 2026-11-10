@@ -771,6 +771,23 @@ model SupportMessage {
 
 // ─── Running on several servers (LOAD_BALANCER_TEST_PLAN L1, L2) ──────────────
 
+// Background work that must survive a restart (lib/jobs.ts, BACKEND_REVIEW M1): pushes, emails sent after
+// the answer, risk checks. Deleted once done; after the last try it stays, with failedAt, for 30 days.
+model Job {
+  id          String    @id
+  name        String // what runs: "push:sold"
+  args        Json // its arguments: ids, never whole records
+  key         String?   @unique // while one with this key waits, queuing it again does nothing
+  runAt       DateTime
+  attempts    Int       @default(0)
+  lockedUntil DateTime? // a server is running it; past this, another may take it over
+  lastError   String?
+  failedAt    DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([runAt])
+}
+
 // A daily job's run: the first server to write the row runs it, the others skip (lib/jobs.ts daily).
 model JobRun {
   name      String

@@ -67,7 +67,8 @@ One server is enough to launch: it held 2 000 live connections in the two-server
 * **Rate limits** are counted in the database (`RateLimit` table, `lib/rateLimit.ts`), so every server counts together. Only the flood fence (3 000 requests a minute per address) is counted per server.
 * **Daily jobs** (money check, retention, risk check) run on one server only: the first to claim the day in `JobRun` runs it.
 * **Live connection limits** (`LIVE_MAX_CONNECTIONS`, 1 000 per address, 600 new a minute per address) are per server: two servers let one address hold twice as many. That's fine: they guard each server's memory.
-* Pushes waiting to go out (`runSoon`) are still in each server's memory and are lost if that server stops in the 2 seconds before they go (`BACKEND_REVIEW.md` M1).
+* **Background jobs** (pushes, emails sent after the answer, risk checks) wait in the `Job` table: any server runs each once, a failure is tried again 5 times, and a deploy or crash loses nothing. One that failed every try keeps its reason (`lastError`) for 30 days: `SELECT name, "lastError", "failedAt" FROM "Job" WHERE "failedAt" IS NOT NULL;`
+* **Daily jobs** also catch up: a server starting after the hour runs that day's if nobody did.
 
 **Database connections: servers × (`DB_POOL_SIZE` + 1) must stay under the database's connection limit**, leaving room for a migration and an admin's own connection (about 5). The + 1 is the live connection (`LISTEN`). The database's limit is on the host's pricing page, or `SHOW max_connections;`.
 

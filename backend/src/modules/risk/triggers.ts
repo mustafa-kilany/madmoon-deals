@@ -1,5 +1,5 @@
 import { prisma } from '../../db';
-import { daily, runSoon } from '../../lib/jobs';
+import { daily, defineJob } from '../../lib/jobs';
 import { logger } from '../../lib/logger';
 import { checkAccount } from './checker';
 
@@ -9,8 +9,9 @@ import { checkAccount } from './checker';
 
 /** Checks the account shortly after the request (several events at once → one check). */
 export function queueRiskCheck(userId: string | null | undefined) {
-  if (userId) runSoon(`risk:${userId}`, () => checkAccount(userId));
+  if (userId) riskCheck.soon({ userId }, `risk:${userId}`);
 }
+const riskCheck = defineJob('riskCheck', ({ userId }: { userId: string }) => checkAccount(userId));
 
 const DAY = 86_400_000;
 

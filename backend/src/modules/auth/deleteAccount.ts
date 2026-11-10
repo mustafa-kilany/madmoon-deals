@@ -67,6 +67,9 @@ export async function deleteAccount(user: User) {
       where: { OR: [{ targetType: 'user', targetId: userId }, { targetType: 'listing', targetId: { in: listingIds } }] },
     });
     await tx.listingView.deleteMany({ where: { viewerKey: userId } });
+    // Background jobs about them (a push, a risk check, an email): nobody is left to tell, and they hold the id.
+    await tx.$executeRaw`DELETE FROM "Job" WHERE "args"::text LIKE ${`%"${userId}"%`} OR "key" LIKE ${`%${userId}%`}`;
+    if (user.email) await tx.$executeRaw`DELETE FROM "Job" WHERE "args"::text LIKE ${`%"${user.email}"%`} OR "key" LIKE ${`%${user.email}%`}`;
     if (user.email) await tx.emailCode.deleteMany({ where: { email: user.email } });
 
     // Unpaid checkouts, on either side, are nobody's record, unless money moved for them (a late

@@ -24,6 +24,8 @@ export const KEEP_DAYS = {
   chat: 365,
   /** The support chat after its last message. */
   support: 730,
+  /** A background job that failed every try (lib/jobs.ts): kept a while to see what went wrong. */
+  failedJob: 30,
   /** Reports an admin closed. */
   resolvedReport: 730,
   /** Risk signals and listing views: only useful while recent. */
@@ -114,6 +116,7 @@ export async function runRetention(now = Date.now()) {
   done.views = (await prisma.listingView.deleteMany({ where: { day: { lt: ago(KEEP_DAYS.listingView) } } })).count;
   done.sessions = (await prisma.session.deleteMany({ where: { expiresAt: { lt: ago(KEEP_DAYS.expiredSession) } } })).count;
   done.emailCodes = (await prisma.emailCode.deleteMany({ where: { expiresAt: { lt: ago(KEEP_DAYS.emailCode) } } })).count;
+  done.failedJobs = (await prisma.job.deleteMany({ where: { failedAt: { lt: ago(KEEP_DAYS.failedJob) } } })).count;
   return done;
 }
 

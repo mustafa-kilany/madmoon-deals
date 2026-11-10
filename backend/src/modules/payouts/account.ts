@@ -4,8 +4,7 @@ import { z } from 'zod';
 import { prisma } from '../../db';
 import type { User } from '../../generated/prisma/client';
 import { ApiError } from '../../lib/errors';
-import { runSoon } from '../../lib/jobs';
-import { logger } from '../../lib/logger';
+import { defineJob } from '../../lib/jobs';
 import { LIMITS } from '../../lib/rateLimit';
 import { dataSeal, dataUnseal } from '../../lib/sealed';
 import { sendCode, useCode } from '../auth/codes';
@@ -105,9 +104,12 @@ payoutAccountRoutes.put('/me/payout-account', ...requireCustomer, ...LIMITS.payo
   pushPayoutAccountChanged(me.id, last4);
   if (me.email) {
     const to = me.email;
-    runSoon(`mail:payout:${me.id}`, () =>
-      mailer.send({ to, ...payoutAccountEmail(last4, replaced) }).catch(error => logger.error({ err: error }, 'Payout account email not sent')),
-    );
+    payoutAccountMail.soon({ to, last4, replaced }, `mail:payout:${me.id}`);
   }
   res.json(toApi(user));
 });
+
+// S3.7: the account's owner is told by email too, in case the change wasn't them. A job: tried again if email is down.
+const payoutAccountMail = defineJob('payoutAccountMail', ({ to, last4, replaced }: { to: string; last4: string; replaced: boolean }) =>
+  mailer.send({ to, ...payoutAccountEmail(last4, replaced) }),
+);
