@@ -1,0 +1,118 @@
+# Load balancer test plan
+
+Written 2026-11-10 from the 2026-11-09 session. Nothing in this plan has been built or run yet.
+
+## Where things stand
+
+* **There is no load balancer in this repo.** The host supplies it (decision D4, not made yet). What the repo has is the code that must work behind one:
+  * `TRUST_PROXY` (`backend/src/app.ts`, `env.ts`): the limits use each person's real address, not the balancer's.
+  * Live updates go through the database (`NOTIFY` in `backend/src/modules/negotiation/live.ts`), so a bid saved on one server should reach phones connected to another. **This was designed for and has never been tested with two servers.**
+  * The app falls back to asking every 3 seconds (auctions) or 5 seconds (chats) when a live connection is down.
+* **Already measured, one server, no balancer** (`docs/INTERNAL_READINESS_PLAN.md`, 2026-11-09): 1 000 virtual phones on one auction, bids arrived in 84 ms on average and 180 ms at worst. About 220 MB of memory per 1 000 connections.
+* **Limits in the code today:** 2 000 live connections per server (`LIVE_MAX_CONNECTIONS`), 1 000 open and 600 new a minute per address.
+
+## Is what's built correct? (code review, 2026-11-10)
+
+Read, not run: `live.ts`, `server.ts`, `app.ts`, `lib/rateLimit.ts`, `lib/jobs.ts`, `bids.ts`, the app's `services/negotiation/live.ts`.
+
+**With one server behind the host's balancer: yes, the design is right.** Nothing below needs changing to launch on one server.
+
+| What a balancer needs | In the code | Verdict |
+|---|---|---|
+| Any server can answer any request (no "sticky" routing) | Sessions, bids, chats are all in the database; live connections only carry copies | ✅ |
+| A health check the balancer can call | `GET /v1/health`, 200 only when the database answers; not rate limited; in the Docker image too | ✅ |
+| The real person's address | `TRUST_PROXY`, used the same way by the API's limits and the live connections | ✅, but the number must match the host (below) |
+| Connections kept open | Something is sent every 25 seconds, under the usual 60-second idle timeout | ✅ |
+| A server can be replaced without losing anything | On `SIGTERM`: live connections closed with "restarting", requests in progress finish, 20 seconds at most | ✅ |
+| Phones cope with a dropped connection | Reconnect after 1 s growing to 30 s, with a random part so a restart isn't a stampede; refetch on reconnect; polling meanwhile | ✅ |
+| A bid reaches every server | `NOTIFY` inside the bid's transaction; every server listens; each checks every 25 s that it still hears | ✅ by design, **never run with two servers** |
+| Auctions close once | Guarded update: only one server's close counts | ✅ |
+
+**Before running two or more servers, these need doing.** None is a bug today:
+
+| # | Gap | What happens with 2 servers | Fix |
+|---|---|---|---|
+| L1 | Rate limits are counted in each server's memory (`SECURITY_PLAN.md` S0.9) | Every limit is doubled: 10 card tries an hour instead of 5 | A shared store in the same PostgreSQL |
+| L2 | The three daily jobs (money check, retention, risk check) start on every server | Each runs twice at the same moment | One database lock per job, so only one server runs it |
+| L3 | Each server opens `DB_POOL_SIZE` (20) + 1 database connections | Small managed databases allow about 20 to 25 in total: the second server can't connect | Set `DB_POOL_SIZE` so servers × (pool + 1) fits; write it in `DEPLOY.md` |
+| L4 | `TRUST_PROXY` is a count of proxies | Some hosts put two in front (their balancer and a CDN). Too low: everyone shares one address and the limits hit everybody. Too high: the address can be faked | Check on the host with two networks; Stage 2 check 6 |
+| L5 | 1 000 live connections per address | A mobile carrier can put many people behind one address | Watch the 503 count in production; raise if real people hit it |
+
+L1 to L3 are Stage 1's follow-up: about half a day together, each with a two-server test.
+
+## Is there something ready to use instead of building?
+
+**The balancer itself: never build it, and it costs nothing extra.**
+
+| Option | Cost | Work | For |
+|---|---|---|---|
+| **The host's own balancer** (DigitalOcean App Platform, Railway, Render, Fly) | Included in the server's price | None: it's there when you deploy | **Launch. Recommended.** |
+| **Caddy** on one rented server, with Docker Compose | The server only, roughly $5 to $12 a month. Check the price on the day | A few lines of settings: HTTPS certificates by itself, WebSockets by default, health checks. But updates, backups and the database become yours to look after | The cheapest possible, if money matters more than time |
+| nginx, HAProxy, Traefik | Free | More settings than Caddy for the same result | No reason to prefer them here |
+| A cloud balancer bought separately (about $12 a month and up) | Extra | Extra | Not needed until several servers on plain machines |
+
+All four pieces of software are free, open source and used by very large sites. They are tested far more than anything written here could be.
+
+**The cheapest sensible launch: one server.** One server holds 2 000 live connections (tested to 1 000) and about 500 requests a second on this PC. That is far more than a first launch needs, and L1 to L3 don't apply to it. Add the second server when the numbers ask for it.
+
+**For the gaps, ready-made parts on the database already paid for:**
+
+| Gap | Ready-made | Instead of |
+|---|---|---|
+| L1 | A PostgreSQL store for `express-rate-limit` (an npm package) | Paying for Redis |
+| L2 | PostgreSQL's own advisory locks (built in), or `pg-boss` if jobs grow | A separate job service |
+| Load testing | `k6` or Artillery, free | A paid load-testing service |
+
+**Not worth buying:** Pusher, Ably, Supabase Realtime and the like sell live connections by the month. Sahla's own are built, tested and free.
+
+## Stage 1: offline, on this PC, free
+
+A balancer on this PC in front of **two copies of the backend** sharing one test database, with virtual phones connecting through it. No account, no domain, no internet.
+
+### What gets built
+
+| Piece | What it is |
+|---|---|
+| `backend/scripts/balancer-test.ts`, run as `npm run balancer-test` | Starts everything below, runs the checks, prints a pass/fail table, stops everything. Takes `BALANCER_URL=` so Stage 2 reuses it against a real address. |
+| Two servers | Ports 4201 and 4202, database `sahla_load_test` (the one `load-test.ts` uses), `TRUST_PROXY=1`, limits at their real values. |
+| The balancer | **nginx for Windows** first: real balancer software, round robin, 60-second idle timeout. If this PC refuses the download (it refused MinIO), a small balancer written in Node inside the script. |
+| Virtual phones | The `ws` package already in the backend. Each opens the same connection the app does. They connect from different local addresses (127.0.0.2, 127.0.0.3, …) so each looks like a separate person. |
+
+Docker isn't on this PC, so nothing here needs it.
+
+**Expected limit of nginx on Windows:** about 500 phones (it holds about 1 024 connections, two per phone). To be confirmed on the day. So nginx runs the behaviour checks at 200 phones, and the Node balancer runs the big numbers.
+
+### The checks
+
+| # | Check | How | Passes when |
+|---|---|---|---|
+| 1 | A bid reaches phones on the other server | 200 phones on one auction, split across both servers; 50 bids sent to server A only, then to B only | Every phone gets every bid, in order, worst delay under 1 second |
+| 2 | Chat and unread signals cross servers | 100 signed-in pairs, sender on A and receiver on B | Every message signal arrives, worst delay under 1 second |
+| 3 | Connections survive quiet periods | 200 phones idle for 3 minutes behind the 60-second timeout | 0 dropped (the server sends something every 25 seconds) |
+| 4 | One server dies | Kill server B mid-auction, keep bidding | B's phones reconnect to A; no phone ends with a bid missing; time to recover is recorded |
+| 5 | The server comes back | Restart B | New phones land on it again, both servers deliver |
+| 6 | Limits see the real person | 1 100 phones from one address; then the same through a server with `TRUST_PROXY=0` | First: exactly 1 000 accepted, others unaffected. Second: shows the failure the setting prevents |
+| 7 | Growing numbers | 200 → 1 000 → 2 000 → 4 000 phones (the two servers' limit together) | Delay, drops and each server's memory recorded per step; under 1 second up to 2 000 |
+| 8 | Past the limit | 4 500 phones | The extra 500 are refused cleanly and fall back to the 3-second check; nobody connected is disturbed |
+| 9 | Live connections down for everyone | Stop the database's live channel with 1 000 phones on, all asking every 3 seconds | Servers stay up, requests answered, 0 errors. Last session's rough estimate was that one server is comfortable to about 780 viewers this way: this measures it |
+
+### What Stage 1 can't prove
+
+The host's own balancer settings, `wss://` with a real certificate, how many connections the real server size holds, and delay over the internet. Those are Stage 2.
+
+## Stage 2: the real host, a test copy, no domain needed
+
+Every host in `backend/docs/DEPLOY.md` gives a free address with HTTPS that already goes through its balancer. Deploy a **test copy** there, never the one real people use.
+
+1. `GET /v1/health` answers 200 through the free address.
+2. `BALANCER_URL=https://<free-address> npm run balancer-test` from this PC: checks 1 to 3 at 200 phones, then growing to 1 000. One PC can't go further: the server allows 1 000 connections and 600 new a minute from one address.
+3. Beyond 1 000: 2 to 4 rented machines for about an hour, each running the same script (or k6, which does the same across machines), one collecting results. This is the "workers" idea.
+4. Checks 4 and 5 by restarting one server from the host's dashboard, if the test copy runs two.
+5. Two real phones on mobile data: same auction, bid on one, watch the other. Needs a build pointing at the free address (`frontend/src/config.ts`, not committed: `appSecurity.test.ts` pins that line).
+
+## Order
+
+1. Build and run Stage 1. Rough estimate: 1 to 2 hours.
+2. Fix whatever it finds, add the results to `docs/INTERNAL_READINESS_PLAN.md`.
+3. Choose the host (D4), deploy the test copy, run Stage 2.
+4. Later, `api.sahla.jo` is a settings change only (`PUBLIC_URL`, the DNS record), then step 1 and 5 of Stage 2 again.
