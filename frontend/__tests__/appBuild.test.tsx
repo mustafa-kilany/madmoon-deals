@@ -1,8 +1,6 @@
 // BACKEND_REVIEW M3: the app tells the server its build, and a server that says "too old" (426)
 // gets only the update screen, which opens the store.
 
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { Linking } from 'react-native';
 import { UpdateRequiredScreen } from '@/components/UpdateRequiredScreen';
@@ -11,6 +9,10 @@ import { changeLanguage } from '@/i18n';
 import { api, setUpdateRequiredHandler } from '@/services/api/client';
 import { ApiError, errorMessageKey } from '@/services/api/errors';
 import { useUiStore } from '@/store/uiStore';
+
+const { readFileSync } = jest.requireActual('fs') as {
+  readFileSync: (file: string, encoding: 'utf8') => string;
+};
 
 const fetchMock = jest.fn();
 globalThis.fetch = fetchMock as unknown as typeof fetch;
@@ -27,10 +29,7 @@ beforeEach(async () => {
 });
 
 test('the build number is the same as versionCode in build.gradle', () => {
-  const gradle = readFileSync(
-    path.join(__dirname, '../android/app/build.gradle'),
-    'utf8',
-  );
+  const gradle = readFileSync('android/app/build.gradle', 'utf8');
   const versionCode = Number(/versionCode\s+(\d+)/.exec(gradle)?.[1]);
   expect(config.appBuild).toBe(versionCode);
 });
@@ -65,7 +64,7 @@ test('the store flag the app root watches', () => {
 });
 
 test('the update screen says why and opens Google Play', async () => {
-  const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+  const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
   await render(<UpdateRequiredScreen />);
   expect(screen.getByText('Time to update Sahla')).toBeTruthy();
   await fireEvent.press(screen.getByRole('button', { name: 'Update' }));
