@@ -8,6 +8,7 @@ import type { AddressInfo } from 'node:net';
 import { after, before, test } from 'node:test';
 import { app } from '../../app';
 import { prisma } from '../../db';
+import { deleteOrders } from '../../lib/testkit';
 import { hashPassword } from '../auth/password';
 import { adminToken } from './testing';
 
@@ -42,7 +43,7 @@ before(async () => {
 });
 after(async () => {
   server.close();
-  await prisma.order.deleteMany({ where: { storeId: STORE } });
+  await deleteOrders({ storeId: STORE });
   await prisma.listing.deleteMany({ where: { storeId: STORE } });
   await prisma.store.deleteMany({ where: { id: STORE } });
   await prisma.adminAction.deleteMany({ where: { adminId: admin.id } });

@@ -19,8 +19,8 @@ import path from 'node:path';
 
 const api = startApi();
 const { call, raw } = api;
-const EMAILS = ['priv.known@example.com', 'priv.google@example.com', 'priv.gone@example.com', 'priv.other@example.com', 'priv.money@example.com', 'priv.bid@example.com', 'priv.rider@sahla.jo', 'priv.admin@sahla.jo'];
-const LISTINGS = ['priv-sold', 'priv-live', 'priv-bought', 'priv-owed', 'priv-held', 'priv-auction', 'priv-copy'];
+const EMAILS = ['priv.known@example.com', 'priv.google@example.com', 'priv.gone@example.com', 'priv.other@example.com', 'priv.money@example.com', 'priv.bid@example.com', 'priv.rider@sahla.jo', 'priv.admin@sahla.jo', 'priv.late@example.com'];
+const LISTINGS = ['priv-sold', 'priv-live', 'priv-bought', 'priv-owed', 'priv-held', 'priv-auction', 'priv-copy', 'priv-late'];
 let other: Person, rider: Person, admin: Person;
 
 before(async () => {
@@ -213,6 +213,20 @@ test('S1.9 a deleted account leaves no personal data in any table or on disk', a
   assert.equal((await call('GET', `/orders/${sold.id}`, other)).status, 200);
   assert.equal(await prisma.listing.count({ where: { id: 'priv-live' } }), 0, 'a listing nobody ordered goes completely');
   assert.equal((await call('GET', '/listings/priv-sold')).body.description ?? '', '');
+});
+
+test('H3 an unpaid checkout with a payment record stays, without who or where, when the account goes', async () => {
+  const late = await newPerson(api, EMAILS[8]);
+  await newListing(other.id, 'priv-late');
+  const checkout = await call('POST', '/orders', late, { listingId: 'priv-late', delivery: DELIVERY });
+  assert.equal(checkout.status, 201);
+  // A card check that charged after someone else bought it, refunded since: money moved, so it is a record.
+  await prisma.payment.create({ data: { orderId: checkout.body.id, provider: 'fake', providerRef: 'priv-late-ref', amountFils: checkout.body.totalFils, status: 'refunded' } });
+  assert.equal((await call('DELETE', '/me', late)).status, 204);
+  const kept = await prisma.order.findUniqueOrThrow({ where: { id: checkout.body.id }, include: { payments: true } });
+  assert.equal(kept.payments.length, 1);
+  assert.equal(kept.buyerId, null);
+  assert.deepEqual([kept.deliveryName, kept.deliveryPhone, kept.deliveryAddress], ['', '', '']);
 });
 
 test('S1.9 not while money is owed, an auction is live, or for staff', async () => {

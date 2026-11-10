@@ -68,7 +68,7 @@ export async function runRetention(now = Date.now()) {
       where: {
         status: 'awaiting_payment',
         updatedAt: { lt: ago(KEEP_DAYS.unpaidCheckout) },
-        payments: { none: { status: { in: ['pending', 'succeeded'] } } },
+        payments: { none: {} }, // any payment, even refunded or failed, is a money record (H3)
       },
     })
   ).count;

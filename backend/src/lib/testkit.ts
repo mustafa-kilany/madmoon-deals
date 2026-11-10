@@ -93,9 +93,17 @@ export async function paidOrder(api: Api, buyer: Person, listingId: string) {
   return paid.body as { id: string; pin: string; [key: string]: unknown };
 }
 
+/** Tests only: orders with their money records, which the database never deletes with an order (H3). */
+export async function deleteOrders(where: Prisma.OrderWhereInput) {
+  const ids = (await prisma.order.findMany({ where, select: { id: true } })).map(order => order.id);
+  await prisma.payout.deleteMany({ where: { orderId: { in: ids } } });
+  await prisma.payment.deleteMany({ where: { orderId: { in: ids } } });
+  await prisma.order.deleteMany({ where: { id: { in: ids } } });
+}
+
 /** Removes what a test file made, children first (orders keep listings; listings keep users). */
 export async function cleanUp(listingIds: string[], emails: string[]) {
-  await prisma.order.deleteMany({ where: { listingId: { in: listingIds } } });
+  await deleteOrders({ listingId: { in: listingIds } });
   await prisma.listing.deleteMany({ where: { id: { in: listingIds } } });
   await prisma.user.deleteMany({ where: { email: { in: emails } } });
 }

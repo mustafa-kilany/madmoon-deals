@@ -11,7 +11,7 @@ import { KEEP_DAYS, runRetention } from './retention';
 
 const api = startApi();
 const EMAILS = ['keep.seller@example.com', 'keep.buyer@example.com'];
-const LISTINGS = ['keep-old', 'keep-new', 'keep-unpaid', 'keep-gone', 'keep-photo', 'keep-chat-old', 'keep-chat-live', 'keep-cert'];
+const LISTINGS = ['keep-old', 'keep-new', 'keep-unpaid', 'keep-gone', 'keep-photo', 'keep-chat-old', 'keep-chat-live', 'keep-cert', 'keep-never-paid'];
 let seller: Person, buyer: Person;
 const DAY = 86_400_000;
 const daysAgo = (days: number) => new Date(Date.now() - days * DAY);
@@ -46,17 +46,36 @@ test('an ended order loses its phones and addresses after 90 days; a recent or o
   assert.equal((await api.call('GET', `/orders/${old.id}`, buyer)).status, 200);
 });
 
-test('an abandoned checkout goes after 30 days, unless a card check is running', async () => {
+test('an abandoned checkout goes after 30 days, unless it has any payment record (H3)', async () => {
   await newListing(seller.id, 'keep-unpaid');
   const checkout = await api.call('POST', '/orders', buyer, { listingId: 'keep-unpaid', delivery: DELIVERY });
   const id = checkout.body.id as string;
   await prisma.$executeRaw`UPDATE "Order" SET "updatedAt" = ${daysAgo(KEEP_DAYS.unpaidCheckout + 1)} WHERE "id" = ${id}`;
-  const pending = await prisma.payment.create({ data: { orderId: id, provider: 'fake', providerRef: `keep-${id}`, amountFils: 1, status: 'pending' } });
+  // A late payment that was charged, then refunded: the order never got paid, but money moved.
+  const payment = await prisma.payment.create({ data: { orderId: id, provider: 'fake', providerRef: `keep-${id}`, amountFils: 1, status: 'pending' } });
+  for (const status of ['pending', 'refunded', 'failed'] as const) {
+    await prisma.payment.update({ where: { id: payment.id }, data: { status } });
+    await runRetention();
+    assert.equal(await prisma.order.count({ where: { id } }), 1, `deleted with a ${status} payment`);
+    assert.equal(await prisma.payment.count({ where: { id: payment.id } }), 1);
+  }
+
+  // No payment at all: nobody's record, it goes.
+  await newListing(seller.id, 'keep-never-paid');
+  const never = (await api.call('POST', '/orders', buyer, { listingId: 'keep-never-paid', delivery: DELIVERY })).body.id as string;
+  await prisma.$executeRaw`UPDATE "Order" SET "updatedAt" = ${daysAgo(KEEP_DAYS.unpaidCheckout + 1)} WHERE "id" = ${never}`;
   await runRetention();
-  assert.equal(await prisma.order.count({ where: { id } }), 1);
-  await prisma.payment.update({ where: { id: pending.id }, data: { status: 'failed' } });
-  await runRetention();
-  assert.equal(await prisma.order.count({ where: { id } }), 0);
+  assert.equal(await prisma.order.count({ where: { id: never } }), 0);
+});
+
+test('the database itself refuses to delete an order that has payment or payout records (H3)', async () => {
+  const order = await prisma.order.findFirstOrThrow({ where: { listingId: 'keep-unpaid' } });
+  await assert.rejects(prisma.order.delete({ where: { id: order.id } }));
+  assert.equal(await prisma.payment.count({ where: { orderId: order.id } }), 1);
+  const delivered = await prisma.order.findFirstOrThrow({ where: { listingId: 'keep-old' } });
+  await prisma.payment.deleteMany({ where: { orderId: delivered.id } });
+  await prisma.payout.create({ data: { orderId: delivered.id, sellerUserId: seller.id, amountFils: 1 } });
+  await assert.rejects(prisma.order.delete({ where: { id: delivered.id } }));
 });
 
 test('certificate originals: gone 180 days after the listing ends, or 30 if unused; live ones stay', async () => {

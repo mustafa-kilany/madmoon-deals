@@ -7,6 +7,7 @@ import type { AddressInfo } from 'node:net';
 import { after, before, beforeEach, test } from 'node:test';
 import { app } from '../../app';
 import { prisma } from '../../db';
+import { deleteOrders } from '../../lib/testkit';
 import { flushJobs } from '../../lib/jobs';
 import { hashPassword } from '../auth/password';
 import { closeEndedAuctions } from '../negotiation/bids';
@@ -80,7 +81,7 @@ beforeEach(() => {
 });
 after(async () => {
   server.close();
-  await prisma.order.deleteMany({ where: { listingId: { in: LISTINGS } } });
+  await deleteOrders({ listingId: { in: LISTINGS } });
   await prisma.listing.deleteMany({ where: { id: { in: LISTINGS } } });
   await prisma.user.deleteMany({ where: { email: { in: [...EMAILS, ADMIN_EMAIL] } } });
   await prisma.$disconnect();

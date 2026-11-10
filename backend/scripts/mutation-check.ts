@@ -50,6 +50,8 @@ const MUTATIONS: Mutation[] = [
   { name: 'one email has no overall limit', file: 'src/modules/auth/routes.ts', find: "    rateLimit({ ...common, limit: limit * 5 * env.RATE_LIMIT_MULTIPLIER, store: new SharedStore(`auth-${name}:email`), keyGenerator: req => emailOf(req as Request) }),\n", replace: ``, test: 'limits' },
   { name: 'each server counts its own card tries', file: 'src/lib/rateLimit.ts', find: "store: new SharedStore(`${name}:u`), ", replace: ``, test: 'sharedLimits' },
   { name: 'each server counts its own tries per address', file: 'src/lib/rateLimit.ts', find: "store: new SharedStore(`${name}:ip`), ", replace: ``, test: 'sharedLimits' },
+  { name: 'retention deletes an order with a refunded payment', file: 'src/modules/privacy/retention.ts', find: `        payments: { none: {} },`, replace: `        payments: { none: { status: { in: ['pending', 'succeeded'] } } },`, test: 'retention' },
+  { name: 'account deletion takes an order with a payment record', file: 'src/modules/auth/deleteAccount.ts', find: `OR: [{ buyerId: userId }, { sellerUserId: userId }], payments: { none: {} } } });`, replace: `OR: [{ buyerId: userId }, { sellerUserId: userId }] } });`, test: 'privacy' },
   { name: 'every server runs the daily jobs', file: 'src/lib/jobs.ts', find: `  if (!claimed) {`, replace: `  if (false) {`, test: 'jobs' },
   { name: 'bids deadlock the pool again', file: 'src/modules/negotiation/bids.ts', find: `(await sellerSuspended(listing.sellerUserId, tx)) ||
       (listing.sellerUserId && (await isBlockedBetween(bidderId, listing.sellerUserId, tx)))`, replace: `(await sellerSuspended(listing.sellerUserId)) ||

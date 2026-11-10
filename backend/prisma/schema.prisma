@@ -585,11 +585,12 @@ enum PaymentStatus {
   refunded
 }
 
-// Every attempt to pay an order: a failed card check can be tried again.
+// Every attempt to pay an order: a failed card check can be tried again. A money record: never
+// deleted, and its order can't be deleted while it exists (BACKEND_REVIEW H3).
 model Payment {
   id           String        @id @default(cuid())
   orderId      String
-  order        Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order        Order         @relation(fields: [orderId], references: [id], onDelete: Restrict)
   provider     String // "fake" until the real provider (D2)
   providerRef  String        @unique // the provider's payment id: a repeated callback is handled once
   amountFils   Int
@@ -608,11 +609,11 @@ enum PayoutStatus {
   failed
 }
 
-// Money released to the seller when the courier confirms delivery (one per order).
+// Money released to the seller when the courier confirms delivery (one per order). Never deleted (H3).
 model Payout {
   id           String       @id @default(cuid())
   orderId      String       @unique
-  order        Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order        Order        @relation(fields: [orderId], references: [id], onDelete: Restrict)
   sellerUserId String?
   sellerUser   User?        @relation(fields: [sellerUserId], references: [id], onDelete: SetNull)
   storeId      String?

@@ -69,8 +69,9 @@ export async function deleteAccount(user: User) {
     await tx.listingView.deleteMany({ where: { viewerKey: userId } });
     if (user.email) await tx.emailCode.deleteMany({ where: { email: user.email } });
 
-    // Unpaid checkouts, on either side, are nobody's record.
-    await tx.order.deleteMany({ where: { status: 'awaiting_payment', OR: [{ buyerId: userId }, { sellerUserId: userId }] } });
+    // Unpaid checkouts, on either side, are nobody's record, unless money moved for them (a late
+    // payment, refunded): those stay like finished orders (H3).
+    await tx.order.deleteMany({ where: { status: 'awaiting_payment', OR: [{ buyerId: userId }, { sellerUserId: userId }], payments: { none: {} } } });
     // Finished orders stay for the accounts, without who or where. The other side keeps the item and the amounts.
     await tx.order.updateMany({
       where: { buyerId: userId },
