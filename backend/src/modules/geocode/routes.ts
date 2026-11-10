@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { logger } from '../../lib/logger';
 import { rateLimit } from 'express-rate-limit';
 import { z } from 'zod';
+import { SharedStore } from '../../lib/rateLimit';
 import { currentUser, requireCustomer } from '../auth/requireUser';
 import { geocoder, inJordan } from './geocoder';
 
@@ -19,6 +20,7 @@ const query = z.object({
 const perUser = rateLimit({
   windowMs: 60 * 60_000,
   limit: 20,
+  store: new SharedStore('geocode:u'),
   standardHeaders: 'draft-8',
   legacyHeaders: false,
   keyGenerator: (_req, res) => currentUser(res.locals).id,

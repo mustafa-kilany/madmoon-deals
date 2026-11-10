@@ -9,7 +9,7 @@ import { logger } from '../../lib/logger';
 import { cityIds } from '../../reference';
 import { queueRiskCheck } from '../risk/triggers';
 import { isStaffEmail } from '../staff/service';
-import { LIMITS } from '../../lib/rateLimit';
+import { LIMITS, SharedStore } from '../../lib/rateLimit';
 import { toApiUser } from './apiUser';
 import { deleteAccount } from './deleteAccount';
 import { exportAccount } from './exportAccount';
@@ -64,7 +64,7 @@ const emailTaken = () => new ApiError(409, 'EMAIL_TAKEN', 'Email already registe
 // - the email alone: one account attacked from many addresses;
 // - the IP alone: one address trying many accounts (generous: carriers share IPs).
 const emailOf = (req: Request) => String(req.body?.email ?? '').trim().toLowerCase();
-const limited = (limit: number) => {
+const limited = (name: string, limit: number) => {
   const common = {
     windowMs: 15 * 60_000,
     standardHeaders: 'draft-8' as const,
@@ -75,9 +75,9 @@ const limited = (limit: number) => {
       }),
   };
   return [
-    rateLimit({ ...common, limit, keyGenerator: req => `${ipKeyGenerator(req.ip ?? '')}|${emailOf(req as Request)}` }),
-    rateLimit({ ...common, limit: limit * 5 * env.RATE_LIMIT_MULTIPLIER, keyGenerator: req => `email:${emailOf(req as Request)}` }),
-    rateLimit({ ...common, limit: 300 * env.RATE_LIMIT_MULTIPLIER, keyGenerator: req => `ip:${ipKeyGenerator(req.ip ?? '')}` }),
+    rateLimit({ ...common, limit, store: new SharedStore(`auth-${name}:ip-email`), keyGenerator: req => `${ipKeyGenerator(req.ip ?? '')}|${emailOf(req as Request)}` }),
+    rateLimit({ ...common, limit: limit * 5 * env.RATE_LIMIT_MULTIPLIER, store: new SharedStore(`auth-${name}:email`), keyGenerator: req => emailOf(req as Request) }),
+    rateLimit({ ...common, limit: 300 * env.RATE_LIMIT_MULTIPLIER, store: new SharedStore(`auth-${name}:ip`), keyGenerator: req => ipKeyGenerator(req.ip ?? '') }),
   ];
 };
 
@@ -92,7 +92,7 @@ const refuseStaff = (email: string) => {
 // S1.3: the same answer whether or not the email has an account, so nobody can use
 // sign-up to find out who uses Sahla. The owner of that mailbox gets an email either
 // way: a code, or "you already have an account" (no code that works).
-authRoutes.post('/auth/send-otp', ...limited(5), async (req, res) => {
+authRoutes.post('/auth/send-otp', ...limited('send-otp', 5), async (req, res) => {
   const body = emailBody.parse(req.body);
   refuseStaff(body.email);
   const exists = await prisma.user.findUnique({ where: { email: body.email }, select: { id: true } });
@@ -100,7 +100,7 @@ authRoutes.post('/auth/send-otp', ...limited(5), async (req, res) => {
   res.status(204).end();
 });
 
-authRoutes.post('/auth/signup', ...limited(10), async (req, res) => {
+authRoutes.post('/auth/signup', ...limited('signup', 10), async (req, res) => {
   const body = signupBody.parse(req.body);
   refuseStaff(body.email);
   // S1.3: the code comes first: only the mailbox's owner can ever see EMAIL_TAKEN.
@@ -125,7 +125,7 @@ authRoutes.post('/auth/signup', ...limited(10), async (req, res) => {
   res.status(201).json(await session(user.id, req));
 });
 
-authRoutes.post('/auth/login', ...limited(10), async (req, res) => {
+authRoutes.post('/auth/login', ...limited('login', 10), async (req, res) => {
   const body = loginBody.parse(req.body);
   const user = await prisma.user.findUnique({ where: { email: body.email } });
   // S1.3: the same time for no account and for a Google / Apple account with no password.
@@ -145,7 +145,7 @@ const socialBody = z.object({
   acceptTerms: z.boolean().optional(),
 });
 for (const provider of ['google', 'apple'] as const)
-  authRoutes.post(`/auth/${provider}`, ...limited(20), async (req, res) => {
+  authRoutes.post(`/auth/${provider}`, ...limited(provider, 20), async (req, res) => {
     const body = socialBody.parse(req.body);
     const user = await accountFor(await verifyIdToken(provider, body.idToken), body.name, body.acceptTerms === true);
     if (user.suspended) throw new ApiError(403, 'FORBIDDEN', 'This account is suspended');
@@ -154,7 +154,7 @@ for (const provider of ['google', 'apple'] as const)
 
 // S1.3: 204 whether or not the account exists, at once: the email goes out after the
 // answer, so neither the answer nor its timing (or an email outage) reveals an account.
-authRoutes.post('/auth/forgot-password', ...limited(5), async (req, res) => {
+authRoutes.post('/auth/forgot-password', ...limited('forgot-password', 5), async (req, res) => {
   const body = emailBody.parse(req.body);
   if (await prisma.user.findUnique({ where: { email: body.email }, select: { id: true } }))
     runSoon(
@@ -165,7 +165,7 @@ authRoutes.post('/auth/forgot-password', ...limited(5), async (req, res) => {
   res.status(204).end();
 });
 
-authRoutes.post('/auth/reset-password', ...limited(10), async (req, res) => {
+authRoutes.post('/auth/reset-password', ...limited('reset-password', 10), async (req, res) => {
   const body = resetBody.parse(req.body);
   await useCode(body.email, 'reset', body.code);
   const user = await prisma.user.findUnique({ where: { email: body.email } });

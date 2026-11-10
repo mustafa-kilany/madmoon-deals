@@ -3,6 +3,7 @@ import { ipKeyGenerator, rateLimit } from 'express-rate-limit';
 import { z } from 'zod';
 import { prisma } from '../../db';
 import { ApiError } from '../../lib/errors';
+import { SharedStore } from '../../lib/rateLimit';
 import { env } from '../../env';
 import { seal, unseal } from '../../lib/sealed';
 import { burnPasswordCheck, passwordMatches } from '../auth/password';
@@ -27,6 +28,7 @@ const tooMany = (_req: Request, res: Response) =>
 const passwordLimit = rateLimit({
   windowMs: 15 * 60_000,
   limit: 10,
+  store: new SharedStore('admin-password'),
   standardHeaders: 'draft-8',
   legacyHeaders: false,
   keyGenerator: req => `${ipKeyGenerator(req.ip ?? '')}|${String(req.body?.email ?? '').trim().toLowerCase()}`,
@@ -35,6 +37,7 @@ const passwordLimit = rateLimit({
 const codeLimit = rateLimit({
   windowMs: 15 * 60_000,
   limit: 10,
+  store: new SharedStore('admin-code'),
   standardHeaders: 'draft-8',
   legacyHeaders: false,
   keyGenerator: req => challengeSubject(req.body?.challenge) ?? ipKeyGenerator(req.ip ?? ''),

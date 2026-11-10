@@ -75,6 +75,8 @@ app.use('/v1/admin/refurbished', express.json({ limit: '5mb' }));
 app.use(express.json({ limit: '64kb' }));
 app.use(refuseNulBytes);
 // F3: a fence for floods, far above any person (a shared mobile-carrier address carries many people).
+// Counted in each server's memory, unlike the budgets (lib/rateLimit.ts SharedStore): a database write
+// on every request would cost more than letting two servers each allow 3 000 a minute.
 app.use(
   '/v1',
   rateLimit({
