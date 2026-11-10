@@ -48,6 +48,7 @@ const MUTATIONS: Mutation[] = [
   { name: 'the profile sends the card token', file: 'src/modules/auth/apiUser.ts', find: `    method: user.method,\n`, replace: `    method: user.method,\n    cardToken: user.cardToken,\n`, test: 'leaks' },
   { name: 'card tries have no limit', file: 'src/modules/orders/routes.ts', find: `orderRoutes.post('/orders/:id/pay', ...requireCustomer, ...LIMITS.pay, async`, replace: `orderRoutes.post('/orders/:id/pay', ...requireCustomer, async`, test: 'limits' },
   { name: 'one email has no overall limit', file: 'src/modules/auth/routes.ts', find: "    rateLimit({ ...common, limit: limit * 5 * env.RATE_LIMIT_MULTIPLIER, keyGenerator: req => `email:${emailOf(req as Request)}` }),\n", replace: ``, test: 'limits' },
+  { name: 'every server runs the daily jobs', file: 'src/lib/jobs.ts', find: `  if (!claimed) {`, replace: `  if (false) {`, test: 'jobs' },
   { name: 'bids deadlock the pool again', file: 'src/modules/negotiation/bids.ts', find: `(await sellerSuspended(listing.sellerUserId, tx)) ||
       (listing.sellerUserId && (await isBlockedBetween(bidderId, listing.sellerUserId, tx)))`, replace: `(await sellerSuspended(listing.sellerUserId)) ||
       (listing.sellerUserId && (await isBlockedBetween(bidderId, listing.sellerUserId)))`, test: 'bidsLoad' },
