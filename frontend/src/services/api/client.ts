@@ -9,6 +9,12 @@ import { tokenStorage } from './tokenStorage';
 
 type Method = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
 
+/** Called when the server says this build is too old (426): the app shows only the update screen. */
+let onUpdateRequired: () => void = () => {};
+export const setUpdateRequiredHandler = (handler: () => void) => {
+  onUpdateRequired = handler;
+};
+
 /** Called when the server rejects the token (401), e.g. to sign the user out. */
 let onUnauthorized: () => void = () => {};
 export const setUnauthorizedHandler = (handler: () => void) => {
@@ -25,6 +31,7 @@ async function request<T>(
   const headers: Record<string, string> = {
     Accept: 'application/json',
     'X-Device-Id': deviceId(),
+    'X-App-Build': String(config.appBuild),
   };
   if (body !== undefined && !isForm)
     headers['Content-Type'] = 'application/json';
@@ -56,6 +63,7 @@ async function request<T>(
   if (!response.ok) {
     // Only a rejected token means "signed out" (a wrong password on log-in is also a 401).
     if (response.status === 401 && token) onUnauthorized();
+    if (response.status === 426) onUpdateRequired();
     // Contract: errors are { "error": { "code": "...", "message": "..." } }.
     const error = (data as { error?: { code?: string; message?: string } })
       ?.error;

@@ -4,6 +4,11 @@ This document defines the REST API contract expected by the **Sahla** mobile app
 
 The app's HTTP service layer (`frontend/src/services/*/http.ts`) and API client (`frontend/src/services/api/client.ts`) are fully implemented and integrated. Connecting to a real API server requires only a configuration update in `frontend/src/config.ts`. The API itself is in `backend/`.
 
+## Changes on 2026-11-10 (minimum app build, BACKEND_REVIEW M3)
+
+* **`X-App-Build: <Android versionCode>` on every request** (`config.appBuild` in the app, the same number as `versionCode` in `android/app/build.gradle`).
+* **426 `UPDATE_REQUIRED`** on any endpoint when the build is older than the server's `MIN_APP_BUILD`. The app then shows only its "update Sahla" screen, with a button to the store. A request without the header isn't checked (the dashboard, the bank's page).
+
 ## Changes on 2026-11-08 (readiness work: `INTERNAL_READINESS_PLAN.md`)
 
 * **`GET /listings/:id/live`:** a WebSocket that delivers each new bid as it's saved. **`GET /me/live`:** a signed-in WebSocket that says when a chat or the support conversation changed. See "Live Updates & Notifications".
@@ -175,6 +180,7 @@ export const config = {
 |---|---|
 | **Format** | JSON, UTF-8 encoded. File uploads are `multipart/form-data`. |
 | **Authentication** | `Authorization: Bearer <token>` header on authenticated endpoints. |
+| **App build** | `X-App-Build: <Android versionCode>` on every request. Older than the server's `MIN_APP_BUILD`: 426 `UPDATE_REQUIRED` everywhere. |
 | **Device id** | `X-Device-Id: <32 hex characters>` on every request: a random id the app makes once per install (MMKV). Counts listing views per phone and lets the risk checker spot many accounts on one phone. Not a hardware id. |
 | **Money / Currency** | Integers in **fils** (1 JOD = 1000 fils). Never use floating point or decimals. Field names end with `Fils` (e.g. `priceFils`, `incrementFils`). |
 | **Localized Strings** | Dual-language catalog fields use `{ "ar": "...", "en": "..." }` (`Localized`). |
@@ -199,6 +205,7 @@ export const config = {
 | `INVALID_CODE` | 422 | Wrong or expired emailed code (sign-up, password reset) |
 | `SANAD_UNAVAILABLE` | 503 | ID verification with Sanad isn't switched on yet ("coming soon") |
 | `EMAIL_UNAVAILABLE` | 503 | The emailed code couldn't be sent (email service down or misconfigured); nothing was saved, so asking again works at once (`POST /auth/send-otp`, `POST /auth/forgot-password`) |
+| `UPDATE_REQUIRED` | 426 | This build of the app is older than `MIN_APP_BUILD`: show the update screen |
 | `RATE_LIMITED` | 429 | Too many tries: log-in / code attempts for one email from one IP (~15 minutes), delivery PINs (5 per order), location lookups (20 an hour) |
 
 Any other code is shown to the user as a generic error, so new codes need an app update to get their own message.

@@ -32,6 +32,12 @@ export const config = {
      */
     courier: false,
   },
+  /**
+   * This build's number, sent as X-App-Build on every request: the server answers a build older
+   * than its MIN_APP_BUILD with "update Sahla" (BACKEND_REVIEW M3). Always the same as versionCode
+   * in android/app/build.gradle: raise both together (__tests__/appBuild.test.ts checks).
+   */
+  appBuild: 1,
   /** Fake network delay for mock calls, so loading states are visible in dev. */
   mockLatencyMs: __DEV__ ? 400 : 0,
   /** Requests slower than this fail with a NETWORK error. Uploads get longer. */

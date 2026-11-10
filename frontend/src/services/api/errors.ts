@@ -17,6 +17,7 @@ export type ApiErrorCode =
   | 'OPEN_ORDERS'
   | 'SANAD_UNAVAILABLE'
   | 'EMAIL_UNAVAILABLE'
+  | 'UPDATE_REQUIRED'
   | 'UNKNOWN';
 
 export class ApiError extends Error {
@@ -46,6 +47,7 @@ const KNOWN: ApiErrorCode[] = [
   'OPEN_ORDERS',
   'SANAD_UNAVAILABLE',
   'EMAIL_UNAVAILABLE',
+  'UPDATE_REQUIRED',
 ];
 
 /** i18n key for an error's user-facing message (src/i18n: errors.*). */

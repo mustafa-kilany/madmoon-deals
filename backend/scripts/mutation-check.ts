@@ -52,6 +52,7 @@ const MUTATIONS: Mutation[] = [
   { name: 'each server counts its own tries per address', file: 'src/lib/rateLimit.ts', find: "store: new SharedStore(`${name}:ip`), ", replace: ``, test: 'sharedLimits' },
   { name: 'retention deletes an order with a refunded payment', file: 'src/modules/privacy/retention.ts', find: `        payments: { none: {} },`, replace: `        payments: { none: { status: { in: ['pending', 'succeeded'] } } },`, test: 'retention' },
   { name: 'account deletion takes an order with a payment record', file: 'src/modules/auth/deleteAccount.ts', find: `OR: [{ buyerId: userId }, { sellerUserId: userId }], payments: { none: {} } } });`, replace: `OR: [{ buyerId: userId }, { sellerUserId: userId }] } });`, test: 'privacy' },
+  { name: 'old app builds are served', file: 'src/app.ts', find: `app.use('/v1', requireAppBuild);\n`, replace: ``, test: 'appBuild' },
   { name: 'every server runs the daily jobs', file: 'src/lib/jobs.ts', find: `  if (!claimed) {`, replace: `  if (false) {`, test: 'jobs' },
   { name: 'bids deadlock the pool again', file: 'src/modules/negotiation/bids.ts', find: `(await sellerSuspended(listing.sellerUserId, tx)) ||
       (listing.sellerUserId && (await isBlockedBetween(bidderId, listing.sellerUserId, tx)))`, replace: `(await sellerSuspended(listing.sellerUserId)) ||

@@ -17,16 +17,22 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { SidebarMenu } from '@/components/SidebarMenu';
 import { TermsUpdatePrompt } from '@/features/legal/TermsUpdatePrompt';
 import { Toast } from '@/components/Toast';
+import { UpdateRequiredScreen } from '@/components/UpdateRequiredScreen';
 import { useSessionRefresh } from '@/features/auth/hooks/useAccount';
 import { restoreSession, useUser } from '@/features/auth/sessionStore';
 import { useLiveAccount } from '@/features/offers/hooks/useLiveAccount';
 import { navigationRef } from '@/navigation/navigationRef';
 import { RootNavigator } from '@/navigation/RootNavigator';
 import { handlePushTaps, startPush } from '@/services/push';
+import { setUpdateRequiredHandler } from '@/services/api/client';
 import { queryClient } from '@/services/queryClient';
 import { useSettingsStore } from '@/store/settingsStore';
+import { useUiStore } from '@/store/uiStore';
 import { toast } from '@/store/toastStore';
 import { colors } from '@/theme/colors';
+
+// The server no longer serves this build (426): nothing else is shown from then on.
+setUpdateRequiredHandler(() => useUiStore.getState().requireUpdate());
 
 const navigationTheme: Theme = {
   ...DefaultTheme,
@@ -46,7 +52,14 @@ function App() {
   useEffect(() => {
     restoreSession().finally(() => setReady(true));
   }, []);
+  const updateRequired = useUiStore(s => s.updateRequired);
   if (!ready) return null;
+  if (updateRequired)
+    return (
+      <SafeAreaProvider>
+        <UpdateRequiredScreen />
+      </SafeAreaProvider>
+    );
 
   return (
     <GestureHandlerRootView style={styles.root}>

@@ -38,7 +38,8 @@ Written so it is one setting away once the host is chosen (decision D4). Everyth
 2. **Migrate first:** run `npx prisma migrate deploy` once, in the image, as the host's "release" or "pre-deploy" command. Never `migrate dev` in production.
 3. **Start:** the image's default command. The host sends `SIGTERM` on the next deploy: requests in progress finish (20 seconds at most).
 4. **Health check:** `GET /v1/health`: 200 only when the database answers. The image has a `HEALTHCHECK`; point the host's check there too, and an uptime monitor (B12.4).
-5. **Then:** `npm run money:check` in the image, and sign in once on the app and the dashboard.
+5. **An app release the API can no longer serve** (an endpoint removed or changed): publish the new build first, wait until it is live in Google Play, then set `MIN_APP_BUILD` to its `versionCode`. Older builds then show only "update Sahla".
+6. **Then:** `npm run money:check` in the image, and sign in once on the app and the dashboard.
 
 ## The first admin
 

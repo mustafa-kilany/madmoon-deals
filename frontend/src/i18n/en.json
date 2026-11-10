@@ -16,6 +16,11 @@
     "body": "This screen ran into a problem. Try again, or restart the app — your account and saved items are safe.",
     "restart": "Restart app"
   },
+  "update": {
+    "title": "Time to update Sahla",
+    "body": "This version of the app no longer works. Update it from Google Play to keep buying and selling — your account and orders are safe.",
+    "button": "Update"
+  },
   "language": {
     "toggle": "عربي",
     "toggleLabel": "Switch to Arabic"
@@ -168,6 +173,7 @@
     "OPEN_ORDERS": "You have orders in progress. Finish them before deleting your account.",
     "SANAD_UNAVAILABLE": "Verification with Sanad is coming soon.",
     "EMAIL_UNAVAILABLE": "We couldn't send the code right now. Try again in a few minutes.",
+    "UPDATE_REQUIRED": "This version of Sahla is too old. Update the app to continue.",
     "PAYMENT_DECLINED": "Your card was declined. Try another card or contact your bank.",
     "RATE_LIMITED": "Too many tries. Wait a few minutes and try again."
   },

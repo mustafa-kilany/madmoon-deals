@@ -61,6 +61,9 @@ const schema = z
     FILES_PUBLIC_URL: optionalUrl.transform(url => url?.replace(/\/$/, '')),
     // Error reports (SECURITY_PLAN S0.10). Blank = off. Reports are scrubbed: lib/errorReporter.ts.
     SENTRY_DSN: optionalUrl,
+    // M3: the oldest app build (Android versionCode) still allowed. The app sends its own in X-App-Build;
+    // an older one is told to update (426 UPDATE_REQUIRED). Blank = every build is allowed.
+    MIN_APP_BUILD: optional.transform(value => (value === undefined ? undefined : Number(value))).pipe(z.number().int().positive().optional()),
     // Tests only: multiplies the per-user rate limits (src/lib/rateLimit.ts). Always 1 in production.
     RATE_LIMIT_MULTIPLIER: z.coerce.number().int().min(1).max(1000).default(1),
     // B15.6: where people can write to Sahla's support team (shown in the app next to the support chat).

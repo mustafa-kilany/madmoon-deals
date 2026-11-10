@@ -2,6 +2,7 @@ import express from 'express';
 import { ipKeyGenerator, rateLimit } from 'express-rate-limit';
 import helmet from 'helmet';
 import { prisma } from './db';
+import { requireAppBuild } from './lib/appBuild';
 import { errorHandler, notFound, refuseNulBytes } from './lib/errors';
 import { requestLogger } from './lib/logger';
 import { adminAdminsRoutes } from './modules/admin/admins';
@@ -89,6 +90,10 @@ app.use(
     handler: (_req, res) => void res.status(429).json({ error: { code: 'RATE_LIMITED', message: 'Too many requests: wait a minute' } }),
   }),
 );
+
+// M3: an app too old for this API is told to update, before anything else answers it. Callers
+// that don't send X-App-Build (the dashboard, the bank's and Sanad's pages) aren't apps.
+app.use('/v1', requireAppBuild);
 
 const v1 = express.Router();
 
