@@ -29,4 +29,6 @@ USER node
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
   CMD node -e "fetch('http://localhost:'+(process.env.PORT||4000)+'/v1/health').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"
 
-CMD ["npx", "tsx", "src/server.ts"]
+# node itself, not npx: a host stops the container with SIGTERM, and through npx it never reached the
+# server (BACKEND_REVIEW M4, CI 2026-11-12: npm exited 1 at once, the careful shutdown never ran).
+CMD ["node", "--import", "tsx", "src/server.ts"]
