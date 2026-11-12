@@ -11,7 +11,7 @@ const PATTERNS: [string, RegExp][] = [
   ['Anthropic key', /\bsk-ant-[0-9A-Za-z_-]{20,}/g],
   ['Sahla store key', /\bsahla_sk_[0-9A-Za-z_-]{30,}/g],
   ['Postmark token', /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b(?=.*(?:POSTMARK|postmark))/gi],
-  ['Database URL with a password', /postgres(?:ql)?:\/\/[^:\s"'`]+:(?!YOUR_PASSWORD|postgres@|build@|password@|PASSWORD@)[^@\s"'`]{4,}@(?!localhost:5432\/sahla_?test)[^\s"'`]+/g],
+  ['Database URL with a password', /postgres(?:ql)?:\/\/[^:\s"'`]+:(?!YOUR_PASSWORD|postgres@|build@|password@|PASSWORD@)[^@\s"'`]{4,}@(?!localhost:5432\/sahla_?test|127\.0\.0\.1:1\/)[^\s"'`]+/g],
   ['JWT secret value', /JWT_SECRET\s*=\s*["']?(?!["']?\s*$)[A-Za-z0-9_-]{32,}/g],
   ['Service account', /"type":\s*"service_account"/g],
 ];
@@ -33,6 +33,13 @@ const SAMPLES: Record<string, string> = {
 for (const [kind, pattern] of PATTERNS) {
   pattern.lastIndex = 0;
   if (!pattern.test(SAMPLES[kind])) throw new Error(`The pattern for ${kind} misses its sample`);
+}
+// Port 1 on this PC is never a database: balancer-test.ts uses it to cut the live connection (check 9).
+// Only that address is let through, not the same password anywhere else.
+const dbUrl = PATTERNS.find(([kind]) => kind === 'Database URL with a password')![1];
+for (const [text, found] of [['postgresql://nobody:' + 'nothing@127.0.0.1:1/none', false], ['postgresql://nobody:' + 'nothing@127.0.0.1:5432/sahla', true]] as const) {
+  dbUrl.lastIndex = 0;
+  if (dbUrl.test(text) !== found) throw new Error(`The database pattern ${found ? 'misses' : 'flags'} ${text.replace(/:[^:@]+@/, ':***@')}`);
 }
 
 const top = execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim();
