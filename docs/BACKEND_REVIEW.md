@@ -1,6 +1,6 @@
 # Backend review: how it's built, and what's wrong with the approach
 
-Written 2026-11-10. **A log only: nothing here has been fixed or changed.**
+Written 2026-11-10 as a log. **Fixed the same day** (`NEXT_STEPS.md` A3, A6), each with a test that fails without it: **H3** (money records never deleted with an order), **M1** (background jobs in the database, retried), **M2** (a notification inbox), **M3** (a minimum app build), **M6** (two servers: shared limits, one server per daily job, the connection sum), **L7** (daily jobs catch up). Still open: H1, H2, H4 to H9 (Part E, with the real provider), M4 (the pull request's checks), M5 (the owner decides), M7 to M9, L1 to L6, L8.
 
 How it was done: by reading the code, not running it. Read in full: the payment, order, delivery, refund, live-connection, job, rate-limit, token and start-up code, the database schema's money models, the Dockerfile. Sampled: notifications, email, catalog search, account deletion, retention. Not read: the admin modules, certificates, identity, refurbished import, uploads. A finding marked **to verify** is a suspicion from reading that needs a test.
 

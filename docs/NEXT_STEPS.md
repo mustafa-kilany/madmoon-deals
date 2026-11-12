@@ -9,10 +9,44 @@ Written 2026-11-10. The order to work in from here, down to the small things. So
 
 * Everything that needs no outside account is built and tested: backend, app, dashboard, security plan, live bids and chat, auction extension.
 * The branch `feat/backend-b8-admin` is on GitHub (pushed 2026-11-10). Nothing is merged into `main` since B1, and the GitHub checks have never run on this work: they only run on a pull request.
-* Not shown to work yet: two servers behind a balancer, a real phone, the GitHub-only checks (Linux shutdown test, secret scan, CodeQL, Docker build).
+* Not shown to work yet: a real phone, the GitHub-only checks (Linux shutdown test, secret scan, CodeQL, Docker build). The update screen and the notification inbox (A6.2, A6.4) are tested in Jest but not yet seen on the emulator.
 * No outside account exists except Google Maps and Firebase.
-* The load balancer code is right for one server; three things need doing before a second one (`LOAD_BALANCER_TEST_PLAN.md`, L1 to L3).
-* The backend's approach is sound, but the payment code has nine design problems that matter the day real money moves, and there are four more things to do before real users (`BACKEND_REVIEW.md`, read from the code on 2026-11-10, nothing fixed). They are steps A6 and E below.
+* **Two servers behind a balancer work** (2026-11-10): `npm run balancer-test`, 12 of 12 checks twice in a row on this PC, with L1 to L3 done (shared rate limits, one server per daily job, the connection sum in `DEPLOY.md`).
+* The backend's approach is sound, but the payment code has nine design problems that matter the day real money moves (`BACKEND_REVIEW.md`, Part E below). Of the things before real users, H3, M1, M2, M3 and L7 are fixed (2026-11-10, A6); M4 waits for the pull request's checks and M5 for the owner.
+
+## What to do next (checked 2026-11-11)
+
+Read from this file, `BACKEND_REVIEW.md`, git and `gh` on 2026-11-11. Nothing was changed or run for this list: it is the order only. The step numbers point at the tables below, where each one is ticked.
+
+**First: loose ends from 2026-11-10** (about an hour, 🤖 unless marked)
+
+| # | Step | Who | Status |
+|---|---|---|---|
+| N1 | Put back two lines in `backend/src/modules/privacy/retention.ts`: the ones that empty `deliveryPhone` and `deliveryAddress` on old orders are removed in the working folder, not committed. It looks like a deliberate break left from a "does the test catch it" run, and `retention.e2e.ts` fails with it. `git restore backend/src/modules/privacy/retention.ts`, then `npm run test:api -- privacy`. | 🤖 | ✅ 2026-11-11: `-- retention` failed 1 of 6 with the break, 6 of 6 after the restore (`-- privacy` doesn't include that file) |
+| N2 | Commit the two documents that record yesterday's work: this file and `BACKEND_REVIEW.md`. | 🤖 when asked | ⬜ |
+| N3 | Finish A3.4: S0.9 is already marked and logged in `SECURITY_PLAN.md`. What's left is rerunning `check:mutations` and the three-runs gate after yesterday's five commits; no rerun is written down. Emulator off first. | 🤖 | ⬜ |
+| N4 | See the update screen and the notification inbox on the emulator (A6.2, A6.4): so far they are tested in Jest only. A Maestro flow for each. | 🤖 | ⬜ |
+| N5 | `npm run check:secrets`, then push: 10 commits are on this PC and not on GitHub. | 🤖 when asked | ⬜ |
+
+**Then: into `main`**
+
+| # | Step | Who | Status |
+|---|---|---|---|
+| N6 | A1.3: `gh auth login`. Still not signed in on 2026-11-11. Or skip it and open the pull request by the link in A1.4. | 👤 | ⬜ |
+| N7 | A1.4 to A1.7: the pull request (106 commits ahead of `main`), its checks, a fix per failure, merge, the tag. The checks also answer A6.1 (M4: does the stop signal reach the server in the container). | 🤖, 👤 presses Merge | ⬜ |
+| N8 | A5.6: Maestro 01 to 11 once on the merged `main`. | 🤖 | ⬜ |
+| N9 | A4: two real phones, all of A4.1 to A4.9. Needs the phones and a cable from the owner. | 👥 | ⬜ |
+
+**The owner, alongside, starting now** 👤
+
+* B1 to B4, slowest first: the payment provider (with the seven questions in Part E), the MoDEE packet, `sahla.jo`, the Google Play account. None is started and everything after Part A waits for them.
+* A5.2 the upload key and its two copies; A5.5 a copy of `backend/.env` off this PC.
+* Three decisions: A5.1 (the toast over the Quick Add row), A6.5 (M5, a `shared/` folder), and the ones under Part E (the hold after delivery, who pays the delivery fee on a cancel, who holds the money).
+
+**Waiting, nothing to do yet**
+
+* Part C waits for the host (B5). Part E (H1, H2, H4 to H9, M7 to M9) waits for the provider's test keys (B1). Part D waits for both.
+* From the review, 20 of 26 findings are open: those eleven, M4 (N7), M5 (the owner), and L1 to L6 and L8, which are read again before the production copy (A6.7).
 
 ## Part A: now, no account needed
 
@@ -35,14 +69,14 @@ Detail and pass marks: `LOAD_BALANCER_TEST_PLAN.md`.
 
 | # | Step | Who | Status |
 |---|---|---|---|
-| A2.1 | Close games and Android Studio first: a heavy program halves the results. The emulator isn't needed and should be off. | 👤 | ⬜ |
-| A2.2 | Try to download nginx for Windows (a zip, no installer). If this PC refuses, as it did MinIO, skip to A2.4. | 🤖 | ⬜ |
-| A2.3 | Write `backend/scripts/balancer-test.ts` and `npm run balancer-test`: own database `sahla_load_test`, two servers on ports 4201 and 4202 with `TRUST_PROXY=1`, the balancer on 4200, virtual phones from addresses 127.0.0.2 upward. | 🤖 | ⬜ |
-| A2.4 | The small Node balancer inside the script, for the large numbers and as the fallback. | 🤖 | ⬜ |
-| A2.5 | Run checks 1 to 6 at 200 phones through nginx. | 🤖 | ⬜ |
-| A2.6 | Run checks 7 to 9 (up to 4 500 phones) through the Node balancer. Note each server's memory at every step. | 🤖 | ⬜ |
-| A2.7 | Run everything a second time: a result that only happens once doesn't count. | 🤖 | ⬜ |
-| A2.8 | Write the results table into `INTERNAL_READINESS_PLAN.md` and tick `LOAD_BALANCER_TEST_PLAN.md`. Commit. | 🤖 | ⬜ |
+| A2.1 | Close games and Android Studio first: a heavy program halves the results. The emulator isn't needed and should be off. | 👤 | ✅ 2026-11-10 |
+| A2.2 | Try to download nginx for Windows (a zip, no installer). If this PC refuses, as it did MinIO, skip to A2.4. | 🤖 | ✅ 2026-11-10: refused here, as MinIO was; skipped to A2.4 |
+| A2.3 | Write `backend/scripts/balancer-test.ts` and `npm run balancer-test`: own database `sahla_load_test`, two servers on ports 4201 and 4202 with `TRUST_PROXY=1`, the balancer on 4200, virtual phones from addresses 127.0.0.2 upward. | 🤖 | ✅ 2026-11-10 |
+| A2.4 | The small Node balancer inside the script, for the large numbers and as the fallback. | 🤖 | ✅ 2026-11-10 |
+| A2.5 | Run checks 1 to 6 at 200 phones through nginx. | 🤖 | ✅ 2026-11-10 |
+| A2.6 | Run checks 7 to 9 (up to 4 500 phones) through the Node balancer. Note each server's memory at every step. | 🤖 | ✅ 2026-11-10 |
+| A2.7 | Run everything a second time: a result that only happens once doesn't count. | 🤖 | ✅ 2026-11-10 |
+| A2.8 | Write the results table into `INTERNAL_READINESS_PLAN.md` and tick `LOAD_BALANCER_TEST_PLAN.md`. Commit. | 🤖 | ✅ 2026-11-10 |
 
 ### A3. Make two servers safe (only needed before a second server)
 
@@ -50,9 +84,9 @@ Skip until the numbers ask for a second server, or do it now while the test from
 
 | # | Step | Who | Status |
 |---|---|---|---|
-| A3.1 | **L2:** `daily()` in `backend/src/lib/jobs.ts` takes a database lock named after the job; a server that doesn't get it skips. Test: two servers, the job runs once. | 🤖 | ⬜ |
-| A3.2 | **L1:** a PostgreSQL store for every `rateLimit(...)` (`lib/rateLimit.ts`, `app.ts`, `auth/routes.ts`, `admin/auth.ts`, `geocode/routes.ts`). Check the package is maintained before adding it; otherwise a small table and 40 lines. Test: 5 card tries split across two servers, the 6th refused. Measure that it doesn't slow requests. | 🤖 | ⬜ |
-| A3.3 | **L3:** `DEPLOY.md` gets the rule "servers × (`DB_POOL_SIZE` + 1) must be under the database's connection limit", with the sum for one and two servers. | 🤖 | ⬜ |
+| A3.1 | **L2:** `daily()` in `backend/src/lib/jobs.ts` takes a database lock named after the job; a server that doesn't get it skips. Test: two servers, the job runs once. | 🤖 | ✅ 2026-11-10 |
+| A3.2 | **L1:** a PostgreSQL store for every `rateLimit(...)` (`lib/rateLimit.ts`, `app.ts`, `auth/routes.ts`, `admin/auth.ts`, `geocode/routes.ts`). Check the package is maintained before adding it; otherwise a small table and 40 lines. Test: 5 card tries split across two servers, the 6th refused. Measure that it doesn't slow requests. | 🤖 | ✅ 2026-11-10 |
+| A3.3 | **L3:** `DEPLOY.md` gets the rule "servers × (`DB_POOL_SIZE` + 1) must be under the database's connection limit", with the sum for one and two servers. | 🤖 | ✅ 2026-11-10 |
 | A3.4 | Mark S0.9 done in `SECURITY_PLAN.md` with its log line. Rerun `check:mutations` and the three-runs gate. | 🤖 | ⬜ |
 
 ### A4. A real phone
@@ -78,22 +112,22 @@ The emulator has no real radio, camera, GPS or notification tray. Nothing has ev
 | A5.1 | Decide: the error toast on the auction screen covers the Quick Add row until it goes. Move the toast above the row, or leave it. | 👤 decides, 🤖 builds | ⬜ |
 | A5.2 | Create the upload key by `RELEASE_SIGNING.md`. Copy the key file and its passwords to two places that aren't this PC (a USB stick and a password manager). Losing it means never updating the app on Google Play. | 👤 | ⬜ |
 | A5.3 | The real support email (now the default `support@sahla.jo`) and the staff email domain (D9). Both wait for the domain, B3. | 👤 | ⬜ |
-| A5.4 | `LAUNCH_READINESS.md` §4: its boxes still say ⬜ for work finished since. Bring it up to date or point it here. | 🤖 | ⬜ |
+| A5.4 | `LAUNCH_READINESS.md` §4: its boxes still say ⬜ for work finished since. Bring it up to date or point it here. | 🤖 | ✅ 2026-11-10 |
 | A5.5 | A copy of `backend/.env` somewhere safe that isn't this PC: it isn't in git, and `ID_HASH_SECRET` can never change once real IDs are stored. | 👤 | ⬜ |
 | A5.6 | Rerun Maestro 01 to 11 once on the merged `main` (02 to 05, 08 and 09 last ran before the auction extension). | 🤖 | ⬜ |
 
 ### A6. From the backend review, no account needed
 
-Each row is a finding in `BACKEND_REVIEW.md`. Nothing is started: the owner asked for a log only (2026-11-10).
+Each row is a finding in `BACKEND_REVIEW.md`. Done 2026-11-10 when the owner asked to execute this file: each with a test that fails without it.
 
 | # | Step | Finding | When | Status |
 |---|---|---|---|---|
 | A6.1 | See whether the server's careful shutdown really runs in the container: the Linux shutdown test and the Docker build in the pull request's checks. If the stop signal doesn't get through `npx`, start the server with `node` directly. | M4 | With A1.5 | ⬜ |
-| A6.2 | A minimum app version: the app sends its version on every request, the server has a `MIN_APP_VERSION` setting and answers "update needed", the app shows an update screen. | M3 | **Before any build reaches a tester**: it can't be added to an installed app | ⬜ |
-| A6.3 | Background work that survives a restart and retries: pushes and risk checks through a queue in PostgreSQL (`pg-boss`), behind the same `runSoon` and `daily`. Also closes L2. | M1, L7 | Before the closed test | ⬜ |
-| A6.4 | A notification inbox: a `Notification` row for every push, `GET /me/notifications`, a screen and an unread dot in the app. | M2 | Before the closed test, with A6.3 | ⬜ |
-| A6.5 | Shared rules out of `frontend/src` into a `shared/` folder both sides import. | M5 | Any quiet day; before the team grows | ⬜ |
-| A6.6 | Payment and payout records never delete with an order (`onDelete: Restrict`), and the two clean-ups keep any order that has a payment row. A migration and two tests. | H3 | Before any real payment; safe to do now | ⬜ |
+| A6.2 | A minimum app version: the app sends its version on every request, the server has a `MIN_APP_VERSION` setting and answers "update needed", the app shows an update screen. | M3 | **Before any build reaches a tester**: it can't be added to an installed app | ✅ 2026-11-10 |
+| A6.3 | Background work that survives a restart and retries: pushes and risk checks through a queue in PostgreSQL (`pg-boss`), behind the same `runSoon` and `daily`. Also closes L2. | M1, L7 | Before the closed test | ✅ 2026-11-10: a `Job` table of our own instead of pg-boss (same idea, inside Prisma's migrations, tests can flush it); daily jobs also catch up (L7) |
+| A6.4 | A notification inbox: a `Notification` row for every push, `GET /me/notifications`, a screen and an unread dot in the app. | M2 | Before the closed test, with A6.3 | ✅ 2026-11-10 |
+| A6.5 | Shared rules out of `frontend/src` into a `shared/` folder both sides import. | M5 | Any quiet day; before the team grows | ⬜ owner decides: touches Metro, Babel, Jest, both tsconfigs and the Dockerfile; Metro needs an emulator run, the Docker build only runs in the pull request |
+| A6.6 | Payment and payout records never delete with an order (`onDelete: Restrict`), and the two clean-ups keep any order that has a payment row. A migration and two tests. | H3 | Before any real payment; safe to do now | ✅ 2026-11-10 |
 | A6.7 | The low notes (L1 to L8): nothing to do now. Read them again before the production copy (Part D). | L1–L8 | Part D | ⬜ |
 
 ## Part B: outside accounts, slowest first

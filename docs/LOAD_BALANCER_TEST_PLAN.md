@@ -110,6 +110,52 @@ Every host in `backend/docs/DEPLOY.md` gives a free address with HTTPS that alre
 4. Checks 4 and 5 by restarting one server from the host's dashboard, if the test copy runs two.
 5. Two real phones on mobile data: same auction, bid on one, watch the other. Needs a build pointing at the free address (`frontend/src/config.ts`, not committed: `appSecurity.test.ts` pins that line).
 
+### Stage 2, step by step (written 2026-11-11, nothing here is started)
+
+**Status:** ⬜ to do · ✅ done. **Who:** 👤 the owner · 🤖 Claude · 👥 together.
+
+**What stands in the way** (found by reading the code on 2026-11-11):
+
+| # | Gap | Fix | Who | Status |
+|---|---|---|---|---|
+| G1 | The code isn't on GitHub: the host builds from there, and 10 commits plus the work of 2026-11-11 are only on this PC | Commit, `npm run check:secrets`, push (`NEXT_STEPS.md` N2, N5) | 🤖 | ⬜ |
+| G2 | The image has never been built anywhere (no Docker on this PC) | The pull request's checks build it for free: do that before paying for a host (`NEXT_STEPS.md` A1.3 to A1.6) | 👤 `gh auth login`, then 🤖 | ⬜ |
+| G3 | `npm run balancer-test` refuses `BALANCER_URL`: it makes its test accounts straight in a local database, and a hosted database isn't reachable from here | The script makes its accounts and listings through the hosted copy itself. Tried first on this PC against the two local servers | 🤖 | ⬜ |
+| G4 | **The image can't start as a test copy.** In production mode `env.ts` refuses to start without `STORAGE=s3` (a bucket, B6) and without real email (`MAIL_MODE=console` is refused; Postmark needs the domain, B3 and B7), and refuses `DEV_EMAIL_CODE` and `RATE_LIMIT_MULTIPLIER`. In development mode the logger asks for `pino-pretty`, which the image leaves out (`npm ci --omit=dev`), so it crashes. `NEXT_STEPS.md` C1 didn't know this | A small code change so the image starts with test settings and no outside account, with a test. The exact settings list for step 7 below comes out of it | 🤖 | ⬜ |
+
+**The owner now (10 minutes, free)** 👤
+
+1. Close every VS Code window and open it again, so `gh` is recognized.
+2. `gh auth login` → GitHub.com → HTTPS → "Login with a web browser" → paste the code it shows.
+3. Tell Claude. Claude then does G1 to G4.
+
+**Renting the test copy (30 to 45 minutes, after G1 to G4)** 👤, with 🤖 beside
+
+Railway is the suggestion **for the test copy only**: on 2026-11-11 it was the one host where PostgreSQL 18 could be confirmed (its template uses the official image), and its cheapest plan allows more than one server, which checks 4 and 5 need. Render and DigitalOcean: PostgreSQL 18 not confirmed that day. This is not decision D4: the test copy holds made-up data only, and can be deleted afterwards. Railway's button names may differ a little from the ones below.
+
+| # | Step | Status |
+|---|---|---|
+| 1 | `railway.com`, sign in **with GitHub** | ⬜ |
+| 2 | The **Hobby** plan, a bank card. About $5 a month at last report; the price lists found disagree, so read `railway.com/pricing` on the day | ⬜ |
+| 3 | **New Project → Deploy from GitHub repo.** Give Railway access to the Sahla repo only | ⬜ |
+| 4 | In the project: **New → Database → PostgreSQL.** It must say version 18 (otherwise the "PostgreSQL 18" template) | ⬜ |
+| 5 | The server's **Settings**: region, the Europe one; Dockerfile path `backend/Dockerfile`; pre-deploy command `npx prisma migrate deploy`; healthcheck path `/v1/health` | ⬜ |
+| 6 | **Networking → Generate Domain**: the free `https://….up.railway.app` address | ⬜ |
+| 7 | **Variables**: the list from G4. Two are secrets: `npm run secret` twice in `backend` (`JWT_SECRET`, `ID_HASH_SECRET`). `DATABASE_URL` points at the database from step 4, `PUBLIC_URL` is the address from step 6, `TRUST_PROXY=1` | ⬜ |
+| 8 | **Deploy**, then `https://<address>/v1/health` in a browser answers | ⬜ |
+| 9 | Give Claude the address | ⬜ |
+
+**The tests** (the numbered list above, in this order)
+
+| # | Step | Who | Status |
+|---|---|---|---|
+| T1 | `$env:BALANCER_URL="https://<address>"; npm run balancer-test` from this PC: checks 1 to 3 at 200 phones, then growing to 1 000. Games and the emulator closed | 🤖 | ⬜ |
+| T2 | Two servers: set the count to 2 in Railway. Check `SHOW max_connections;` against the sum in `DEPLOY.md` first. Then checks 4 and 5: restart one mid-auction, if the dashboard can restart one alone | 👥 | ⬜ |
+| T3 | The real address (L4, `NEXT_STEPS.md` C2): sign in once from Wi-Fi and once from mobile data; the two addresses in the server's log must differ and be the phones' own | 👥 | ⬜ |
+| T4 | Two real phones on mobile data, a build pointing at the free address (not committed): bid on one, time the other | 👥 | ⬜ |
+| T5 | Results into `INTERNAL_READINESS_PLAN.md`, ticks here and in `NEXT_STEPS.md` C3. Then delete the Railway project, or keep it as the test copy for Part C | 🤖, 👤 deletes | ⬜ |
+| T6 | Optional, not needed to launch: beyond 1 000 phones, 2 to 4 rented machines for an hour | 👥 | ⬜ |
+
 ## Order
 
 1. Build and run Stage 1. Rough estimate: 1 to 2 hours.
