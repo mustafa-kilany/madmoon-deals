@@ -132,6 +132,18 @@ jobs:
           status=$(curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:4000/v1/auth/signup -H 'Content-Type: application/json' \
             -d '{"name":"Test Copy","email":"copy@example.com","password":"longenough1","acceptTerms":true,"code":"123456"}')
           [ "$status" = 201 ] || { echo "sign-up answered $status"; docker logs copy; exit 1; }
+      # BACKEND_REVIEW M4: a host stops the container as docker stop does, SIGTERM to the image's command
+      # (npx). If it doesn't reach the server, Docker kills it after 10 s (exit 137) and requests in progress
+      # are cut on every deploy. The server must exit by itself with 0, after its "Shutting down" line.
+      - name: A stop signal reaches the server through the image's command
+        run: |
+          started=$(date +%s)
+          docker stop copy
+          took=$(( $(date +%s) - started ))
+          code=$(docker inspect copy --format '{{.State.ExitCode}}')
+          docker logs copy 2>&1 | tail -5
+          echo "stopped in ${took} s with exit code ${code}"
+          [ "$code" = 0 ] || exit 1
 
   # The admin dashboard in admin/: type check and production build.
   admin:
