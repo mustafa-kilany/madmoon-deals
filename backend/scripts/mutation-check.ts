@@ -68,7 +68,7 @@ const MUTATIONS: Mutation[] = [
   { name: 'live: silent phones stay forever', file: 'src/modules/negotiation/live.ts', find: `      if (!alive.has(ws)) {\n        ws.terminate();\n        continue;\n      }\n`, replace: ``, test: 'live' },
   { name: 'live: a silently dead database link goes unnoticed', file: 'src/modules/negotiation/live.ts', find: `    if (pingSent) {\n      logger.error('Live: the database stopped delivering bids, reconnecting');\n      retryMs = Math.max(retryMs, limits.heartbeatMs);\n      onDown(listener);\n      return;\n    }\n`, replace: ``, test: 'live' },
   { name: 'live: phones aren’t told when the database link drops', file: 'src/modules/negotiation/live.ts', find: `    closeAll(1013, 'try again');\n`, replace: ``, test: 'live' },
-  { name: 'live: the bid isn’t announced', file: 'src/modules/negotiation/bids.ts', find: `    await announceBid(tx, toApiBid(bid));\n`, replace: ``, test: 'live' },
+  { name: 'live: the bid isn’t announced', file: 'src/modules/negotiation/bids.ts', find: `    await announceBid(tx, toApiBid(bid), endsAt);\n`, replace: ``, test: 'live' },
   { name: 'live: the announcement says more than the public list', file: 'src/modules/negotiation/live.ts', find: `JSON.stringify({ type: 'bid', bid, auctionEndsAt: auctionEndsAt.toISOString() })`, replace: `JSON.stringify({ type: 'bid', bid, auctionEndsAt: auctionEndsAt.toISOString(), extra: 'private' })`, test: 'live' },
   { name: 'live chat: no token needed', file: 'src/modules/negotiation/live.ts', find: `if (!session) return refuse(socket, 401);
         if (session.user.suspended) return refuse(socket, 403);
@@ -110,6 +110,7 @@ const MUTATIONS: Mutation[] = [
   { name: 'reports carry the raw error', file: 'src/lib/errorReporter.ts', find: `const safe = safeError(error);`, replace: `const safe = { type: 'Error', message: String((error as Error).message), stack: '', code: undefined as string | undefined };`, test: 'errorReporter' },
   { name: 'certificate originals go to the public bucket', file: 'src/modules/certificates/service.ts', find: `privateStorage.put(\`\${name}.jpg\`, image), // the original: admins only`, replace: `storage.put(\`\${name}.jpg\`, image),`, test: 'storage' },
   { name: 'storage requests aren’t really signed', file: 'src/lib/storage.ts', find: `secretAccessKey: env.S3_SECRET_ACCESS_KEY!,`, replace: `secretAccessKey: 'wrong-secret',`, test: 'storage' },
+  { name: 'the profile edit takes any field', file: 'src/modules/auth/routes.ts', find: `const body = profileBody.parse(req.body);`, replace: `const body = profileBody.passthrough().parse(req.body);`, test: 'auth' },
 ];
 
 const only = process.argv[2];
