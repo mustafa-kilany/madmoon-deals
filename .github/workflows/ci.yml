@@ -98,9 +98,36 @@ jobs:
   docker:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - run: docker build -f backend/Dockerfile -t sahla-api .
+      # The image as a hosted test copy (LOAD_BALANCER_TEST_PLAN Stage 2, G4): development mode, no outside
+      # account, made-up accounts through the demo code. It must migrate, answer /v1/health and sign someone up.
+      - name: The image starts as a test copy
+        run: |
+          cat > test-copy.env <<'SETTINGS'
+          NODE_ENV=development
+          DATABASE_URL=postgresql://postgres:postgres@localhost:5432/sahla_copy
+          JWT_SECRET=ci-only-secret-not-used-anywhere-else-0123456789
+          PUBLIC_URL=http://localhost:4000
+          TRUST_PROXY=1
+          DEV_EMAIL_CODE=123456
+          SETTINGS
+          docker run --rm --network host --env-file test-copy.env sahla-api npx prisma migrate deploy
+          docker run -d --name copy --network host --env-file test-copy.env sahla-api
+          for i in $(seq 1 60); do curl -fs http://localhost:4000/v1/health && break; sleep 1; done
+          curl -fs http://localhost:4000/v1/health || { docker logs copy; exit 1; }
+          status=$(curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:4000/v1/auth/signup -H 'Content-Type: application/json' \
+            -d '{"name":"Test Copy","email":"copy@example.com","password":"longenough1","acceptTerms":true,"code":"123456"}')
+          [ "$status" = 201 ] || { echo "sign-up answered $status"; docker logs copy; exit 1; }
 
   # The admin dashboard in admin/: type check and production build.
   admin:
