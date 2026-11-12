@@ -7,7 +7,8 @@ import { spawn } from 'node:child_process';
 import { test } from 'node:test';
 
 test('SIGTERM finishes the request in progress, then exits with 0', { skip: process.platform === 'win32' ? 'SIGTERM needs Linux (CI runs it)' : false }, async () => {
-  const port = 4190;
+  // Not 4190: it is on fetch's list of blocked ports (ManageSieve), and fetch refused it ("bad port", CI 2026-11-12).
+  const port = 4191;
   const server = spawn(process.execPath, ['--import', 'tsx', 'src/server.ts'], { env: { ...process.env, PORT: String(port), LOG_LEVEL: 'info' }, stdio: ['ignore', 'pipe', 'pipe'] });
   // Its own words, for the failure message: the first CI run only said it never answered.
   let output = '';
