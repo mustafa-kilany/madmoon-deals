@@ -3,12 +3,12 @@
 
 name: CodeQL
 
+# Paused 2026-11-12 (the owner's choice): the repository is private, and GitHub runs code scanning on
+# private repositories only with its paid Code Security add-on ("Code scanning is not enabled for this
+# repository"). Started by hand only (Actions → CodeQL → Run workflow) until it is bought; then put
+# pull_request, push to main and the weekly schedule back. SECURITY_PLAN S7.10.
 on:
-  pull_request:
-  push:
-    branches: [main]
-  schedule:
-    - cron: '0 2 * * 1'
+  workflow_dispatch:
 
 jobs:
   analyze:

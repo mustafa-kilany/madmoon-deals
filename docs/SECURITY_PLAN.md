@@ -175,7 +175,7 @@ without query strings, headers or bodies · ✅ `.env` refuses dangerous product
 | 🔨 S7.7 | Backups (tools and drill ✅, the host's schedule ⏸): daily, encrypted, kept 30 days, **a restore tested** (B12.3). | Restore into a fresh DB and run the e2e smoke. |
 | 🔨 S7.8 | Logs kept (contents ✅, the 90 days is a host setting ⏸) e.g. 30–90 days; contain no personal data beyond IP/user id (S0.10 scrubbing). | Read a day of production logs. |
 | 🟠 S7.9 | Dependencies: `npm audit` clean (or each finding noted), Dependabot / Renovate on, lockfiles committed, no `latest` versions. **2026-11-07:** backend 0, admin 0, frontend 13 (8 high): `@grpc/grpc-js` / `firebase` JS SDK pulled in by `@react-native-firebase` (Node/web code, not the Android native path; npm's "fix" is a downgrade to v20, don't), `body-parser`, `joi`, `postcss-selector-parser`, `deepmerge` (Metro / RN CLI build tools, not in the app). Re-check when `@react-native-firebase` updates. | `npm audit --omit=dev` in backend, frontend, admin. |
-| 🔨 S7.10 | CI checks (written, first run needs a push): add `gitleaks` (secrets), `npm audit --audit-level=high`, and CodeQL (free on GitHub) to `.github/workflows`. | A PR with a fake key fails CI. |
+| 🔨 S7.10 | CI checks (written, first run needs a push): add `gitleaks` (secrets), `npm audit --audit-level=high`, and CodeQL (free on GitHub) to `.github/workflows`. **First run 2026-11-12 (pull request #1): gitleaks and npm audit run. CodeQL is paused (hand start only, the owner chose): the repository is private, and GitHub scans private code only with its paid Code Security add-on; turn it back on when bought.** | A PR with a fake key fails CI. |
 
 ## S8 — Privacy, ID data and legal
 
