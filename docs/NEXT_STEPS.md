@@ -23,17 +23,17 @@ Read from this file, `BACKEND_REVIEW.md`, git and `gh` on 2026-11-11. Nothing wa
 | # | Step | Who | Status |
 |---|---|---|---|
 | N1 | Put back two lines in `backend/src/modules/privacy/retention.ts`: the ones that empty `deliveryPhone` and `deliveryAddress` on old orders are removed in the working folder, not committed. It looks like a deliberate break left from a "does the test catch it" run, and `retention.e2e.ts` fails with it. `git restore backend/src/modules/privacy/retention.ts`, then `npm run test:api -- privacy`. | 🤖 | ✅ 2026-11-11: `-- retention` failed 1 of 6 with the break, 6 of 6 after the restore (`-- privacy` doesn't include that file) |
-| N2 | Commit the two documents that record yesterday's work: this file and `BACKEND_REVIEW.md`. | 🤖 when asked | ⬜ |
-| N3 | Finish A3.4: S0.9 is already marked and logged in `SECURITY_PLAN.md`. What's left is rerunning `check:mutations` and the three-runs gate after yesterday's five commits; no rerun is written down. Emulator off first. | 🤖 | ⬜ |
-| N4 | See the update screen and the notification inbox on the emulator (A6.2, A6.4): so far they are tested in Jest only. A Maestro flow for each. | 🤖 | ⬜ |
-| N5 | `npm run check:secrets`, then push: 10 commits are on this PC and not on GitHub. | 🤖 when asked | ⬜ |
+| N2 | Commit the two documents that record yesterday's work: this file and `BACKEND_REVIEW.md`. | 🤖 when asked | ✅ 2026-11-12 (0068f69) |
+| N3 | Finish A3.4: S0.9 is already marked and logged in `SECURITY_PLAN.md`. What's left is rerunning `check:mutations` and the three-runs gate after yesterday's five commits; no rerun is written down. Emulator off first. | 🤖 | ✅ 2026-11-12: `check:mutations` 85 of 86 caught, the 86th a stale entry (the auction extension changed the code it breaks), fixed and caught; 2 new cases caught. Three runs in a row: the third caught a flaky jobs test (the first of five same-moment inserts doesn't always win), fixed; then three clean runs: backend 36 unit + 283 end-to-end (1 skipped), app 278, types, lint 0 errors, dashboard |
+| N4 | See the update screen and the notification inbox on the emulator (A6.2, A6.4): so far they are tested in Jest only. A Maestro flow for each. | 🤖 | 🔨 flows 12 (inbox) and 13 (update screen) written, the runner restarts the backend for 13; not run on the emulator yet |
+| N5 | `npm run check:secrets`, then push: 10 commits are on this PC and not on GitHub. | 🤖 when asked | ✅ 2026-11-12: the scan first stopped on balancer-test.ts's deliberately unreachable database address; let through by address only |
 
 **Then: into `main`**
 
 | # | Step | Who | Status |
 |---|---|---|---|
-| N6 | A1.3: `gh auth login`. Still not signed in on 2026-11-11. Or skip it and open the pull request by the link in A1.4. | 👤 | ⬜ |
-| N7 | A1.4 to A1.7: the pull request (106 commits ahead of `main`), its checks, a fix per failure, merge, the tag. The checks also answer A6.1 (M4: does the stop signal reach the server in the container). | 🤖, 👤 presses Merge | ⬜ |
+| N6 | A1.3: `gh auth login`. Still not signed in on 2026-11-11. Or skip it and open the pull request by the link in A1.4. | 👤 | ✅ 2026-11-12 |
+| N7 | A1.4 to A1.7: the pull request (106 commits ahead of `main`), its checks, a fix per failure, merge, the tag. The checks also answer A6.1 (M4: does the stop signal reach the server in the container). | 🤖, 👤 presses Merge | 🔨 pull request #1: **every check green** (2026-11-12, fifth run): app, backend 283 of 283 on Linux (the shutdown test ran for the first time), dashboard, image (starts as a test copy, stops cleanly), leak scan. Fixed on the way: the logger in the image, M4, two CI permissions, the shutdown test's port and hang. CodeQL paused by the owner. Left: 👤 merge, then the tag |
 | N8 | A5.6: Maestro 01 to 11 once on the merged `main`. | 🤖 | ⬜ |
 | N9 | A4: two real phones, all of A4.1 to A4.9. Needs the phones and a cable from the owner. | 👥 | ⬜ |
 
@@ -56,11 +56,11 @@ Read from this file, `BACKEND_REVIEW.md`, git and `gh` on 2026-11-11. Nothing wa
 |---|---|---|---|
 | A1.1 | `npm run check:secrets` in `backend`: 110 commits, 616 files, no secrets | 🤖 | ✅ 2026-11-10 |
 | A1.2 | Push `feat/backend-b8-admin` | 🤖 | ✅ 2026-11-10 |
-| A1.3 | Sign the new GitHub tool in, once: `gh auth login` → GitHub.com → HTTPS → "Login with a web browser" → paste the code it shows. **"gh is not recognized"** (seen 2026-11-10): VS Code was open when `gh` was installed, and a new terminal inside it isn't enough. Close every VS Code window and open it again, or run `& "C:\Program Files\GitHub CLI\gh.exe" auth login`. | 👤 | ⬜ |
-| A1.4 | Open the pull request `feat/backend-b8-admin` → `main`. Without A1.3: open `https://github.com/mustafa-kilany/Sahla/pull/new/feat/backend-b8-admin` and press "Create pull request". | 🤖 after A1.3, or 👤 by the link | ⬜ |
-| A1.5 | Wait for the checks (15 minutes at most each): app, backend, dashboard, secret scan, CodeQL, Docker build. First run ever, so expect something to fail. | 🤖 | ⬜ |
-| A1.6 | Fix each failure, one commit each, push, repeat until green. Likely places: the Linux-only shutdown test (never run), the Docker build (Docker isn't on this PC), line endings. | 🤖 | ⬜ |
-| A1.7 | Merge into `main`. Tag it `v0.9.0-internal`. | 👤 presses Merge, 🤖 tags | ⬜ |
+| A1.3 | Sign the new GitHub tool in, once: `gh auth login` → GitHub.com → HTTPS → "Login with a web browser" → paste the code it shows. **"gh is not recognized"** (seen 2026-11-10): VS Code was open when `gh` was installed, and a new terminal inside it isn't enough. Close every VS Code window and open it again, or run `& "C:\Program Files\GitHub CLI\gh.exe" auth login`. | 👤 | ✅ 2026-11-12 |
+| A1.4 | Open the pull request `feat/backend-b8-admin` → `main`. Without A1.3: open `https://github.com/mustafa-kilany/Sahla/pull/new/feat/backend-b8-admin` and press "Create pull request". | 🤖 after A1.3, or 👤 by the link | ✅ 2026-11-12: #1 |
+| A1.5 | Wait for the checks (15 minutes at most each): app, backend, dashboard, secret scan, CodeQL, Docker build. First run ever, so expect something to fail. | 🤖 | ✅ 2026-11-12 |
+| A1.6 | Fix each failure, one commit each, push, repeat until green. Likely places: the Linux-only shutdown test (never run), the Docker build (Docker isn't on this PC), line endings. | 🤖 | ✅ 2026-11-12: five runs, every failure fixed with its own commit |
+| A1.7 | Merge into `main`. Tag it `v0.9.0-internal`. | 👤 presses Merge, 🤖 tags | ⬜ 👤 press Merge on #1; then 🤖 tags `v0.9.0-internal` |
 | A1.8 | From then on: a new branch per piece of work, a pull request each, never 43 commits waiting again. | 👥 | ⬜ |
 
 ### A2. The offline balancer test (Stage 1)
@@ -87,7 +87,7 @@ Skip until the numbers ask for a second server, or do it now while the test from
 | A3.1 | **L2:** `daily()` in `backend/src/lib/jobs.ts` takes a database lock named after the job; a server that doesn't get it skips. Test: two servers, the job runs once. | 🤖 | ✅ 2026-11-10 |
 | A3.2 | **L1:** a PostgreSQL store for every `rateLimit(...)` (`lib/rateLimit.ts`, `app.ts`, `auth/routes.ts`, `admin/auth.ts`, `geocode/routes.ts`). Check the package is maintained before adding it; otherwise a small table and 40 lines. Test: 5 card tries split across two servers, the 6th refused. Measure that it doesn't slow requests. | 🤖 | ✅ 2026-11-10 |
 | A3.3 | **L3:** `DEPLOY.md` gets the rule "servers × (`DB_POOL_SIZE` + 1) must be under the database's connection limit", with the sum for one and two servers. | 🤖 | ✅ 2026-11-10 |
-| A3.4 | Mark S0.9 done in `SECURITY_PLAN.md` with its log line. Rerun `check:mutations` and the three-runs gate. | 🤖 | ⬜ |
+| A3.4 | Mark S0.9 done in `SECURITY_PLAN.md` with its log line. Rerun `check:mutations` and the three-runs gate. | 🤖 | ✅ 2026-11-12 (see N3) |
 
 ### A4. A real phone
 
@@ -122,7 +122,7 @@ Each row is a finding in `BACKEND_REVIEW.md`. Done 2026-11-10 when the owner ask
 
 | # | Step | Finding | When | Status |
 |---|---|---|---|---|
-| A6.1 | See whether the server's careful shutdown really runs in the container: the Linux shutdown test and the Docker build in the pull request's checks. If the stop signal doesn't get through `npx`, start the server with `node` directly. | M4 | With A1.5 | ⬜ |
+| A6.1 | See whether the server's careful shutdown really runs in the container: the Linux shutdown test and the Docker build in the pull request's checks. If the stop signal doesn't get through `npx`, start the server with `node` directly. | M4 | With A1.5 | ✅ 2026-11-12: through npx, `docker stop` made npm exit 1 at once and the careful shutdown never ran. The image now starts with node; CI stops it like a host and needs exit 0 |
 | A6.2 | A minimum app version: the app sends its version on every request, the server has a `MIN_APP_VERSION` setting and answers "update needed", the app shows an update screen. | M3 | **Before any build reaches a tester**: it can't be added to an installed app | ✅ 2026-11-10 |
 | A6.3 | Background work that survives a restart and retries: pushes and risk checks through a queue in PostgreSQL (`pg-boss`), behind the same `runSoon` and `daily`. Also closes L2. | M1, L7 | Before the closed test | ✅ 2026-11-10: a `Job` table of our own instead of pg-boss (same idea, inside Prisma's migrations, tests can flush it); daily jobs also catch up (L7) |
 | A6.4 | A notification inbox: a `Notification` row for every push, `GET /me/notifications`, a screen and an unread dot in the app. | M2 | Before the closed test, with A6.3 | ✅ 2026-11-10 |

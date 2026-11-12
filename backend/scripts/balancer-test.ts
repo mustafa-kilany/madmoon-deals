@@ -15,8 +15,8 @@ import path from 'node:path';
 import { WebSocket } from 'ws';
 
 if (process.env.BALANCER_URL) {
-  // Stage 2 needs test accounts on the hosted test copy, which can't be made from here yet (NEXT_STEPS C3).
-  console.error('BALANCER_URL (Stage 2) is not wired yet: see docs/LOAD_BALANCER_TEST_PLAN.md, Stage 2.');
+  // This one starts its own servers and writes to their database; a hosted copy needs the other script.
+  console.error('With BALANCER_URL (Stage 2), run npm run balancer-test:hosted instead: docs/LOAD_BALANCER_TEST_PLAN.md, Stage 2.');
   process.exit(1);
 }
 

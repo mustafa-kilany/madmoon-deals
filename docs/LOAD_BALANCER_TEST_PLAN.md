@@ -1,6 +1,6 @@
 # Load balancer test plan
 
-Written 2026-11-10 from the 2026-11-09 session. **Stage 1 built and passed on 2026-11-10** (`npm run balancer-test`, results in `INTERNAL_READINESS_PLAN.md`), with the Node balancer: nginx for Windows couldn't be downloaded on this PC. **L1 to L3 done the same day.** Stage 2 waits for the host (`NEXT_STEPS.md` B5, C3); the script refuses `BALANCER_URL` until then, because it can't make test accounts on a hosted copy yet.
+Written 2026-11-10 from the 2026-11-09 session. **Stage 1 built and passed on 2026-11-10** (`npm run balancer-test`, results in `INTERNAL_READINESS_PLAN.md`), with the Node balancer: nginx for Windows couldn't be downloaded on this PC. **L1 to L3 done the same day.** Stage 2 waits for the host (`NEXT_STEPS.md` B5, C3); its script is `npm run balancer-test:hosted` (2026-11-12), and the steps are under "Stage 2, step by step" below.
 
 ## Where things stand
 
@@ -118,10 +118,10 @@ Every host in `backend/docs/DEPLOY.md` gives a free address with HTTPS that alre
 
 | # | Gap | Fix | Who | Status |
 |---|---|---|---|---|
-| G1 | The code isn't on GitHub: the host builds from there, and 10 commits plus the work of 2026-11-11 are only on this PC | Commit, `npm run check:secrets`, push (`NEXT_STEPS.md` N2, N5) | 🤖 | ⬜ |
-| G2 | The image has never been built anywhere (no Docker on this PC) | The pull request's checks build it for free: do that before paying for a host (`NEXT_STEPS.md` A1.3 to A1.6) | 👤 `gh auth login`, then 🤖 | ⬜ |
-| G3 | `npm run balancer-test` refuses `BALANCER_URL`: it makes its test accounts straight in a local database, and a hosted database isn't reachable from here | The script makes its accounts and listings through the hosted copy itself. Tried first on this PC against the two local servers | 🤖 | ⬜ |
-| G4 | **The image can't start as a test copy.** In production mode `env.ts` refuses to start without `STORAGE=s3` (a bucket, B6) and without real email (`MAIL_MODE=console` is refused; Postmark needs the domain, B3 and B7), and refuses `DEV_EMAIL_CODE` and `RATE_LIMIT_MULTIPLIER`. In development mode the logger asks for `pino-pretty`, which the image leaves out (`npm ci --omit=dev`), so it crashes. `NEXT_STEPS.md` C1 didn't know this | A small code change so the image starts with test settings and no outside account, with a test. The exact settings list for step 7 below comes out of it | 🤖 | ⬜ |
+| G1 | The code isn't on GitHub: the host builds from there, and 10 commits plus the work of 2026-11-11 are only on this PC | Commit, `npm run check:secrets`, push (`NEXT_STEPS.md` N2, N5) | 🤖 | ✅ 2026-11-12: pushed (the scan first caught balancer-test.ts's deliberately unreachable database address, now let through by address only) |
+| G2 | The image has never been built anywhere (no Docker on this PC) | The pull request's checks build it for free: do that before paying for a host (`NEXT_STEPS.md` A1.3 to A1.6) | 👤 `gh auth login`, then 🤖 | ✅ 2026-11-12: pull request #1; the image builds, starts as a test copy, and stops cleanly when the host stops it (M4 fixed on the way) |
+| G3 | `npm run balancer-test` refuses `BALANCER_URL`: it makes its test accounts straight in a local database, and a hosted database isn't reachable from here | A separate script, `npm run balancer-test:hosted`: bidders sign up with the demo code, bids go on a seeded auction through the host's balancer, phones are paced under the per-address limits. Chat signals are left to the real phones (T4): same channel as bids, already crossed servers in Stage 1 | 🤖 | ✅ 2026-11-12: 5 of 5 on this PC against a seeded development server |
+| G4 | **The image can't start as a test copy.** In production mode `env.ts` refuses to start without `STORAGE=s3` (a bucket, B6) and without real email (`MAIL_MODE=console` is refused; Postmark needs the domain, B3 and B7), and refuses `DEV_EMAIL_CODE` and `RATE_LIMIT_MULTIPLIER`. In development mode the logger asks for `pino-pretty`, which the image leaves out (`npm ci --omit=dev`), so it crashes. `NEXT_STEPS.md` C1 didn't know this | The test copy runs in development mode; the logger asks for `pino-pretty` only in a terminal. CI now migrates, starts the image that way and signs someone up | 🤖 | ✅ 2026-11-12: CI showed the crash without the fix ("unable to determine transport target for pino-pretty"), then passes with it: migrates, answers /v1/health, signs someone up |
 
 **The owner now (10 minutes, free)** 👤
 
@@ -139,9 +139,24 @@ Railway is the suggestion **for the test copy only**: on 2026-11-11 it was the o
 | 2 | The **Hobby** plan, a bank card. About $5 a month at last report; the price lists found disagree, so read `railway.com/pricing` on the day | ⬜ |
 | 3 | **New Project → Deploy from GitHub repo.** Give Railway access to the Sahla repo only | ⬜ |
 | 4 | In the project: **New → Database → PostgreSQL.** It must say version 18 (otherwise the "PostgreSQL 18" template) | ⬜ |
-| 5 | The server's **Settings**: region, the Europe one; Dockerfile path `backend/Dockerfile`; pre-deploy command `npx prisma migrate deploy`; healthcheck path `/v1/health` | ⬜ |
+| 5 | The server's **Settings**: region, the Europe one; Dockerfile path `backend/Dockerfile`; pre-deploy command `npx prisma migrate deploy && npm run db:seed` (the seed can run again on every deploy: it makes the demo accounts and auctions the test uses); healthcheck path `/v1/health` | ⬜ |
 | 6 | **Networking → Generate Domain**: the free `https://….up.railway.app` address | ⬜ |
-| 7 | **Variables**: the list from G4. Two are secrets: `npm run secret` twice in `backend` (`JWT_SECRET`, `ID_HASH_SECRET`). `DATABASE_URL` points at the database from step 4, `PUBLIC_URL` is the address from step 6, `TRUST_PROXY=1` | ⬜ |
+| 7 | **Variables**: the list below | ⬜ |
+
+**Step 7, the test copy's settings.** Paste them into Railway's Variables ("Raw Editor"), with your own values where it says so. Everything not listed stays at its safe default (payments, Sanad, pushes and email off; files on the server's own disk, which is wiped on each deploy: fine for a test).
+
+```
+NODE_ENV=development
+DATABASE_URL=${{Postgres.DATABASE_URL}}
+JWT_SECRET=<run "npm run secret" in backend and paste what it prints>
+PUBLIC_URL=https://<the address from step 6>
+TRUST_PROXY=1
+DEV_EMAIL_CODE=<six digits of your own choosing, not 123456>
+```
+
+`${{Postgres.DATABASE_URL}}` is Railway's way of saying "the database from step 4"; if the database has another name in the project, use that name. Then the test is run with the same code: `$env:CODE="<the six digits>"`.
+
+**Development mode on a public address, for a day:** anyone who knows the address and the code can sign up, and the demo accounts' passwords are in this repo (including `admin@sahla.jo`). Only made-up data is there, but keep the address to yourself and delete the project when the tests are done (T5). Never use these settings for the copy real people use: that one is Part C of `NEXT_STEPS.md`, in production mode.
 | 8 | **Deploy**, then `https://<address>/v1/health` in a browser answers | ⬜ |
 | 9 | Give Claude the address | ⬜ |
 
@@ -149,7 +164,7 @@ Railway is the suggestion **for the test copy only**: on 2026-11-11 it was the o
 
 | # | Step | Who | Status |
 |---|---|---|---|
-| T1 | `$env:BALANCER_URL="https://<address>"; npm run balancer-test` from this PC: checks 1 to 3 at 200 phones, then growing to 1 000. Games and the emulator closed | 🤖 | ⬜ |
+| T1 | In `backend`: `$env:BALANCER_URL="https://<address>"; $env:CODE="<the six digits>"; npm run balancer-test:hosted`. Bids reach 200 phones, 3 minutes of quiet, then 200 → 500 → 900 phones (one address can hold 1 000 per server, and opens 600 a minute: about 2 minutes per 1 000), and requests alongside. Games and the emulator closed | 🤖 | ⬜ |
 | T2 | Two servers: set the count to 2 in Railway. Check `SHOW max_connections;` against the sum in `DEPLOY.md` first. Then checks 4 and 5: restart one mid-auction, if the dashboard can restart one alone | 👥 | ⬜ |
 | T3 | The real address (L4, `NEXT_STEPS.md` C2): sign in once from Wi-Fi and once from mobile data; the two addresses in the server's log must differ and be the phones' own | 👥 | ⬜ |
 | T4 | Two real phones on mobile data, a build pointing at the free address (not committed): bid on one, time the other | 👥 | ⬜ |
