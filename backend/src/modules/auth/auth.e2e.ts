@@ -98,6 +98,31 @@ test('profile: name and city; an unknown city is VALIDATION', async () => {
   assert.deepEqual(code(await call('PATCH', '/me', { cityId: 'paris' }, body.token)), [422, 'VALIDATION']);
 });
 
+// API3:2023 (mass assignment): the profile edit changes the name and city, nothing the
+// server or an admin owns, whatever else the body carries.
+test('profile: role, verified, suspended, email, password and payout fields in the body change nothing', async () => {
+  const { body } = await call('POST', '/auth/login', { email: 'ahmad@sahla.jo', password: 'sahla1234' });
+  const before = await prisma.user.findUniqueOrThrow({ where: { email: 'ahmad@sahla.jo' } });
+  const r = await call('PATCH', '/me', {
+    name: 'Ahmad M',
+    role: 'admin',
+    adminRole: 'super',
+    verified: true,
+    suspended: true,
+    email: 'taken-over@example.com',
+    passwordHash: 'x',
+    payoutIban: 'JO00TEST',
+    payoutChangedAt: null,
+  }, body.token);
+  assert.equal(r.status, 200);
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: before.id } });
+  assert.equal(user.name, 'Ahmad M');
+  assert.deepEqual(
+    [user.role, user.adminRole, user.verified, user.suspended, user.email, user.passwordHash, user.payoutIban, user.payoutChangedAt],
+    [before.role, before.adminRole, before.verified, before.suspended, before.email, before.passwordHash, before.payoutIban, before.payoutChangedAt],
+  );
+});
+
 test('tokens: missing, forged, or logged out → 401', async () => {
   assert.deepEqual(code(await call('GET', '/me')), [401, 'UNAUTHORIZED']);
   const { body } = await call('POST', '/auth/login', { email: 'ahmad@sahla.jo', password: 'sahla1234' });
