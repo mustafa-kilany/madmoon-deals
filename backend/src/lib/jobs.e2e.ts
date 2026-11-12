@@ -53,13 +53,17 @@ test('a queued job waits in the database, not in memory: a restart loses nothing
 
 test('the same key while one is waiting: it runs once', async () => {
   seen.length = 0;
-  for (let i = 0; i < 5; i++) record.soon({ value: `listing ${i}` }, 'e2e:risk:same-person');
+  const five = ['listing 0', 'listing 1', 'listing 2', 'listing 3', 'listing 4'];
+  for (const value of five) record.soon({ value }, 'e2e:risk:same-person');
   await flushJobs();
-  assert.deepEqual(seen, ['listing 0']);
+  // Once, not which: the five inserts are in flight together and any can commit first (run 3 of the
+  // three-runs gate, 2026-11-12, saw one that wasn't the first). Callers' keys fix their arguments.
+  assert.equal(seen.length, 1, `ran ${seen.length} times: ${seen.join(', ')}`);
+  assert.ok(five.includes(seen[0]), seen[0]);
   // Once it ran, the key is free again.
   record.soon({ value: 'later' }, 'e2e:risk:same-person');
   await flushJobs();
-  assert.deepEqual(seen, ['listing 0', 'later']);
+  assert.deepEqual(seen.slice(1), ['later']);
 });
 
 test('a job that fails is tried again later, then given up after 5 tries, with the reason kept', async () => {
