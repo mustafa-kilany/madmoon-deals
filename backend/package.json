@@ -29,7 +29,8 @@
     "staff": "tsx scripts/staff.ts",
     "money:check": "tsx scripts/money-check.ts",
     "check:storage": "tsx scripts/storage-check.ts",
-    "push:test": "tsx scripts/push-test.ts"
+    "push:test": "tsx scripts/push-test.ts",
+    "balancer-test:hosted": "tsx scripts/balancer-test-hosted.ts"
   },
   "type": "module",
   "dependencies": {
