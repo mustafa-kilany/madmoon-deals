@@ -15,17 +15,24 @@ test('SIGTERM finishes the request in progress, then exits with 0', { skip: proc
   server.stderr.on('data', chunk => (output += chunk));
   const exited = new Promise<number | null>(resolve => server.once('exit', resolve));
   const base = `http://127.0.0.1:${port}/v1`;
+  // The start of its output (where "Sahla backend on" belongs), stack traces cut short.
+  const told = () => output.split('\n').map(line => line.replace(/"stack":"[^"]*"/, '"stack":"…"').slice(0, 300)).slice(0, 20).join('\n');
   try {
     let up = false;
+    let lastHealth = 'never asked';
     for (let i = 0; i < 120 && !up && server.exitCode === null; i++) {
       await new Promise(resolve => setTimeout(resolve, 250));
-      up = await fetch(`${base}/health`).then(r => r.ok, () => false);
+      lastHealth = await fetch(`${base}/health`, { signal: AbortSignal.timeout(5000) }).then(
+        async r => `${r.status} ${(await r.text()).slice(0, 200)}`,
+        (error: Error) => `${error.name}: ${(error.cause as Error | undefined)?.message ?? error.message}`,
+      );
+      up = lastHealth.startsWith('200');
     }
-    assert.ok(up, `the server didn't answer within 30 s (exit code ${server.exitCode}). Its output:\n${output.slice(-3000)}`);
+    assert.ok(up, `the server didn't answer within 30 s (exit code ${server.exitCode}); the last health check got: ${lastHealth}. Its output:\n${told()}`);
     const inProgress = fetch(`${base}/listings?limit=50`);
     server.kill('SIGTERM');
     assert.equal((await inProgress).status, 200, 'the request in progress got its answer');
-    assert.equal(await exited, 0, `exit code. Its output:\n${output.slice(-3000)}`);
+    assert.equal(await exited, 0, `exit code. Its output:\n${told()}`);
     assert.equal(await fetch(`${base}/health`).then(() => 'up', () => 'down'), 'down');
   } finally {
     // A failed check must not leave it running: the test runner then waits for it for ever (CI, 2026-11-12).
