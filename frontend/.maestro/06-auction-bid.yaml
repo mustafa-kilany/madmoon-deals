@@ -1,0 +1,86 @@
+# Part 1 of an auction on the real backend: bid, get outbid (scripts/rival-bids.js), see it without
+# reloading, bid again and lead. Part 2 is 07, after the auction ends:
+# in backend/, with the test database: npx tsx scripts/e2e-end-auction.ts auction-fashion
+appId: com.sahla
+name: Bid, get outbid, bid again
+---
+- runFlow: subflows/launch.yaml
+- runFlow:
+    file: subflows/sign-in.yaml
+    env:
+      EMAIL: ahmad@sahla.jo
+      PASSWORD: sahla1234
+- runFlow: subflows/accept-terms.yaml
+
+- tapOn: "Home"
+- tapOn: "Search for anything..."
+- tapOn: "Search for anything..."
+- inputText: "Luxury Watch"
+- pressKey: Enter
+- extendedWaitUntil:
+    visible: "Luxury Watch"
+    timeout: 10000
+- tapOn:
+    text: "Luxury Watch"
+    below:
+      text: '\d+ results?'
+- extendedWaitUntil:
+    visible: "Current Highest Bid"
+    timeout: 10000
+
+# Too low is refused here, with the minimum: the message is the same words as the note on the page, so
+# the second copy is the toast. It sits over the Quick Add row, so it's tapped away before that's used.
+- tapOn: "Your Bid (JOD)"
+- inputText: "1"
+- hideKeyboard
+- tapOn: "Place Bid"
+- extendedWaitUntil:
+    visible:
+      text: 'Minimum required bid.*'
+      index: 1
+    timeout: 5000
+- tapOn:
+    text: 'Minimum required bid.*'
+    index: 1
+- extendedWaitUntil:
+    notVisible:
+      text: 'Minimum required bid.*'
+      index: 1
+    timeout: 5000
+
+# 210 + 25 = 235, and this auction goes up in tens.
+- tapOn: "+25 JOD"
+- tapOn: "Place Bid"
+- extendedWaitUntil:
+    visible: "Your bid was placed successfully!"
+    timeout: 10000
+- tapOn: "Your bid was placed successfully!"
+- extendedWaitUntil:
+    visible: 'Minimum required bid.*245.*'
+    timeout: 5000
+
+- runScript:
+    file: scripts/rival-bids.js
+    env:
+      LISTING: auction-fashion
+      AMOUNT: "300000"
+      API: ${API}
+# The rival's bid and new price arrive on their own, over the live connection (its backup poll is 15 s).
+- extendedWaitUntil:
+    visible: 'Minimum required bid.*310.*'
+    timeout: 5000
+
+- tapOn: "+25 JOD"
+- tapOn: "Place Bid"
+- extendedWaitUntil:
+    visible: "Your bid was placed successfully!"
+    timeout: 10000
+- tapOn: "Your bid was placed successfully!"
+- extendedWaitUntil:
+    visible: 'Minimum required bid.*335.*'
+    timeout: 5000
+
+# Both people are in the history, further down the page.
+- scrollUntilVisible:
+    element: "Ahmad.*"
+- assertVisible: "Sami.*"

@@ -1,0 +1,19 @@
+{
+  // Vite builds; tsc only type-checks. "@/…" is the app's own code
+  // (../frontend/src), shared like the backend does: money formatting, types.
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "noEmit": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "jsx": "react-jsx",
+    "types": ["vite/client"],
+    "paths": {
+      "@/*": ["../frontend/src/*"]
+    }
+  },
+  "include": ["src", "vite.config.ts"]
+}

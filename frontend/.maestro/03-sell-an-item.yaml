@@ -1,0 +1,123 @@
+# Seller lists a phone: photo from the gallery, brand + model pickers (the
+# model fills the title), a description, the shop test certificate, price,
+# publish, finds it in My Listings, then edits its price (B15.2). Against the
+# real backend: the server checks the certificate (fake reader without a key).
+appId: com.sahla
+name: Sell an item
+---
+- addMedia:
+    - "media/listing-photo.jpg"
+- runFlow: subflows/launch.yaml
+- runFlow:
+    file: subflows/sign-in.yaml
+    env:
+      EMAIL: ahmad@sahla.jo
+      PASSWORD: sahla1234
+- runFlow: subflows/accept-terms.yaml
+- tapOn: "Sell"
+- assertVisible: "List an Item"
+
+# Photo: Android's photo picker, newest photo first
+- tapOn: "Add Photo"
+- runFlow: subflows/pick-first-photo.yaml
+- assertVisible: "Remove photo 1"
+
+# Brand and model (Mobiles & Tablets → Phones is the default)
+- scrollUntilVisible:
+    element:
+        text: "Brand (optional)"
+- tapOn: "Brand (optional)"
+- tapOn: "Search"
+- inputText: "sams"
+- tapOn: "Samsung"
+- scrollUntilVisible:
+    element:
+        text: "Model (optional)"
+- tapOn: "Model (optional)"
+- tapOn: "Search"
+- inputText: "s24 ultra"
+- tapOn: "Galaxy S24 Ultra"
+- scrollUntilVisible: # title filled from the model
+    element:
+        text: "Samsung Galaxy S24 Ultra"
+    direction: UP
+
+# Description: at least 10 words
+- tapOn:
+    id: "listing-description"
+- inputText: "Used for a year with a case and screen protector, battery health 90 percent, never repaired."
+- hideKeyboard
+
+# Phones need a shop test certificate; the mock check passes any photo
+- scrollUntilVisible:
+    element:
+        text: "Add certificate photo"
+- tapOn: "Add certificate photo"
+- runFlow: subflows/pick-first-photo.yaml
+- extendedWaitUntil:
+    visible: "Certificate accepted"
+    timeout: 15000
+
+- scrollUntilVisible:
+    element:
+        text: "Price (JOD)"
+- tapOn: "Price (JOD)"
+- inputText: "650"
+- hideKeyboard
+# Where the driver collects it (B14.5): never shown to buyers
+- scrollUntilVisible:
+    element:
+        text: "Phone for the courier"
+- tapOn: "Phone for the courier"
+- inputText: "0795550123"
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+        text: "Street and building"
+- tapOn: "Street and building"
+- inputText: "Wasfi Al-Tal St, building 40"
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+        text: "Publish Listing"
+# The success toast can be gone before the tap settles (the countdowns
+# keep the screen busy), so check the outcome: the listing in My Listings.
+- tapOn: "Publish Listing"
+
+- tapOn: "Profile"
+- scrollUntilVisible:
+    element:
+        text: "Samsung Galaxy S24 Ultra"
+
+# B15.2: the seller opens it and edits the price
+- tapOn: "Samsung Galaxy S24 Ultra"
+- tapOn:
+    id: "product-edit"
+- assertVisible: "Edit listing"
+- tapOn:
+    id: "edit-price"
+- eraseText
+- inputText: "600"
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+        id: "edit-save"
+- tapOn:
+    id: "edit-save"
+- extendedWaitUntil:
+    visible: ".*600.*JOD" # the new price (the number is wrapped in direction marks)
+    timeout: 10000
+
+# Withdraw it (B15.2), so the flow can run again: the same certificate photo
+# can't be on two listings at once.
+- tapOn:
+    id: "product-edit"
+- scrollUntilVisible:
+    element:
+        id: "edit-withdraw"
+- tapOn:
+    id: "edit-withdraw"
+- tapOn: "(?i)withdraw listing" # the confirmation dialog
+- extendedWaitUntil:
+    notVisible: "Samsung Galaxy S24 Ultra"
+    timeout: 10000

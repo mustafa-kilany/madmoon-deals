@@ -1,0 +1,27 @@
+# Finds common security mistakes in the code (SECURITY_PLAN S7.10). Free for public repos,
+# and on private ones with GitHub Advanced Security.
+
+name: CodeQL
+
+# Paused 2026-11-12 (the owner's choice): the repository is private, and GitHub runs code scanning on
+# private repositories only with its paid Code Security add-on ("Code scanning is not enabled for this
+# repository"). Started by hand only (Actions → CodeQL → Run workflow) until it is bought; then put
+# pull_request, push to main and the weekly schedule back. SECURITY_PLAN S7.10.
+on:
+  workflow_dispatch:
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      security-events: write
+      contents: read
+      # It reads its own workflow run: without this, "Resource not accessible by integration" (2026-11-12).
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+      - uses: github/codeql-action/analyze@v3

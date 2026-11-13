@@ -1,0 +1,88 @@
+# Against the real backend (B15.10): the buyer pays into escrow and gets a PIN;
+# an admin assigns the driver (scripts/assign-courier.js, as the dashboard
+# does); the driver picks the item up and confirms with the PIN; the seller
+# sees the sale. Before running: `npm run db:seed` in backend/ (puts the fake
+# items back on sale).
+appId: com.sahla
+name: Buy, driver picks up and delivers with the PIN
+---
+- runFlow: subflows/launch.yaml
+- runFlow:
+    file: subflows/sign-in.yaml
+    env:
+      EMAIL: ahmad@sahla.jo
+      PASSWORD: sahla1234
+- runFlow: subflows/accept-terms.yaml
+
+# Find a fixed-price listing and pay with the saved card
+- tapOn: "Home"
+- tapOn: "Search for anything..."
+- inputText: "14 pro"
+- hideKeyboard
+- extendedWaitUntil:
+    visible: "iPhone 14 Pro"
+    timeout: 10000
+- tapOn: "iPhone 14 Pro"
+- tapOn: "Pay Now"
+
+# No saved address yet (fresh app), so checkout offers to use the location.
+# Type it instead: the emulator's GPS is in California.
+- assertVisible: "Deliver to where you are?"
+- tapOn: "I'll type it myself"
+- assertVisible: "Secure Checkout"
+- scrollUntilVisible:
+    element:
+        id: "delivery-phone"
+- tapOn:
+    id: "delivery-phone"
+- inputText: "0791234567"
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+        id: "delivery-address"
+- tapOn:
+    id: "delivery-address"
+- inputText: "Mecca St, Building 12, 3rd floor"
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+        text: 'Pay \d.*'
+- tapOn: 'Pay \d.*'
+- extendedWaitUntil:
+    visible: "Track Order"
+    timeout: 20000
+- assertVisible: "Delivery PIN"
+# B15.3: before pickup the buyer may cancel; B15.6: support is one tap away.
+- assertVisible:
+    id: "order-cancel"
+- assertVisible:
+    id: "order-support"
+
+# The order number and PIN the buyer sees (read through the API: the list on
+# screen may still be refreshing).
+- runScript: scripts/newest-order.js
+
+# The admin gives it to the driver (the dashboard's Orders page does the same call).
+- runScript: scripts/assign-courier.js
+
+# The driver: the delivery is on their list, picked up, then the PIN
+- runFlow: subflows/sign-out.yaml
+- runFlow:
+    file: subflows/sign-in-courier.yaml
+    env:
+      EMAIL: courier@sahla.jo
+      PASSWORD: sahla1234
+- extendedWaitUntil:
+    visible: ${output.orderId}
+    timeout: 35000 # the list refreshes every 30 s
+- tapOn: ${output.orderId}
+- assertVisible:
+    id: "delivery-mark-failed"
+- tapOn: "I Picked It Up"
+- tapOn: "Delivery PIN"
+- inputText: ${output.pin}
+- hideKeyboard
+- tapOn: "Confirm Delivery"
+- extendedWaitUntil:
+    visible: "Delivery confirmed. Payment released to the seller."
+    timeout: 15000

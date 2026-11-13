@@ -1,8 +1,12 @@
 SAHLA - HOW TO RUN THE APP FROM ZERO (Windows, Android emulator)
 =================================================================
 
-Type all commands in the VS Code terminal (PowerShell), inside the project folder:
-    C:\Users\mustafa\Desktop\Sahla\Sahla
+Type all commands in the VS Code terminal (PowerShell).
+The project has two parts, each in its own folder:
+    C:\Users\mustafa\Desktop\Sahla\Sahla\frontend   the app (run app commands here)
+    C:\Users\mustafa\Desktop\Sahla\Sahla\backend    the API (see backend\README.md)
+    C:\Users\mustafa\Desktop\Sahla\Sahla\admin      the admin dashboard website
+A new terminal starts in the Sahla folder, so for app commands first type:   cd frontend
 
 
 -----------------------------------------------------------------
@@ -37,7 +41,7 @@ PART 1 - ONE-TIME SETUP (only on a new computer)
 
 5. Get the code and install the packages:
        git clone <repo-url>
-       cd Sahla
+       cd Sahla\frontend
        npm install
 
 6. Check everything works (optional):
@@ -54,21 +58,37 @@ PART 2 - EVERY DAY: START THE APP
    (You do NOT need to open the project in Android Studio.)
 
 2. VS Code terminal tab 1 - start Metro (the JavaScript server):
+       cd frontend
        npm start
    Wait for "Dev server ready". Leave this terminal open.
 
 3. VS Code terminal tab 2 (click + to open a new terminal) - build and install the app:
+       cd frontend
        npm run android -- --active-arch-only
    The first build takes several minutes. Later ones are faster.
    If it asks "Use port 8082 instead?" answer N (No).
 
 4. If the app asks to access "nearby devices", tap Allow.
 
-5. Only if you want to log in - VS Code terminal tab 3 - start the test server:
-       npm run contract-server
-   Leave it open. Demo login: ahmad@sahla.jo / sahla1234
+5. Only if you want to log in - VS Code terminal tab 3 - start the backend:
+       cd backend
+       npm run dev
+   Leave it open. Demo login: ahmad@sahla.jo / sahla1234 (run  npm run db:seed  once first).
+   Sign-up code on this PC: 123456.
+   (Or the small fake server instead:  cd frontend  then  npm run contract-server .
+   Run only one of the two: both use port 4000.)
 
 That's it. When you save a code file, the app reloads by itself.
+
+6. Only if you want the ADMIN DASHBOARD (a website for Sahla staff) - another terminal:
+       cd admin
+       npm install          (first time only)
+       npm run dev
+   Open http://localhost:5174 in your browser. The backend (step 5) must be running.
+   Demo admin: admin@sahla.jo / sahla1234 (after  npm run db:seed  in backend).
+   The first log-in shows a QR code: scan it with an authenticator app on your phone
+   (Google Authenticator or Microsoft Authenticator), then type the 6-digit code it shows.
+   Lost the phone? In backend:  npm run staff -- reset-2fa admin@sahla.jo
 After you change babel.config.js, metro.config.js or tailwind.config.js,
 stop Metro (Ctrl+C) and start it with:   npm start -- --reset-cache
 
@@ -88,19 +108,20 @@ White screen / app frozen / emulator not responding
 
 Login says "No connection"
    The test server isn't running. Start it (Part 2, step 5).
-   Or use the built-in fake backend: in src/config.ts set  auth: true
+   Or use the built-in fake backend: in frontend\src\config.ts set  auth: true
    (the courier demo account courier@sahla.jo / sahla1234 only works this way).
 
 Build fails with a path that is too long (CMake / 260 characters)
    Keep the project in a short folder path, e.g. C:\Users\<you>\Desktop\Sahla\Sahla
 
 Strange errors after pulling new code
+       cd frontend
        npm install
        npm start -- --reset-cache
 
 
 -----------------------------------------------------------------
-USEFUL COMMANDS
+USEFUL COMMANDS (app: in the frontend folder)
 -----------------------------------------------------------------
    npm start                 start Metro
    npm run android           build + install on the emulator
@@ -109,4 +130,8 @@ USEFUL COMMANDS
    npm run typecheck         check TypeScript types
    npm run lint              check code style
 
-More detail: DEVELOPMENT_GUIDE.md (section 6) and docs/API.md (backend endpoints).
+Android Studio: to open the Android project, open the folder  frontend\android
+(not the Sahla folder).
+
+More detail: DEVELOPMENT_GUIDE.md (section 6), docs/API.md (backend endpoints),
+backend\README.md (the API).

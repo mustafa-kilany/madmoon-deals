@@ -1,0 +1,53 @@
+# Buy a listing with the saved card. Params: QUERY (search words), TITLE (exact
+# listing title). Fills the address only when checkout asks (the first time).
+appId: com.sahla
+---
+- repeat: # back to the tabs from wherever we are
+    times: 5
+    while:
+      notVisible: "Profile"
+    commands:
+      - back
+- tapOn: "Home"
+- scrollUntilVisible: # Home may still be scrolled down from before
+    element:
+      text: "Search for anything..."
+    direction: UP
+- tapOn: "Search for anything..." # opens Search
+- tapOn: "Search for anything..." # focuses its field
+- inputText: ${QUERY}
+- pressKey: Enter # search, which also closes the keyboard
+- extendedWaitUntil:
+    visible: ${TITLE}
+    timeout: 10000
+- tapOn: # the card, not the search box (Maestro matches text ignoring case)
+    text: ${TITLE}
+    below:
+      text: '\d+ results?'
+- tapOn: "Pay Now"
+- runFlow:
+    when:
+      visible: "Deliver to where you are?"
+    commands:
+      - tapOn: "I'll type it myself"
+      - scrollUntilVisible:
+          element:
+            id: "delivery-phone"
+      - tapOn:
+          id: "delivery-phone"
+      - inputText: "0791234567"
+      - hideKeyboard
+      - scrollUntilVisible:
+          element:
+            id: "delivery-address"
+      - tapOn:
+          id: "delivery-address"
+      - inputText: "Mecca St, Building 12, 3rd floor"
+      - hideKeyboard
+- scrollUntilVisible:
+    element:
+      text: 'Pay \d.*'
+- tapOn: 'Pay \d.*'
+- extendedWaitUntil:
+    visible: "Track Order"
+    timeout: 20000

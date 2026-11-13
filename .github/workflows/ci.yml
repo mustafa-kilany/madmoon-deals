@@ -13,16 +13,155 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # The React Native app in frontend/.
   check:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: frontend/package-lock.json
       - run: npm ci
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test -- --ci
+
+  # The API in backend/: type check, unit tests, and end-to-end tests against
+  # a real PostgreSQL (the tests create and empty their own sahla_test database).
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/sahla
+      JWT_SECRET: ci-only-secret-not-used-anywhere-else-0123456789
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            frontend/package-lock.json
+            backend/package-lock.json
+      # The backend shares the app's rules and reference data (../frontend/src),
+      # whose types come from the app's packages.
+      - run: npm ci --ignore-scripts
+        working-directory: frontend
+      - run: npm ci
+        working-directory: backend
+      - run: npm run typecheck
+        working-directory: backend
+      - run: npm test
+        working-directory: backend
+      - run: npm run test:api
+        working-directory: backend
+
+  # SECURITY_PLAN S7.9–S7.10: no secret in the code or its history, no known hole in what we ship.
+  security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # gitleaks lists the pull request's commits: without this it stops at "Resource not accessible by integration".
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # the whole history: a key deleted later is still leaked
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      # What runs on the server and in the browser must be clean. The app's list has
+      # known findings in build tools (S7.9): reported, not blocking.
+      - run: npm audit --omit=dev --audit-level=high
+        working-directory: backend
+      - run: npm audit --omit=dev --audit-level=high
+        working-directory: admin
+      - run: npm audit --omit=dev --audit-level=high
+        working-directory: frontend
+        continue-on-error: true
+
+  # The server's image builds (backend/docs/DEPLOY.md).
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -f backend/Dockerfile -t sahla-api .
+      # The image as a hosted test copy (LOAD_BALANCER_TEST_PLAN Stage 2, G4): development mode, no outside
+      # account, made-up accounts through the demo code. It must migrate, answer /v1/health and sign someone up.
+      - name: The image starts as a test copy
+        run: |
+          cat > test-copy.env <<'SETTINGS'
+          NODE_ENV=development
+          DATABASE_URL=postgresql://postgres:postgres@localhost:5432/sahla_copy
+          JWT_SECRET=ci-only-secret-not-used-anywhere-else-0123456789
+          PUBLIC_URL=http://localhost:4000
+          TRUST_PROXY=1
+          DEV_EMAIL_CODE=123456
+          SETTINGS
+          docker run --rm --network host --env-file test-copy.env sahla-api npx prisma migrate deploy
+          docker run -d --name copy --network host --env-file test-copy.env sahla-api
+          for i in $(seq 1 60); do curl -fs http://localhost:4000/v1/health && break; sleep 1; done
+          curl -fs http://localhost:4000/v1/health || { docker logs copy; exit 1; }
+          status=$(curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:4000/v1/auth/signup -H 'Content-Type: application/json' \
+            -d '{"name":"Test Copy","email":"copy@example.com","password":"longenough1","acceptTerms":true,"code":"123456"}')
+          [ "$status" = 201 ] || { echo "sign-up answered $status"; docker logs copy; exit 1; }
+      # BACKEND_REVIEW M4: a host stops the container as docker stop does, SIGTERM to the image's command
+      # (npx). If it doesn't reach the server, Docker kills it after 10 s (exit 137) and requests in progress
+      # are cut on every deploy. The server must exit by itself with 0, after its "Shutting down" line.
+      - name: A stop signal reaches the server through the image's command
+        run: |
+          started=$(date +%s)
+          docker stop copy
+          took=$(( $(date +%s) - started ))
+          code=$(docker inspect copy --format '{{.State.ExitCode}}')
+          docker logs copy 2>&1 | tail -5
+          echo "stopped in ${took} s with exit code ${code}"
+          [ "$code" = 0 ] || exit 1
+
+  # The admin dashboard in admin/: type check and production build.
+  admin:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            frontend/package-lock.json
+            admin/package-lock.json
+      # Shares the app's money formatting (../frontend/src/lib).
+      - run: npm ci --ignore-scripts
+        working-directory: frontend
+      - run: npm ci
+        working-directory: admin
+      - run: npm run build
+        working-directory: admin

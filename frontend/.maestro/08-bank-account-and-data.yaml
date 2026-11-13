@@ -1,0 +1,97 @@
+# The seller's bank account (S3.7) and a copy of one's data (S8.4).
+appId: com.sahla
+name: Bank account, download my data
+---
+- runFlow: subflows/launch.yaml
+- runFlow:
+    file: subflows/sign-in.yaml
+    env:
+      EMAIL: ahmad@sahla.jo
+      PASSWORD: sahla1234
+- runFlow: subflows/accept-terms.yaml
+
+- scrollUntilVisible:
+    element:
+      id: "profile-bank-account"
+    centerElement: true
+- tapOn:
+    id: "profile-bank-account"
+- extendedWaitUntil:
+    visible:
+      id: "payout-holder"
+    timeout: 10000
+- tapOn:
+    id: "payout-holder"
+- inputText: "Ahmad Seller"
+- tapOn:
+    id: "payout-iban-input"
+# Half an IBAN is caught on the phone (a wrong check digit too: __tests__/money.test.ts).
+- inputText: "JO94CBJO001"
+- assertVisible: 'Check it: a Jordanian IBAN.*'
+- inputText: "0000000000131000302"
+- hideKeyboard
+- assertNotVisible: 'Check it: a Jordanian IBAN.*'
+# The wrong password is refused and doesn't sign anyone out.
+- tapOn:
+    id: "payout-password"
+- inputText: "not-my-password"
+- hideKeyboard
+- tapOn:
+    id: "payout-save"
+- extendedWaitUntil:
+    visible: "Wrong password"
+    timeout: 10000
+- assertVisible:
+    id: "payout-holder"
+- tapOn:
+    id: "payout-password"
+- inputText: "sahla1234"
+- hideKeyboard
+- tapOn:
+    id: "payout-save"
+- extendedWaitUntil:
+    visible:
+      id: "payout-current"
+    timeout: 10000
+# Only the last 4 show, and the first account isn't held.
+- assertVisible: '.*0302.*'
+- assertNotVisible:
+    id: "payout-held"
+
+# Changing it starts the 24 hours.
+- tapOn:
+    id: "payout-change"
+- assertVisible: 'To protect you.*24 hours.*'
+- tapOn:
+    id: "payout-holder"
+- inputText: "Ahmad Seller"
+- tapOn:
+    id: "payout-iban-input"
+- inputText: "JO71CBJO0000000000001234567890"
+- hideKeyboard
+- tapOn:
+    id: "payout-password"
+- inputText: "sahla1234"
+- hideKeyboard
+- tapOn:
+    id: "payout-save"
+- extendedWaitUntil:
+    visible:
+      id: "payout-held"
+    timeout: 10000
+- assertVisible: '.*7890.*'
+- back
+
+# Download my data opens the phone's share sheet.
+- scrollUntilVisible:
+    element:
+      id: "profile-export"
+    centerElement: true
+- tapOn:
+    id: "profile-export"
+- extendedWaitUntil:
+    notVisible:
+      id: "profile-export"
+    timeout: 10000
+- back
+- assertVisible: "Profile & Settings"

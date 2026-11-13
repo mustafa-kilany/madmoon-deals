@@ -1,0 +1,65 @@
+# Live chat and unread numbers on the real backend, after 05 (Ahmad's chat with Sami exists). Sami writes
+# while Ahmad is elsewhere: the number comes to the Chats tab and the list by itself, opening the chat
+# clears it, and a message written with the chat open just appears. Timeouts are shorter than any poll
+# (30 s with the connection up), so a pass means the live connection did it.
+appId: com.sahla
+name: A message and its unread number arrive on their own
+---
+- runFlow: subflows/launch.yaml
+- runFlow:
+    file: subflows/sign-in.yaml
+    env:
+      EMAIL: ahmad@sahla.jo
+      PASSWORD: sahla1234
+- runFlow: subflows/accept-terms.yaml
+
+- tapOn: "Home"
+- extendedWaitUntil:
+    visible: "Search for anything..."
+    timeout: 10000
+# Time to connect.
+- swipe:
+    direction: UP
+    duration: 400
+- runScript:
+    file: scripts/seller-writes.js
+    env:
+      SELLER: sami@demo.sahla.jo
+      TEXTS: "first live message|second live message"
+      API: ${API}
+- extendedWaitUntil:
+    visible:
+      id: "tab-unread"
+    timeout: 5000
+
+- tapOn: 'Chats.*'
+- extendedWaitUntil:
+    visible: "second live message"
+    timeout: 10000
+- assertVisible:
+    id: 'chat-unread-.*'
+- tapOn: "second live message"
+
+# Opening it reads it: the number leaves the tab.
+- extendedWaitUntil:
+    visible: "first live message"
+    timeout: 10000
+- extendedWaitUntil:
+    notVisible:
+      id: "tab-unread"
+    timeout: 10000
+
+- runScript:
+    file: scripts/seller-writes.js
+    env:
+      SELLER: sami@demo.sahla.jo
+      TEXTS: "written while it is open"
+      API: ${API}
+- extendedWaitUntil:
+    visible: "written while it is open"
+    timeout: 5000
+# Seen, so it never counts as unread.
+- extendedWaitUntil:
+    notVisible:
+      id: "tab-unread"
+    timeout: 5000

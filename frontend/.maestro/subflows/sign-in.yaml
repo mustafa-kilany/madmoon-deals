@@ -1,0 +1,15 @@
+# Log in with email from the Profile tab. Params: EMAIL, PASSWORD.
+appId: com.sahla
+---
+- tapOn: "Profile"
+- tapOn: "Sign In"
+- tapOn: "Continue with Email"
+- tapOn: "Email Address"
+- inputText: ${EMAIL}
+- tapOn: "Password"
+- inputText: ${PASSWORD}
+- hideKeyboard
+- tapOn: "LOG IN"
+- extendedWaitUntil:
+    visible: "(Profile & Settings|I accept)" # signed in; the terms prompt, when new, covers the page
+    timeout: 40000

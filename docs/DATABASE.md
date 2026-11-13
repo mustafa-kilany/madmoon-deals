@@ -1,0 +1,538 @@
+# Sahla Database Design (PostgreSQL)
+
+The physical design of Sahla's database: every table, its columns and types, keys and indexes, how the
+tables are connected, and how the main flows move through them. **✅ built** tables exist today
+(`backend/prisma/schema.prisma`); **planned** ones are added in the phase shown
+([`BACKEND_PLAN.md`](BACKEND_PLAN.md)). Pictures: [`docs/database/`](database/) (also drawn below).
+
+## Conventions
+
+| Topic | Rule |
+|---|---|
+| Ids | `text` primary keys. Server-made ids are **cuid** (`ckz…`, time-ordered, safe in URLs). Some ids are meaningful: stores `store-apple`, orders `SA-123456` (the courier types it), demo listings `mobiles-0`. |
+| Money | Always `integer` **fils** (1 JOD = 1000 fils), columns end in `Fils`. Never decimals. |
+| Time | `timestamp(3)` in **UTC**; the API sends ISO-8601 strings. Every table has `createdAt`; changing ones `updatedAt`. |
+| Text in two languages | `…Ar` / `…En` column pairs (e.g. `titleAr`, `titleEn`). |
+| Reference data | Categories, item types, brands and areas (`category`, `type`, `brand`, `locationId`, `cityId`) are **ids from the shared reference files** (`frontend/src/services/mock/filters.ts`, `places.ts`), checked by the API, not foreign keys, so the list can grow without a migration. |
+| Secrets | Never stored readable: passwords → scrypt hash, tokens / API keys → SHA-256, email codes → HMAC, national ID → HMAC, IMEI → hash. |
+| Deleting | Accounts are deleted (cascade to their private rows); money and order history is kept with the person removed. Listings are never deleted, only `withdrawn`. |
+| Enums | PostgreSQL enum types (shown in *italics* below), so a wrong value can't be saved. |
+
+---
+
+## 1. The whole picture
+
+How every table connects (columns are in the area diagrams below). Planned tables say so.
+
+![Overview](database/overview.png)
+
+```mermaid
+erDiagram
+  User ||--o{ Session : "signs in"
+  User ||--o{ Listing : sells
+  User ||--o{ TestCertificate : uploads
+  User ||--o{ IdVerification : "verifies ID"
+  User ||--o{ Device : "push tokens"
+  User ||--o{ Upload : uploads
+  Store ||--o{ Listing : "sells refurbished"
+  Store ||--o{ StoreApiKey : "has keys"
+  Store ||--o{ RefurbishedImport : "import runs"
+  TestCertificate |o--o| Listing : "proves device"
+  Listing ||--o{ ListingView : "views"
+  Listing ||--o{ Chat : "about"
+  Listing ||--o{ Offer : "offers"
+  Listing ||--o{ Bid : "bids"
+  Listing ||--o{ Order : "sold by"
+  User ||--o{ Order : "sells / delivers"
+  User ||--o{ Chat : "buyer"
+  Chat ||--o{ Message : "contains"
+  Chat ||--o{ Offer : "negotiates"
+  Offer |o--o{ Message : "shown in"
+  User ||--o{ Bid : "bids"
+  User ||--o{ Order : "buys"
+  Offer |o--o| Order : "agreed price"
+  Order ||--o{ Payment : "paid by"
+  Order ||--o| Payout : "releases"
+  User ||--o{ Report : reports
+  User ||--o{ Block : blocks
+  User ||--o{ AccountSignal : "risk signals"
+  User ||--o{ RiskFlag : "flagged"
+  User ||--o{ AdminAction : "admin did"
+```
+
+---
+
+## 2. Accounts and security
+
+![Accounts and security](database/accounts.png)
+
+```mermaid
+erDiagram
+  User ||--o{ Session : "signs in on"
+  User ||--o{ IdVerification : "verifies"
+  User ||--o{ Device : "gets push on"
+  Session |o--o{ Device : "registered in"
+  User {
+    text id PK "cuid"
+    text name "2-60 chars"
+    text email UK "lower-case, null for some Apple ids"
+    text passwordHash "scrypt, null for Google/Apple"
+    AuthMethod method "email | google | apple"
+    bool verified "Verified badge"
+    text cityId "area id"
+    text avatarUrl
+    text cardBrand "saved card: brand"
+    text cardLast4
+    text cardToken "the provider's token, never the number"
+    Role role "null | courier | admin"
+    bool suspended "admin only"
+    text totpSecret "admins' 2FA secret, encrypted"
+    timestamp totpEnabledAt
+    int totpLastStep "each code works once"
+    timestamp createdAt
+    timestamp updatedAt
+  }
+  Session {
+    text id PK "= JWT sid"
+    text userId FK
+    text tokenHash UK "SHA-256 of the JWT"
+    SessionScope scope "app | admin"
+    timestamp expiresAt "app 60 days, admin 12 h"
+    text deviceId "X-Device-Id"
+    text ip
+    timestamp createdAt
+  }
+  EmailCode {
+    text id PK
+    text email "no FK: sign-up has no user yet"
+    EmailCodePurpose purpose "signup | reset"
+    text codeHash "HMAC"
+    int attempts "max 5"
+    timestamp expiresAt "10 min"
+    timestamp createdAt
+  }
+  IdVerification {
+    text id PK
+    text userId FK
+    IdProvider provider "sanad"
+    IdVerificationStatus status "pending | approved | rejected"
+    text providerRef
+    text nationalIdHash "one ID = one account"
+    text stateHash UK "one-time, cleared on answer"
+    text rejectReason
+    timestamp createdAt
+    timestamp decidedAt
+  }
+  Device {
+    text token PK "FCM token"
+    text userId FK
+    text sessionId FK "the sign-in that registered it"
+    Platform platform "android | ios"
+    text language "ar | en: the pushes' language"
+    timestamp createdAt
+    timestamp updatedAt
+  }
+```
+
+| Table | Status | Purpose and rules | Indexes |
+|---|---|---|---|
+| **User** | ✅ B1 | Every person: buyers, sellers, couriers, admins. `role` is null for normal users; couriers and admins are **staff accounts** made by an admin with the company email domain, never by sign-up (B14). `suspended` is set only by an admin. Deleting a user cascades to sessions, certificates, ID checks, reports, blocks, signals, flags; their listings are withdrawn and keep no link. | `email` unique |
+| **Session** | ✅ B1, scope B8.1 | One signed-in device. The JWT names the session (`sid`); deleting the row signs that device out. Log-out deletes one, password reset all. `scope` `admin` = the dashboard (after the two-step log-in, 12 hours); an app session never opens `/v1/admin/*` and an admin one opens nothing else. | `tokenHash` unique, `userId`, `deviceId` |
+| **EmailCode** | ✅ B1 | 6-digit codes for sign-up and password reset. Deleted once used. | `(email, purpose)` |
+| **IdVerification** | ✅ B3.5 (Sanad: B11) | One check with **Sanad** (no ID photos, no manual review). `stateHash` finds the check when Sanad answers; the national number is kept only as a keyed hash (one ID, one verified account). Approving sets `User.verified` (and `Listing.sellerVerified` on their listings). | `userId`, `nationalIdHash` |
+| **Device** | ✅ B9.2–B9.3 | Push notification tokens. A token belongs to the account last signed in on that phone and to that sign-in: removed with the `Session` (log-out, password reset), with the account, and when Firebase says the app was uninstalled. `language` = the app's language on that phone. | `userId` |
+
+The saved card (B7.8) is three `User` columns, not a table: one card per account, `cardToken` being the
+payment provider's reusable token (never the card number).
+
+---
+
+## 3. Catalog and selling
+
+![Catalog and selling](database/catalog.png)
+
+```mermaid
+erDiagram
+  User ||--o{ Listing : "sells (sellerUserId)"
+  Store ||--o{ Listing : "sells refurbished (storeId)"
+  Store ||--o{ StoreApiKey : "has"
+  Store ||--o{ RefurbishedImport : "history"
+  User ||--o{ TestCertificate : uploads
+  TestCertificate |o--o| Listing : "used by one"
+  Listing ||--o{ ListingView : "counted"
+  User ||--o{ Upload : uploads
+  Listing {
+    text id PK "cuid"
+    text category "category id"
+    text type "item type id"
+    text titleAr
+    text titleEn
+    int priceFils "price, or highest bid"
+    text_array imageUrls "1-5, cover first"
+    Condition condition "new .. loved, refurbished_*"
+    text description "10+ words"
+    ListingStatus status "active | reserved | sold | withdrawn"
+    text brand
+    text model
+    text locationId "area id"
+    SaleType saleType "fixed | auction"
+    timestamp auctionEndsAt
+    int incrementFils
+    int bidCount "kept by bids"
+    text auctionWinnerId FK "highest bidder at the end"
+    timestamp auctionClosedAt "set by the closing job"
+    bool reportHidden "3 reporters: hidden"
+    text pickupPhone "for the courier (B14.5)"
+    text pickupAddress "never shown to buyers"
+    text pickupNotes
+    int views
+    text searchText "folded search words"
+    bool sellerVerified "copy of the badge"
+    text sellerUserId FK "seller is a user..."
+    text storeId FK "...or a store"
+    text sku "store's own id"
+    int quantity "store stock units (planned B13)"
+    int warrantyMonths "refurbished (fixed price only)"
+    text testCertificateId FK,UK
+    timestamp createdAt
+    timestamp updatedAt
+  }
+  Store {
+    text id PK "store-apple"
+    text nameEn
+    text nameAr
+    text pickupPhone "couriers collect here (B14.5)"
+    text pickupCityId
+    text pickupAddress
+    timestamp createdAt
+  }
+  StoreApiKey {
+    text id PK
+    text storeId FK
+    text keyHash UK "SHA-256"
+    text label
+    timestamp createdAt
+    timestamp lastUsedAt
+    timestamp revokedAt
+  }
+  RefurbishedImport {
+    text id PK
+    text storeId FK
+    text source "key or admin"
+    text mode "upsert | replace"
+    int created
+    int updated
+    int withdrawn
+    jsonb errors "skipped rows"
+    timestamp createdAt
+  }
+  TestCertificate {
+    text id PK
+    text userId FK
+    CertificateStatus status "passed | failed"
+    text_array problems
+    text category
+    text type
+    text brand
+    text model
+    text shopName
+    text shopPhone
+    timestamp testedAt
+    text device
+    text_array specs
+    text photoUrl "admins only"
+    text blurredUrl "buyers see"
+    text imageHash "reuse check"
+    text_array serialHashes "IMEI hashes"
+    text ocrProvider
+    text ocrText "never sent to the app"
+    bool stampChecked
+    timestamp createdAt
+  }
+  Category {
+    text id PK "mobiles, electronics, ..."
+    text imageUrl "picture an admin uploaded"
+    text updatedById FK "admin"
+    timestamp updatedAt
+  }
+  ListingView {
+    text listingId PK,FK
+    text viewerKey PK "user or device"
+    date day PK "once a day"
+  }
+  Upload {
+    text id PK
+    text userId FK
+    UploadKind kind "listing | avatar | category"
+    text url
+    text thumbUrl "400 px"
+    int bytes
+    timestamp usedAt "null = unused, cleaned after 24 h"
+    timestamp createdAt
+  }
+```
+
+| Table | Status | Purpose and rules | Indexes |
+|---|---|---|---|
+| **Listing** | ✅ B2 | Everything for sale. Exactly one of `sellerUserId` / `storeId` is set (stores = refurbished only, **always fixed price**: never `saleType = auction`; users can't list `refurbished_*`). `quantity` (B13): identical units of a store listing; orders take one each. `searchText` and `sellerVerified` are copies kept for fast search and sorting. Status: `active` → `reserved` (paid) → `sold` (delivered); refund → `active`; `withdrawn` = deleted, never shown. | `(category, status)`, `sellerUserId`, `(storeId, sku)` unique, `testCertificateId` unique, GIN `pg_trgm` on `searchText`, `(status, saleType, auctionEndsAt)`, `(status, sellerVerified, createdAt)`, `(status, priceFils)`, `locationId` |
+| **Store** | ✅ B0 | A brand's official refurbished store; its id is the listings' `sellerId`. | — |
+| **StoreApiKey** | ✅ B0 | Keys a brand's system imports with. Shown once, stored hashed, can be revoked. | `keyHash` unique |
+| **RefurbishedImport** | ✅ B0 | One row per import run (dashboard history). | `(storeId, createdAt)` |
+| **TestCertificate** | ✅ table, endpoint B4 | A checked photo of a shop's test report. A listing of a phone / electronics type needs a `passed` one; each is used by one listing only. | `userId`, `imageHash` |
+| **ListingView** | ✅ B2.5 | Counts a viewer once a day; `Listing.views` is the total. | primary key `(listingId, viewerKey, day)` |
+| **Category** | ✅ B3.7 | Only the categories whose picture an admin changed. Names, icons and item types stay in the shared reference files; `Listing.category` is the id, not a foreign key. | — |
+| **Upload** | ✅ B3 | Every uploaded photo. `POST /listings` accepts only listing photos from here; unused ones are deleted after a day. | `userId`, `(kind, usedAt, createdAt)`, `url` unique |
+
+---
+
+## 4. Negotiation: chats, offers, bids (✅ B6)
+
+![Negotiation](database/negotiation.png)
+
+```mermaid
+erDiagram
+  Listing ||--o{ Chat : "about"
+  User ||--o{ Chat : "buyer"
+  Chat ||--o{ Message : "contains"
+  User ||--o{ Message : "sends"
+  Listing ||--o{ Offer : "receives"
+  User ||--o{ Offer : "buyer makes"
+  Chat ||--o{ Offer : "negotiated in"
+  Offer |o--o{ Message : "shown in"
+  Listing ||--o{ Bid : "receives"
+  User ||--o{ Bid : "places"
+  Chat {
+    text id PK
+    text listingId FK
+    text buyerId FK "seller = the listing's seller"
+    text lastMessage "for the chat list"
+    timestamp createdAt
+    timestamp updatedAt "last activity"
+  }
+  Message {
+    text id PK
+    text chatId FK
+    text senderId FK
+    text text "max 1000"
+    text offerId FK "messages about an offer"
+    timestamp createdAt
+  }
+  Offer {
+    text id PK
+    text listingId FK
+    text buyerId FK
+    text chatId FK
+    int amountFils "agreed price once accepted"
+    int counterAmountFils "seller's counter"
+    OfferStatus status "pending | countered | accepted | rejected"
+    timestamp createdAt
+    timestamp updatedAt
+  }
+  Bid {
+    text id PK
+    text listingId FK
+    text bidderId FK
+    int amountFils "at least price + increment"
+    timestamp createdAt
+  }
+```
+
+| Table | Purpose and rules | Indexes |
+|---|---|---|
+| **Chat** | One per buyer and listing (`(listingId, buyerId)` unique). The seller is the listing's seller, so it isn't stored twice. Hidden when either side blocked the other. | `(listingId, buyerId)` unique, `(buyerId, updatedAt)` |
+| **Message** | Chat messages, oldest first. Offer steps post a message with `offerId`, and the app shows the offer's current state. | `(chatId, createdAt)` |
+| **Offer** | Turn rules: the seller answers `pending` (accept / reject / counter), the buyer answers `countered`. Only the buyer of an `accepted` offer can check out with it. | `(listingId, status)`, `buyerId` |
+| **Bid** | Placed in one transaction that also raises `Listing.priceFils` and `bidCount`, so two bids can't both win. At `auctionEndsAt` a job (every minute) sets `Listing.auctionWinnerId` and `auctionClosedAt`. | `(listingId, amountFils desc)` |
+
+---
+
+## 5. Orders, payments and escrow (✅ B7, courier part B14)
+
+![Orders and money](database/orders.png)
+
+```mermaid
+erDiagram
+  Listing ||--o{ Order : "bought as"
+  User ||--o{ Order : "buyer"
+  User ||--o{ Order : "seller (copied in)"
+  Store ||--o{ Order : "refurbished seller"
+  Offer |o--o{ Order : "agreed price"
+  User |o--o{ Order : "courier delivers"
+  Order ||--o{ Payment : "paid by"
+  Order ||--o| Payout : "releases to seller"
+  Order {
+    text id PK "SA-123456"
+    text listingId FK
+    text buyerId FK "null once the buyer deleted the account"
+    text sellerUserId FK "or storeId"
+    text storeId FK
+    text offerId FK "if bought by offer"
+    int itemPriceFils "listing, offer or winning bid"
+    int buyerProtectionFils "3%, min 1000"
+    int deliveryFils "2000"
+    int totalFils
+    OrderStatus status "awaiting_payment | escrow_held | completed | refunded"
+    text pin "4 digits, set when paid"
+    int pinAttempts "5 tries, then locked"
+    text deliveryName
+    text deliveryPhone "07XXXXXXXX"
+    text deliveryCityId
+    text deliveryAddress
+    text deliveryNotes
+    text pickupName "seller side, given when paid"
+    text pickupPhone
+    text pickupCityId
+    text pickupAddress
+    text pickupNotes
+    text courierId FK "staff account, role courier"
+    CourierStatus courierStatus "to_pickup | picked_up | delivered"
+    timestamp assignedAt
+    timestamp pickedUpAt
+    timestamp createdAt
+    timestamp updatedAt
+    timestamp paidAt
+    timestamp deliveredAt
+    timestamp refundedAt
+  }
+  Payment {
+    text id PK
+    text orderId FK
+    text provider "fake until D2"
+    text providerRef UK "the provider's payment id"
+    int amountFils
+    PaymentStatus status "pending | succeeded | failed | refunded"
+    text paymentUrl "3-D Secure page"
+    jsonb providerData "no card numbers"
+    timestamp createdAt
+    timestamp updatedAt
+  }
+  Payout {
+    text id PK
+    text orderId FK,UK
+    text sellerUserId FK "or a store"
+    text storeId FK
+    int amountFils "the item price (no seller fee)"
+    PayoutStatus status "pending | paid | failed"
+    timestamp createdAt
+    timestamp paidAt
+  }
+```
+
+| Table | Purpose and rules | Indexes |
+|---|---|---|
+| **Order** | The server prices every order (the app never sends amounts). One unpaid order per buyer and listing: checking out again updates it. Paying sets `escrow_held`, makes the PIN and reserves the listing **in one transaction** with the payment, order and listing rows locked: the first payment wins, a later one is refunded at once. The PIN is kept readable (the buyer opens the order to see it again; hashing 4 digits protects nothing): what protects it is `pinAttempts`, 5 tries counted *before* comparing, then locked until an admin unlocks. The right PIN → `completed`, listing `sold`, a `Payout`. Delivery details are copied in, since the address book can change. Courier part (B14): the seller gives `pickup*` once paid, an admin sets `courierId` (`to_pickup`), the courier marks `picked_up`, the PIN makes it `delivered`; pickup and drop-off are shown only to that courier, the seller sees only the buyer's name and area. | `(buyerId, createdAt)`, `(sellerUserId, createdAt)`, `(listingId, status)`, `status`, `(courierId, courierStatus)` |
+| **Payment** | Each attempt to pay (a declined card or failed 3-D Secure can be retried). `providerRef` unique, and the row is locked while settling, so a repeated bank callback is handled once. | `orderId`, `providerRef` unique |
+| **Payout** | Money released to the seller after delivery (one per order): the item price, since Sahla takes no seller fee. | `orderId` unique, `status` |
+
+---
+
+## 6. Safety and admin
+
+![Safety and admin](database/safety.png)
+
+```mermaid
+erDiagram
+  User ||--o{ Report : "reports (reporterId)"
+  User ||--o{ Block : "blocks (blockerId)"
+  User ||--o{ Block : "is blocked (blockedId)"
+  User ||--o{ AccountSignal : "has"
+  User ||--o{ RiskFlag : "flagged (userId)"
+  User |o--o{ RiskFlag : "reviews (reviewedById)"
+  User |o--o{ AdminAction : "admin does (adminId)"
+  Report {
+    text id PK
+    text reporterId FK
+    text targetType "listing | user"
+    text targetId "listing or user id"
+    text reason "scam | prohibited | offensive | wrong_info | other"
+    text details "max 500"
+    timestamp createdAt
+    timestamp resolvedAt "an admin handled it (B8.3)"
+    text resolvedById "the admin"
+    text resolution "kept | removed | dismissed | suspended"
+  }
+  Block {
+    text blockerId PK,FK
+    text blockedId PK,FK
+    timestamp createdAt
+  }
+  AccountSignal {
+    text id PK
+    text userId FK
+    text kind "disposable_email, shared_device, ..."
+    int points
+    jsonb details
+    timestamp createdAt
+  }
+  RiskFlag {
+    text id PK
+    text userId FK
+    int score
+    jsonb signals
+    text aiSummary
+    text aiModel
+    RiskFlagStatus status "open | dismissed | actioned"
+    text reviewedById FK
+    text reviewNote
+    timestamp createdAt
+    timestamp reviewedAt
+  }
+  AdminAction {
+    text id PK
+    text adminId FK "null once the admin is deleted"
+    text action "admin.login, order.refund, courier.create, ..."
+    text targetType "order | user | category"
+    text targetId
+    jsonb details "e.g. before / after"
+    text ip
+    timestamp createdAt
+  }
+```
+
+| Table | Status | Purpose and rules | Indexes |
+|---|---|---|---|
+| **Report** | ✅ table, endpoint B5 | Reports on a listing or a user (App Store rule: act within 24 h). `targetId` points at either table, so there's no foreign key. An admin closes them in the review queue (B8.3: `resolvedAt`, `resolution`); only open ones count towards hiding a listing. | `(targetType, targetId)` |
+| **Block** | ✅ table, endpoints B5 | Who blocked whom; works both ways in listings, chats, offers and orders. | primary key `(blockerId, blockedId)`, `blockedId` |
+| **AccountSignal** | ✅ | What the suspicious-account checker noticed. | `(userId, createdAt)` |
+| **RiskFlag** | ✅ | The admin queue. The checker only creates these; it never acts. | `(status, createdAt)`, `userId` |
+| **AdminAction** | ✅ B8.1 | Audit log: every admin action (log-ins too) with who, when, from which IP and the details (before / after where it matters). Never edited or deleted; deleting the admin keeps the rows. | `createdAt`, `(targetType, targetId)` |
+
+---
+
+## 7. How everything is done
+
+**Signing up and in.** `EmailCode` (send-otp) → `User` + `Session` (sign-up). Log-in checks
+`User.passwordHash` and adds a `Session`; every request checks the JWT and that its `Session` row still
+exists. Log-out deletes the row; password reset deletes all of the user's rows. Admins log in to the
+dashboard with the password and then a code checked against `User.totpSecret` → a `Session` with scope
+`admin` and an `AdminAction` row.
+
+**Selling.** Photos → `Upload`. Phones and electronics → `TestCertificate` (OCR). `POST /listings`
+creates the `Listing` with `searchText`, `sellerVerified` and the certificate. Brands' stock arrives
+through `StoreApiKey` → `RefurbishedImport` → `Listing` (with `storeId`, `sku`).
+
+**Browsing.** `GET /listings` reads only `Listing` (plus the seller's name): `searchText` for search,
+the copied columns for sorting, `GROUP BY` for counts and filter options, a keyset cursor for pages.
+Blocks (B5) hide listings of blocked users.
+
+**Negotiating.** First message or offer → `Chat`. Each offer step updates `Offer` and adds a
+`Message`. Bids add a `Bid` and update `Listing.priceFils` / `bidCount` in one transaction; a job sets
+`auctionWinnerId` when the auction ends.
+
+**Buying.** `Order` (`awaiting_payment`) → `Payment` (maybe 3-D Secure) → bank callback → `Order`
+`escrow_held` + PIN + `Listing` `reserved` (one transaction). Courier enters the PIN → `Order`
+`completed`, `Listing` `sold`, `Payout`. Refund (admin) → `Order` `refunded`, `Payment` `refunded`,
+`Listing` `active` (logged in `AdminAction`).
+
+**Keeping it safe.** `Report` / `Block` from users; `AccountSignal` → `RiskFlag` for admins; every admin
+decision → `AdminAction`.
+
+## 8. Operations
+
+- **Migrations:** every change is a Prisma migration in `backend/prisma/migrations/` (`npm run db:migrate
+  -- --name <change>`); production runs `prisma migrate deploy` on release.
+- **Backups:** daily, kept 30 days, a restore tested before launch (B12.3).
+- **Growth:** listings, messages and views grow fastest. Indexes above cover the app's queries; `ListingView`
+  can be cleaned after a year, `EmailCode` and expired `Session` rows by a nightly job.
+- **Jobs** (auction closing, clean-ups, risk checks) run inside the server process for now (`src/lib/jobs.ts`); with several
+  servers they move to `pg-boss`, which keeps its own tables in a separate `pgboss` schema of the same database.

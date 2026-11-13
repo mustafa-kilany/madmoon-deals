@@ -1,0 +1,19 @@
+appId: com.sahla
+---
+# Back out to the tab bar from wherever the flow is.
+- repeat:
+    times: 5
+    while:
+      notVisible: "Profile"
+    commands:
+      - back
+- tapOn: "Profile"
+# Centred: near the bottom edge the raised Sell button covers it.
+- scrollUntilVisible:
+    element:
+      text: "Log Out"
+    centerElement: true
+- tapOn: "Log Out"
+- extendedWaitUntil:
+    visible: "Welcome to Sahla" # signed out → guest Home
+    timeout: 10000

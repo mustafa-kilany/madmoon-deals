@@ -1,0 +1,828 @@
+// Sahla database schema. Models follow docs/API.md; after changing this file run
+// `npm run db:migrate -- --name <what-changed>` to update the database.
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum AuthMethod {
+  email
+  google
+  apple
+}
+
+enum Role {
+  courier
+  admin // the admin dashboard: refurbished import, review queues (never sent to the app)
+}
+
+// B15.7: what an admin may do in the dashboard (src/modules/admin/permissions.ts).
+enum AdminRole {
+  owner // everything, and the only one who manages admins
+  operations // orders, drivers, delivery problems (retry), stores, categories
+  support // support chat, reports, users, certificates, orders read-only
+  finance // refunds, payouts, analytics, orders read-only
+}
+
+// API `User`. `card` is stored as cardBrand + cardLast4 (never the card number), and
+// cardToken is the payment provider's token for charging it again (B7.8).
+model User {
+  id            String     @id @default(cuid())
+  name          String
+  email         String?    @unique // lower-cased; Apple may give a relay address
+  passwordHash  String? // null for Google / Apple accounts
+  googleId      String?    @unique // Google account id ("sub"), set by POST /auth/google
+  appleId       String?    @unique // Apple account id ("sub"), set by POST /auth/apple
+  method        AuthMethod @default(email)
+  verified      Boolean    @default(false)
+  cityId        String     @default("amman") // an area id from GET /cities
+  avatarUrl     String     @default("")
+  cardBrand     String?
+  cardLast4     String?
+  cardToken     String?
+  // S3.7: where the seller's money goes (a bank transfer). The IBAN is encrypted (lib/sealed.ts, dataSeal);
+  // a change holds payouts for 24 hours and tells the person.
+  payoutHolder    String?
+  payoutIban      String?
+  payoutIbanLast4 String?
+  payoutChangedAt DateTime?
+  role          Role?
+  adminRole     AdminRole? // role admin only (B15.7)
+  // B15.8: the terms + privacy policy version accepted (frontend/src/legal LEGAL_VERSION), and when.
+  termsVersion    String?
+  termsAcceptedAt DateTime?
+  suspended     Boolean    @default(false) // set by an admin only (never by the risk checker)
+  // Admins' two-step log-in (B8.1): an authenticator-app secret, encrypted (lib/sealed.ts).
+  // Set on the first dashboard log-in, enabled once a code from it was accepted.
+  totpSecret    String?
+  totpEnabledAt DateTime?
+  totpLastStep  Int? // the last accepted 30-second step: a code works once
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  sessions         Session[]
+  listings         Listing[]
+  certificates     TestCertificate[]
+  idVerifications  IdVerification[]
+  reportsMade      Report[]          @relation("reporter")
+  blocks           Block[]           @relation("blocker")
+  blockedBy        Block[]           @relation("blocked")
+  accountSignals   AccountSignal[]
+  riskFlags        RiskFlag[]        @relation("flagged")
+  riskFlagsHandled RiskFlag[]        @relation("reviewer")
+  uploads          Upload[]
+  chatsAsBuyer     Chat[]
+  messages         Message[]
+  offers           Offer[]
+  bids             Bid[]
+  auctionsWon      Listing[]         @relation("auctionWinner")
+  orders           Order[]           @relation("orderBuyer")
+  sales            Order[]           @relation("orderSeller")
+  deliveries       Order[]           @relation("orderCourier")
+  payouts          Payout[]
+  devices          Device[]
+  notifications    Notification[]
+  adminActions     AdminAction[]
+  supportThread    SupportThread?
+  supportMessages  SupportMessage[]
+}
+
+enum SessionScope {
+  app // the mobile app, SESSION_DAYS
+  admin // the admin dashboard, 12 hours, after the two-step log-in
+}
+
+// One signed-in device. Only a hash of the bearer token is stored, so a leaked
+// database can't be used to sign in.
+model Session {
+  id        String       @id @default(cuid())
+  tokenHash String       @unique
+  scope     SessionScope @default(app)
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  deviceId  String? // X-Device-Id header (planned): spots many accounts on one phone
+  ip        String?
+  createdAt DateTime     @default(now())
+  devices   Device[]
+
+  @@index([userId])
+  @@index([deviceId])
+}
+
+enum EmailCodePurpose {
+  payout // S3.7: changing the bank account (accounts with no password)
+  signup
+  reset
+}
+
+// 6-digit emailed codes (POST /auth/send-otp, /auth/forgot-password).
+model EmailCode {
+  id        String           @id @default(cuid())
+  email     String
+  purpose   EmailCodePurpose
+  codeHash  String
+  attempts  Int              @default(0) // ~5 wrong tries, then a new code is needed
+  expiresAt DateTime
+  createdAt DateTime         @default(now())
+
+  @@index([email, purpose])
+}
+
+// ─── Listings ───────────────────────────────────────────────────────────────
+
+enum Condition {
+  new
+  excellent
+  good
+  loved
+  refurbished_like_new
+  refurbished_excellent
+  refurbished_good
+}
+
+enum ListingStatus {
+  active
+  reserved // paid, waiting for delivery
+  sold
+  withdrawn // deleted by the seller, or a refurbished sku taken off sale (never shown)
+}
+
+enum SaleType {
+  fixed
+  auction
+}
+
+// API `Item`. The seller is either a user (sellerUserId) or a brand's official
+// store (storeId, refurbished stock only), never both.
+model Listing {
+  id             String        @id @default(cuid())
+  category       String
+  type           String
+  titleAr        String
+  titleEn        String
+  priceFils      Int // fixed price, or the current highest bid of an auction
+  imageUrls      String[] // cover first, 1–5
+  condition      Condition
+  description    String
+  status         ListingStatus @default(active)
+  brand          String?
+  model          String?
+  locationId     String // area id from GET /cities
+  saleType       SaleType      @default(fixed)
+  auctionEndsAt  DateTime?
+  // The end the seller set, kept once a late bid has moved auctionEndsAt: the limit is counted from it.
+  auctionOriginalEndsAt DateTime?
+  incrementFils  Int?
+  bidCount       Int           @default(0) // kept up to date by bids (B6); sort=most_bids
+  views          Int           @default(0)
+  // Search: title (ar + en), brand, model and type name (ar + en), folded like the
+  // app's foldText(). Set with searchTextFor() whenever those change.
+  searchText     String        @default("")
+  // Copy of the seller's Verified badge (stores: always), for sort=recommended and
+  // verifiedOnly without a join. Update the user's listings when the badge changes.
+  sellerVerified Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  sellerUserId String?
+  sellerUser   User?   @relation(fields: [sellerUserId], references: [id])
+
+  // Auctions (B6): at auctionEndsAt the closing job sets auctionClosedAt and the
+  // highest bidder (none = ended unsold). Only the winner can check out.
+  auctionWinnerId String?
+  auctionWinner   User?     @relation("auctionWinner", fields: [auctionWinnerId], references: [id], onDelete: SetNull)
+  auctionClosedAt DateTime?
+
+  // Hidden from browsing after several people reported it, until an admin looks (B5.1).
+  reportHidden Boolean @default(false)
+
+  // Where the courier collects it (B14.5): given with the listing, copied onto each
+  // order, shown only to the assigned courier and admins (never in listing responses).
+  // The area is locationId. Brand stores use their Store pickup instead.
+  pickupPhone   String?
+  pickupAddress String?
+  pickupNotes   String?
+
+  // Certified refurbished (POST /admin/refurbished/import)
+  storeId        String?
+  store          Store?  @relation(fields: [storeId], references: [id])
+  sku            String?
+  warrantyMonths Int?
+
+  // Phones & electronics: the shop test certificate it was published with
+  testCertificateId String?          @unique
+  testCertificate   TestCertificate? @relation(fields: [testCertificateId], references: [id])
+
+  viewedBy ListingView[]
+  chats    Chat[]
+  offers   Offer[]
+  bids     Bid[]
+  orders   Order[]
+
+  @@unique([storeId, sku])
+  @@index([category, status])
+  @@index([sellerUserId])
+  // GET /listings (BACKEND_PLAN B2.6): every search word is a LIKE '%word%' on
+  // searchText, served by a trigram index (pg_trgm, created in the migration).
+  @@index([searchText(ops: raw("gin_trgm_ops"))], type: Gin)
+  // Live listings by format / auction end (ending_soon, endingSoon, hiding ended ones)
+  @@index([status, saleType, auctionEndsAt])
+  // sort=recommended (verified first, newest) and the price filters / sorts
+  @@index([status, sellerVerified, createdAt])
+  @@index([status, priceFils])
+  @@index([locationId])
+}
+
+// One viewer per listing per day (POST /listings/:id/views); Listing.views is the
+// total. viewerKey: the user id when signed in, else the X-Device-Id header, else the IP.
+model ListingView {
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  viewerKey String
+  day       DateTime @db.Date
+
+  @@id([listingId, viewerKey, day])
+}
+
+// The 8 categories' pictures, when an admin changed them (BACKEND_PLAN B3.7).
+// Names, icons and item types stay in the shared reference files.
+model Category {
+  id          String   @id // mobiles, electronics, …
+  imageUrl    String
+  updatedById String?
+  updatedAt   DateTime @updatedAt
+}
+
+enum UploadKind {
+  listing
+  avatar
+  category
+}
+
+// Every uploaded photo. POST /listings accepts only listing photos from here; ones no
+// listing uses are deleted after a day (BACKEND_PLAN B3.6).
+model Upload {
+  id        String     @id @default(cuid())
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      UploadKind
+  url       String     @unique // full size (≤ 1600 px)
+  thumbUrl  String? // 400 × 400 (listing photos)
+  bytes     Int
+  usedAt    DateTime? // null = not used by anything yet
+  createdAt DateTime   @default(now())
+
+  @@index([kind, usedAt, createdAt])
+  @@index([userId])
+}
+
+// ─── Certified refurbished stores ───────────────────────────────────────────
+
+// A brand's official store account, e.g. id "store-apple", "Apple Certified".
+model Store {
+  id        String   @id // "store-apple": the listings' sellerId
+  nameEn    String
+  nameAr    String
+  // Where couriers collect this store's orders (B14.5), set in the dashboard.
+  pickupPhone   String?
+  pickupCityId  String?
+  pickupAddress String?
+  createdAt DateTime @default(now())
+
+  listings Listing[]
+  apiKeys  StoreApiKey[]
+  imports  RefurbishedImport[]
+  orders   Order[]
+  payouts  Payout[]
+}
+
+// A key a brand's system uses to call the import itself. Only a hash is
+// stored; the key is shown once, when created (npm run store:key).
+model StoreApiKey {
+  id         String    @id @default(cuid())
+  storeId    String
+  store      Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  keyHash    String    @unique
+  label      String // e.g. "Apple stock system"
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+}
+
+// Every import run (dashboard or brand API), for the dashboard's history.
+model RefurbishedImport {
+  id        String   @id @default(cuid())
+  storeId   String
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  source    String // "key:<label>" or "admin:<userId>"
+  mode      String // upsert | replace
+  created   Int
+  updated   Int
+  withdrawn Int
+  errors    Json // the skipped rows, as returned to the caller
+  createdAt DateTime @default(now())
+
+  @@index([storeId, createdAt])
+}
+
+// ─── Shop test certificates (OCR) ───────────────────────────────────────────
+
+enum CertificateStatus {
+  passed
+  failed
+}
+
+// POST /test-certificates: one checked photo of a shop's stamped test report.
+model TestCertificate {
+  id           String            @id @default(cuid())
+  userId       String
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status       CertificateStatus
+  problems     String[] // unreadable, no_stamp, no_shop, device_mismatch, no_specs, too_old, already_used
+  // The device the seller chose
+  category     String
+  type         String
+  brand        String
+  model        String?
+  // What was read off the paper
+  shopName     String?
+  shopPhone    String?
+  testedAt     DateTime?
+  device       String?
+  specs        String[]
+  photoUrl     String // the original: admins only
+  blurredUrl   String? // IMEI / serial blurred: what buyers see
+  imageHash    String? // perceptual hash, to catch the same photo reused
+  serialHashes String[] // hashed IMEI / serial numbers read off the paper
+  ocrProvider  String // e.g. "google-vision"
+  ocrText      String // kept for disputes, never returned to the app
+  stampChecked Boolean           @default(false) // false until a stamp detector runs: admin review
+  createdAt    DateTime          @default(now())
+
+  listing Listing?
+
+  @@index([userId])
+  @@index([imageHash])
+}
+
+// ─── ID verification (Sanad, or a manual photo review until Sanad is live) ──
+
+// Sanad only (decided 2026-10-30: no ID photos, no manual review).
+enum IdProvider {
+  sanad
+}
+
+enum IdVerificationStatus {
+  pending
+  approved
+  rejected
+}
+
+model IdVerification {
+  id             String               @id @default(cuid())
+  userId         String
+  user           User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider       IdProvider           @default(sanad)
+  status         IdVerificationStatus @default(pending)
+  providerRef    String? // the provider's request / transaction id
+  nationalIdHash String? // one national ID, one verified account; never the number itself
+  // Hash of the one-time state sent to Sanad; cleared once Sanad answers.
+  stateHash      String?              @unique
+  rejectReason   String?
+  // B15.8: the person agreed to this Sanad consent text (SANAD_CONSENT_VERSION) before the lookup.
+  consentVersion String?
+  consentAt      DateTime?
+  createdAt      DateTime             @default(now())
+  decidedAt      DateTime?
+
+  @@index([userId])
+  @@index([nationalIdHash])
+}
+
+// ─── Negotiation: chats, offers, bids (B6) ─────────────────────────────────
+
+enum OfferStatus {
+  pending // the seller answers: accept, counter or reject
+  countered // the buyer answers the seller's counterAmountFils: accept or reject
+  accepted
+  rejected
+}
+
+// One conversation per buyer and listing. The seller is the listing's seller.
+model Chat {
+  id          String   @id @default(cuid())
+  listingId   String
+  listing     Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  buyerId     String
+  buyer       User     @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  lastMessage String   @default("") // for the chat list
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) // last message
+  // Each side has read up to here (unread counts). The other side never sees these.
+  buyerReadAt  DateTime?
+  sellerReadAt DateTime?
+
+  messages Message[]
+  offers   Offer[]
+
+  @@unique([listingId, buyerId])
+  @@index([buyerId, updatedAt])
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  chatId    String
+  chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  text      String // max 1000
+  // Offer steps post a message with the offer; the app shows its current state.
+  offerId   String?
+  offer     Offer?   @relation(fields: [offerId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+
+  @@index([chatId, createdAt])
+}
+
+model Offer {
+  id                String      @id @default(cuid())
+  listingId         String
+  listing           Listing     @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  buyerId           String
+  buyer             User        @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  chatId            String
+  chat              Chat        @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  amountFils        Int // the buyer's offer; once accepted, the agreed price
+  counterAmountFils Int? // the seller's counter (status countered)
+  status            OfferStatus @default(pending)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  messages Message[]
+  orders   Order[]
+
+  @@index([listingId, status])
+  @@index([buyerId])
+}
+
+// Placed in one transaction that also raises Listing.priceFils and bidCount.
+model Bid {
+  id         String   @id @default(cuid())
+  listingId  String
+  listing    Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  bidderId   String
+  bidder     User     @relation(fields: [bidderId], references: [id], onDelete: Cascade)
+  amountFils Int
+  createdAt  DateTime @default(now())
+
+  @@index([listingId, amountFils(sort: Desc)])
+}
+
+// ─── Orders, payments, escrow (B7) ─────────────────────────────────────────
+
+enum OrderStatus {
+  awaiting_payment
+  escrow_held // paid; the money waits until the courier confirms delivery
+  completed // delivered: released to the seller (a Payout row)
+  refunded // by an admin: money back to the buyer, listing on sale again
+  cancelled // by the buyer before pickup (B15.3): money back, listing on sale again
+}
+
+enum CourierStatus {
+  to_pickup
+  picked_up
+  delivered
+  failed // the driver couldn't finish (B15.4): failedStage + failedReason, waiting for an admin
+}
+
+// API `Order`. The server prices it (the app never sends amounts); delivery
+// details are copied in, since the buyer's address book can change.
+model Order {
+  id                  String      @id // "SA-123456": the courier types it
+  listingId           String
+  listing             Listing     @relation(fields: [listingId], references: [id])
+  buyerId             String? // null once the buyer deleted the account (only finished orders)
+  buyer               User?       @relation("orderBuyer", fields: [buyerId], references: [id], onDelete: SetNull)
+  // The seller when it was ordered (a user, or a brand store), for sales and the payout.
+  sellerUserId        String?
+  sellerUser          User?       @relation("orderSeller", fields: [sellerUserId], references: [id], onDelete: SetNull)
+  storeId             String?
+  store               Store?      @relation(fields: [storeId], references: [id])
+  offerId             String? // bought at an accepted offer's price
+  offer               Offer?      @relation(fields: [offerId], references: [id], onDelete: SetNull)
+  itemPriceFils       Int // the listing, the accepted offer or the winning bid
+  buyerProtectionFils Int // 3%, at least 1000
+  deliveryFils        Int // 2000
+  totalFils           Int
+  status              OrderStatus @default(awaiting_payment)
+  // The 4-digit delivery PIN, set when paid. Kept readable: the buyer can open the
+  // order again to see it, and hashing a 4-digit number protects nothing. What keeps
+  // it safe is pinAttempts: 5 wrong tries lock the order (an admin unlocks).
+  pin                 String?
+  pinAttempts         Int         @default(0)
+
+  deliveryName    String
+  deliveryPhone   String // 07XXXXXXXX
+  deliveryCityId  String
+  deliveryAddress String
+  deliveryNotes   String?
+
+  // Courier (B14): the seller's pickup address (given when paid), the assigned courier.
+  pickupName    String?
+  pickupPhone   String?
+  pickupCityId  String?
+  pickupAddress String?
+  pickupNotes   String?
+  courierId     String?
+  courier       User?          @relation("orderCourier", fields: [courierId], references: [id], onDelete: SetNull)
+  courierStatus CourierStatus?
+  assignedAt    DateTime?
+  pickedUpAt    DateTime?
+
+  // B15.3: the buyer cancelled before pickup (reasons in frontend/src/lib/deliveryProblems.ts).
+  cancelReason String?
+  cancelNote   String?
+  cancelledAt  DateTime?
+  // B15.4: the buyer reported a problem with the item at the door instead of giving the PIN.
+  itemIssueReason String?
+  itemIssueNote   String?
+  itemIssueAt     DateTime?
+  // B15.4: the driver couldn't finish (courierStatus failed): where and why.
+  failedStage  String? // pickup | dropoff
+  failedReason String?
+  failedNote   String?
+  failedAt     DateTime?
+  // B15.4: what an admin decided about the last problem: retry | refund.
+  problemResolution String?
+  problemResolvedAt DateTime?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  paidAt      DateTime?
+  deliveredAt DateTime?
+  refundedAt  DateTime?
+
+  payments Payment[]
+  payout   Payout?
+
+  @@index([buyerId, createdAt])
+  @@index([sellerUserId, createdAt])
+  @@index([listingId, status])
+  @@index([status])
+  @@index([courierId, courierStatus])
+}
+
+enum PaymentStatus {
+  pending // waiting for the bank's card check (3-D Secure)
+  succeeded
+  failed
+  refunded
+}
+
+// Every attempt to pay an order: a failed card check can be tried again. A money record: never
+// deleted, and its order can't be deleted while it exists (BACKEND_REVIEW H3).
+model Payment {
+  id           String        @id @default(cuid())
+  orderId      String
+  order        Order         @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  provider     String // "fake" until the real provider (D2)
+  providerRef  String        @unique // the provider's payment id: a repeated callback is handled once
+  amountFils   Int
+  status       PaymentStatus @default(pending)
+  paymentUrl   String? // the bank's card check page
+  providerData Json? // what the provider said (no card numbers)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([orderId])
+}
+
+enum PayoutStatus {
+  pending // to be paid to the seller (bank transfer / the provider's payouts)
+  paid
+  failed
+}
+
+// Money released to the seller when the courier confirms delivery (one per order). Never deleted (H3).
+model Payout {
+  id           String       @id @default(cuid())
+  orderId      String       @unique
+  order        Order        @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  sellerUserId String?
+  sellerUser   User?        @relation(fields: [sellerUserId], references: [id], onDelete: SetNull)
+  storeId      String?
+  store        Store?       @relation(fields: [storeId], references: [id])
+  amountFils   Int // the item price: Sahla takes no seller fee (DEVELOPMENT_GUIDE §3.2)
+  status       PayoutStatus @default(pending)
+  createdAt    DateTime     @default(now())
+  paidAt       DateTime?
+
+  @@index([status])
+}
+
+// ─── Safety: reports, blocks, suspicious-account checker ───────────────────
+
+model Report {
+  id         String   @id @default(cuid())
+  reporterId String
+  reporter   User     @relation("reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  targetType String // listing | user
+  targetId   String
+  reason     String // scam | prohibited | offensive | wrong_info | other
+  details    String?
+  createdAt  DateTime @default(now())
+  // An admin handled it (B8.3): only unresolved reports count towards hiding a
+  // listing, so a restored listing needs new reports to be hidden again.
+  resolvedAt   DateTime?
+  resolvedById String? // the admin (who did what is in the audit log too)
+  resolution   String? // kept | removed | dismissed | suspended
+
+  @@index([targetType, targetId])
+}
+
+model Block {
+  blockerId String
+  blocker   User     @relation("blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blockedId String
+  blocked   User     @relation("blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([blockerId, blockedId])
+  @@index([blockedId])
+}
+
+// One thing the checker noticed about an account (docs/ACCOUNT-RISK.md).
+model AccountSignal {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      String // disposable_email, shared_device, listing_burst, reports_received, …
+  points    Int // how much it adds to the risk score
+  details   Json
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+enum RiskFlagStatus {
+  open
+  dismissed // an admin looked: nothing wrong
+  actioned // an admin did something (warned, suspended, …)
+}
+
+// The admin queue. The checker only ever creates these: it never blocks,
+// hides or suspends anything itself.
+model RiskFlag {
+  id           String         @id @default(cuid())
+  userId       String
+  user         User           @relation("flagged", fields: [userId], references: [id], onDelete: Cascade)
+  score        Int
+  signals      Json // the signals behind it
+  aiSummary    String? // a short explanation for the admin, when the AI reviewer is on
+  aiModel      String?
+  status       RiskFlagStatus @default(open)
+  reviewedById String?
+  reviewedBy   User?          @relation("reviewer", fields: [reviewedById], references: [id])
+  reviewNote   String?
+  createdAt    DateTime       @default(now())
+  reviewedAt   DateTime?
+
+  @@index([status, createdAt])
+  @@index([userId])
+}
+
+// ─── Push notifications (B9) ───────────────────────────────────────────────
+
+enum Platform {
+  android
+  ios
+}
+
+// The notification inbox (BACKEND_REVIEW M2): every push is also kept here, in both languages, so
+// someone with notifications off, on a new phone, or whose push never arrived still finds out.
+// Chat messages and support replies aren't copied: their own screens count what's unread.
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String // the push's data.type: "order", "sale", "outbid", "delivery"…
+  refId     String? // the push's data.id: which order or listing
+  titleAr   String
+  bodyAr    String
+  titleEn   String
+  bodyEn    String
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, createdAt])
+}
+
+// A phone that gets push notifications (POST /me/devices). The token is the
+// Firebase (FCM) token; a token belongs to the account last signed in on it.
+model Device {
+  token     String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // The sign-in that registered it: log-out, password reset or expiry ends the pushes too.
+  sessionId String?
+  session   Session? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  platform  Platform
+  language  String   @default("en") // the app's language on that phone: "ar" | "en" (B9.3)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// Every change an admin makes from the dashboard (BACKEND_PLAN B8.1): who, what,
+// when, and the details (before / after where it matters). Never edited or deleted.
+model AdminAction {
+  id         String   @id @default(cuid())
+  adminId    String?
+  admin      User?    @relation(fields: [adminId], references: [id], onDelete: SetNull)
+  action     String // e.g. "order.refund", "courier.create", "admin.login"
+  targetType String? // "order", "user", "category"…
+  targetId   String?
+  details    Json?
+  ip         String?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([targetType, targetId])
+}
+
+// B15.6: the in-app chat with Sahla's support team. One conversation per person
+// (customers and drivers); admins with the support permission answer from the dashboard.
+model SupportThread {
+  id             String           @id @default(cuid())
+  userId         String           @unique
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  open           Boolean          @default(true) // closed by support; the person writing again reopens it
+  lastMessageAt  DateTime         @default(now())
+  userReadAt     DateTime? // the person last opened the chat
+  supportReadAt  DateTime? // support last opened it
+  createdAt      DateTime         @default(now())
+  messages       SupportMessage[]
+
+  @@index([open, lastMessageAt])
+}
+
+model SupportMessage {
+  id          String        @id @default(cuid())
+  threadId    String
+  thread      SupportThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  // The person, or the admin who answered (fromSupport). Null once that admin is gone.
+  senderId    String?
+  sender      User?         @relation(fields: [senderId], references: [id], onDelete: SetNull)
+  fromSupport Boolean       @default(false)
+  text        String // max 2000
+  orderId     String? // the order it is about, if the person started from one
+  createdAt   DateTime      @default(now())
+
+  @@index([threadId, createdAt])
+}
+
+// ─── Running on several servers (LOAD_BALANCER_TEST_PLAN L1, L2) ──────────────
+
+// Background work that must survive a restart (lib/jobs.ts, BACKEND_REVIEW M1): pushes, emails sent after
+// the answer, risk checks. Deleted once done; after the last try it stays, with failedAt, for 30 days.
+model Job {
+  id          String    @id
+  name        String // what runs: "push:sold"
+  args        Json // its arguments: ids, never whole records
+  key         String?   @unique // while one with this key waits, queuing it again does nothing
+  runAt       DateTime
+  attempts    Int       @default(0)
+  lockedUntil DateTime? // a server is running it; past this, another may take it over
+  lastError   String?
+  failedAt    DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([runAt])
+}
+
+// A daily job's run: the first server to write the row runs it, the others skip (lib/jobs.ts daily).
+model JobRun {
+  name      String
+  day       String // the Jordan date it ran for, 2026-11-10
+  startedAt DateTime @default(now())
+
+  @@id([name, day])
+}
+
+// Rate-limit counters every server shares (SECURITY_PLAN S0.9, lib/rateLimit.ts sharedStore):
+// with counts in each server's memory, two servers would allow 10 card tries instead of 5.
+model RateLimit {
+  key     String   @id // the limit's name, then who: "pay:u:<user id>"
+  hits    Int
+  resetAt DateTime
+
+  @@index([resetAt])
+}
