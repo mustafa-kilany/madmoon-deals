@@ -33,7 +33,7 @@ Read from this file, `BACKEND_REVIEW.md`, git and `gh` on 2026-11-11. Nothing wa
 | # | Step | Who | Status |
 |---|---|---|---|
 | N6 | A1.3: `gh auth login`. Still not signed in on 2026-11-11. Or skip it and open the pull request by the link in A1.4. | 👤 | ✅ 2026-11-12 |
-| N7 | A1.4 to A1.7: the pull request (106 commits ahead of `main`), its checks, a fix per failure, merge, the tag. The checks also answer A6.1 (M4: does the stop signal reach the server in the container). | 🤖, 👤 presses Merge | 🔨 pull request #1: **every check green** (2026-11-12, fifth run): app, backend 283 of 283 on Linux (the shutdown test ran for the first time), dashboard, image (starts as a test copy, stops cleanly), leak scan. Fixed on the way: the logger in the image, M4, two CI permissions, the shutdown test's port and hang. CodeQL paused by the owner. Left: 👤 merge, then the tag |
+| N7 | A1.4 to A1.7: the pull request (106 commits ahead of `main`), its checks, a fix per failure, merge, the tag. The checks also answer A6.1 (M4: does the stop signal reach the server in the container). | 🤖, 👤 presses Merge | ✅ 2026-11-13: pull request #1 merged (f3fa538) with every check green after five runs; tagged `v0.9.0-internal`. Fixed from its checks: the image crashed as a test copy (logger), M4 (the stop signal never reached the server through npx), the leak scan's permission, the shutdown test's port and its hang. CodeQL paused by the owner (private repository, paid add-on) |
 | N8 | A5.6: Maestro 01 to 11 once on the merged `main`. | 🤖 | ⬜ |
 | N9 | A4: two real phones, all of A4.1 to A4.9. Needs the phones and a cable from the owner. | 👥 | ⬜ |
 
@@ -60,7 +60,7 @@ Read from this file, `BACKEND_REVIEW.md`, git and `gh` on 2026-11-11. Nothing wa
 | A1.4 | Open the pull request `feat/backend-b8-admin` → `main`. Without A1.3: open `https://github.com/mustafa-kilany/Sahla/pull/new/feat/backend-b8-admin` and press "Create pull request". | 🤖 after A1.3, or 👤 by the link | ✅ 2026-11-12: #1 |
 | A1.5 | Wait for the checks (15 minutes at most each): app, backend, dashboard, secret scan, CodeQL, Docker build. First run ever, so expect something to fail. | 🤖 | ✅ 2026-11-12 |
 | A1.6 | Fix each failure, one commit each, push, repeat until green. Likely places: the Linux-only shutdown test (never run), the Docker build (Docker isn't on this PC), line endings. | 🤖 | ✅ 2026-11-12: five runs, every failure fixed with its own commit |
-| A1.7 | Merge into `main`. Tag it `v0.9.0-internal`. | 👤 presses Merge, 🤖 tags | ⬜ 👤 press Merge on #1; then 🤖 tags `v0.9.0-internal` |
+| A1.7 | Merge into `main`. Tag it `v0.9.0-internal`. | 👤 presses Merge, 🤖 tags | ✅ 2026-11-13: merged (f3fa538), tagged `v0.9.0-internal` |
 | A1.8 | From then on: a new branch per piece of work, a pull request each, never 43 commits waiting again. | 👥 | ⬜ |
 
 ### A2. The offline balancer test (Stage 1)
