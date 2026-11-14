@@ -3,7 +3,7 @@
 #   docker build -f backend/Dockerfile -t madmoon-api .
 # The steps for a release are in backend/docs/DEPLOY.md.
 
-FROM node:24-slim
+FROM node:25-slim
 
 WORKDIR /app/backend
 # Shared code and the category pictures. Nothing else of the app.
