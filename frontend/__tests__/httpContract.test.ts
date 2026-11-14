@@ -393,14 +393,14 @@ const rows: Row[] = [
       httpNegotiationService.report({
         target: { type: 'listing', id: 'mobiles-1' },
         reason: 'scam',
-        details: 'Asks for payment outside Sahla',
+        details: 'Asks for payment outside Madmoon Deals',
       }),
     url: '/reports',
     body: {
       targetType: 'listing',
       targetId: 'mobiles-1',
       reason: 'scam',
-      details: 'Asks for payment outside Sahla',
+      details: 'Asks for payment outside Madmoon Deals',
     },
   },
   {

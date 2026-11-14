@@ -1,6 +1,6 @@
 # Certified Refurbished: collecting stock
 
-**Refurbished on Sahla** = devices a customer returned to the vendor (usually for a defect), repaired,
+**Refurbished on Madmoon Deals** = devices a customer returned to the vendor (usually for a defect), repaired,
 tested and resold **by the vendor** with a grade and a warranty, at a fixed price. Never listed by app users.
 Where stock can come from, including importing from Europe / the US: [`docs/REFURBISHED_SOURCING.md`](../../docs/REFURBISHED_SOURCING.md).
 
@@ -75,7 +75,7 @@ Authorization: Bearer sahla_sk_…
 
 ## Still to do
 
-- Copy the brands' photos to Sahla's own storage/CDN (now the listing links to their URLs).
+- Copy the brands' photos to Madmoon Deals' own storage/CDN (now the listing links to their URLs).
 - Admin dashboard: upload button, import history (`RefurbishedImport` rows), per-store stock.
 
 ## Ideas to get the first stores

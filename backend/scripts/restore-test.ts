@@ -30,12 +30,12 @@ const counts = (database: string, env: NodeJS.ProcessEnv) => {
   return result;
 };
 
-const dir = mkdtempSync(path.join(tmpdir(), 'sahla-drill-'));
+const dir = mkdtempSync(path.join(tmpdir(), 'madmoon-drill-'));
 let failed = false;
 try {
   const started = Date.now();
   const dump = path.join(dir, 'dump');
-  const backup = path.join(dir, 'sahla.backup');
+  const backup = path.join(dir, 'madmoon.backup');
   run('pg_dump', ['--format=custom', `--file=${dump}`, '--no-owner', '--no-privileges', source.database], source.env);
   encryptFile(dump, backup, key);
   console.log(`Backup: ${(statSync(backup).size / 1024).toFixed(0)} KB, encrypted`);

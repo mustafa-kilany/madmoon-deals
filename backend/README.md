@@ -1,4 +1,4 @@
-# Sahla backend
+# Madmoon Deals backend
 
 The API the app talks to, built to [`docs/API.md`](../docs/API.md).
 Express 5 + TypeScript, PostgreSQL through Prisma. What's next: [`docs/BACKEND_PLAN.md`](../docs/BACKEND_PLAN.md).
@@ -44,11 +44,11 @@ Express 5 + TypeScript, PostgreSQL through Prisma. What's next: [`docs/BACKEND_P
 | `npm run db:restore-test` | The backup drill (`docs/BACKUPS.md`) |
 | `npm run check:storage` | Real S3 / R2 bucket check (`docs/STORAGE.md`) |
 | `npm test` | Run the backend unit tests (`src/**/*.test.ts`) |
-| `npm run test:api` | End-to-end tests over HTTP (`src/**/*.e2e.ts`) on a separate `sahla_test` database |
+| `npm run test:api` | End-to-end tests over HTTP (`src/**/*.e2e.ts`) on a separate `madmoon_test` database |
 | `npm run db:seed` | Add the demo accounts (development only) |
 | `npm run secret` | Print a new random `JWT_SECRET` |
 | `npm run staff -- courier "Name" name@sahla.jo` | Create a courier account (staff email domain) and email the invite code; also `admin "Name" email`, `disable <email>`, `list` |
-| `npm run load-check` | Time `GET /listings` with 10 000 fake listings in `sahla_test` |
+| `npm run load-check` | Time `GET /listings` with 10 000 fake listings in `madmoon_test` |
 | `npm run store -- <command>` | Refurbished stores: `create`, `key`, `revoke`, `list`, `import` ([docs/REFURBISHED.md](docs/REFURBISHED.md)) |
 
 The server uses port 4000, the same as `npm run contract-server` in `frontend/`, so the app's

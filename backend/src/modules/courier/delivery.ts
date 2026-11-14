@@ -16,7 +16,7 @@ export async function confirmDelivery(courierId: string, orderId: string, pin: s
   if (!order || order.courierId !== courierId)
     throw new ApiError(404, 'NOT_FOUND', `No order ${orderId}`);
   if (order.status !== 'escrow_held') throw new ApiError(422, 'VALIDATION', `This order is ${order.status}, not waiting for delivery`);
-  if (order.courierStatus === 'failed') throw new ApiError(422, 'VALIDATION', 'Marked as failed: Sahla’s team decides what happens next');
+  if (order.courierStatus === 'failed') throw new ApiError(422, 'VALIDATION', 'Marked as failed: Madmoon Deals’ team decides what happens next');
 
   // The driver must have the item: a PIN alone (given early, or guessed) can't release the money.
   if (order.courierStatus !== 'picked_up') throw new ApiError(422, 'VALIDATION', 'Mark it as picked up first');
@@ -28,7 +28,7 @@ export async function confirmDelivery(courierId: string, orderId: string, pin: s
     data: { pinAttempts: { increment: 1 } },
   });
   if (!count)
-    throw new ApiError(429, 'RATE_LIMITED', `Locked after ${PIN_TRIES} wrong PINs: Sahla support can unlock it`);
+    throw new ApiError(429, 'RATE_LIMITED', `Locked after ${PIN_TRIES} wrong PINs: Madmoon Deals support can unlock it`);
   if (pin !== order.pin) {
     const left = PIN_TRIES - (order.pinAttempts + 1);
     throw new ApiError(422, 'INVALID_PIN', `Wrong PIN (${Math.max(left, 0)} tries left)`);
@@ -41,7 +41,7 @@ export async function confirmDelivery(courierId: string, orderId: string, pin: s
     });
     if (!done.count) throw new ApiError(422, 'VALIDATION', 'This order was just completed or refunded');
     await tx.listing.update({ where: { id: order.listingId }, data: { status: 'sold' } });
-    // Sahla takes no seller fee: the seller gets the item price (protection and delivery are the buyer's).
+    // Madmoon Deals takes no seller fee: the seller gets the item price (protection and delivery are the buyer's).
     await tx.payout.create({
       data: { orderId, sellerUserId: order.sellerUserId, storeId: order.storeId, amountFils: order.itemPriceFils },
     });

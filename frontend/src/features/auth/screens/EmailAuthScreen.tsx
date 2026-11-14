@@ -17,7 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 import { BackButton } from '@/components/BackButton';
 import { Icon, type IconName } from '@/components/icons';
-import { SahlaLogo } from '@/components/SahlaLogo';
+import { MadmoonLogo } from '@/components/MadmoonLogo';
 import { Button, Heading, Screen, Text, TextField } from '@/components/ui';
 import { config } from '@/config';
 import type { RootScreenProps } from '@/navigation/types';
@@ -48,7 +48,7 @@ const signUpSchema = logInSchema.extend({
 
 type FormValues = z.infer<typeof logInSchema>;
 
-/** Footer reassurance: what an account on Sahla gets you. */
+/** Footer reassurance: what an account on Madmoon Deals gets you. */
 const TRUST = [
   { icon: 'Shield', label: 'product.buyerProtection' },
   { icon: 'Truck', label: 'product.delivery48h' },
@@ -143,7 +143,7 @@ export function EmailAuthScreen({ route }: RootScreenProps<'EmailAuth'>) {
           <View className="flex-1 justify-center gap-6 pb-8">
             <View className="items-center gap-2">
               <View className="mb-2">
-                <SahlaLogo size={64} />
+                <MadmoonLogo size={64} />
               </View>
               <Heading className="text-center text-3xl">{title}</Heading>
               <Text className="text-center font-sans-medium text-sm leading-relaxed text-brand-warmgray">

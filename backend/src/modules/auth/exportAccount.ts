@@ -5,7 +5,7 @@ import { LIMIT_PER_KIND, listingCopy, orderCopy } from './exportShapes';
 import { toApiUser } from './apiUser';
 
 // GET /me/export (SECURITY_PLAN S8.4; Jordan's PDPL right of access): a copy of what
-// Sahla holds about this person, in plain JSON. Things only they gave or did, never
+// Madmoon Deals holds about this person, in plain JSON. Things only they gave or did, never
 // secrets (password hash, card token, whole IBAN) or other people's private details.
 
 export async function exportAccount(user: User, req: Request) {

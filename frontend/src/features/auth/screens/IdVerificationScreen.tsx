@@ -26,7 +26,7 @@ export function IdVerificationScreen({
   const user = useUser();
   const start = useStartIdVerification();
   const localized = useLocalized();
-  // B15.8: MoDEE's pledge: the person agrees before Sahla asks Sanad anything.
+  // B15.8: MoDEE's pledge: the person agrees before Madmoon Deals asks Sanad anything.
   const [consent, setConsent] = useState(false);
   const { mutate: reloadUser } = useReloadUser();
   /** Sanad was opened: reload the account when the user comes back. */

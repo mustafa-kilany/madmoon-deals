@@ -10,7 +10,7 @@ import { currentUser, requireUser } from '../auth/requireUser';
 import { announceAfterSaving } from '../negotiation/live';
 import { pushSupportReply } from '../notifications/notify';
 
-// Support (BACKEND_PLAN B15.6): Sahla's support email, and one chat per person
+// Support (BACKEND_PLAN B15.6): Madmoon Deals' support email, and one chat per person
 // with the support team. Customers and drivers write from the app; admins with
 // the support permission answer from the dashboard. The app hears of changes on its live connection.
 
@@ -26,7 +26,7 @@ const toApiMessage = (m: MessageRow, withName = false) => ({
   fromSupport: m.fromSupport,
   text: m.text,
   ...(m.orderId && { orderId: m.orderId }),
-  // The person sees "Sahla support", never which admin answered.
+  // The person sees "Madmoon Deals support", never which admin answered.
   ...(withName && m.sender && { senderName: m.sender.name }),
   createdAt: m.createdAt.toISOString(),
 });

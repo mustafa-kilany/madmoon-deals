@@ -10,7 +10,7 @@ import { securityHeaders } from './securityHeaders';
 
 /** S5.3: dist/_headers, for hosts that read that file. */
 const headersFile = (headers: Record<string, string>): Plugin => ({
-  name: 'sahla-headers-file',
+  name: 'madmoon-headers-file',
   apply: 'build',
   closeBundle() {
     const lines = Object.entries(headers).map(([name, value]) => `  ${name}: ${value}`);

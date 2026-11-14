@@ -85,11 +85,11 @@ export const authRoutes = Router();
 // Staff (couriers, admins) never sign up: an admin creates their account (BACKEND_PLAN B14).
 const refuseStaff = (email: string) => {
   if (isStaffEmail(email))
-    throw new ApiError(422, 'VALIDATION', 'This email is for Sahla staff: ask an admin for an account');
+    throw new ApiError(422, 'VALIDATION', 'This email is for Madmoon Deals staff: ask an admin for an account');
 };
 
 // S1.3: the same answer whether or not the email has an account, so nobody can use
-// sign-up to find out who uses Sahla. The owner of that mailbox gets an email either
+// sign-up to find out who uses Madmoon Deals. The owner of that mailbox gets an email either
 // way: a code, or "you already have an account" (no code that works).
 authRoutes.post('/auth/send-otp', ...limited('send-otp', 5), async (req, res) => {
   const body = emailBody.parse(req.body);
@@ -211,7 +211,7 @@ authRoutes.delete('/me', requireUser, async (_req, res) => {
   res.status(204).end();
 });
 
-// S8.4: a copy of everything Sahla holds about the person.
+// S8.4: a copy of everything Madmoon Deals holds about the person.
 authRoutes.get('/me/export', requireUser, ...LIMITS.dataExport, async (req, res) => {
   res.set('Cache-Control', 'no-store').json(await exportAccount(currentUser(res.locals), req));
 });

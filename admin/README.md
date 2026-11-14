@@ -1,6 +1,6 @@
-# Sahla admin dashboard
+# Madmoon Deals admin dashboard
 
-A website for Sahla staff on the same API as the app (`docs/BACKEND_PLAN.md` → B8). It has no database
+A website for Madmoon Deals staff on the same API as the app (`docs/BACKEND_PLAN.md` → B8). It has no database
 access and no business rules of its own: everything goes through `/v1/admin/*` (`docs/API.md` → Admin
 dashboard).
 

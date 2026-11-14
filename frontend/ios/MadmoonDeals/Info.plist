@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-	<string>Sahla</string>
+	<string>Madmoon Deals</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -34,7 +34,7 @@
 		<true/>
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Sahla uses your location to pick your area, show items near you and fill in your delivery address. It is only used to look up the address and is never shown to other people.</string>
+	<string>Madmoon Deals uses your location to pick your area, show items near you and fill in your delivery address. It is only used to look up the address and is never shown to other people.</string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

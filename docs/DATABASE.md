@@ -1,6 +1,6 @@
-# Sahla Database Design (PostgreSQL)
+# Madmoon Deals Database Design (PostgreSQL)
 
-The physical design of Sahla's database: every table, its columns and types, keys and indexes, how the
+The physical design of Madmoon Deals' database: every table, its columns and types, keys and indexes, how the
 tables are connected, and how the main flows move through them. **✅ built** tables exist today
 (`backend/prisma/schema.prisma`); **planned** ones are added in the phase shown
 ([`BACKEND_PLAN.md`](BACKEND_PLAN.md)). Pictures: [`docs/database/`](database/) (also drawn below).
@@ -422,7 +422,7 @@ erDiagram
 |---|---|---|
 | **Order** | The server prices every order (the app never sends amounts). One unpaid order per buyer and listing: checking out again updates it. Paying sets `escrow_held`, makes the PIN and reserves the listing **in one transaction** with the payment, order and listing rows locked: the first payment wins, a later one is refunded at once. The PIN is kept readable (the buyer opens the order to see it again; hashing 4 digits protects nothing): what protects it is `pinAttempts`, 5 tries counted *before* comparing, then locked until an admin unlocks. The right PIN → `completed`, listing `sold`, a `Payout`. Delivery details are copied in, since the address book can change. Courier part (B14): the seller gives `pickup*` once paid, an admin sets `courierId` (`to_pickup`), the courier marks `picked_up`, the PIN makes it `delivered`; pickup and drop-off are shown only to that courier, the seller sees only the buyer's name and area. | `(buyerId, createdAt)`, `(sellerUserId, createdAt)`, `(listingId, status)`, `status`, `(courierId, courierStatus)` |
 | **Payment** | Each attempt to pay (a declined card or failed 3-D Secure can be retried). `providerRef` unique, and the row is locked while settling, so a repeated bank callback is handled once. | `orderId`, `providerRef` unique |
-| **Payout** | Money released to the seller after delivery (one per order): the item price, since Sahla takes no seller fee. | `orderId` unique, `status` |
+| **Payout** | Money released to the seller after delivery (one per order): the item price, since Madmoon Deals takes no seller fee. | `orderId` unique, `status` |
 
 ---
 

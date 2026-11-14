@@ -1,4 +1,4 @@
-# Sahla Launch Readiness
+# Madmoon Deals Launch Readiness
 
 What is ready, what isn't, and the order to finish it. Audited 2026-11-07 on `feat/backend-b8-admin`
 (`5a8e2d3`). **External APIs and accounts are listed only at the end**: everything above them can be done
@@ -14,7 +14,7 @@ now, without waiting for anyone. Security has its own plan: [`SECURITY_PLAN.md`]
 |---|---|
 | Backend `typecheck` | ✅ passes |
 | Backend unit tests | ✅ 32 / 32 |
-| Backend end-to-end tests (real PostgreSQL, `sahla_test`) | ✅ 121 / 121 |
+| Backend end-to-end tests (real PostgreSQL, `madmoon_test`) | ✅ 121 / 121 |
 | App `typecheck` | ✅ passes |
 | App tests (Jest) | ✅ 191 / 191 in 21 suites |
 | Dashboard build | ✅ builds |
@@ -54,7 +54,7 @@ below marked "before launch" are closed.**
 |---|---|---|---|
 | C1 | **No push to the driver when an order is assigned to them.** They only see it if the app is open (30 s polling). | Drivers miss jobs. | Before launch |
 | C2 | **No "problem with this delivery" path**: buyer not home, buyer refuses the item, item not as described, seller didn't hand it over. Order statuses are only `to_pickup → picked_up → delivered`; the only way out is an admin refund. | The first failed delivery will be handled by phone with no record. Needs at least a "Report a problem" button (reason + note) that shows in the dashboard. Product decision first (§5 Q1). | Before launch |
-| C3 | **No Sahla support number in the app**, but two driver messages say "Call Sahla support". | Driver is stuck at the door. | Before launch |
+| C3 | **No Madmoon Deals support number in the app**, but two driver messages say "Call Madmoon Deals support". | Driver is stuck at the door. | Before launch |
 | C4 | No push / status to the buyer when the item is picked up ("on the way"). | Buyer may not be home. | Before launch (small) |
 | C5 | Run the whole driver flow on a real phone against the real backend: invite → set password → assigned push → picked up → PIN → seller sees payout. | Nobody has done it end to end yet. | Before launch |
 | C6 | Driver history older than today; deliveries by area (auto-assign). | Nice to have. | After launch |

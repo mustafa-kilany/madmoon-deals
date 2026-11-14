@@ -66,7 +66,7 @@ async function confirmOwner(user: User, input: { password?: string; code?: unkno
       throw new ApiError(422, 'INVALID_CREDENTIALS', 'Wrong password');
     return;
   }
-  if (!user.email) throw new ApiError(422, 'VALIDATION', 'This account has no email: contact Sahla support');
+  if (!user.email) throw new ApiError(422, 'VALIDATION', 'This account has no email: contact Madmoon Deals support');
   await useCode(user.email, 'payout', input.code);
 }
 
@@ -80,7 +80,7 @@ payoutAccountRoutes.get('/me/payout-account', ...requireCustomer, (_req, res) =>
 payoutAccountRoutes.post('/me/payout-account/code', ...requireCustomer, ...LIMITS.payoutAccount, async (_req, res) => {
   const user = currentUser(res.locals);
   if (user.passwordHash) throw new ApiError(422, 'VALIDATION', 'This account confirms with its password');
-  if (!user.email) throw new ApiError(422, 'VALIDATION', 'This account has no email: contact Sahla support');
+  if (!user.email) throw new ApiError(422, 'VALIDATION', 'This account has no email: contact Madmoon Deals support');
   await sendCode(user.email, 'payout');
   res.status(204).end();
 });

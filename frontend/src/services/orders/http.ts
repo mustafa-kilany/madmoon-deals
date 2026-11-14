@@ -1,4 +1,4 @@
-// Orders from the Sahla API (docs/API.md → Checkout, Orders & Escrow).
+// Orders from the Madmoon Deals API (docs/API.md → Checkout, Orders & Escrow).
 
 import type { DeliveryFailure, Order, OrderProblem } from '@/lib/types';
 import { api } from '../api/client';

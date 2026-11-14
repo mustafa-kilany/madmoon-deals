@@ -149,8 +149,8 @@ test('B15.4 the buyer reports a problem at the door; the driver sees it and mark
   assert.equal(failed.status, 200);
   assert.deepEqual([failed.body.status, failed.body.failed.stage], ['failed', 'dropoff']);
   assert.deepEqual(await pushed(), [
-    ['buyer', `Order ${order.id} wasn’t delivered: Buyer refused: the item has a defect. Sahla’s team will follow up.`],
-    ['seller', `Order ${order.id} wasn’t delivered: Buyer refused: the item has a defect. Sahla’s team will follow up.`],
+    ['buyer', `Order ${order.id} wasn’t delivered: Buyer refused: the item has a defect. Madmoon Deals’ team will follow up.`],
+    ['seller', `Order ${order.id} wasn’t delivered: Buyer refused: the item has a defect. Madmoon Deals’ team will follow up.`],
   ]);
   // No PIN while it's failed; the buyer sees why.
   const pin = (await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).pin;

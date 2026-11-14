@@ -9,9 +9,9 @@ const PATTERNS: [string, RegExp][] = [
   ['Private key', /-----BEGIN (?:RSA |EC |OPENSSH |)PRIVATE KEY-----/g],
   ['AWS key', /\bAKIA[0-9A-Z]{16}\b/g],
   ['Anthropic key', /\bsk-ant-[0-9A-Za-z_-]{20,}/g],
-  ['Sahla store key', /\bsahla_sk_[0-9A-Za-z_-]{30,}/g],
+  ['Madmoon Deals store key', /\bsahla_sk_[0-9A-Za-z_-]{30,}/g],
   ['Postmark token', /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b(?=.*(?:POSTMARK|postmark))/gi],
-  ['Database URL with a password', /postgres(?:ql)?:\/\/[^:\s"'`]+:(?!YOUR_PASSWORD|postgres@|build@|password@|PASSWORD@)[^@\s"'`]{4,}@(?!localhost:5432\/sahla_?test|127\.0\.0\.1:1\/)[^\s"'`]+/g],
+  ['Database URL with a password', /postgres(?:ql)?:\/\/[^:\s"'`]+:(?!YOUR_PASSWORD|postgres@|build@|password@|PASSWORD@)[^@\s"'`]{4,}@(?!localhost:5432\/madmoon_?test|127\.0\.0\.1:1\/)[^\s"'`]+/g],
   ['JWT secret value', /JWT_SECRET\s*=\s*["']?(?!["']?\s*$)[A-Za-z0-9_-]{32,}/g],
   ['Service account', /"type":\s*"service_account"/g],
 ];
@@ -24,9 +24,9 @@ const SAMPLES: Record<string, string> = {
   'Private key': '-----BEGIN ' + 'PRIVATE KEY-----',
   'AWS key': 'AKIA' + 'B'.repeat(16),
   'Anthropic key': 'sk-ant-' + 'b'.repeat(24),
-  'Sahla store key': 'sahla_sk_' + 'b'.repeat(32),
+  'Madmoon Deals store key': 'sahla_sk_' + 'b'.repeat(32),
   'Postmark token': 'POSTMARK=' + ['aaaaaaaa', 'bbbb', 'cccc', 'dddd', 'eeeeeeeeeeee'].join('-') + ' postmark',
-  'Database URL with a password': 'postgresql://sahla:' + 'hunter2hunter' + '@db.example.com/sahla',
+  'Database URL with a password': 'postgresql://madmoon:' + 'hunter2hunter' + '@db.example.com/sahla',
   'JWT secret value': 'JWT_SECRET=' + 'q'.repeat(40),
   'Service account': '"type": "service_' + 'account"',
 };

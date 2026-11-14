@@ -127,7 +127,7 @@ export const useExportMyData = () =>
   useMutation({
     mutationFn: async () => {
       const data = await authService.exportMyData();
-      await Share.share({ title: 'sahla-my-data.json', message: JSON.stringify(data, null, 2) });
+      await Share.share({ title: 'madmoon-my-data.json', message: JSON.stringify(data, null, 2) });
     },
   });
 

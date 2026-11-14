@@ -1,4 +1,4 @@
-// npm run load-check [-- <listings>]: fills the TEST database (sahla_test) with
+// npm run load-check [-- <listings>]: fills the TEST database (madmoon_test) with
 // fake listings (default 10 000), times typical GET /listings requests, then
 // removes them. Never touches your development data.
 

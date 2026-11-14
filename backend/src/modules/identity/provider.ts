@@ -2,7 +2,7 @@ import { randomInt } from 'node:crypto';
 import { env } from '../../env';
 
 // ID verification (the Verified badge) with Sanad, Jordan's national digital ID
-// app. Sahla never sees or stores an ID photo. See backend/docs/ID-VERIFICATION.md.
+// app. Madmoon Deals never sees or stores an ID photo. See backend/docs/ID-VERIFICATION.md.
 //
 // Flow (to be confirmed with MoDEE's integration documents):
 //   app → POST /me/id-verification/sanad → { redirectUrl } → the user approves in Sanad
@@ -41,7 +41,7 @@ export const fakeSanad: IdVerificationProvider = {
 
 /**
  * The provider in use, or null while Sanad is off (503 SANAD_UNAVAILABLE).
- * When MoDEE gives Sahla access: add `sanad` here, built from their documents
+ * When MoDEE gives Madmoon Deals access: add `sanad` here, built from their documents
  * (client id/secret, authorize and token URLs in .env).
  */
 export function idProvider(): IdVerificationProvider | null {

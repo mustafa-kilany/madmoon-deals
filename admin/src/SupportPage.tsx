@@ -1,7 +1,7 @@
 // The support chat (BACKEND_PLAN B15.6): conversations with customers and
 // drivers on the left (open ones first; "waiting" = they wrote since we last
 // looked), the chosen one on the right. Answers are pushed to the person's phone
-// as "Sahla support"; Close moves it off the open list until they write again.
+// as "Madmoon Deals support"; Close moves it off the open list until they write again.
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
@@ -131,7 +131,7 @@ function Conversation({ userId }: { userId: string }) {
         <div ref={end} />
       </div>
       <form className="toolbar" onSubmit={send}>
-        <textarea value={text} onChange={e => setText(e.target.value)} placeholder="Answer as Sahla support…" maxLength={2000} rows={3} required />
+        <textarea value={text} onChange={e => setText(e.target.value)} placeholder="Answer as Madmoon Deals support…" maxLength={2000} rows={3} required />
         <button className="primary" disabled={busy || !text.trim()}>
           {busy ? 'Sending…' : 'Send'}
         </button>

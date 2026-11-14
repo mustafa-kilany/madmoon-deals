@@ -14,8 +14,8 @@ import type { SessionScope } from '../../generated/prisma/client';
 // different audience and 12 hours, so an app token never opens /v1/admin/*.
 
 const key = new TextEncoder().encode(env.JWT_SECRET);
-const ISSUER = 'sahla-api';
-const AUDIENCE: Record<SessionScope, string> = { app: 'sahla-app', admin: 'sahla-admin' };
+const ISSUER = 'madmoon-api';
+const AUDIENCE: Record<SessionScope, string> = { app: 'madmoon-app', admin: 'madmoon-admin' };
 export const ADMIN_SESSION_HOURS = 12;
 const lifetimeMs = (scope: SessionScope) =>
   scope === 'admin' ? ADMIN_SESSION_HOURS * 3_600_000 : env.SESSION_DAYS * 86_400_000;

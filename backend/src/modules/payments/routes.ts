@@ -23,7 +23,7 @@ paymentRoutes.get('/payments/callback', async (req, res) => {
 });
 
 const MESSAGES: Record<CallbackOutcome, PageMessage> = {
-  paid: { ar: 'تم الدفع. المبلغ محفوظ لدى سهلة حتى تستلم طلبك. ارجع إلى التطبيق.', en: 'Payment done. Sahla holds it until you receive your order. Go back to the Sahla app.' },
+  paid: { ar: 'تم الدفع. المبلغ محفوظ لدى مضمون ديلز حتى تستلم طلبك. ارجع إلى التطبيق.', en: 'Payment done. Madmoon Deals holds it until you receive your order. Go back to the Madmoon Deals app.' },
   already_paid: { ar: 'هذا الطلب مدفوع مسبقاً، وأُعيد هذا المبلغ إليك.', en: 'This order was already paid, so this payment was given back to you.' },
   sold: { ar: 'عذراً، اشترى شخص آخر هذا المنتج قبلك. أُعيد المبلغ إليك.', en: 'Sorry, someone else bought this first. Your money was given back.' },
   failed: { ar: 'لم يتم الدفع. يمكنك المحاولة مرة أخرى من التطبيق.', en: 'The payment didn’t go through. You can try again in the app.' },

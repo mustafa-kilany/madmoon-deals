@@ -1,5 +1,5 @@
 // Card tokenization. The card number goes to the payment provider, never to
-// Sahla's backend; the app only passes on the provider's token. The provider
+// Madmoon Deals' backend; the app only passes on the provider's token. The provider
 // isn't chosen yet (DEVELOPMENT_GUIDE §8 #4): when it is, its SDK replaces
 // this mock (and its card field replaces the plain input on Profile).
 

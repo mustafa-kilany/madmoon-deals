@@ -1,4 +1,4 @@
-# Sahla Backend Plan
+# Madmoon Deals Backend Plan
 
 The road from today to a launched API, phase by phase. **Edit this file freely**: reorder tasks, cross
 things out, add notes under a task. It's the to-do list; [`API.md`](API.md) stays the contract (what each
@@ -25,13 +25,13 @@ endpoint does), [`DATABASE.md`](DATABASE.md) the database design and [`backend/R
 |---|---|---|---|---|
 | D1 | Where photos are stored in production | Cloudflare R2 (cheap, no download fees) · AWS S3 · DigitalOcean Spaces | B3 | _R2 recommended_ |
 | D2 | Payment provider (JOD, cards, 3-D Secure, holding money until delivery) | MEPS (Jordanian banks) · a bank's payment gateway · HyperPay · PayTabs · Checkout.com | B7 | |
-| D3 | Email service for codes | Amazon SES (cheapest) · Resend (easiest) · Postmark | B9 (sooner for real users) | **Postmark** (2026-11-02; needs Sahla's own domain) |
+| D3 | Email service for codes | Amazon SES (cheapest) · Resend (easiest) · Postmark | B9 (sooner for real users) | **Postmark** (2026-11-02; needs Madmoon Deals' own domain) |
 | D4 | Hosting for the API + database | Railway / Render (easiest) · DigitalOcean App Platform + Managed Postgres · AWS | B12 | |
 | D5 | Admin dashboard | Own web app in this repo (`admin/`, React + Vite) calling the same API · AdminJS (generated, less flexible) | B8 | _Own web app on the same API recommended (see B8)_ |
 | D6 | Reverse geocoding (street from GPS) | Google Geocoding · HERE · Mapbox · self-hosted Nominatim (free) | B7 | **Google** (2026-11-02) |
 | D7 | Search engine | Postgres only (enough to launch) · Meilisearch later for typo tolerance | B2 | _Postgres first_ |
-| D9 | Staff email domain (couriers, admins) | e.g. `@sahla.jo` (the domain Sahla owns) | B14 | |
-| D8 | Where refurbished stock comes from (`REFURBISHED_SOURCING.md`) | 1 Jordanian vendors · 2 Sahla imports graded stock (EU / US / UAE) and sells it · 3 order on demand | B13 | _1 now, 2 next; 3 later_ |
+| D9 | Staff email domain (couriers, admins) | e.g. `@sahla.jo` (the domain Madmoon Deals owns) | B14 | |
+| D8 | Where refurbished stock comes from (`REFURBISHED_SOURCING.md`) | 1 Jordanian vendors · 2 Madmoon Deals imports graded stock (EU / US / UAE) and sells it · 3 order on demand | B13 | _1 now, 2 next; 3 later_ |
 
 ---
 
@@ -45,7 +45,7 @@ endpoint does), [`DATABASE.md`](DATABASE.md) the database design and [`backend/R
 ## B1 — Accounts (email) 🔨
 - ✅ **B1.1** Email sign-up with code, log-in, log-out, password reset, `GET/PATCH/DELETE /me`.
   JWT (HS256, 60 days) + a database session per token (revocable). scrypt passwords, HMAC codes,
-  rate limit per IP + email. `npm run db:seed` demo accounts. End-to-end tests on `sahla_test`.
+  rate limit per IP + email. `npm run db:seed` demo accounts. End-to-end tests on `madmoon_test`.
 - ✅ **B1.2** Backend CI: GitHub Actions job with a PostgreSQL service running typecheck, unit and
   end-to-end tests on every pull request. _(First real run when the branch is pushed.)_
 - ✅ **B1.3** App: send `X-Device-Id` (random id stored once in MMKV) on every request; document it in
@@ -211,7 +211,7 @@ Tasks:
 ## B9 — Emails and push notifications 🔨 (D3 for emails; Firebase project `sahla-project-75cb2`)
 - 🔨 **B9.1** Real email sending (codes) behind `mailer.ts`; Arabic + English templates. ✅ Built:
   `MAIL_MODE=postmark` (D3), one email in both languages (text + HTML), `503 EMAIL_UNAVAILABLE` when it can't
-  be sent (the code is forgotten, so asking again works at once). ⏸ Switching it on needs Sahla's domain
+  be sent (the code is forgotten, so asking again works at once). ⏸ Switching it on needs Madmoon Deals' domain
   (DNS records) and Postmark's approval: `backend/docs/EMAIL.md`.
 - ✅ **B9.2** `POST /me/devices`, `DELETE /me/devices/:token` (`Device` table, with the phone's language and
   the sign-in it belongs to). ✅ App: sends the token and language after sign-in and at launch, removes it on
@@ -249,8 +249,8 @@ Tasks:
 - ✅ **B12.6** Privacy policy + data deletion rules: `privacy/retention.ts`, `auth/deleteAccount.ts`, `GET /me/export`.
 - ⬜ **B12.7** App release builds use `https://api.sahla.jo/v1`; contract server kept for app tests only.
 
-## B13 — Imported refurbished stock (Sahla as the seller) ⬜ (D8; see `REFURBISHED_SOURCING.md`)
-- ⬜ **B13.1** Sahla's own store account (`store-sahla`) and its terms (grading, warranty, returns).
+## B13 — Imported refurbished stock (Madmoon Deals as the seller) ⬜ (D8; see `REFURBISHED_SOURCING.md`)
+- ⬜ **B13.1** Madmoon Deals' own store account (`store-madmoon`) and its terms (grading, warranty, returns).
 - ⬜ **B13.2** `Listing.quantity` for store listings: several identical units under one listing; an order
   reserves one unit; the listing sells out at 0. Import column `quantity` (default 1).
 - ⬜ **B13.3** Landed-cost calculator in the dashboard: buy price, shipping, customs, tax, approval,
@@ -292,7 +292,7 @@ buying, chats or offers.
   false = the real API). A courier account gets only these screens: **Deliveries** (assigned ones oldest
   first, then today's delivered; refreshes every 30 s) → a delivery: order number, pickup and drop-off with
   **Call** and **Open in Maps**, **Picked up**, then the **PIN** → **Confirm delivery**. Five wrong PINs:
-  "call Sahla support". The menu has only language and log out. Replaces the old "Confirm a delivery" screen.
+  "call Madmoon Deals support". The menu has only language and log out. Replaces the old "Confirm a delivery" screen.
 
 ## B15 — Ready for testing with fake items 🔨 (owner's decisions 2026-11-07; audit in `LAUNCH_READINESS.md`)
 
@@ -341,7 +341,7 @@ Short notes on what changed, newest first.
   email + chat, admin types with an owner, edit listings, push to the seller when paid, legal pages). Not going live:
   testing on fake items. Security plan executed item by item (`SECURITY_PLAN.md`).
 - 2026-11-02: D3 = Postmark: B9.1 built (`MAIL_MODE=postmark`, bilingual code emails, `EMAIL_UNAVAILABLE`);
-  goes live once Sahla has a domain (`backend/docs/EMAIL.md`).
+  goes live once Madmoon Deals has a domain (`backend/docs/EMAIL.md`).
 - 2026-11-02: D6 = Google: `GEOCODER=google` added (street + neighbourhood in Arabic or English); the key's
   set-up, quota and budget in `backend/docs/GEOCODING.md`.
 - 2026-11-02: B14.2 done: `GET /me/listings` now customers only too; one test checks every customer endpoint
@@ -364,7 +364,7 @@ Short notes on what changed, newest first.
 - 2026-10-31: B8.1 done: two-step admin log-in, dashboard-only tokens, audit log.
 - 2026-10-30: courier (driver) app planned as B14: staff accounts made by admins with the company email,
   courier-only screens (deliveries, pickup / drop-off, PIN).
-- 2026-10-30: refurbished = vendor-refurbished customer returns, sold only by vendors (or Sahla); sourcing
+- 2026-10-30: refurbished = vendor-refurbished customer returns, sold only by vendors (or Madmoon Deals); sourcing
   options in `REFURBISHED_SOURCING.md`, phase B13; B3 also covers admin category pictures.
 - 2026-10-30: certified refurbished listings are fixed price only (vendors set the price): no auction
   columns in the import or template, app store screen without format tabs (API.md change log).

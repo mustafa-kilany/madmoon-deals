@@ -19,8 +19,8 @@ export function fakeOcr(device: FakeDevice): OcrProvider {
       const today = new Date();
       const date = `${String(today.getUTCDate()).padStart(2, '0')}/${String(today.getUTCMonth() + 1).padStart(2, '0')}/${today.getUTCFullYear()}`;
       const lines = [
-        'مركز سهلة التجريبي للخلويات',
-        'Sahla Demo Mobile Center',
+        'مركز مضمون ديلز التجريبي للخلويات',
+        'Madmoon Deals Demo Mobile Center',
         'Tel: 0791234567',
         `Device: ${device.brand} ${device.model ?? ''}`.trim(),
         'Storage 128GB  Battery 91%',

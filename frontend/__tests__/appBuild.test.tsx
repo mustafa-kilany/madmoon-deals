@@ -66,7 +66,7 @@ test('the store flag the app root watches', () => {
 test('the update screen says why and opens Google Play', async () => {
   const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
   await render(<UpdateRequiredScreen />);
-  expect(screen.getByText('Time to update Sahla')).toBeTruthy();
+  expect(screen.getByText('Time to update Madmoon Deals')).toBeTruthy();
   await fireEvent.press(screen.getByRole('button', { name: 'Update' }));
   expect(open).toHaveBeenCalledWith('market://details?id=com.sahla');
 });

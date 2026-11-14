@@ -1,6 +1,6 @@
-# Sahla
+# Madmoon Deals
 
-Sahla (سهلة) is a buy-and-sell marketplace app for Jordan: fixed-price listings,
+Madmoon Deals (مضمون ديلز) is a buy-and-sell marketplace app for Jordan: fixed-price listings,
 offers, live auctions, and escrow payments released when the courier confirms
 delivery. React Native 0.88 (Android + iOS), English and Arabic (RTL), with its
 own API (Express + PostgreSQL).
@@ -22,7 +22,7 @@ own API (Express + PostgreSQL).
 | [`DEVELOPMENT_GUIDE.md`](DEVELOPMENT_GUIDE.md) | Rules, architecture, design system, roadmap and phase status |
 | [`docs/API.md`](docs/API.md) | The API contract both sides are built against |
 | [`docs/BACKEND_PLAN.md`](docs/BACKEND_PLAN.md) | The backend, phase by phase |
-| [`docs/REFURBISHED_SOURCING.md`](docs/REFURBISHED_SOURCING.md) | What refurbished means on Sahla and where the stock comes from (Jordan, Europe, US, UAE) |
+| [`docs/REFURBISHED_SOURCING.md`](docs/REFURBISHED_SOURCING.md) | What refurbished means on Madmoon Deals and where the stock comes from (Jordan, Europe, US, UAE) |
 | [`docs/DATABASE.md`](docs/DATABASE.md) | The database design: every table, column and connection, with pictures in `docs/database/` |
 | [`frontend/.maestro/README.md`](frontend/.maestro/README.md) | End-to-end tests and demo accounts |
 

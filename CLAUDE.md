@@ -1,4 +1,4 @@
-# Sahla
+# Madmoon Deals
 
 A marketplace for Jordan: buy, sell, offers, auctions, delivery by couriers. Three projects in one repo, each with its own `package.json`:
 
@@ -27,7 +27,7 @@ Run each in its project's folder.
 |---|---|---|
 | `backend` | `npm run dev` | The API on port 4000 |
 | `backend` | `npm run typecheck`, `npm test` | Types, unit tests |
-| `backend` | `npm run test:api` (`-- orders` for one area) | End-to-end tests on their own `sahla_test` database |
+| `backend` | `npm run test:api` (`-- orders` for one area) | End-to-end tests on their own `madmoon_test` database |
 | `backend` | `npm run check:attack`, `check:mutations`, `check:secrets`, `load-test`, `db:restore-test` | The gates in `INTERNAL_READINESS_PLAN.md` |
 | `backend` | `npm run db:migrate`, `db:seed` | Development database |
 | `frontend` | `npm start`, `npm run android` | Metro, then the debug app on the emulator |

@@ -1,9 +1,9 @@
 # Certified Refurbished: what it is and where the stock comes from
 
-## What "refurbished" means on Sahla
+## What "refurbished" means on Madmoon Deals
 
 **Devices a customer returned to the vendor (usually for a defect), that the vendor repaired, tested and
-sells again, with a warranty.** The seller is always the vendor (or Sahla itself, see below), never an
+sells again, with a warranty.** The seller is always the vendor (or Madmoon Deals itself, see below), never an
 app user:
 
 - Users can't list refurbished items: `POST /listings` refuses the `refurbished_*` conditions.
@@ -14,15 +14,15 @@ app user:
 
 ## Where the stock can come from
 
-### Option 1: Jordanian vendors (what Sahla supports today)
+### Option 1: Jordanian vendors (what Madmoon Deals supports today)
 Local shops and authorised resellers that already take back and repair returns sell through their own
-store account on Sahla. **No importing, no customs, fast delivery.** Limited by how much refurbished
-stock local shops actually have; there's no Jordanian certification for "refurbished", so Sahla's own
+store account on Madmoon Deals. **No importing, no customs, fast delivery.** Limited by how much refurbished
+stock local shops actually have; there's no Jordanian certification for "refurbished", so Madmoon Deals' own
 rules (grade, battery health, warranty, returns) go into each vendor's contract.
 
-### Option 2: Sahla imports stock from Europe / the US / the UAE and sells it itself
-Sahla buys **graded refurbished stock in bulk** from B2B suppliers, ships it to Jordan, clears customs,
-keeps it in Amman, and sells it under its own store account (e.g. `store-sahla` "Sahla Certified").
+### Option 2: Madmoon Deals imports stock from Europe / the US / the UAE and sells it itself
+Madmoon Deals buys **graded refurbished stock in bulk** from B2B suppliers, ships it to Jordan, clears customs,
+keeps it in Amman, and sells it under its own store account (e.g. `store-madmoon` "Madmoon Deals Certified").
 
 | Where to buy | What it is | Notes |
 |---|---|---|
@@ -31,7 +31,7 @@ keeps it in Amman, and sells it under its own store account (e.g. `store-sahla` 
 | [RecirQ](https://www.recirqglobal.com/) (US) | Used and refurbished unlocked iPhones and other phones | Says it ships to resellers in the Middle East |
 | [HGC Technologies](https://hgctechnologies.uk/wholesale/) (UK) | Refurbished laptops | Says it ships 50–150+ unit batches to GCC buyers |
 | UAE wholesalers, e.g. [UAEPC](https://uaepc.com/en/products/laptops), [Recycle Emirates](https://www.africa-business.com/profiles/recycle.html), [GSMBid](https://gsmbid.com/) (auctions) | Graded laptops and phones, often with minimum orders (~100 pieces) | **Closest**: cheaper and faster shipping to Amman than Europe / the US |
-| [B-Stock](https://bstock.com/) (US) | Retailers' **customer returns** (Walmart, Best Buy, …) in lots | Cheapest, closest to "returned for a defect", but **not refurbished**: Sahla (or a partner repair shop) must test, repair and grade every unit. Buyers arrange their own shipping |
+| [B-Stock](https://bstock.com/) (US) | Retailers' **customer returns** (Walmart, Best Buy, …) in lots | Cheapest, closest to "returned for a defect", but **not refurbished**: Madmoon Deals (or a partner repair shop) must test, repair and grade every unit. Buyers arrange their own shipping |
 
 These are the suppliers' own descriptions; check each one (samples, references, warranty terms, export
 documents) before paying.
@@ -41,7 +41,7 @@ is 1–2 days, escrow works as today, returns are local, and customs and approva
 shipment, not per customer.
 
 ### Option 3: Order on demand (no stock)
-Sahla lists items from a foreign supplier's catalogue (with their permission and feed), and orders each
+Madmoon Deals lists items from a foreign supplier's catalogue (with their permission and feed), and orders each
 one only after a customer pays; the supplier or a forwarder ships it to Jordan. **No money tied up in
 stock, but:** 1–3 weeks delivery, customs and approvals per parcel, prices that change with shipping,
 and returns that go back abroad. Better as a later step, for expensive or rare items, once Option 2 runs.
@@ -62,7 +62,7 @@ and returns that go back abroad. Better as a later step, for expensive or rare i
 - **Lithium batteries** (every phone and laptop) have special air-freight rules; the freight forwarder
   handles the packing and paperwork.
 - **Warranty:** manufacturer refurbished warranties are often valid only in the country of sale, so the
-  supplier's or **Sahla's own warranty** is what the customer gets. Price it in.
+  supplier's or **Madmoon Deals' own warranty** is what the customer gets. Price it in.
 - **Start with laptops and tablets** if phone approvals are slow; check whether Wi-Fi devices need
   type approval too.
 
@@ -70,7 +70,7 @@ and returns that go back abroad. Better as a later step, for expensive or rare i
 
 | Need | Status |
 |---|---|
-| Sahla's own store account (`store-sahla`), stock imported with the Excel sheet | ✅ works today (`npm run store`) |
+| Madmoon Deals' own store account (`store-madmoon`), stock imported with the Excel sheet | ✅ works today (`npm run store`) |
 | Users can't list refurbished | ✅ |
 | **Several identical units under one listing** (bulk stock: 20 × iPhone 13 128GB grade A) | planned: `Listing.quantity` for store listings; an order reserves one unit, the listing stays on sale until the last |
 | **Landed-cost price calculator** in the dashboard (buy price + shipping + customs + tax + approval + warranty + margin → JOD price) | planned (dashboard) |

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-// S3.2: card numbers never reach Sahla (PCI SAQ A): the provider's SDK or page swaps
+// S3.2: card numbers never reach Madmoon Deals (PCI SAQ A): the provider's SDK or page swaps
 // the card for a token first. This is the second fence: a request with a real-looking
 // card number in it (an app bug, a bad client) is refused without repeating it back,
 // and it is never charged, stored or logged (request bodies aren't logged at all).

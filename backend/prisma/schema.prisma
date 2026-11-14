@@ -1,4 +1,4 @@
-// Sahla database schema. Models follow docs/API.md; after changing this file run
+// Madmoon Deals database schema. Models follow docs/API.md; after changing this file run
 // `npm run db:migrate -- --name <what-changed>` to update the database.
 
 generator client {
@@ -619,7 +619,7 @@ model Payout {
   sellerUser   User?        @relation(fields: [sellerUserId], references: [id], onDelete: SetNull)
   storeId      String?
   store        Store?       @relation(fields: [storeId], references: [id])
-  amountFils   Int // the item price: Sahla takes no seller fee (DEVELOPMENT_GUIDE §3.2)
+  amountFils   Int // the item price: Madmoon Deals takes no seller fee (DEVELOPMENT_GUIDE §3.2)
   status       PayoutStatus @default(pending)
   createdAt    DateTime     @default(now())
   paidAt       DateTime?
@@ -758,7 +758,7 @@ model AdminAction {
   @@index([targetType, targetId])
 }
 
-// B15.6: the in-app chat with Sahla's support team. One conversation per person
+// B15.6: the in-app chat with Madmoon Deals' support team. One conversation per person
 // (customers and drivers); admins with the support permission answer from the dashboard.
 model SupportThread {
   id             String           @id @default(cuid())

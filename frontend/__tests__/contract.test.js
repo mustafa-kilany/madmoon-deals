@@ -35,7 +35,7 @@ class RNFormData extends FormData {
 }
 globalThis.FormData = RNFormData;
 
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'sahla-contract-'));
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'madmoon-contract-'));
 function photoFile(name, header) {
   const file = path.join(tmp, name);
   fs.writeFileSync(

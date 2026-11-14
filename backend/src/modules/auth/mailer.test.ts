@@ -17,13 +17,13 @@ const message = { to: 'buyer@example.com', ...codeEmail('signup', '482913') };
 
 test('sends Postmark the token, sender, both bodies and the tag', async () => {
   const calls: Call[] = [];
-  const mailer = postmarkMailer({ token: 'server-token', from: 'Sahla <no-reply@sahla.jo>' }, fakeFetch(200, { ErrorCode: 0, Message: 'OK' }, calls));
+  const mailer = postmarkMailer({ token: 'server-token', from: 'Madmoon Deals <no-reply@sahla.jo>' }, fakeFetch(200, { ErrorCode: 0, Message: 'OK' }, calls));
   await mailer.send(message);
   assert.equal(calls.length, 1);
   assert.equal(calls[0].url, 'https://api.postmarkapp.com/email');
   assert.equal((calls[0].init.headers as Record<string, string>)['X-Postmark-Server-Token'], 'server-token');
   const body = JSON.parse(String(calls[0].init.body));
-  assert.equal(body.From, 'Sahla <no-reply@sahla.jo>');
+  assert.equal(body.From, 'Madmoon Deals <no-reply@sahla.jo>');
   assert.equal(body.To, 'buyer@example.com');
   assert.equal(body.MessageStream, 'outbound');
   assert.equal(body.Tag, 'signup-code');
@@ -62,5 +62,5 @@ test('code emails: HTML-safe', () => {
 });
 
 test('code emails: "Arabic and English" title kept', () => {
-  assert.match(codeEmail('reset', '111111').subject, /Reset your Sahla password/);
+  assert.match(codeEmail('reset', '111111').subject, /Reset your Madmoon Deals password/);
 });

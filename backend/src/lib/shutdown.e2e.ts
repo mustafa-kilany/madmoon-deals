@@ -16,7 +16,7 @@ test('SIGTERM finishes the request in progress, then exits with 0', { skip: proc
   server.stderr.on('data', chunk => (output += chunk));
   const exited = new Promise<number | null>(resolve => server.once('exit', resolve));
   const base = `http://127.0.0.1:${port}/v1`;
-  // The start of its output (where "Sahla backend on" belongs), stack traces cut short.
+  // The start of its output (where "Madmoon Deals backend on" belongs), stack traces cut short.
   const told = () => output.split('\n').map(line => line.replace(/"stack":"[^"]*"/, '"stack":"…"').slice(0, 300)).slice(0, 20).join('\n');
   try {
     let up = false;

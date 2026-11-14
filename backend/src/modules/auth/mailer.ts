@@ -27,7 +27,7 @@ export const consoleMailer: Mailer = {
   },
 };
 
-// Postmark's ErrorCodes about the recipient, not about Sahla's account:
+// Postmark's ErrorCodes about the recipient, not about Madmoon Deals' account:
 // 300 invalid address, 406 inactive (bounced or marked as spam before).
 const RECIPIENT_ERRORS = new Set([300, 406]);
 
@@ -78,7 +78,7 @@ function bilingual(parts: { ar: string[]; en: string[]; code?: string }) {
   const html =
     '<!doctype html><html><body style="margin:0;background:#f4f4f0">' +
     '<div style="max-width:480px;margin:0 auto;padding:32px 24px;font-family:Tahoma,Arial,sans-serif;font-size:16px;line-height:1.5;color:#1d1d1b;background:#ffffff">' +
-    '<p style="margin:0 0 24px;font-size:22px;font-weight:bold;color:#66824f">سهلة · Sahla</p>' +
+    '<p style="margin:0 0 24px;font-size:22px;font-weight:bold;color:#66824f">مضمون ديلز · Madmoon Deals</p>' +
     (parts.code ? `<p dir="ltr" style="margin:0 0 24px;font-size:32px;font-weight:bold;letter-spacing:8px;text-align:center">${escape(parts.code)}</p>` : '') +
     block(parts.ar, 'rtl', 'ar') +
     '<hr style="border:0;border-top:1px solid #e2e2dc;margin:20px 0">' +
@@ -89,28 +89,28 @@ function bilingual(parts: { ar: string[]; en: string[]; code?: string }) {
 
 /** S1.3: someone tried to sign up with this email, which already has an account. */
 export const accountExistsEmail = () => ({
-  subject: 'لديك حساب في سهلة | You already have a Sahla account',
+  subject: 'لديك حساب في مضمون ديلز | You already have a Madmoon Deals account',
   tag: 'account-exists',
   ...bilingual({
-    ar: ['طلب أحدهم إنشاء حساب في سهلة بهذا البريد، لكن لديك حساب بالفعل. سجّل الدخول، أو اختر «نسيت كلمة المرور» إن لزم.', 'إذا لم تكن أنت، تجاهل هذه الرسالة؛ حسابك آمن.'],
-    en: ['Someone asked to create a Sahla account with this email, but you already have one. Log in, or choose "Forgot password" if you need to.', "If this wasn't you, ignore this email; your account is safe."],
+    ar: ['طلب أحدهم إنشاء حساب في مضمون ديلز بهذا البريد، لكن لديك حساب بالفعل. سجّل الدخول، أو اختر «نسيت كلمة المرور» إن لزم.', 'إذا لم تكن أنت، تجاهل هذه الرسالة؛ حسابك آمن.'],
+    en: ['Someone asked to create a Madmoon Deals account with this email, but you already have one. Log in, or choose "Forgot password" if you need to.', "If this wasn't you, ignore this email; your account is safe."],
   }),
 });
 
 /** S3.7: an alert, not a code: the seller's bank account was set or changed. */
 export const payoutAccountEmail = (last4: string, replaced: boolean) => ({
-  subject: 'تم تغيير الحساب البنكي | Your Sahla bank account changed',
+  subject: 'تم تغيير الحساب البنكي | Your Madmoon Deals bank account changed',
   tag: 'payout-account',
   ...bilingual({
     ar: [
-      `تم ${replaced ? 'تغيير' : 'إضافة'} الحساب البنكي لاستلام أموالك في سهلة، وينتهي بـ ${last4}.`,
+      `تم ${replaced ? 'تغيير' : 'إضافة'} الحساب البنكي لاستلام أموالك في مضمون ديلز، وينتهي بـ ${last4}.`,
       ...(replaced ? ['لحمايتك، لن نرسل أي دفعات إلى الحساب الجديد قبل مرور 24 ساعة.'] : []),
-      'إذا لم تكن أنت، تواصل مع دعم سهلة فوراً وغيّر كلمة المرور.',
+      'إذا لم تكن أنت، تواصل مع دعم مضمون ديلز فوراً وغيّر كلمة المرور.',
     ],
     en: [
-      `The bank account for your Sahla money was ${replaced ? 'changed' : 'added'}. It ends in ${last4}.`,
+      `The bank account for your Madmoon Deals money was ${replaced ? 'changed' : 'added'}. It ends in ${last4}.`,
       ...(replaced ? ['To protect you, nothing is sent to the new account for 24 hours.'] : []),
-      "If this wasn't you, contact Sahla support right away and change your password.",
+      "If this wasn't you, contact Madmoon Deals support right away and change your password.",
     ],
   }),
 });
@@ -118,17 +118,17 @@ export const payoutAccountEmail = (last4: string, replaced: boolean) => ({
 export const codeEmail = (purpose: 'signup' | 'reset' | 'payout', code: string) =>
   purpose === 'payout'
     ? {
-        subject: `تأكيد الحساب البنكي: ${code} | Confirm your Sahla bank account`,
+        subject: `تأكيد الحساب البنكي: ${code} | Confirm your Madmoon Deals bank account`,
         tag: 'payout-code',
         ...bilingual({
           code,
-          ar: [`رمز تأكيد الحساب البنكي: ${code}`, 'صالح لمدة 10 دقائق. إذا لم تطلبه، تواصل مع دعم سهلة فوراً.'],
-          en: [`Your code to confirm the bank account: ${code}`, "Valid for 10 minutes. If you didn't ask for it, contact Sahla support right away."],
+          ar: [`رمز تأكيد الحساب البنكي: ${code}`, 'صالح لمدة 10 دقائق. إذا لم تطلبه، تواصل مع دعم مضمون ديلز فوراً.'],
+          en: [`Your code to confirm the bank account: ${code}`, "Valid for 10 minutes. If you didn't ask for it, contact Madmoon Deals support right away."],
         }),
       }
     : purpose === 'signup'
     ? {
-        subject: `رمز التحقق من سهلة: ${code} | Your Sahla code`,
+        subject: `رمز التحقق من مضمون ديلز: ${code} | Your Madmoon Deals code`,
         tag: 'signup-code',
         ...bilingual({
           code,
@@ -137,7 +137,7 @@ export const codeEmail = (purpose: 'signup' | 'reset' | 'payout', code: string) 
         }),
       }
     : {
-        subject: `إعادة تعيين كلمة المرور: ${code} | Reset your Sahla password`,
+        subject: `إعادة تعيين كلمة المرور: ${code} | Reset your Madmoon Deals password`,
         tag: 'reset-code',
         ...bilingual({
           code,

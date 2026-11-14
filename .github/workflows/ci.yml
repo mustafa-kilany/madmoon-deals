@@ -33,7 +33,7 @@ jobs:
       - run: npm test -- --ci
 
   # The API in backend/: type check, unit tests, and end-to-end tests against
-  # a real PostgreSQL (the tests create and empty their own sahla_test database).
+  # a real PostgreSQL (the tests create and empty their own madmoon_test database).
   backend:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -112,21 +112,21 @@ jobs:
           --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
       - uses: actions/checkout@v4
-      - run: docker build -f backend/Dockerfile -t sahla-api .
+      - run: docker build -f backend/Dockerfile -t madmoon-api .
       # The image as a hosted test copy (LOAD_BALANCER_TEST_PLAN Stage 2, G4): development mode, no outside
       # account, made-up accounts through the demo code. It must migrate, answer /v1/health and sign someone up.
       - name: The image starts as a test copy
         run: |
           cat > test-copy.env <<'SETTINGS'
           NODE_ENV=development
-          DATABASE_URL=postgresql://postgres:postgres@localhost:5432/sahla_copy
+          DATABASE_URL=postgresql://postgres:postgres@localhost:5432/madmoon_copy
           JWT_SECRET=ci-only-secret-not-used-anywhere-else-0123456789
           PUBLIC_URL=http://localhost:4000
           TRUST_PROXY=1
           DEV_EMAIL_CODE=123456
           SETTINGS
-          docker run --rm --network host --env-file test-copy.env sahla-api npx prisma migrate deploy
-          docker run -d --name copy --network host --env-file test-copy.env sahla-api
+          docker run --rm --network host --env-file test-copy.env madmoon-api npx prisma migrate deploy
+          docker run -d --name copy --network host --env-file test-copy.env madmoon-api
           for i in $(seq 1 60); do curl -fs http://localhost:4000/v1/health && break; sleep 1; done
           curl -fs http://localhost:4000/v1/health || { docker logs copy; exit 1; }
           status=$(curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:4000/v1/auth/signup -H 'Content-Type: application/json' \

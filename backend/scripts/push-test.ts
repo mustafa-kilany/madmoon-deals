@@ -20,7 +20,7 @@ async function main() {
   for (const device of devices) {
     const ar = device.language === 'ar';
     const result = await sender.send(device.token, {
-      title: 'Sahla',
+      title: 'Madmoon Deals',
       body: ar ? 'إشعار تجريبي: الإشعارات تعمل ✅' : 'Test notification: pushes work ✅',
       data: { type: 'test', id: '' },
     });

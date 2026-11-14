@@ -1,4 +1,4 @@
-SAHLA - HOW TO RUN THE APP FROM ZERO (Windows, Android emulator)
+MADMOON DEALS - HOW TO RUN THE APP FROM ZERO (Windows, Android emulator)
 =================================================================
 
 Type all commands in the VS Code terminal (PowerShell).
@@ -80,7 +80,7 @@ PART 2 - EVERY DAY: START THE APP
 
 That's it. When you save a code file, the app reloads by itself.
 
-6. Only if you want the ADMIN DASHBOARD (a website for Sahla staff) - another terminal:
+6. Only if you want the ADMIN DASHBOARD (a website for Madmoon Deals staff) - another terminal:
        cd admin
        npm install          (first time only)
        npm run dev

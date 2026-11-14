@@ -9,7 +9,7 @@ import { execFileSync, spawn } from 'node:child_process';
 const PORT = 4102;
 const base = `http://127.0.0.1:${PORT}/v1`;
 const db = new URL(process.env.DATABASE_URL ?? '');
-db.pathname = '/sahla_load_test';
+db.pathname = '/madmoon_load_test';
 Object.assign(process.env, {
   NODE_ENV: 'test', // quiet logs, no background jobs in the way
   DATABASE_URL: db.toString(),

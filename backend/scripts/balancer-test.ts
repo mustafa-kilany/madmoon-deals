@@ -1,5 +1,5 @@
 // npm run balancer-test (docs/LOAD_BALANCER_TEST_PLAN.md, Stage 1): two copies of the backend on this
-// PC behind a balancer, sharing the sahla_load_test database, with virtual phones connecting through it
+// PC behind a balancer, sharing the madmoon_load_test database, with virtual phones connecting through it
 // the way the app does. Runs checks 1 to 9, prints a pass/fail table, stops everything.
 //
 // The balancer is scripts/balancer.ts (nginx for Windows couldn't be downloaded on this PC). Each
@@ -28,7 +28,7 @@ const LONE_BALANCER = 4210;
 const local = (port: number) => `http://127.0.0.1:${port}`;
 
 const db = new URL(process.env.DATABASE_URL ?? '');
-db.pathname = '/sahla_load_test';
+db.pathname = '/madmoon_load_test';
 const serverEnv: NodeJS.ProcessEnv = {
   ...process.env,
   NODE_ENV: 'test', // no background pushes
@@ -43,7 +43,7 @@ const serverEnv: NodeJS.ProcessEnv = {
 };
 Object.assign(process.env, { NODE_ENV: 'test', DATABASE_URL: db.toString(), LOG_LEVEL: 'silent' });
 
-const logDir = path.join(os.tmpdir(), 'sahla-balancer-test');
+const logDir = path.join(os.tmpdir(), 'madmoon-balancer-test');
 mkdirSync(logDir, { recursive: true });
 const shell = process.platform === 'win32';
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -326,7 +326,7 @@ const record = (check: string, pass: boolean, detail: string) => {
 let failed = false;
 let prisma: typeof import('../src/db').prisma | undefined;
 try {
-  console.log(`Database sahla_load_test; server logs in ${logDir}`);
+  console.log(`Database madmoon_load_test; server logs in ${logDir}`);
   execFileSync('npx', ['prisma', 'migrate', 'deploy'], { stdio: 'ignore', env: process.env, shell });
   execFileSync('npx', ['tsx', 'scripts/empty-db.ts'], { stdio: 'ignore', env: process.env, shell });
   startServer('server-a', A);

@@ -5,5 +5,5 @@ appId: com.sahla
     clearState: true
     clearKeychain: true
 - extendedWaitUntil:
-    visible: "Welcome to Sahla"
+    visible: "Welcome to Madmoon Deals"
     timeout: 60000 # first launch of a debug build loads the JS bundle

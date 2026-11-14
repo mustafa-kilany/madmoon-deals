@@ -1,13 +1,13 @@
-# Sahla API Contract & Connection Guide
+# Madmoon Deals API Contract & Connection Guide
 
-This document defines the REST API contract expected by the **Sahla** mobile application, as well as instructions for connecting the app to a live backend service.
+This document defines the REST API contract expected by the **Madmoon Deals** mobile application, as well as instructions for connecting the app to a live backend service.
 
 The app's HTTP service layer (`frontend/src/services/*/http.ts`) and API client (`frontend/src/services/api/client.ts`) are fully implemented and integrated. Connecting to a real API server requires only a configuration update in `frontend/src/config.ts`. The API itself is in `backend/`.
 
 ## Changes on 2026-11-10 (minimum app build, BACKEND_REVIEW M3)
 
 * **`X-App-Build: <Android versionCode>` on every request** (`config.appBuild` in the app, the same number as `versionCode` in `android/app/build.gradle`).
-* **426 `UPDATE_REQUIRED`** on any endpoint when the build is older than the server's `MIN_APP_BUILD`. The app then shows only its "update Sahla" screen, with a button to the store. A request without the header isn't checked (the dashboard, the bank's page).
+* **426 `UPDATE_REQUIRED`** on any endpoint when the build is older than the server's `MIN_APP_BUILD`. The app then shows only its "update Madmoon Deals" screen, with a button to the store. A request without the header isn't checked (the dashboard, the bank's page).
 
 ## Changes on 2026-11-08 (readiness work: `INTERNAL_READINESS_PLAN.md`)
 
@@ -41,7 +41,7 @@ problem resolved.
 
 **ID verification is Sanad only (breaking).** `POST /me/id-verification` (ID photo) is gone: no photos,
 no manual review. New: `POST /me/id-verification/sanad` → `{ redirectUrl }`; the app opens it, Sanad sends the
-user back to the server, and `GET /me` then shows `verified: true`. Until Sahla has Sanad access it answers
+user back to the server, and `GET /me` then shows `verified: true`. Until Madmoon Deals has Sanad access it answers
 `503 SANAD_UNAVAILABLE` (the app says "coming soon").
 
 **Planned: courier app** ([Couriers](#couriers-drivers-planned-backend_plan-b14)). Courier accounts are
@@ -258,7 +258,7 @@ Authenticates an existing user.
 Signs in or signs up with the ID token from Google's sign-in SDK.
 * **Request Body:** `{ "idToken": "<Google ID token>", "acceptTerms": true }` (B15.8: needed when it creates a new account,
   else `VALIDATION`; the app always sends it, the terms are shown with the buttons). The server **verifies** it with Google's public keys
-  (signature, issuer, audience = one of Sahla's OAuth client ids, expiry) and takes the account id and email
+  (signature, issuer, audience = one of Madmoon Deals' OAuth client ids, expiry) and takes the account id and email
   from it, never from the request.
 * **Which account:** the one already linked to that Google account; else the account with the same
   **verified** email (linked now, so password log-in keeps working too); else a new one
@@ -285,7 +285,7 @@ Emails a 6-digit code to a **new** address, before sign-up.
 #### 6. `POST /auth/forgot-password`
 Emails a 6-digit reset code if the address has an account.
 * **Request Body:** `{ "email": "user@sahla.jo" }`
-* **Response:** 204 No Content, **whether or not the account exists** (so it can't be used to find out who uses Sahla).
+* **Response:** 204 No Content, **whether or not the account exists** (so it can't be used to find out who uses Madmoon Deals).
 
 #### 7. `POST /auth/reset-password`
 Sets a new password with the emailed code and signs in.
@@ -325,9 +325,9 @@ Uploads a new profile picture.
 
 #### 12. `POST /me/id-verification/sanad` *(Authenticated, customers)*
 Starts verifying the account with **Sanad** (Jordan's national digital ID) for the Verified badge. Accounts are
-created with email (or Google/Apple) only; ID verification happens afterwards. Sahla never sees an ID photo or
+created with email (or Google/Apple) only; ID verification happens afterwards. Madmoon Deals never sees an ID photo or
 stores the national number (only a keyed hash: one ID verifies one account).
-* **Request Body:** `{ "consent": true }` (B15.8, MoDEE's pledge: the app shows what Sahla asks Sanad for and why, and the
+* **Request Body:** `{ "consent": true }` (B15.8, MoDEE's pledge: the app shows what Madmoon Deals asks Sanad for and why, and the
   person ticks agree; the server stores the consent version and time with the check). Without it: `VALIDATION`.
 * **Response (200):** `{ "redirectUrl": "https://…" }`: Sanad's consent page. The app opens it in the browser.
 * Sanad then sends the user to the server (`GET /v1/id-verification/sanad/callback?code&state`, the redirect URI
@@ -335,11 +335,11 @@ stores the national number (only a keyed hash: one ID verifies one account).
   Back in the app, `GET /me` shows `verified: true` (the badge also shows on the user's listings).
 * The link works once and for 15 minutes. Cancelled in Sanad, or an ID that already verifies another account:
   not verified (the page says why).
-* **Errors:** `SANAD_UNAVAILABLE` (503) until Sahla has Sanad access; `VALIDATION` (422) already verified;
+* **Errors:** `SANAD_UNAVAILABLE` (503) until Madmoon Deals has Sanad access; `VALIDATION` (422) already verified;
   `FORBIDDEN` for couriers.
 
 #### 13. `POST /me/payment-card` *(Authenticated)*
-Attaches a saved card reference using a payment token generated by the payment provider's mobile SDK. Raw card numbers are never sent to Sahla servers.
+Attaches a saved card reference using a payment token generated by the payment provider's mobile SDK. Raw card numbers are never sent to Madmoon Deals servers.
 * **Request Body:** `{ "cardToken": "provider_token_xyz" }`
 * **Response (200):** `User` (with updated `card: { brand, last4 }`)
 * **Server (B7.8):** the provider swaps the SDK's one-time token for one that can be charged again; only that
@@ -817,7 +817,7 @@ building and floor, and can change anything. The order is unchanged: it carries 
     unpaid order for that listing and returns it with the same `id`, so unpaid orders don't pile up.
 * **`POST /orders/:id/pay` *(Authenticated, the order's buyer)*** → Body: `{ "cardToken": "..." }` (provider token, or `"saved"` to charge the account's saved card) → `Order`
   * Paid: `status: "escrow_held"`, with the delivery `pin`. The listing becomes `reserved`.
-  * **Bank card check (3-D Secure):** Jordanian cards usually need it, so with MEPS expect this path. Return the order still `awaiting_payment` with `paymentUrl` (the bank's page). The app opens it in the browser and then polls `GET /me/orders` / `GET /orders/:id`. When the bank calls back, the server sets `escrow_held` (or leaves `awaiting_payment` if it failed, so the buyer can pay again). The bank's return page can simply say "Payment done, go back to Sahla".
+  * **Bank card check (3-D Secure):** Jordanian cards usually need it, so with MEPS expect this path. Return the order still `awaiting_payment` with `paymentUrl` (the bank's page). The app opens it in the browser and then polls `GET /me/orders` / `GET /orders/:id`. When the bank calls back, the server sets `escrow_held` (or leaves `awaiting_payment` if it failed, so the buyer can pay again). The bank's return page can simply say "Payment done, go back to Madmoon Deals".
   * Two buyers racing: the first payment wins; the other gets `ITEM_UNAVAILABLE` (409) and isn't charged. Do the check and the status change in one transaction.
   * **Server (B7.4):** a payment that succeeds after the listing was bought (a slow card check) is refunded at
     once and the bank's page says so. The bank sends the browser to `GET /v1/payments/callback?ref=…`; the
@@ -838,9 +838,9 @@ building and floor, and can change anything. The order is unchanged: it carries 
   * The listing becomes `sold`.
   * The PIN check and release happen **only on the server**. Rate-limit attempts per order (e.g. lock after 5 wrong PINs) so a PIN can't be guessed.
   * **Server (B7.6):** 5 tries per order (counted before the PIN is compared, so guesses sent at once don't get
-    more); then `RATE_LIMITED` (429) until Sahla support unlocks it, even for the right PIN. `orderId` is
+    more); then `RATE_LIMITED` (429) until Madmoon Deals support unlocks it, even for the right PIN. `orderId` is
     case-insensitive. An order assigned to another courier is `NOT_FOUND`. The seller's payout is the item
-    price (Sahla takes no seller fee; the buyer pays protection and delivery).
+    price (Madmoon Deals takes no seller fee; the buyer pays protection and delivery).
 * **`POST /orders/:id/cancel` *(the order's buyer)*** → Body: `{ "reason": CancelReason, "note"?: string }` → `Order`
   (`cancelled`, with `cancel`). B15.3: allowed while unpaid, or paid until the driver has picked the item up:
   the money goes back at once, the listing is on sale again, the seller (and the assigned driver) get a push.
@@ -870,7 +870,7 @@ Where a seller's money goes after delivery (an admin sends a bank transfer, `POS
 
 ### Couriers (drivers) *(backend: BACKEND_PLAN B14.3–B14.6; the app's courier mode: B14.7)*
 
-Couriers are Sahla staff. **Nobody signs up as a courier:** an admin creates the account with a company
+Couriers are Madmoon Deals staff. **Nobody signs up as a courier:** an admin creates the account with a company
 email (the staff domain, e.g. `@sahla.jo`) and an invite code is emailed; the courier sets a password with
 `POST /auth/reset-password` (the app's normal "forgot password" screens) and then logs in with
 `POST /auth/login`. `POST /auth/send-otp` and `POST /auth/signup` refuse staff-domain emails (`VALIDATION`).
@@ -1005,7 +1005,7 @@ The app's reference copy of the row rules is `validateImportRow()` / `importRowT
     store, `verified: true`, `status: "active"`, `saleType: "fixed"` (never an auction).
   * **Updating** a sku changes its listing in place (price, photos, warranty, …), so Saved items and
     links keep working. A sku with an open order (paid, not delivered) is not changed; the row gets
-    an error. A sold sku isn't reused either (error): restocked items need a new sku. Copy the photos to Sahla's CDN instead of linking the brand's URLs.
+    an error. A sold sku isn't reused either (error): restocked items need a new sku. Copy the photos to Madmoon Deals' CDN instead of linking the brand's URLs.
   * **Errors:** `UNAUTHORIZED` (401), `FORBIDDEN` (403) for another store's id, `NOT_FOUND` (404) for
     an unknown `storeId`, `VALIDATION` (422) for a malformed body or more than 1000 items. Row
     problems are not errors: they come back in `errors` with status 200.
@@ -1299,13 +1299,13 @@ bidding; the screens won't change.
 
 ### Support (BACKEND_PLAN B15.6)
 
-Sahla's support team: an email address and one chat per person (customers **and** drivers), answered from the
+Madmoon Deals' support team: an email address and one chat per person (customers **and** drivers), answered from the
 dashboard by admins with the `support` permission. No phone number for now.
 
 ```ts
 type SupportMessage = {
   id: string;
-  fromSupport: boolean; // true = Sahla support (the app never shows which admin)
+  fromSupport: boolean; // true = Madmoon Deals support (the app never shows which admin)
   text: string;         // 1–2000 characters
   orderId?: string;     // "SA-123456" when the person wrote about an order
   createdAt: string;    // ISO-8601

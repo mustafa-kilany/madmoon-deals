@@ -24,9 +24,9 @@ import type { toApiBid } from './shapes';
 // the app fetches that through the normal API, so private messages stay behind its checks and never
 // travel through the database's notifications. Ends when the session does.
 
-const BIDS_CHANNEL = 'sahla_bids';
-const PING_CHANNEL = 'sahla_live_ping';
-const ACCOUNT_CHANNEL = 'sahla_account_events';
+const BIDS_CHANNEL = 'madmoon_bids';
+const PING_CHANNEL = 'madmoon_live_ping';
+const ACCOUNT_CHANNEL = 'madmoon_account_events';
 const MAX_SOCKETS_PER_USER = 5; // a few phones; more is someone's script
 const NOTIFY_MAX_BYTES = 7900; // Postgres refuses more than 8000, which would fail the bid itself
 const SEND_BUFFER_MAX = 1024 * 1024;

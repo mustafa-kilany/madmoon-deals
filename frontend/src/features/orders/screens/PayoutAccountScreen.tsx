@@ -1,4 +1,4 @@
-// The seller's bank account (SECURITY_PLAN S3.7): where Sahla sends the money after delivery. A change
+// The seller's bank account (SECURITY_PLAN S3.7): where Madmoon Deals sends the money after delivery. A change
 // needs the password (or an emailed code, for Google / Apple accounts), and holds payouts
 // for 24 hours. Only the last 4 characters ever come back from the server. The screen is
 // kept out of screenshots while it's open.

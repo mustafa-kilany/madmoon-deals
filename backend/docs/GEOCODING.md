@@ -32,7 +32,7 @@ Google sign-in and maps.
 3. **Turn on the API.** ☰ → *APIs & Services* → *Library* → search **Geocoding API** → *Enable*.
 4. **Make the key.** *APIs & Services* → *Credentials* → *+ Create credentials* → *API key*. Then open the key
    (✏️) and:
-   * **Name:** `Sahla backend geocoding`.
+   * **Name:** `Madmoon Deals backend geocoding`.
    * **API restrictions:** *Restrict key* → tick only **Geocoding API** → *Save*.
    * **Application restrictions:** *None* for now (your home IP changes). When the API is hosted (B12.2) and
      has a fixed outgoing IP, change it to *IP addresses* with that IP.

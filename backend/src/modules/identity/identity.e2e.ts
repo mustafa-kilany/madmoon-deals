@@ -97,7 +97,7 @@ test('approved in Sanad: Verified badge on the account and its listings; no nati
 test('one national ID verifies one account', async () => {
   const { body } = await start(tokens[1]);
   const answered = await callback(body.redirectUrl, { code: 'fake-2000000001' });
-  assert.match(answered.html, /another Sahla account/);
+  assert.match(answered.html, /another Madmoon Deals account/);
   assert.equal((await me(tokens[1])).verified, false);
 });
 

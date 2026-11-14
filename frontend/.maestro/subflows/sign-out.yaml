@@ -15,5 +15,5 @@ appId: com.sahla
     centerElement: true
 - tapOn: "Log Out"
 - extendedWaitUntil:
-    visible: "Welcome to Sahla" # signed out → guest Home
+    visible: "Welcome to Madmoon Deals" # signed out → guest Home
     timeout: 10000

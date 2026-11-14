@@ -1,4 +1,4 @@
-// The courier's deliveries from the Sahla API (docs/API.md → Couriers).
+// The courier's deliveries from the Madmoon Deals API (docs/API.md → Couriers).
 
 import type { Delivery, DeliveryFailure, OrderProblem } from '@/lib/types';
 import { api } from '../api/client';

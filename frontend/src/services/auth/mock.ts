@@ -188,7 +188,7 @@ export const mockAuthService: AuthService = {
     return openSession(updated);
   },
 
-  // Like the server until Sahla has Sanad access.
+  // Like the server until Madmoon Deals has Sanad access.
   startIdVerification: async () => {
     await mockLatency();
     currentAccount();

@@ -56,7 +56,7 @@ async function otherAdmin(meId: string, id: string, losingOwner: boolean) {
   if (!admin || admin.role !== 'admin') throw new ApiError(404, 'NOT_FOUND', `No admin ${id}`);
   if (losingOwner && admin.adminRole === 'owner' && !admin.suspended) {
     const owners = await prisma.user.count({ where: { role: 'admin', adminRole: 'owner', suspended: false } });
-    if (owners <= 1) throw new ApiError(422, 'VALIDATION', 'Sahla needs at least one active owner');
+    if (owners <= 1) throw new ApiError(422, 'VALIDATION', 'Madmoon Deals needs at least one active owner');
   }
   return admin;
 }

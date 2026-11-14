@@ -1,6 +1,6 @@
 # Payments and escrow
 
-**Goal:** the buyer pays by card when ordering, Sahla holds the money (escrow) until the courier
+**Goal:** the buyer pays by card when ordering, Madmoon Deals holds the money (escrow) until the courier
 types the buyer's delivery PIN, then the seller is paid. If the item never arrives, an admin refunds.
 
 ```
@@ -11,8 +11,8 @@ courier: PIN            → completed          (listing sold, a Payout row for t
 admin: refund           → refunded           (money back, listing on sale again)
 ```
 
-Card numbers never reach Sahla's server: the payment provider's SDK in the app turns the card into a
-**token**, and only the token is sent (`cardToken`). That keeps Sahla out of most card-security
+Card numbers never reach Madmoon Deals' server: the payment provider's SDK in the app turns the card into a
+**token**, and only the token is sent (`cardToken`). That keeps Madmoon Deals out of most card-security
 (PCI DSS) work.
 
 ## Development: the fake provider
@@ -40,7 +40,7 @@ Options for Jordan in JOD: **MEPS** (the Jordanian banks' processor), a **bank's
 2. Do they support **3-D Secure** with a redirect (`paymentUrl`) and a server-to-server status check?
 3. A **mobile SDK** (React Native, or Android + iOS) that gives a card token, and **saved cards**
    (tokens that can be charged again)?
-4. **Refunds** through the API, and **payouts** to sellers (or does Sahla pay sellers by bank transfer)?
+4. **Refunds** through the API, and **payouts** to sellers (or does Madmoon Deals pay sellers by bank transfer)?
 5. Their rules for **marketplaces holding money** for others (some need a licence or a special
    account type; ask the Central Bank of Jordan's rules too).
 

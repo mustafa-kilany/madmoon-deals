@@ -4,7 +4,7 @@
 // tab signs out, and it lasts 12 hours anyway.
 
 const BASE = import.meta.env.VITE_API_URL ?? '/v1';
-const TOKEN_KEY = 'sahla-admin-token';
+const TOKEN_KEY = 'madmoon-admin-token';
 
 export class ApiError extends Error {
   constructor(

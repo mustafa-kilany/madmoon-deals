@@ -15,9 +15,9 @@ if (env.NODE_ENV === 'production') {
 
 const demo = [
   { name: 'Ahmad', email: 'ahmad@sahla.jo', cardBrand: 'visa', cardLast4: '4242', cardToken: 'fakecard_visa_4242' },
-  { name: 'Sahla Courier', email: 'courier@sahla.jo', verified: true, role: 'courier' as const },
+  { name: 'Madmoon Deals Courier', email: 'courier@sahla.jo', verified: true, role: 'courier' as const },
   // The dashboard (admin/): the first log-in shows a QR code for an authenticator app.
-  { name: 'Sahla Admin', email: 'admin@sahla.jo', verified: true, role: 'admin' as const, adminRole: 'owner' as const },
+  { name: 'Madmoon Deals Admin', email: 'admin@sahla.jo', verified: true, role: 'admin' as const, adminRole: 'owner' as const },
 ];
 
 async function main() {

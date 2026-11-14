@@ -1,6 +1,6 @@
 # Push notifications
 
-Firebase Cloud Messaging (FCM) delivers Sahla's pushes to Android phones, and to iPhones once an Apple
+Firebase Cloud Messaging (FCM) delivers Madmoon Deals' pushes to Android phones, and to iPhones once an Apple
 push key is uploaded to Firebase. Firebase project: `sahla-project-75cb2`.
 
 ## What is sent (BACKEND_PLAN B9.3)

@@ -1,4 +1,4 @@
-// Accounts from the Sahla API (docs/API.md → Accounts).
+// Accounts from the Madmoon Deals API (docs/API.md → Accounts).
 
 import type { Session, User } from '@/lib/types';
 import { api, photoForm } from '../api/client';

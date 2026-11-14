@@ -34,7 +34,7 @@ const nominatim: Geocoder = {
   async street({ lat, lng }, lang) {
     const url = new URL('/reverse', env.NOMINATIM_URL);
     url.search = new URLSearchParams({ format: 'jsonv2', lat: String(lat), lon: String(lng), zoom: '17', 'accept-language': lang }).toString();
-    const r = await fetch(url, { headers: { 'User-Agent': 'Sahla marketplace (https://sahla.jo)' }, signal: AbortSignal.timeout(4000) });
+    const r = await fetch(url, { headers: { 'User-Agent': 'Madmoon Deals marketplace (https://sahla.jo)' }, signal: AbortSignal.timeout(4000) });
     if (!r.ok) throw new Error(`Nominatim answered ${r.status}`);
     const address = ((await r.json()) as { address?: NominatimAddress }).address ?? {};
     const parts = [address.road, address.neighbourhood ?? address.quarter ?? address.suburb ?? address.city_district];

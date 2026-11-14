@@ -1,7 +1,7 @@
 {
-  "name": "sahla-admin",
+  "name": "madmoon-admin",
   "version": "1.0.0",
-  "description": "Sahla admin dashboard (docs/BACKEND_PLAN.md B8): a website on the same API",
+  "description": "Madmoon Deals admin dashboard (docs/BACKEND_PLAN.md B8): a website on the same API",
   "private": true,
   "type": "module",
   "scripts": {

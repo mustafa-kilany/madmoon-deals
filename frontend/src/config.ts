@@ -8,7 +8,7 @@
 
 export const config = {
   /**
-   * Base URL of the Sahla REST API. Debug builds use the local contract
+   * Base URL of the Madmoon Deals REST API. Debug builds use the local contract
    * server; release builds the real API (address from the backend developer).
    */
   apiBaseUrl: __DEV__ ? 'http://10.0.2.2:4000/v1' : 'https://api.sahla.jo/v1',
@@ -34,7 +34,7 @@ export const config = {
   },
   /**
    * This build's number, sent as X-App-Build on every request: the server answers a build older
-   * than its MIN_APP_BUILD with "update Sahla" (BACKEND_REVIEW M3). Always the same as versionCode
+   * than its MIN_APP_BUILD with "update Madmoon Deals" (BACKEND_REVIEW M3). Always the same as versionCode
    * in android/app/build.gradle: raise both together (__tests__/appBuild.test.ts checks).
    */
   appBuild: 1,

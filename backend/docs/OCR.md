@@ -13,7 +13,7 @@ The server needs three things from the photo:
 
 ## OCR providers
 
-| Provider | Arabic | Word positions (for blurring) | Price (check current pricing) | Fit for Sahla |
+| Provider | Arabic | Word positions (for blurring) | Price (check current pricing) | Fit for Madmoon Deals |
 |---|---|---|---|---|
 | **Google Cloud Vision**, `DOCUMENT_TEXT_DETECTION` | ✅ printed and handwritten | ✅ per word | First 1,000 images/month free, then about $1.50 per 1,000 | **Recommended start.** Simple REST call with an API key; already written in `src/modules/certificates/ocr.ts` |
 | Google Document AI (Enterprise Document OCR) | ✅ | ✅ | Similar per-page price | Better on complex layouts; more setup (processors, a GCP project). Upgrade path if Vision struggles |
