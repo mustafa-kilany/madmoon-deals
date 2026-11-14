@@ -6,7 +6,7 @@ import { defineJob } from '../../lib/jobs';
 import { announceAfterSaving } from '../negotiation/live';
 import { pushSender, type PushMessage } from './push';
 
-// The pushes Sahla sends (BACKEND_PLAN B9.3; docs/API.md → Live Updates &
+// The pushes Madmoon Deals sends (BACKEND_PLAN B9.3; docs/API.md → Live Updates &
 // Notifications). Each is a job (lib/jobs.ts): it runs a moment after the request, survives a
 // restart, is tried again if sending fails, reads what is true then,
 // and is written in the language of each phone. Never the text of a chat
@@ -195,8 +195,8 @@ const pushSoldJob = defineJob('pushSold', async ({ orderId }: { orderId: string 
       title: titleOf(order.listing, lang),
       body:
         lang === 'ar'
-          ? `تم البيع! دفع المشتري ${formatJOD(order.itemPriceFils, lang)}. جهّز المنتج، سيأتي سائق سهلة لاستلامه.`
-          : `Sold! The buyer paid ${formatJOD(order.itemPriceFils, lang)}. Get the item ready: a Sahla driver will pick it up.`,
+          ? `تم البيع! دفع المشتري ${formatJOD(order.itemPriceFils, lang)}. جهّز المنتج، سيأتي سائق مضمون ديلز لاستلامه.`
+          : `Sold! The buyer paid ${formatJOD(order.itemPriceFils, lang)}. Get the item ready: a Madmoon Deals driver will pick it up.`,
     }),
     { type: 'sale', id: orderId },
   );
@@ -307,8 +307,8 @@ const pushDeliveryFailedJob = defineJob('pushDeliveryFailed', async ({ orderId }
     title: titleOf(order.listing, lang),
     body:
       lang === 'ar'
-        ? `${atSeller ? 'لم يتم استلام' : 'لم يتم توصيل'} الطلب ${order.id}: ${reason.ar}. سيتواصل معك فريق سهلة.`
-        : `Order ${order.id} wasn’t ${atSeller ? 'picked up' : 'delivered'}: ${reason.en}. Sahla’s team will follow up.`,
+        ? `${atSeller ? 'لم يتم استلام' : 'لم يتم توصيل'} الطلب ${order.id}: ${reason.ar}. سيتواصل معك فريق مضمون ديلز.`
+        : `Order ${order.id} wasn’t ${atSeller ? 'picked up' : 'delivered'}: ${reason.en}. Madmoon Deals’ team will follow up.`,
   });
   await sendTo(order.buyerId, text, { type: 'order', id: orderId });
   await sendTo(order.sellerUserId, text, { type: 'sale', id: orderId });
@@ -382,8 +382,8 @@ const pushListingRemovedJob = defineJob('pushListingRemoved', async ({ listingId
             ? 'أزلنا إعلانك لأن شهادة الفحص لم تجتز المراجعة. يمكنك نشره من جديد بشهادة من محل فحص.'
             : 'We took your listing down: its test certificate didn’t pass our review. You can list it again with a certificate from a testing shop.'
           : lang === 'ar'
-            ? 'أزلنا إعلانك بعد بلاغات من المستخدمين لأنه يخالف قواعد سهلة. تواصل مع الدعم إن كان هناك خطأ.'
-            : 'We took your listing down after reports from other users: it breaks Sahla’s rules. Contact support if you think this is a mistake.',
+            ? 'أزلنا إعلانك بعد بلاغات من المستخدمين لأنه يخالف قواعد مضمون ديلز. تواصل مع الدعم إن كان هناك خطأ.'
+            : 'We took your listing down after reports from other users: it breaks Madmoon Deals’ rules. Contact support if you think this is a mistake.',
     }),
     { type: 'sale', id: listingId },
   );
@@ -407,7 +407,7 @@ const pushPayoutAccountChangedJob = defineJob('pushPayoutAccountChanged', async 
   );
 });
 
-/** B15.6: Sahla's support team answered (never the text: it shows on the lock screen). */
+/** B15.6: Madmoon Deals' support team answered (never the text: it shows on the lock screen). */
 export function pushSupportReply(userId: string) {
   pushSupportReplyJob.soon({ userId }, 'push:support:' + userId);
 }
@@ -415,7 +415,7 @@ const pushSupportReplyJob = defineJob('pushSupportReply', async ({ userId }: { u
   await sendTo(
     userId,
     lang => ({
-      title: lang === 'ar' ? 'دعم سهلة' : 'Sahla support',
+      title: lang === 'ar' ? 'دعم مضمون ديلز' : 'Madmoon Deals support',
       body: lang === 'ar' ? 'وصلك رد من فريق الدعم.' : 'The support team answered you.',
     }),
     { type: 'support', id: userId },

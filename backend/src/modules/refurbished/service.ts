@@ -31,7 +31,7 @@ export async function importRefurbished(req: ImportRequest, caller: ImportCaller
   };
   if (req.dryRun) return result;
 
-  // TODO(uploads): copy imageUrls to Sahla's CDN instead of linking the brand's URLs.
+  // TODO(uploads): copy imageUrls to Madmoon Deals' CDN instead of linking the brand's URLs.
   await prisma.$transaction(
     async tx => {
       // Store listings are always verified (the brand's official store).

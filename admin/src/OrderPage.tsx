@@ -200,7 +200,7 @@ export function OrderPage() {
       {dialog === 'unlock' && (
         <ConfirmDialog
           title="Unlock the delivery PIN?"
-          body={<p>The courier gets 5 new tries. Do this only after the buyer confirmed the courier at the door is really Sahla’s.</p>}
+          body={<p>The courier gets 5 new tries. Do this only after the buyer confirmed the courier at the door is really Madmoon Deals’.</p>}
           confirmLabel="Unlock"
           onConfirm={() => api.post(`/admin/orders/${o.id}/unlock-pin`).then(changed)}
           onClose={() => setDialog(null)}

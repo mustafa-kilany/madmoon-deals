@@ -1,6 +1,6 @@
 # Emails: Postmark
 
-Sahla sends one kind of email: **6-digit codes** for sign-up, password reset and staff (courier / admin)
+Madmoon Deals sends one kind of email: **6-digit codes** for sign-up, password reset and staff (courier / admin)
 invites, in Arabic and English (BACKEND_PLAN B9.1, decision D3 = **Postmark**: built for exactly these
 emails, fast and good at reaching the inbox).
 
@@ -10,7 +10,7 @@ Settings in `backend/.env`:
 ```
 MAIL_MODE=postmark                     # console = printed in the terminal (development)
 POSTMARK_SERVER_TOKEN=...              # a secret: never commit it
-MAIL_FROM=Sahla <no-reply@sahla.jo>    # an address at the domain verified in Postmark
+MAIL_FROM=Madmoon Deals <no-reply@sahla.jo>    # an address at the domain verified in Postmark
 ```
 
 * `DEV_EMAIL_CODE` (e.g. `123456`) **skips sending entirely**: remove it to send real emails.
@@ -34,7 +34,7 @@ addresses. A `.jo` domain is registered through a Jordanian registrar and needs 
 to Cloudflare, free).
 
 1. **Account.** Sign up at <https://postmarkapp.com/> with your work email.
-2. **Server.** *Servers* → *Create server* → name `Sahla`, colour any. It comes with a *Default Transactional
+2. **Server.** *Servers* → *Create server* → name `Madmoon Deals`, colour any. It comes with a *Default Transactional
    Stream* (`outbound`), which is what the backend uses.
 3. **Domain.** *Sender signatures* → *Add domain or signature* → *Domain* → `sahla.jo`. Postmark shows two
    records; add them at your domain's DNS:
@@ -49,17 +49,17 @@ to Cloudflare, free).
    Postmark approves them. *Request approval* (a banner in the account): say it's a Jordanian marketplace app
    sending only sign-up and password-reset codes to its users, no marketing, and give the website. Usually
    about a day.
-6. **Token.** *Servers* → `Sahla` → *API Tokens* → copy the **Server API token**.
+6. **Token.** *Servers* → `Madmoon Deals` → *API Tokens* → copy the **Server API token**.
 7. **`backend/.env`:**
    ```
    MAIL_MODE=postmark
    POSTMARK_SERVER_TOKEN=the token
-   MAIL_FROM=Sahla <no-reply@sahla.jo>
+   MAIL_FROM=Madmoon Deals <no-reply@sahla.jo>
    ```
    and delete the `DEV_EMAIL_CODE=123456` line. Restart the backend (`Ctrl+C`, then `npm run dev`).
    Note: after this the demo accounts' code `123456` no longer works; real codes arrive by email.
 8. **Try it.** In the app: *Sign up* with an address you can read (before approval: one at your domain). The
-   email should arrive within seconds. Postmark → *Servers* → `Sahla` → *Activity* shows every email: sent,
+   email should arrive within seconds. Postmark → *Servers* → `Madmoon Deals` → *Activity* shows every email: sent,
    delivered, bounced, opened.
 
 ## When it doesn't work

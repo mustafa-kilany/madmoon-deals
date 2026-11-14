@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '@/components/icons';
 import { AppleLogo, GoogleLogo } from '@/components/icons/BrandLogos';
-import { SahlaLogo } from '@/components/SahlaLogo';
+import { MadmoonLogo } from '@/components/MadmoonLogo';
 import { Button, Heading, Text } from '@/components/ui';
 import type { RootScreenProps } from '@/navigation/types';
 import { errorMessageKey } from '@/services/api/errors';
@@ -61,7 +61,7 @@ export function AuthScreen({ navigation }: RootScreenProps<'Auth'>) {
       <ScrollView contentContainerClassName="grow justify-center gap-6 p-6">
         <View className="items-center gap-2">
           <View className="mb-2">
-            <SahlaLogo size={84} />
+            <MadmoonLogo size={84} />
           </View>
           <Heading className="text-center text-3xl">
             {t('screens.auth')}

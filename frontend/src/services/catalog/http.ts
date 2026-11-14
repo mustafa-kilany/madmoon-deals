@@ -1,4 +1,4 @@
-// Catalog from the Sahla API (docs/API.md → Catalog). Responses are mapped
+// Catalog from the Madmoon Deals API (docs/API.md → Catalog). Responses are mapped
 // to app types here, so screens never see the wire format.
 
 import type { IconName } from '@/components/icons';

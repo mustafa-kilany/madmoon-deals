@@ -31,7 +31,7 @@ legalRoutes.get('/legal/:doc', (req, res) => {
     .type('html')
     .send(
       `<!doctype html><html lang="${lang}" dir="${lang === 'ar' ? 'rtl' : 'ltr'}"><head><meta charset="utf-8">` +
-        `<meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(page.title[lang])} · Sahla</title>` +
+        `<meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(page.title[lang])} · Madmoon Deals</title>` +
         '<style>body{font-family:system-ui,sans-serif;max-width:44rem;margin:2rem auto;padding:0 1rem;line-height:1.7;color:#2c1e16}h2{margin-top:2rem}</style>' +
         `</head><body><p><a href="?lang=${other}">${other === 'ar' ? 'العربية' : 'English'}</a></p>` +
         `<h1>${escape(page.title[lang])}</h1><p><small>${LEGAL_VERSION} · ${escape(env.SUPPORT_EMAIL)}</small></p>${sections}</body></html>`,

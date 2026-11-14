@@ -50,7 +50,7 @@ export interface AuthService {
   /**
    * Start verifying the signed-in account with Sanad. The app opens redirectUrl;
    * Sanad sends the user back to the server, then GET /me shows verified: true.
-   * SANAD_UNAVAILABLE until Sahla has Sanad access. Sends the person's consent
+   * SANAD_UNAVAILABLE until Madmoon Deals has Sanad access. Sends the person's consent
    * (B15.8): the screen asks for it first.
    */
   startIdVerification(): Promise<IdVerificationStart>;
@@ -72,7 +72,7 @@ export interface AuthService {
   savePayoutAccount(input: PayoutAccountInput): Promise<PayoutAccount>;
   /** Accounts with no password: email a code to confirm a change. */
   sendPayoutCode(): Promise<void>;
-  /** S8.4: a copy of everything Sahla holds about this person. */
+  /** S8.4: a copy of everything Madmoon Deals holds about this person. */
   exportMyData(): Promise<unknown>;
   logOut(): Promise<void>;
   /** Delete the account and everything on it (App Store rule 5.1.1(v)). */

@@ -10,10 +10,10 @@ const key = backupKey();
 const url = process.env.DATABASE_URL;
 if (!url) throw new Error('DATABASE_URL is required');
 const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-const output = process.argv[2] ?? `sahla-${stamp}.backup`;
+const output = process.argv[2] ?? `madmoon-${stamp}.backup`;
 
 const { database, env } = connection(url);
-const dir = mkdtempSync(path.join(tmpdir(), 'sahla-backup-'));
+const dir = mkdtempSync(path.join(tmpdir(), 'madmoon-backup-'));
 try {
   const dump = path.join(dir, 'dump');
   run('pg_dump', ['--format=custom', `--file=${dump}`, '--no-owner', '--no-privileges', database], env);

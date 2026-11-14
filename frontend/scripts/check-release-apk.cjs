@@ -36,7 +36,7 @@ check(flag('usesCleartextTraffic') === 'false', 'plain http off (usesCleartextTr
 check(flag('debuggable') !== 'true', 'not debuggable');
 
 // ── The JS bundle ──
-const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sahla-apk-'));
+const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'madmoon-apk-'));
 try {
   const asZip = path.join(dir, 'app.zip');
   fs.copyFileSync(apk, asZip);

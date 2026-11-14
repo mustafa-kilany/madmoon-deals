@@ -57,7 +57,7 @@ Read from this file, `BACKEND_REVIEW.md`, git and `gh` on 2026-11-11. Nothing wa
 | A1.1 | `npm run check:secrets` in `backend`: 110 commits, 616 files, no secrets | 🤖 | ✅ 2026-11-10 |
 | A1.2 | Push `feat/backend-b8-admin` | 🤖 | ✅ 2026-11-10 |
 | A1.3 | Sign the new GitHub tool in, once: `gh auth login` → GitHub.com → HTTPS → "Login with a web browser" → paste the code it shows. **"gh is not recognized"** (seen 2026-11-10): VS Code was open when `gh` was installed, and a new terminal inside it isn't enough. Close every VS Code window and open it again, or run `& "C:\Program Files\GitHub CLI\gh.exe" auth login`. | 👤 | ✅ 2026-11-12 |
-| A1.4 | Open the pull request `feat/backend-b8-admin` → `main`. Without A1.3: open `https://github.com/mustafa-kilany/Sahla/pull/new/feat/backend-b8-admin` and press "Create pull request". | 🤖 after A1.3, or 👤 by the link | ✅ 2026-11-12: #1 |
+| A1.4 | Open the pull request `feat/backend-b8-admin` → `main`. Without A1.3: open `https://github.com/mustafa-kilany/madmoon-deals/pull/new/feat/backend-b8-admin` and press "Create pull request". | 🤖 after A1.3, or 👤 by the link | ✅ 2026-11-12: #1 |
 | A1.5 | Wait for the checks (15 minutes at most each): app, backend, dashboard, secret scan, CodeQL, Docker build. First run ever, so expect something to fail. | 🤖 | ✅ 2026-11-12 |
 | A1.6 | Fix each failure, one commit each, push, repeat until green. Likely places: the Linux-only shutdown test (never run), the Docker build (Docker isn't on this PC), line endings. | 🤖 | ✅ 2026-11-12: five runs, every failure fixed with its own commit |
 | A1.7 | Merge into `main`. Tag it `v0.9.0-internal`. | 👤 presses Merge, 🤖 tags | ✅ 2026-11-13: merged (f3fa538), tagged `v0.9.0-internal` |
@@ -71,7 +71,7 @@ Detail and pass marks: `LOAD_BALANCER_TEST_PLAN.md`.
 |---|---|---|---|
 | A2.1 | Close games and Android Studio first: a heavy program halves the results. The emulator isn't needed and should be off. | 👤 | ✅ 2026-11-10 |
 | A2.2 | Try to download nginx for Windows (a zip, no installer). If this PC refuses, as it did MinIO, skip to A2.4. | 🤖 | ✅ 2026-11-10: refused here, as MinIO was; skipped to A2.4 |
-| A2.3 | Write `backend/scripts/balancer-test.ts` and `npm run balancer-test`: own database `sahla_load_test`, two servers on ports 4201 and 4202 with `TRUST_PROXY=1`, the balancer on 4200, virtual phones from addresses 127.0.0.2 upward. | 🤖 | ✅ 2026-11-10 |
+| A2.3 | Write `backend/scripts/balancer-test.ts` and `npm run balancer-test`: own database `madmoon_load_test`, two servers on ports 4201 and 4202 with `TRUST_PROXY=1`, the balancer on 4200, virtual phones from addresses 127.0.0.2 upward. | 🤖 | ✅ 2026-11-10 |
 | A2.4 | The small Node balancer inside the script, for the large numbers and as the fallback. | 🤖 | ✅ 2026-11-10 |
 | A2.5 | Run checks 1 to 6 at 200 phones through nginx. | 🤖 | ✅ 2026-11-10 |
 | A2.6 | Run checks 7 to 9 (up to 4 500 phones) through the Node balancer. Note each server's memory at every step. | 🤖 | ✅ 2026-11-10 |
@@ -192,7 +192,7 @@ Starts when B1 gives test keys. The findings are the design: build them in, don'
 | E9 | The item is held for a few minutes while one buyer is paying | M7 | ⬜ |
 | E10 | The same gates as before on the provider's test mode: double calls, bad amounts, the attack script, deliberate breaks, then one real card for 1 JOD, refunded | all | ⬜ |
 
-**Decisions for the owner before E starts** 👤: the hold after delivery (E6); who pays the delivery fee when a buyer cancels after the driver set out, and when a delivery fails (H9); whether Sahla or the provider holds the money (H8, with the lawyer, B12).
+**Decisions for the owner before E starts** 👤: the hold after delivery (E6); who pays the delivery fee when a buyer cancels after the driver set out, and when a delivery fails (H9); whether Madmoon Deals or the provider holds the money (H8, with the lawyer, B12).
 
 ## Part D: launch
 

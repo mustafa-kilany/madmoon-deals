@@ -1,4 +1,4 @@
-// "By continuing, you agree to Sahla's Terms and Privacy Policy" with links
+// "By continuing, you agree to Madmoon Deals' Terms and Privacy Policy" with links
 // (BACKEND_PLAN B15.8). Shown with the sign-up and Google / Apple buttons:
 // pressing them sends acceptTerms, recorded with the account.
 

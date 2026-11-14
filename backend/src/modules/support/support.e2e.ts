@@ -90,7 +90,7 @@ test('a customer writes; support sees it waiting, answers; the customer gets a p
   const after = (await call('GET', '/admin/support', support())).body.find((t: { userId: string }) => t.userId === buyer().id);
   assert.equal(after.waiting, false);
 
-  // The customer sees "Sahla support", not which admin answered.
+  // The customer sees "Madmoon Deals support", not which admin answered.
   const chat = (await call('GET', '/support', buyer())).body.messages;
   assert.deepEqual(chat.map((m: { fromSupport: boolean; text: string }) => [m.fromSupport, m.text]), [
     [false, 'My driver never came'],

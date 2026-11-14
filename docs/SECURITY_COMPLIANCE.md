@@ -31,7 +31,7 @@ The full list of rules, with a log line for each, is `SECURITY_PLAN.md`. The des
 |---|---|---|---|
 | Passwords | `scrypt` with a random 16-byte salt per password, compared in constant time. Never stored or logged in plain text | `backend/src/modules/auth/password.ts` | ✅ |
 | National ID numbers, certificate serials | Kept only as a keyed hash (HMAC-SHA-256 with `ID_HASH_SECRET`), never the number | `lib/hash.ts`; schema `nationalIdHash`, `serialHashes` | ✅ |
-| Seller IBANs | **Encrypted, not hashed** (the draft said hashed): Sahla has to read the IBAN back to pay the seller. Only the last 4 digits are shown | `lib/sealed.ts`; schema `payoutIban` | ✅ |
+| Seller IBANs | **Encrypted, not hashed** (the draft said hashed): Madmoon Deals has to read the IBAN back to pay the seller. Only the last 4 digits are shown | `lib/sealed.ts`; schema `payoutIban` | ✅ |
 | `ID_HASH_SECRET` | Must be set and different from `JWT_SECRET` in production; can never change once real IDs are stored. **No copy off this PC yet** | `env.ts`; `NEXT_STEPS.md` A5.5 | 🟡 |
 
 ### 1.3 Network (MASVS-NETWORK)
@@ -68,13 +68,13 @@ The full list of rules, with a log line for each, is `SECURITY_PLAN.md`. The des
 
 | Control | What is there | Proof | Status |
 |---|---|---|---|
-| No card data on Sahla's servers | The server refuses anything that looks like a card number, wherever it is sent; it takes only the provider's token | `payments/cardToken.ts`; `check:attack`; the card-number test in `INTERNAL_READINESS_PLAN.md` M7 | ✅ |
+| No card data on Madmoon Deals' servers | The server refuses anything that looks like a card number, wherever it is sent; it takes only the provider's token | `payments/cardToken.ts`; `check:attack`; the card-number test in `INTERNAL_READINESS_PLAN.md` M7 | ✅ |
 | Card entry in the provider's SDK or page | **No provider yet** (B1): today a fake provider stands in, and a release build refuses to pay (503) until there is one. SAQ A applies once the provider's own form takes the card | `NEXT_STEPS.md` B1, Part E | ⬜ |
 | Prices on the server | The total is the item price + 3% buyer protection (at least 1 JOD) + 2 JOD delivery, all in fils, worked out by the server; a price the app sends is ignored | `frontend/src/lib/money.ts` (shared with the server); double-call and bad-amount tests (M4, M5) | ✅ |
 | Row locks | Paying, refunding, cancelling and paying out lock the order's row (`FOR UPDATE`); two at once can't both go through | `orders/pay.ts`, `orders/problems.ts`; parallel-call tests | ✅ |
 | Payout hold | A changed IBAN holds payouts for 24 hours, needs the password again, and the seller is pushed and emailed | `payouts/account.ts` (`PAYOUT_HOLD_MS`) | ✅ |
 | Money records kept | Payment and payout rows can never be deleted with an order (the database refuses) | `retention.e2e.ts`, `privacy.e2e.ts` (H3) | ✅ |
-| **Not yet safe for real money** | Nine design problems in the payment path: charge before the record (H1), no webhook (H2), refund marked before the money moves (H4), the bank called inside a transaction (H5), no idempotency key (H6), nothing after delivery (H7), Sahla holding the money (H8, a legal question), all-or-nothing refunds (H9). The row locks above don't cover these | `BACKEND_REVIEW.md`; `NEXT_STEPS.md` Part E | ⬜ before any real payment |
+| **Not yet safe for real money** | Nine design problems in the payment path: charge before the record (H1), no webhook (H2), refund marked before the money moves (H4), the bank called inside a transaction (H5), no idempotency key (H6), nothing after delivery (H7), Madmoon Deals holding the money (H8, a legal question), all-or-nothing refunds (H9). The row locks above don't cover these | `BACKEND_REVIEW.md`; `NEXT_STEPS.md` Part E | ⬜ before any real payment |
 
 ## 4. Personal data (Jordan Law No. 24 of 2023)
 

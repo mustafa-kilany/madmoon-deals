@@ -1,6 +1,6 @@
 # The API, for any host that runs containers (decision D4). Build from the repo's root,
 # because the backend shares the app's rules and reference data (frontend/src):
-#   docker build -f backend/Dockerfile -t sahla-api .
+#   docker build -f backend/Dockerfile -t madmoon-api .
 # The steps for a release are in backend/docs/DEPLOY.md.
 
 FROM node:24-slim

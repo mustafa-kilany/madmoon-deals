@@ -12,7 +12,7 @@ const PORT = 4101;
 const base = `http://127.0.0.1:${PORT}/v1`;
 const dev = new URL(process.env.DATABASE_URL ?? '');
 const db = new URL(dev);
-db.pathname = '/sahla_attack_test';
+db.pathname = '/madmoon_attack_test';
 
 const secret = () => randomBytes(32).toString('base64url');
 Object.assign(process.env, {
@@ -164,7 +164,7 @@ try {
   }
 
   // ── Forged tokens ──
-  const payload = (over: object) => Buffer.from(JSON.stringify({ sub: admin.id, sid: 'x', iss: 'sahla-api', aud: 'sahla-admin', exp: 4102444800, ...over })).toString('base64url');
+  const payload = (over: object) => Buffer.from(JSON.stringify({ sub: admin.id, sid: 'x', iss: 'madmoon-api', aud: 'madmoon-admin', exp: 4102444800, ...over })).toString('base64url');
   const header = (alg: string) => Buffer.from(JSON.stringify({ alg, typ: 'JWT' })).toString('base64url');
   const { createHmac } = await import('node:crypto');
   const signed = (key: string, body: string) => {

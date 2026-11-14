@@ -54,4 +54,4 @@ export function matchTotp(secret: string, code: string, now = Date.now()) {
 
 /** For the QR code the authenticator app scans. */
 export const otpauthUrl = (secret: string, email: string) =>
-  `otpauth://totp/${encodeURIComponent(`Sahla Admin:${email}`)}?secret=${secret}&issuer=${encodeURIComponent('Sahla Admin')}&algorithm=SHA1&digits=6&period=30`;
+  `otpauth://totp/${encodeURIComponent(`Madmoon Deals Admin:${email}`)}?secret=${secret}&issuer=${encodeURIComponent('Madmoon Deals Admin')}&algorithm=SHA1&digits=6&period=30`;

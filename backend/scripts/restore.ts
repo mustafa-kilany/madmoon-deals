@@ -13,7 +13,7 @@ const { database, env } = connection(target);
 const tables = run('psql', ['--dbname', database, '--tuples-only', '--no-align', '--command', "SELECT count(*) FROM pg_tables WHERE schemaname = 'public'"], env).trim();
 if (tables !== '0') throw new Error(`${database} has ${tables} tables: restore only into an empty database`);
 
-const dir = mkdtempSync(path.join(tmpdir(), 'sahla-restore-'));
+const dir = mkdtempSync(path.join(tmpdir(), 'madmoon-restore-'));
 try {
   const dump = path.join(dir, 'dump');
   decryptFile(file, dump, backupKey());

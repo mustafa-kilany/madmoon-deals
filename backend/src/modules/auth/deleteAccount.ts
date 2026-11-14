@@ -9,7 +9,7 @@ import { UNPAID_WIN_MS } from '../selling/service';
 // DELETE /me (SECURITY_PLAN S1.9, the privacy policy's "How long we keep it"): the
 // account, its files and its personal data go. What stays is what accounting needs: the
 // amounts of finished orders and payments, with no name, phone or address on them.
-// (The admin audit log stays too: it records who at Sahla did what.)
+// (The admin audit log stays too: it records who at Madmoon Deals did what.)
 
 const closedBecause = (message: string) => new ApiError(409, 'OPEN_ORDERS', message);
 
@@ -31,7 +31,7 @@ async function refuseWhileOpen(userId: string) {
   });
   if (orders) throw closedBecause('Orders in progress: finish them first');
   if (await prisma.payout.count({ where: { sellerUserId: userId, status: { not: 'paid' } } }))
-    throw closedBecause('Sahla still owes you money: wait for your payout');
+    throw closedBecause('Madmoon Deals still owes you money: wait for your payout');
   const windowOpen = new Date(now - UNPAID_WIN_MS);
   const auctions = await prisma.listing.count({
     where: {

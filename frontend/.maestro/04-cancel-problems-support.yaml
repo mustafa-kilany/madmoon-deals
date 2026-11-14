@@ -62,7 +62,7 @@ name: Cancel, problem at the door, delivery failed, support
 - tapOn: "Open menu"
 - tapOn: "Log Out"
 - extendedWaitUntil:
-    visible: "Welcome to Sahla"
+    visible: "Welcome to Madmoon Deals"
     timeout: 15000
 
 # At the door the buyer finds a defect: no PIN, a problem report instead

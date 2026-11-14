@@ -126,7 +126,7 @@ test('delivered: the buyer and the seller', async () => {
   const paid = (await call('POST', `/orders/${order.id}/pay`, buyer(), { cardToken: 'mock_visa_4242' })).body;
   // B15.1: the seller hears the moment it's paid, and nobody else can buy it any more.
   assert.deepEqual(await sent(), [
-    ['seller', 'ساعة', 'تم البيع! دفع المشتري 30 د.أ. جهّز المنتج، سيأتي سائق سهلة لاستلامه.', { type: 'sale', id: order.id }],
+    ['seller', 'ساعة', 'تم البيع! دفع المشتري 30 د.أ. جهّز المنتج، سيأتي سائق مضمون ديلز لاستلامه.', { type: 'sale', id: order.id }],
   ]);
   const browse = (await call('GET', '/listings?limit=50', bidder())).body;
   assert.ok(!browse.items.some((i: { id: string }) => i.id === LISTINGS[1]), 'off browsing once paid');

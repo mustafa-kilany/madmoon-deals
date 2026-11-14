@@ -89,7 +89,7 @@ export async function accountFor(identity: SocialIdentity, nameFromApp?: string,
   }
 
   if (identity.email && isStaffEmail(identity.email))
-    throw new ApiError(422, 'VALIDATION', 'This email is for Sahla staff: ask an admin for an account');
+    throw new ApiError(422, 'VALIDATION', 'This email is for Madmoon Deals staff: ask an admin for an account');
   // B15.8: a new account only with the terms accepted (the app shows them with the buttons).
   if (!acceptedTerms) throw new ApiError(422, 'VALIDATION', 'acceptTerms: agree to the Terms and the Privacy Policy');
   // Apple shares the name only with the app, once, so the app may send it.

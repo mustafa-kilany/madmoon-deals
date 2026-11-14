@@ -1,5 +1,5 @@
 // npm run test:api: runs the end-to-end tests (src/**/*.e2e.ts) against a
-// separate, empty database "sahla_test", never your development data.
+// separate, empty database "madmoon_test", never your development data.
 // npm run test:api -- orders: only the files whose name starts with "orders".
 
 import { execSync } from 'node:child_process';
@@ -26,7 +26,7 @@ const env = {
 };
 const run = (command: string) => execSync(command, { stdio: 'inherit', env });
 
-run('npx prisma migrate deploy'); // creates sahla_test on first run, then applies migrations
+run('npx prisma migrate deploy'); // creates madmoon_test on first run, then applies migrations
 run('npx tsx scripts/empty-db.ts');
 // One file at a time: they share the test database.
 const only = process.argv[2]?.replace(/[^\w-]/g, '') ?? '';

@@ -2,7 +2,7 @@
 
 **Goal:** a user taps "Verify with Sanad", approves in the **Sanad** app (Jordan's national digital
 ID by the Ministry of Digital Economy and Entrepreneurship, **MoDEE**), and gets the Verified badge.
-No ID photos stored by Sahla.
+No ID photos stored by Madmoon Deals.
 
 ## What we know (October 2026)
 
@@ -13,7 +13,7 @@ No ID photos stored by Sahla.
 
 ### How to apply
 
-1. Register Sahla as a company in Jordan (MoDEE will ask for the commercial registration).
+1. Register Madmoon Deals as a company in Jordan (MoDEE will ask for the commercial registration).
 2. Contact MoDEE (the Sanad / digital ID team) and ask for **"Sanad digital ID integration for a
    private-sector service provider"**. Explain the use case: a marketplace verifying sellers' and
    buyers' identity, with consent, to reduce fraud.
@@ -38,15 +38,15 @@ once (the server refuses it in production).
 App: "Verify with Sanad" ─► POST /me/id-verification/sanad              → { redirectUrl }
      opens Sanad in the browser, the user approves
 Sanad ─► GET /v1/id-verification/sanad/callback?code=…&state=…   (this server: the redirect URI)
-Server ─► exchanges the code with Sanad (server to server, Sahla's credentials)
+Server ─► exchanges the code with Sanad (server to server, Madmoon Deals' credentials)
        ─► IdVerification approved, User.verified = true, badge on their listings
-       ─► shows "Your account is verified. Go back to the Sahla app."
+       ─► shows "Your account is verified. Go back to the Madmoon Deals app."
 App (back in front) ─► GET /me → verified: true
 ```
 
 - `state` is random, used once, valid 15 minutes; only its hash is stored (`IdVerification.stateHash`).
 - The national number is never stored: `nationalIdHash` = HMAC-SHA256 with `ID_HASH_SECRET`. A second
-  account with the same ID is refused ("This ID already verifies another Sahla account").
+  account with the same ID is refused ("This ID already verifies another Madmoon Deals account").
 - Code: `backend/src/modules/identity/` (`provider.ts`, `sanad.ts`, `routes.ts`), tests in `identity.e2e.ts`.
 
 ## When Sanad access arrives (BACKEND_PLAN B11.2)

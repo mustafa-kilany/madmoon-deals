@@ -1,4 +1,4 @@
-// Help & support (BACKEND_PLAN B15.6): write to Sahla's support team in the
+// Help & support (BACKEND_PLAN B15.6): write to Madmoon Deals' support team in the
 // app, or by email. One conversation per person (customers and drivers); a
 // reply arrives as a push. Opened from the menu, from an order (the order
 // number goes with the first message) or from a delivery.

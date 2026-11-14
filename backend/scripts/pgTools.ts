@@ -51,7 +51,7 @@ export function encryptFile(input: string, output: string, secret: string) {
 
 export function decryptFile(input: string, output: string, secret: string) {
   const file = readFileSync(input);
-  if (!file.subarray(0, MAGIC.length).equals(MAGIC)) throw new Error(`${input} isn't a Sahla backup`);
+  if (!file.subarray(0, MAGIC.length).equals(MAGIC)) throw new Error(`${input} isn't a Madmoon Deals backup`);
   const iv = file.subarray(MAGIC.length, MAGIC.length + 12);
   const tag = file.subarray(MAGIC.length + 12, MAGIC.length + 28);
   const decipher = createDecipheriv('aes-256-gcm', keyFrom(secret), iv);

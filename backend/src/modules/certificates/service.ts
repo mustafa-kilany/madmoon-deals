@@ -31,7 +31,7 @@ function ocrFor(device: FakeDevice): OcrProvider {
   throw new ApiError(503, 'INTERNAL', "Certificate checks aren't set up on this server yet");
 }
 
-/** A listing that counts as "another listing" for reuse: still for sale or sold through Sahla. */
+/** A listing that counts as "another listing" for reuse: still for sale or sold through Madmoon Deals. */
 const liveListing = { listing: { status: { not: 'withdrawn' as const } } };
 
 /** In `problems` of a certificate an admin rejected in the review queue (B8.3); never sent to the app. */

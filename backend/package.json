@@ -1,7 +1,7 @@
 {
-  "name": "sahla-backend",
+  "name": "madmoon-backend",
   "version": "1.0.0",
-  "description": "Sahla API (docs/API.md)",
+  "description": "Madmoon Deals API (docs/API.md)",
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "start": "tsx src/server.ts",

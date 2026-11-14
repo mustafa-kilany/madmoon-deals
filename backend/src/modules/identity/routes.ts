@@ -32,10 +32,10 @@ identityRoutes.get('/id-verification/sanad/callback', async (req, res) => {
 });
 
 const MESSAGES: Record<SanadOutcome, PageMessage> = {
-  verified: { ar: 'تم توثيق حسابك. ارجع إلى تطبيق سهلة.', en: 'Your account is verified. Go back to the Sahla app.' },
+  verified: { ar: 'تم توثيق حسابك. ارجع إلى تطبيق مضمون ديلز.', en: 'Your account is verified. Go back to the Madmoon Deals app.' },
   cancelled: { ar: 'تم إلغاء التوثيق. يمكنك المحاولة مرة أخرى من التطبيق.', en: 'Verification was cancelled. You can try again from the app.' },
   expired: { ar: 'انتهت صلاحية هذا الرابط. ابدأ من جديد في التطبيق.', en: 'This link has expired. Start again in the app.' },
-  id_used: { ar: 'هذه الهوية موثقة على حساب آخر في سهلة.', en: 'This ID already verifies another Sahla account.' },
+  id_used: { ar: 'هذه الهوية موثقة على حساب آخر في مضمون ديلز.', en: 'This ID already verifies another Madmoon Deals account.' },
   failed: { ar: 'تعذر التحقق مع سند. حاول لاحقاً.', en: "We couldn't check with Sanad. Please try later." },
 };
 

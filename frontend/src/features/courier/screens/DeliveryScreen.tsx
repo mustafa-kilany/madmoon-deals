@@ -2,7 +2,7 @@
 // to take it (the buyer), each with Call and Open in Maps. Collect → "Picked
 // up"; at the door the buyer tells the 4-digit PIN → "Confirm delivery", and
 // the server releases the payment to the seller. A wrong PIN releases nothing;
-// after five the order locks until Sahla support unlocks it. Can't finish →
+// after five the order locks until Madmoon Deals support unlocks it. Can't finish →
 // "Delivery failed" with a reason (B15.4); the buyer's report at the door shows here.
 
 import { useSecureScreen } from '@/lib/secureScreen';

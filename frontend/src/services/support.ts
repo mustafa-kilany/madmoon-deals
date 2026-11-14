@@ -1,4 +1,4 @@
-// Sahla's support team (BACKEND_PLAN B15.6; docs/API.md → Support): the
+// Madmoon Deals' support team (BACKEND_PLAN B15.6; docs/API.md → Support): the
 // support email and one chat per person. Always the real API (customers and
 // drivers both use it), so there is no mock version.
 
@@ -7,7 +7,7 @@ import { fromIso } from './api/wire';
 
 export type SupportMessage = {
   id: string;
-  /** true = Sahla support wrote it. */
+  /** true = Madmoon Deals support wrote it. */
   fromSupport: boolean;
   text: string;
   /** The order it's about, if any. */

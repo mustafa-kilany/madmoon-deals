@@ -247,7 +247,7 @@ test('a phone needs a passed certificate for the same device; buyers see its blu
   const r = await call('POST', '/listings', await phone({ testCertificateId: cert.id }));
   assert.equal(r.status, 201);
   assert.match(r.body.testCertificate.imageUrl, /\/files\/certificates\/.+_blurred\.jpg$/);
-  assert.match(r.body.testCertificate.shopName, /Sahla|سهلة/);
+  assert.match(r.body.testCertificate.shopName, /Madmoon Deals|مضمون ديلز/);
   assert.deepEqual(r.body.testCertificate.specs, ['128GB', 'Battery 91%']);
   const page = await (await fetch(`${base}/listings/${r.body.id}`)).json();
   assert.equal(page.testCertificate.imageUrl, r.body.testCertificate.imageUrl);

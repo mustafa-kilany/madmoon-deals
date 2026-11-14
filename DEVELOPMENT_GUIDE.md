@@ -1,6 +1,6 @@
-# Sahla — Development Guide
+# Madmoon Deals — Development Guide
 
-The single reference for building the Sahla mobile app (Android + iOS) with React Native.
+The single reference for building the Madmoon Deals mobile app (Android + iOS) with React Native.
 It covers the rules, design patterns, architecture, the development roadmap from start to
 release, and every dependency needed to begin.
 
@@ -15,7 +15,7 @@ release, and every dependency needed to begin.
 It is a working web prototype (React + Tailwind + Vite). We port its screens, tokens and logic
 to React Native; we do not copy its web markup.
 
-**Local reference copy:** `C:\Users\mustafa\Desktop\Sahla\figma-prototype` (outside this repo, with its
+**Local reference copy:** `C:\Users\mustafa\Desktop\Madmoon Deals\figma-prototype` (outside this repo, with its
 own git history: one commit per design sync), copied from the Make file via the Figma MCP. Run it with `npm run dev` there → http://localhost:5173. Any
 screen opens directly with URL params, e.g. `?screen=checkout&lang=ar&user=1&category=tech&item=0`
 (also `sidebar=1`, `filters=1`, `user=verified`, `q=<search>`; `item=4` is a category's demo
@@ -27,7 +27,7 @@ update adding the Auctions tab); the pre-update set is kept in `screenshots/prev
 
 ## 1. Product Summary
 
-Sahla is a bilingual (Arabic RTL / English LTR) second-hand marketplace for Jordan.
+Madmoon Deals is a bilingual (Arabic RTL / English LTR) second-hand marketplace for Jordan.
 Tone: warm, local, trustworthy.
 
 | User | Can do |
@@ -218,7 +218,7 @@ Porting classes: prototype `font-heading font-black` → `font-heading-black`; p
 
 ```
 1. Buyer pays        → card at Checkout
-2. Money held        → Sahla escrow ("Payment held safely in escrow")
+2. Money held        → Madmoon Deals escrow ("Payment held safely in escrow")
 3. Seller ships      → courier picks up the item
 4. Buyer gets PIN    → shown on Order Tracking
 5. Delivery          → buyer gives the PIN to the courier
@@ -269,7 +269,7 @@ Porting classes: prototype `font-heading font-black` → `font-heading-black`; p
 
 ### 3.6 Git and GitHub
 
-Repo: `github.com/mustafa-kilany/Sahla`, using **GitHub Flow**: one long-lived branch (`main`)
+Repo: `github.com/mustafa-kilany/madmoon-deals`, using **GitHub Flow**: one long-lived branch (`main`)
 plus short-lived branches for each piece of work.
 
 - `main` always builds and passes CI. Nobody pushes to it directly.
@@ -407,7 +407,7 @@ screen → hook (features/*/hooks, TanStack Query) → service interface (servic
 - Errors are `ApiError` with a `code`; screens show `t(errorMessageKey(error))`. A 401 signs out.
 - The session token lives in `services/api/tokenStorage.ts` (MMKV). **Before release** move it
   to the keychain (`react-native-keychain`) — only that file changes.
-- Card numbers never reach the Sahla API: `services/payments` tokenizes (mock now, provider SDK
+- Card numbers never reach the Madmoon Deals API: `services/payments` tokenizes (mock now, provider SDK
   later) and the API stores the token.
 
 **Adding an endpoint:** (1) describe it in `docs/API.md`, (2) add the method to the service's
@@ -525,8 +525,8 @@ Each phase ends with a working build on an Android emulator (and iOS, see §6.3)
 - Still to do: accessibility pass with TalkBack, iOS E2E run (needs a Mac or cloud runner).
 
 ### Phase 9 — Release
-- ✅ Logo and app icons (2026-10-20): `assets/logo/sahla-mark.svg` (winking bag + price tag),
-  `SahlaLogo` / `SahlaMark` in `src/components/SahlaLogo.tsx`, Android adaptive + legacy icons,
+- ✅ Logo and app icons (2026-10-20): `assets/logo/madmoon-mark.svg` (the letter م on dark brown; first a winking bag, replaced 2026-11-14),
+  `MadmoonLogo` / `MadmoonMark` in `src/components/MadmoonLogo.tsx`, Android adaptive + legacy icons,
   iOS AppIcon set, `assets/logo/play-store-icon-512.png`. Still to do: splash screen, app name
   in Arabic and English.
 - Android: release keystore, signed AAB, Google Play listing.

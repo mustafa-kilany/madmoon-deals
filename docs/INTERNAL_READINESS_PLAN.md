@@ -1,4 +1,4 @@
-# Sahla Internal Readiness Plan
+# Madmoon Deals Internal Readiness Plan
 
 Everything that can be finished **without a third-party account or API**, and how each part is proven.
 Written 2026-11-08 from a re-audit of `501800b`. Detail and evidence for security items stay in
@@ -95,7 +95,7 @@ MoDEE / Sanad · Play Console · Apple Developer · regenerating the Maps key an
 
 ## Results (2026-11-10): two servers behind a balancer (`npm run balancer-test`)
 
-Stage 1 of `LOAD_BALANCER_TEST_PLAN.md`, on this PC: two servers (4201, 4202, `TRUST_PROXY=1`, real limits) on `sahla_load_test`, the small Node balancer from `scripts/balancer.ts` (nginx for Windows couldn't be downloaded here), virtual phones from separate local addresses. **Run three times; the last two back to back, 12 of 12 each.** The first run had 1 failed request out of 2 495 in check 8 (not recorded which; the script now prints it) and never came back. Numbers below are the last run's.
+Stage 1 of `LOAD_BALANCER_TEST_PLAN.md`, on this PC: two servers (4201, 4202, `TRUST_PROXY=1`, real limits) on `madmoon_load_test`, the small Node balancer from `scripts/balancer.ts` (nginx for Windows couldn't be downloaded here), virtual phones from separate local addresses. **Run three times; the last two back to back, 12 of 12 each.** The first run had 1 failed request out of 2 495 in check 8 (not recorded which; the script now prints it) and never came back. Numbers below are the last run's.
 
 | # | Check | Result |
 |---|---|---|

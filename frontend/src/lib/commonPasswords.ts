@@ -1,5 +1,5 @@
 // SECURITY_PLAN S1.2, shared by the app's sign-up form and the server: passwords of 8+ characters
-// that top every leaked-password list, plus Sahla-specific guesses. Compared lower-case, without spaces.
+// that top every leaked-password list, plus Madmoon Deals-specific guesses. Compared lower-case, without spaces.
 
 const COMMON = new Set([
   '12345678',

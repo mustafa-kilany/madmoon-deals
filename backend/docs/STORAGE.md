@@ -15,8 +15,8 @@ provider changes settings, not data.
 
 ## Setting up Cloudflare R2 (the plan's recommendation, D1)
 
-1. Cloudflare dashboard → R2 → create two buckets: `sahla-photos` and `sahla-private`.
-2. `sahla-photos` → Settings → **Custom Domains** → `files.sahla.jo`. Leave `sahla-private` with **no** public access and no domain.
+1. Cloudflare dashboard → R2 → create two buckets: `madmoon-photos` and `madmoon-private`.
+2. `madmoon-photos` → Settings → **Custom Domains** → `files.sahla.jo`. Leave `madmoon-private` with **no** public access and no domain.
 3. R2 → **Manage API Tokens** → create one with *Object Read & Write*, limited to those two buckets. It shows the access key id and the secret once.
 4. Set these in the host's secret settings (never in git):
    ```
@@ -25,8 +25,8 @@ provider changes settings, not data.
    S3_REGION=auto
    S3_ACCESS_KEY_ID=…
    S3_SECRET_ACCESS_KEY=…
-   S3_PUBLIC_BUCKET=sahla-photos
-   S3_PRIVATE_BUCKET=sahla-private
+   S3_PUBLIC_BUCKET=madmoon-photos
+   S3_PRIVATE_BUCKET=madmoon-private
    FILES_PUBLIC_URL=https://files.sahla.jo
    ```
 5. **Check it:** `npm run check:storage`. It writes, reads and deletes a file in each bucket and proves the private bucket refuses anonymous reads.

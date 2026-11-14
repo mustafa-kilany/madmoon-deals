@@ -63,7 +63,7 @@ All four pieces of software are free, open source and used by very large sites. 
 | L2 | PostgreSQL's own advisory locks (built in), or `pg-boss` if jobs grow | A separate job service |
 | Load testing | `k6` or Artillery, free | A paid load-testing service |
 
-**Not worth buying:** Pusher, Ably, Supabase Realtime and the like sell live connections by the month. Sahla's own are built, tested and free.
+**Not worth buying:** Pusher, Ably, Supabase Realtime and the like sell live connections by the month. Madmoon Deals' own are built, tested and free.
 
 ## Stage 1: offline, on this PC, free
 
@@ -74,7 +74,7 @@ A balancer on this PC in front of **two copies of the backend** sharing one test
 | Piece | What it is |
 |---|---|
 | `backend/scripts/balancer-test.ts`, run as `npm run balancer-test` | Starts everything below, runs the checks, prints a pass/fail table, stops everything. Takes `BALANCER_URL=` so Stage 2 reuses it against a real address. |
-| Two servers | Ports 4201 and 4202, database `sahla_load_test` (the one `load-test.ts` uses), `TRUST_PROXY=1`, limits at their real values. |
+| Two servers | Ports 4201 and 4202, database `madmoon_load_test` (the one `load-test.ts` uses), `TRUST_PROXY=1`, limits at their real values. |
 | The balancer | **nginx for Windows** first: real balancer software, round robin, 60-second idle timeout. If this PC refuses the download (it refused MinIO), a small balancer written in Node inside the script. |
 | Virtual phones | The `ws` package already in the backend. Each opens the same connection the app does. They connect from different local addresses (127.0.0.2, 127.0.0.3, …) so each looks like a separate person. |
 
@@ -137,7 +137,7 @@ Railway is the suggestion **for the test copy only**: on 2026-11-11 it was the o
 |---|---|---|
 | 1 | `railway.com`, sign in **with GitHub** | ⬜ |
 | 2 | The **Hobby** plan, a bank card. About $5 a month at last report; the price lists found disagree, so read `railway.com/pricing` on the day | ⬜ |
-| 3 | **New Project → Deploy from GitHub repo.** Give Railway access to the Sahla repo only | ⬜ |
+| 3 | **New Project → Deploy from GitHub repo.** Give Railway access to the Madmoon Deals repo only | ⬜ |
 | 4 | In the project: **New → Database → PostgreSQL.** It must say version 18 (otherwise the "PostgreSQL 18" template) | ⬜ |
 | 5 | The server's **Settings**: region, the Europe one; Dockerfile path `backend/Dockerfile`; pre-deploy command `npx prisma migrate deploy && npm run db:seed` (the seed can run again on every deploy: it makes the demo accounts and auctions the test uses); healthcheck path `/v1/health` | ⬜ |
 | 6 | **Networking → Generate Domain**: the free `https://….up.railway.app` address | ⬜ |

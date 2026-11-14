@@ -54,7 +54,7 @@ test('only admins with the right password get a ticket; the first one sets up th
   assert.equal(first.status, 200);
   assert.ok(first.body.challenge);
   assert.match(first.body.setup.secret, /^[A-Z2-7]{32}$/);
-  assert.match(first.body.setup.otpauthUrl, /^otpauth:\/\/totp\/Sahla%20Admin%3Ae2e\.dash\.admin%40sahla\.jo\?secret=/);
+  assert.match(first.body.setup.otpauthUrl, /^otpauth:\/\/totp\/Madmoon%20Deals%20Admin%3Ae2e\.dash\.admin%40sahla.jo\?secret=/);
   secret = first.body.setup.secret;
   // Until a code is accepted, every try shows the same secret (the app already scanned it).
   assert.equal((await login()).body.setup.secret, secret);

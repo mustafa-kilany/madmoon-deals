@@ -1,4 +1,4 @@
-// Sahla contract server: a small, real HTTP implementation of the account
+// Madmoon Deals contract server: a small, real HTTP implementation of the account
 // endpoints in docs/API.md, used to prove the app's HTTP integration end to
 // end before the production backend exists. NOT the backend: data lives in
 // memory and is lost on restart (which also tests expired-token handling).
@@ -224,7 +224,7 @@ function createStore() {
   });
   // Demo courier (as in src/services/mock/users.ts): sees "Confirm a Delivery".
   addAccount(store, {
-    name: 'Sahla Courier',
+    name: 'Madmoon Deals Courier',
     email: 'courier@sahla.jo',
     password: 'sahla1234',
     method: 'email',
@@ -530,7 +530,7 @@ function routes(store) {
       return [200, publicUser(account), photo];
     },
 
-    // Like the real backend until Sahla has Sanad access (backend/docs/ID-VERIFICATION.md).
+    // Like the real backend until Madmoon Deals has Sanad access (backend/docs/ID-VERIFICATION.md).
     'POST /me/id-verification/sanad': async req => {
       authenticate(store, req);
       throw new HttpError(
@@ -639,7 +639,7 @@ if (require.main === module) {
   const port = Number(process.env.PORT ?? 4000);
   createContractServer().listen(port, '0.0.0.0', () =>
     console.log(
-      `Sahla contract server on http://localhost:${port}${PREFIX} ` +
+      `Madmoon Deals contract server on http://localhost:${port}${PREFIX} ` +
         `(emulator: http://10.0.2.2:${port}${PREFIX}). Demo: ahmad@sahla.jo / sahla1234`,
     ),
   );

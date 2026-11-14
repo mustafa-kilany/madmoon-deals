@@ -64,7 +64,7 @@ export function LoginPage() {
     <main className="login">
       <div className="card login-card">
         <div className="brand">
-          <span className="brand-mark">S</span> Sahla Admin
+          <span className="brand-mark">M</span> Madmoon Deals Admin
         </div>
         {!step ? (
           <form onSubmit={submitPassword}>
@@ -95,7 +95,7 @@ export function LoginPage() {
             {step.setup ? (
               <Setup secret={step.setup.secret} otpauthUrl={step.setup.otpauthUrl} />
             ) : (
-              <p className="muted">Open your authenticator app and enter the 6-digit code for Sahla Admin.</p>
+              <p className="muted">Open your authenticator app and enter the 6-digit code for Madmoon Deals Admin.</p>
             )}
             <label>
               6-digit code

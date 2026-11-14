@@ -1,4 +1,4 @@
-// HTTP client for the Sahla API: JSON in/out, bearer token, timeout, and
+// HTTP client for the Madmoon Deals API: JSON in/out, bearer token, timeout, and
 // errors turned into ApiError. Only the services' http.ts files use it.
 
 import { config } from '@/config';

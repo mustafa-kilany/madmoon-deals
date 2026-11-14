@@ -1,6 +1,6 @@
-# Sahla Security Plan
+# Madmoon Deals Security Plan
 
-How Sahla's security gets checked before launch and kept checked after it. Written 2026-11-07 from an
+How Madmoon Deals' security gets checked before launch and kept checked after it. Written 2026-11-07 from an
 audit of the code on `feat/backend-b8-admin` (`5a8e2d3`). **Edit freely**: tick items, add notes, move dates.
 
 **Status:** ✅ done (with where it lives) · ⬜ to do · 🔴 found in the audit, must fix before launch ·
@@ -267,7 +267,7 @@ Newest first. Each entry: what was done, the commit, how it was checked.
   **Still to check on a built release APK:** the merged manifest (libraries add permissions), and the bundle's contents. **S6.6:** push texts read: no PIN, address or chat text. **S6.7:** a push only opens a screen; the server's checks decide (S2.1). **Found while testing:** an auction winner had no way to find a win without the push: `GET /me/auctions-won`, shown on the Auctions tab and Profile.
 - 2026-11-08: **Server and files (`INTERNAL_READINESS_PLAN.md` phase 3).**
   * **Found by the new load test, the worst bug of this work:** `placeBid` asked for a second database connection while its transaction held one. **120 bids at once: all 120 answered 500, and the whole
-    server stalled for 5 seconds**, for people only browsing too. Any busy auction would have taken Sahla down. Fixed in `negotiation/bids.ts`; `bidsLoad.e2e.ts` proves it (it failed 120/120 on the old code). The
+    server stalled for 5 seconds**, for people only browsing too. Any busy auction would have taken Madmoon Deals down. Fixed in `negotiation/bids.ts`; `bidsLoad.e2e.ts` proves it (it failed 120/120 on the old code). The
     load test went from 83 to 393 requests a second, p95 under 500 ms. It was the only place with this mistake (searched every `$transaction`). `DB_POOL_SIZE` is now a setting.
   * **S0.5 built:** `lib/storage.ts` speaks S3 (R2, S3, MinIO) with a public and a private bucket; production refuses `local`. `storage.e2e.ts` runs the whole flow against a small S3 server that **recomputes AWS's Signature V4
     itself** and refuses a wrong one. **Not yet run against a real bucket** (downloading MinIO was refused by this PC's permissions): `npm run check:storage` does it, in the R2 steps of `backend/docs/STORAGE.md`.
@@ -287,7 +287,7 @@ Newest first. Each entry: what was done, the commit, how it was checked.
   * **S1.9 deletion fixed (the biggest privacy gap):** it left pickup and delivery phones and addresses on orders and listings, chats on the person's listings, reports about them,
     every **photo file and certificate original on disk**, and the saved card at the provider, while the policy promised they were gone. It also let a person leave with money still owed,
     or as the top bidder, and let a driver or the only owner delete themselves. Now tested by planting marks in every table, deleting, and searching **every table** and the disk.
-    Accepted: the admin audit log keeps the person's id (who at Sahla did what). Known limit: a rejected fake certificate's hash goes with the account, so someone could delete and retry.
+    Accepted: the admin audit log keeps the person's id (who at Madmoon Deals did what). Known limit: a rejected fake certificate's hash goes with the account, so someone could delete and retry.
   * **S2.1 + a route walker:** `lib/authz.e2e.ts` reads the server's route table: every non-public route must answer 401 with no token, every admin route must refuse customers and
     couriers, and a customer route with an id not in the two-user table **fails the test**. No hole found: all passed.
   * **S2.3 tightened:** a delivered or failed job keeps only names and areas on the driver's phone. **S2.5** passed (two stores, revoked key). **S2.6:** `lib/leaks.e2e.ts` walks real answers from guests,
@@ -327,8 +327,8 @@ Newest first. Each entry: what was done, the commit, how it was checked.
     sharp itself refuses above 268 MP. **S4.3** ✅: the type comes from the bytes (an SVG named `.jpg` → 422).
   * Checked by `src/lib/hardening.e2e.ts` (4 common passwords → 422; a 64 MP PNG header of 1.3 KB → 422 "too many
     pixels"; an SVG named `.jpg` → 422). 146 e2e + 201 app tests pass.
-- 2026-11-07: **S0.3 prepared.** `frontend/android/app/build.gradle` signs release builds with Sahla's upload key
-  when `SAHLA_UPLOAD_*` is set in `%USERPROFILE%/.gradle/gradle.properties` (outside git); without it a release
+- 2026-11-07: **S0.3 prepared.** `frontend/android/app/build.gradle` signs release builds with Madmoon Deals' upload key
+  when `MADMOON_UPLOAD_*` is set in `%USERPROFILE%/.gradle/gradle.properties` (outside git); without it a release
   build for the emulator still uses the debug key, but `bundleRelease` (the Play Store file) **refuses** to run.
   Steps for the owner (make the key, store it, Play App Signing, Firebase SHA-1): `docs/RELEASE_SIGNING.md`.
   Checked: `gradlew :app:tasks` configures. **Open (owner):** create the key (a password only the owner knows).

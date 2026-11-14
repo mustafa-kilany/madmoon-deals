@@ -53,7 +53,7 @@ export async function reportError(error: unknown, where: string) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-sentry-envelope',
-      'X-Sentry-Auth': `Sentry sentry_version=7, sentry_client=sahla-backend/1.0, sentry_key=${dsn.publicKey}`,
+      'X-Sentry-Auth': `Sentry sentry_version=7, sentry_client=madmoon-backend/1.0, sentry_key=${dsn.publicKey}`,
     },
     body,
     signal: AbortSignal.timeout(3000),

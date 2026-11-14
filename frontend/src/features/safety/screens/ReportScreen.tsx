@@ -1,4 +1,4 @@
-// Report a listing or a user to the Sahla team (App Store guideline 1.2:
+// Report a listing or a user to the Madmoon Deals team (App Store guideline 1.2:
 // apps with user content must let people report it). Pick a reason, add
 // optional details, send. The team reviews reports within 24 hours.
 

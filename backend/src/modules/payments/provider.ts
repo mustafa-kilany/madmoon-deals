@@ -2,10 +2,10 @@ import { env } from '../../env';
 import { fakePayments } from './fake';
 
 // The payment provider (BACKEND_PLAN B7.3, decision D2: MEPS, a bank's gateway,
-// HyperPay, PayTabs, …). Card numbers never reach Sahla: the app's provider SDK
+// HyperPay, PayTabs, …). Card numbers never reach Madmoon Deals: the app's provider SDK
 // turns the card into a token, and only the token comes here.
 //
-// Escrow means Sahla takes the buyer's money when they pay and keeps it until
+// Escrow means Madmoon Deals takes the buyer's money when they pay and keeps it until
 // the courier confirms delivery (then a Payout to the seller), or refunds it.
 
 export type ChargeResult = {
@@ -39,7 +39,7 @@ export interface PaymentProvider {
 
 /**
  * The provider in use, or null while payments are off (503). PAYMENT_MODE=fake
- * for development and tests; the real one is B7.9, once D2 is decided and Sahla
+ * for development and tests; the real one is B7.9, once D2 is decided and Madmoon Deals
  * has a merchant account.
  */
 export function paymentProvider(): PaymentProvider | null {

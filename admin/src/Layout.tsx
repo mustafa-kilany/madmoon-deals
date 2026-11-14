@@ -31,7 +31,7 @@ export function Layout() {
     <div className="shell">
       <nav className="sidebar" aria-label="Main">
         <div className="brand">
-          <span className="brand-mark">S</span> Sahla Admin
+          <span className="brand-mark">M</span> Madmoon Deals Admin
         </div>
         {pages
           .filter(page => 'section' in page || can(page.needs))

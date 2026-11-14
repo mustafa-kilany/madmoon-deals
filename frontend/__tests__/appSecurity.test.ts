@@ -29,7 +29,7 @@ test('S6.3 no secret key in the app: only the public Google client id', () => {
 
 test('S6.2 release builds use only the real API over https, and no service is on mock data', () => {
   const config = readFileSync('src/config.ts', 'utf8');
-  expect(config).toMatch(/apiBaseUrl: __DEV__ \? 'http:\/\/10\.0\.2\.2:4000\/v1' : 'https:\/\/api\.sahla\.jo\/v1'/);
+  expect(config).toMatch(/apiBaseUrl: __DEV__ \? 'http:\/\/10\.0\.2\.2:4000\/v1' : 'https:\/\/api.sahla.jo\/v1'/);
   const mock = config.slice(config.indexOf('mock: {'), config.indexOf('},', config.indexOf('mock: {')));
   expect(mock).not.toMatch(/: true/);
   // Nothing else in the app hard-codes a test address.
@@ -91,7 +91,7 @@ test('accessibility: every tappable thing is a button to a screen reader, and ic
     for (const block of tappable(text)) {
       const where = `${file}: ${block.slice(0, 80).replace(/\s+/g, ' ')}`;
       if (!block.includes('accessibilityRole')) noRole.push(where);
-      const iconOnly = /<Icon\b|<SahlaLogo\b/.test(block) && !/<Text\b|<Ltr\b/.test(block);
+      const iconOnly = /<Icon\b|<MadmoonLogo\b/.test(block) && !/<Text\b|<Ltr\b/.test(block);
       if (iconOnly && !block.includes('accessibilityLabel')) noLabel.push(where);
     }
   expect(noRole).toEqual([]);
@@ -99,5 +99,5 @@ test('accessibility: every tappable thing is a button to a screen reader, and ic
 });
 
 test('the app’s name is translated', () => {
-  expect(readFileSync('android/app/src/main/res/values-ar/strings.xml', 'utf8')).toContain('سهلة');
+  expect(readFileSync('android/app/src/main/res/values-ar/strings.xml', 'utf8')).toContain('مضمون ديلز');
 });

@@ -26,7 +26,7 @@ export interface PrivateStorage extends Storage {
 const PUBLIC_PREFIX = '/files/';
 const PRIVATE_PREFIX = 'private:';
 
-/** The keys Sahla makes are random names: this refuses anything that could climb out of a folder. */
+/** The keys Madmoon Deals makes are random names: this refuses anything that could climb out of a folder. */
 const safeKey = (key: string) => (key && !key.split('/').some(part => part === '..' || part === '') ? key : undefined);
 
 export const uploadDir = fileURLToPath(new URL('../../uploads', import.meta.url));

@@ -19,7 +19,7 @@ import { WebSocket } from 'ws';
 
 const BASE = (process.env.BALANCER_URL ?? '').replace(/\/$/, '');
 if (!/^https?:\/\//.test(BASE)) {
-  console.error('Set BALANCER_URL to the test copy, e.g. $env:BALANCER_URL="https://sahla-test.up.railway.app"');
+  console.error('Set BALANCER_URL to the test copy, e.g. $env:BALANCER_URL="https://madmoon-test.up.railway.app"');
   process.exit(1);
 }
 const WS_BASE = BASE.replace(/^http/, 'ws');
@@ -270,7 +270,7 @@ try {
 }
 
 if (results.some(r => !r.pass)) failed = true;
-const file = path.join(os.tmpdir(), `sahla-balancer-hosted-${new Date().toISOString().replace(/[:.]/g, '-')}.json`);
+const file = path.join(os.tmpdir(), `madmoon-balancer-hosted-${new Date().toISOString().replace(/[:.]/g, '-')}.json`);
 writeFileSync(file, JSON.stringify({ at: new Date().toISOString(), target: BASE, listing: LISTING, results }, null, 2));
 console.log(`\n${results.filter(r => r.pass).length}/${results.length} passed. Results: ${file}`);
 console.log(failed ? 'FAILED.' : 'Passed.');

@@ -71,7 +71,7 @@ test('development reader: passes, with the shop, date, device and specs; the OCR
   assert.equal(r.status, 201);
   assert.deepEqual([r.body.status, r.body.problems], ['passed', []]);
   assert.equal(r.body.device, 'Apple iPhone 14 Pro');
-  assert.match(r.body.shopName, /سهلة|Sahla/);
+  assert.match(r.body.shopName, /مضمون ديلز|Madmoon Deals/);
   assert.deepEqual(r.body.specs, ['128GB', 'Battery 91%']);
   assert.equal(r.body.testedAt.slice(0, 10), new Date().toISOString().slice(0, 10));
   assert.equal(r.body.ocrText, undefined);

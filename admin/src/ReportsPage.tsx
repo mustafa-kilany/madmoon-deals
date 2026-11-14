@@ -57,7 +57,7 @@ export function ReportsPage() {
       {decision?.kind === 'remove' && (
         <ConfirmDialog
           title="Remove this listing?"
-          body={<p>It comes off sale for good and the seller gets a notification that it broke Sahla’s rules.</p>}
+          body={<p>It comes off sale for good and the seller gets a notification that it broke Madmoon Deals’ rules.</p>}
           inputLabel="What rule it breaks (kept in the audit log)"
           confirmLabel="Remove listing"
           danger

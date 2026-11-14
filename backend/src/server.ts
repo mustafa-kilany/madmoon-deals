@@ -22,7 +22,7 @@ scheduleRetention();
 const stopJobs = startJobWorker(); // pushes, emails, risk checks waiting in the Job table
 
 const server = app.listen(env.PORT, () => {
-  logger.info(`Sahla backend on http://localhost:${env.PORT}/v1`);
+  logger.info(`Madmoon Deals backend on http://localhost:${env.PORT}/v1`);
 });
 
 const live = attachLive(server, app);

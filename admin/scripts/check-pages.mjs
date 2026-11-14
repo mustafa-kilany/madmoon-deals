@@ -19,10 +19,10 @@ const API = (process.env.API_URL ?? 'http://localhost:4001') + '/v1';
 const CHROME = process.env.CHROME ?? 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const PORT = 9347;
 const SHOTS = process.env.SHOTS;
-const TOKEN_KEY = 'sahla-admin-token';
+const TOKEN_KEY = 'madmoon-admin-token';
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-const profile = mkdtempSync(path.join(tmpdir(), 'sahla-check-pages-'));
+const profile = mkdtempSync(path.join(tmpdir(), 'madmoon-check-pages-'));
 const chrome = spawn(CHROME, ['--headless=new', `--remote-debugging-port=${PORT}`, `--user-data-dir=${profile}`, '--window-size=1400,1000', '--no-first-run', 'about:blank'], { stdio: 'ignore' });
 
 async function connect() {

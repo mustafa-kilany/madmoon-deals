@@ -47,7 +47,7 @@ const schema = z
     MAIL_MODE: z.enum(['console', 'postmark']).default('console'),
     POSTMARK_SERVER_TOKEN: optional,
     // The sender: an address at a domain verified in Postmark.
-    MAIL_FROM: z.string().min(3).default('Sahla <no-reply@sahla.jo>'),
+    MAIL_FROM: z.string().min(3).default('Madmoon Deals <no-reply@sahla.jo>'),
     // Uploaded files (SECURITY_PLAN S0.5, backend/docs/STORAGE.md). local = backend/uploads, development only;
     // s3 = any S3-compatible service (Cloudflare R2, AWS S3, MinIO).
     STORAGE: z.enum(['local', 's3']).default('local'),
@@ -66,7 +66,7 @@ const schema = z
     MIN_APP_BUILD: optional.transform(value => (value === undefined ? undefined : Number(value))).pipe(z.number().int().positive().optional()),
     // Tests only: multiplies the per-user rate limits (src/lib/rateLimit.ts). Always 1 in production.
     RATE_LIMIT_MULTIPLIER: z.coerce.number().int().min(1).max(1000).default(1),
-    // B15.6: where people can write to Sahla's support team (shown in the app next to the support chat).
+    // B15.6: where people can write to Madmoon Deals' support team (shown in the app next to the support chat).
     SUPPORT_EMAIL: z.email().default('support@sahla.jo'),
     // The dashboard's second log-in step, the authenticator app code (BACKEND_PLAN B8.1).
     // off = email + password only: local development until the dashboard is hosted (B8.6).
@@ -87,7 +87,7 @@ const schema = z
     GOOGLE_JWKS_URL: z.string().url().default('https://www.googleapis.com/oauth2/v3/certs'),
     APPLE_JWKS_URL: z.string().url().default('https://appleid.apple.com/auth/keys'),
     // ID verification with Sanad (backend/docs/ID-VERIFICATION.md). off = 503 SANAD_UNAVAILABLE
-    // until MoDEE gives Sahla access; fake = a pretend Sanad for development and tests.
+    // until MoDEE gives Madmoon Deals access; fake = a pretend Sanad for development and tests.
     SANAD_MODE: z.enum(['off', 'fake']).default('off'),
     // Key for hashing national ID numbers (one ID, one verified account). Set it before
     // Sanad goes live and never change it; until then the JWT secret is used.
