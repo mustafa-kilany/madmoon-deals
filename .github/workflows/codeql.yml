@@ -20,7 +20,7 @@ jobs:
       # It reads its own workflow run: without this, "Resource not accessible by integration" (2026-11-12).
       actions: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: github/codeql-action/init@v3
         with:
           languages: javascript-typescript
